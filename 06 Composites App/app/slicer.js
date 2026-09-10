@@ -747,8 +747,8 @@ function sectionize(layers, maxDepth) {
 /* Slice a mold into layers.
      tris        — triangles already in mm (see scaleTris)
      thicknesses — ordered bottom-to-top, in mm; must cover the mold height
-     opts        — { margin, inflate, simplifyEps, onProgress }
-   Returns { layers, bounds, warnings }. Throws with a human sentence on a bad
+     opts        — { margin, inflate, simplifyEps, onProgress, monolithic }
+   Returns { layers, bounds, warnings, monolithic }. Throws with a human sentence on a bad
    mesh; the message is shown to whoever picked the file. */
 /* Slice with the boards chosen automatically from what the rack holds.
    Evaluates each candidate by actually slicing it and keeping the one that
@@ -814,6 +814,26 @@ function sliceMold(tris, thicknesses, opts) {
   const inflate = opts.inflate == null ? MARGIN_MAX_MM : opts.inflate;
   const eps = opts.simplifyEps == null ? 0.2 : opts.simplifyEps;
   const bounds = meshBounds(tris);
+  /* MONOLITHIC — one footprint for every layer.
+
+     The default steps each layer in to the mold: a layer's blank only covers
+     the union over its own slab, so a tapered plug gets smaller boards up top
+     and the glued stack is a staircase. That saves board, and it is what the
+     planner scores. A monolithic stack instead gives every layer the SAME
+     rectangle, the whole mold's XY bounds plus margin, so the glue-up is one
+     rectangular brick around the mold: more board, but nothing to line up
+     between layers, every slab is supported by the full one below it, and the
+     stock body CAM sees is a plain box. Opt-in, from the mold modal.
+
+     The block is a superset of every stepped blank (each slab box lies inside
+     the mesh bounds), so containment holds by construction and the same
+     containment test in tools/test_slicer.mjs covers both modes. Islands in a
+     layer collapse into the one block too; that is the point, not a loss.
+     Sections, kerf and the cut list are untouched: a monolithic layer is still
+     one rectangle per board, packed onto sheets with the same straight-through
+     cuts as any other blank. */
+  const mono = !!opts.monolithic;
+  const fullBox = mono ? { x0: bounds.x0, y0: bounds.y0, x1: bounds.x1, y1: bounds.y1 } : null;
   const total = thicknesses.reduce((a, b) => a + b, 0);
   const height = bounds.z1 - bounds.z0;
   const warnings = [];
@@ -832,7 +852,9 @@ function sliceMold(tris, thicknesses, opts) {
 
     /* BLANKS come from the exact slab clip — no draft assumption, so an
        overhung mold still gets a correct blank instead of a refusal. */
-    const groups = slabBoxes(tris, z0, Math.min(z1, bounds.z1), inflate);
+    const groups = mono
+      ? [{ box: fullBox, members: [0] }]
+      : slabBoxes(tris, z0, Math.min(z1, bounds.z1), inflate);
     if (!groups.length) throw new Error(`Layer ${i + 1} came out empty — the mold may not sit flat on Z.`);
     const blanks = groups.map(g => applyMargin(g.box, margin));
 
@@ -905,7 +927,7 @@ function sliceMold(tris, thicknesses, opts) {
   const tooThick = layers.find(L => L.thickness > maxDepth + 1e-6);
   if (tooThick) warnings.push(`Layer ${tooThick.index + 1} is a single board ${(tooThick.thickness / 25.4).toFixed(2)}in thick, deeper than the machine can cut. Use thinner boards for that layer.`);
 
-  return { layers, sections, bounds, warnings };
+  return { layers, sections, bounds, warnings, monolithic: mono };
 }
 
 /* Node (tests) and the Worker both need these; the browser gets them as

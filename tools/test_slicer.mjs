@@ -425,6 +425,48 @@ t("how a stack is judged can be swapped out, and defaults to board volume", () =
   assert(Number.isFinite(fewest.cost), "the winning score is reported so the UI can explain it");
 });
 
+t("monolithic: every layer gets the same blank, the whole mold's footprint plus margin", () => {
+  /* Opt-in from the mold modal. The default steps each layer in to the mold;
+     a monolithic stack is one brick around it, so the four blanks of a tapered
+     plug must be one identical rectangle, and that rectangle must be the
+     stepped BOTTOM blank — the widest slab already spans the mesh bounds. */
+  const tris = frustum(200, 80, 0, 100);
+  const stepped = S.sliceMold(tris, [25, 25, 25, 25], {});
+  const mono = S.sliceMold(tris, [25, 25, 25, 25], { monolithic: true });
+  assert(stepped.monolithic === false && mono.monolithic === true, "the result says which mode produced it");
+  assert(mono.layers.length === 4, "a block still has one layer per board, got " + mono.layers.length);
+  const key = b => [b.x0, b.y0, b.x1, b.y1].map(v => v.toFixed(4)).join(",");
+  const b0 = mono.layers[0].blanks[0];
+  for (const L of mono.layers) {
+    assert(L.blanks.length === 1, `layer ${L.index + 1} should be one blank, got ${L.blanks.length}`);
+    assert(key(L.blanks[0]) === key(b0), `layer ${L.index + 1} has a different footprint from layer 1`);
+  }
+  const m = S.MARGIN_MIN_MM - 1e-6, bb = mono.bounds;
+  assert(b0.x0 <= bb.x0 - m && b0.x1 >= bb.x1 + m && b0.y0 <= bb.y0 - m && b0.y1 >= bb.y1 + m,
+    "the block carries the full margin around the whole mold");
+  const w = b0.x1 - b0.x0, q = S.BLANK_QUANTUM_MM;
+  assert(Math.abs(w / q - Math.round(w / q)) < 1e-6, "the block is still sawn to the half-inch quantum");
+  const top = stepped.layers[3].blanks[0];
+  assert(top.x1 - top.x0 < w, "stepped: the top blank is smaller than the block, or steps would be pointless");
+  assert(key(stepped.layers[0].blanks[0]) === key(b0), "stepped: the bottom blank IS the block");
+  assert(!mono.warnings.some(x => /overhang/i.test(x)), "a block cannot overhang itself");
+});
+t("monolithic: islands collapse into the one block, and planMold carries the flag through", () => {
+  const tris = prism(rect(0, 0, 900, 300), 0, 25)
+    .concat(prism(rect(50, 50, 200, 250), 0, 100), prism(rect(700, 50, 850, 250), 0, 100));
+  const stepped = S.sliceMold(tris, [25, 25, 25, 25], {});
+  assert(stepped.layers[3].blanks.length === 2, "stepped: two spikes are two blanks up top, got " + stepped.layers[3].blanks.length);
+  const mono = S.sliceMold(tris, [25, 25, 25, 25], { monolithic: true });
+  assert(mono.layers.every(L => L.blanks.length === 1), "block: the spikes share one blank per layer");
+  assert(mono.layers[3].islands.length === 2, "the cosmetic outlines still show both spikes inside the block");
+  const IN = 25.4;
+  const planned = S.planMold(frustum(120, 60, 0, 4 * IN), [1 * IN, 2 * IN], { monolithic: true });
+  assert(planned.monolithic === true, "auto board choice keeps the mode");
+  assert(planned.layers.every(L => L.blanks.length === 1), "and every planned layer is one blank");
+  const auto = S.planMold(frustum(120, 60, 0, 4 * IN), [1 * IN, 2 * IN], {});
+  assert(auto.monolithic === false, "and without the flag nothing changes");
+});
+
 console.log("CONTAINMENT — the property that matters:");
 t("CRITICAL every triangle, clipped to its slab, lies inside one of that layer's blanks", () => {
   const molds = {
@@ -433,8 +475,9 @@ t("CRITICAL every triangle, clipped to its slab, lies inside one of that layer's
     "two spikes on a base": prism(rect(0, 0, 900, 300), 0, 25)
       .concat(prism(rect(50, 50, 200, 250), 0, 100), prism(rect(700, 50, 850, 250), 0, 100)),
   };
-  for (const [name, tris] of Object.entries(molds)) {
-    const out = S.sliceMold(tris, [25, 25, 25, 25], {});
+  for (const [name0, tris] of Object.entries(molds)) for (const monolithic of [false, true]) {
+    const name = name0 + (monolithic ? " (block)" : "");
+    const out = S.sliceMold(tris, [25, 25, 25, 25], { monolithic });
     let checked = 0;
     for (const L of out.layers) {
       for (const tri of tris) {

@@ -513,6 +513,18 @@ the plan linked to it, so the record exists from day one of design instead of
 being back-filled after machining. Three sample molds ship with the app, so the
 planner can be tried without exporting anything from Fusion.
 
+**Stepped or solid.** By default each layer's blank only covers the mold over
+its own slab, so a tapered plug gets smaller boards up top and the glued stack
+is a staircase; that is what the planner scores, because it uses the least
+board. The STL fields also offer **one solid block around the whole mold**:
+every layer gets the same rectangle, the mold's full outline plus margin, so the
+glue-up is one brick with nothing to line up between layers and the stock body
+CAM sees is a plain box. It is opt-in, a re-plan keeps whichever shape the mold
+last had, and the plan page says "as one solid block" so nobody reads a brick as
+a planner mistake. The cut list does not care which was chosen: a block layer
+is still one rectangle per board, packed onto sheets with the same
+straight-through cuts as any other blank.
+
 ![Molds: the season view when nothing is selected](../design/molds-overview-mockup-20260825.png)
 
 With nothing selected, the right pane is the season: where the live molds sit

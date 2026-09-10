@@ -27,6 +27,13 @@ to learn**, not about API compatibility:
 
 ---
 
+## v4.6.0 — 2026-09-09
+
+- Molds: an STL can be planned as one solid block instead of stepped layers. The mold modal has a Blank shape choice under the STL fields; stepping stays the default, and a block gives every layer the whole mold's footprint plus margin, so the glue-up is one rectangular brick with nothing to line up. Re-planning a mold keeps the shape it was last planned with, and the plan page says "as one solid block"
+- The cut list, drawings, sections and STL export are unchanged by the choice: a block layer is one rectangle per board, packed onto sheets with the same straight-through cuts
+
+---
+
 ## v4.5.1 — 2026-09-07
 
 - Fusion hand-off: a mesh that arrives before the palette is signed in, or before the rack has loaded, waits and opens by itself once both hold, instead of opening over the sign-in card and refusing every density

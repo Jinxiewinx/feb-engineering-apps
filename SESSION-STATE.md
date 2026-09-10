@@ -20,6 +20,18 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**App v4.6.0: an STL can be planned as one solid block** (2026-09-09, Simon's
+ask). Opt-in from a Blank shape select in the mold modal's STL fields; the
+default still steps. In `sliceMold`, `opts.monolithic` gives every layer the
+mesh's full XY bounds plus margin as its one blank; the worker, the inline
+fallback and the plan record carry `monolithic`, a re-plan prefills it from
+`currentPlanFor`, and the plan page header says "as one solid block". The
+packer, sections, drawings and STL export are untouched by design. Not done:
+nothing on the Fusion side needed changing, but the add-in has not been run
+against a block plan live. `tools/test_drawings.mjs` has three pre-existing
+failures (cutlist, cutcrowd, cutbatch, "findings" from the visual audit) that
+were there before this change and are not from it.
+
 **Fusion add-in built: app v4.5.0 and `10 Fusion Add-in/FEBPlanStock/`**
 (2026-09-04). Study at `FEASIBILITY.md` chose the palette-hosted app; all six
 spikes passed on macOS (`spikes/README.md`), the `fusion360://` deep link

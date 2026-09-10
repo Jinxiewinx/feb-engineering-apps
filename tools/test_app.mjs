@@ -4992,8 +4992,11 @@ function plugTris(hb, ht, z0, z1) {
   }
   return out;
 }
-function fillMold({ tris = plugTris(200, 80, 0, 100), name = "test plug", unit = "mm", thk = "", thkU = "mm", size = null, src = "stl", mode = "auto", body = null, box = null, density = "30", densityMax = "" } = {}) {
+function fillMold({ tris = plugTris(200, 80, 0, 100), name = "test plug", unit = "mm", thk = "", thkU = "mm", size = null, src = "stl", mode = "auto", body = null, box = null, density = "30", densityMax = "", shape = "steps" } = {}) {
   el("ml-name").value = name; el("ml-unit").value = unit;
+  // Stubs persist between tests, so the blank shape is reset every time —
+  // a test that planned a block must not leak it into the next one.
+  el("ml-shape").value = shape;
   // The real modal renders this prefilled (canonDensity(mold.density) ?? 30);
   // the stub renders nothing, so say what the browser would have shown. Blank
   // is a user who deliberately cleared the field, and the planner refuses it.
@@ -5022,6 +5025,42 @@ function seedStock() {
     thk: { value: t, unit: "in" }, density: 30, qty: 3,
   }));
 }
+await t("an STL can be planned as one solid block instead of stepped layers, and the cut list still packs it", async () => {
+  /* Simon, 2026-09-09: opt-in, the default still steps, and the guillotine
+     cut list for the sheets is not touched. So: the same plug planned both
+     ways, the block one blank per layer and every layer identical, the
+     stepped one smaller up top, and blanksFromPlans + packAll handling the
+     block plan exactly like any other. */
+  seedStock(); DB.stackplans = []; DB.molds = [];
+  fillMold({ thk: "1, 1, 1, 1", thkU: "in", mode: "manual" });   // 1in boards, which the seeded rack holds
+  await submitMold();
+  const stepped = DB.stackplans[0];
+  assert(stepped && stepped.monolithic === false, "the default is stepped, and the plan says so");
+  const W = b => b.x1 - b.x0;
+  assert(W(stepped.layers[3].blanks[0]) < W(stepped.layers[0].blanks[0]), "stepped: the top blank is smaller than the bottom one");
+  fillMold({ thk: "1, 1, 1, 1", thkU: "in", mode: "manual", name: "block plug", shape: "block" });
+  await submitMold();
+  const mono = DB.stackplans[1];
+  assert(mono && mono.monolithic === true, "the plan records that it was made as a block");
+  assert(mono.layers.length === 4 && mono.layers.every(L => L.blanks.length === 1), "one blank per layer");
+  const key = b => [b.x0, b.y0, b.x1, b.y1].map(v => v.toFixed(3)).join(",");
+  assert(mono.layers.every(L => key(L.blanks[0]) === key(mono.layers[0].blanks[0])), "every layer has the same footprint");
+  assert(key(mono.layers[0].blanks[0]) === key(stepped.layers[0].blanks[0]), "the block is the stepped plan's bottom blank");
+  const blanks = blanksFromPlans([mono]);
+  assert(blanks.length === 4, "four blanks go to the cut list, got " + blanks.length);
+  const res = packAll(blanks, boardsForPacking(), {});
+  assert(res && res.boardsUsed >= 1 && !(res.shortfall || []).length, "the guillotine packer nests them like any other plan, nothing left over");
+  view = { ...view, tab: "molds", mode: "detail", id: mono.id }; render();
+  assert(main.innerHTML.includes("as one solid block"), "the plan page says it is a block");
+  view = { ...view, tab: "molds", mode: "detail", id: stepped.id }; render();
+  assert(!main.innerHTML.includes("as one solid block"), "and a stepped plan does not");
+  // A re-plan of the block mold opens with the block already selected.
+  MOLD_REPLAN = "";
+  uploadMold(moldRecById(mono.moldId));
+  assert(/value="block" selected/.test(el("modal").innerHTML), "re-plan prefills the shape the mold last had");
+  assert(!/value="steps" selected/.test(el("modal").innerHTML), "and not both");
+  closeModal();
+});
 await t("the planner is scored against the real rack, and says why", async () => {
   /* The composition used to be picked by blank volume plus a flat per-layer
      penalty, which cannot see the rack and always favoured thin boards — one

@@ -26,14 +26,14 @@ let pendingRender = false;
    `var`, not `const`: tools/test_app.mjs concatenates these files and reaches
    file-scope declarations through globalThis, which a lexical binding never
    joins. Same reason as WO_NOTES_NEW. */
-var APP_VERSION = "4.5.1";
+var APP_VERSION = "4.6.0";
 /* What this version changed, in the words a team member would use. Rewritten
    every release. ONE SHORT LINE PER ITEM, five items at most: this renders as
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Plan a mold's stock from inside Fusion. The FEB toolbar's Plan stock command exports the selected mold body, opens this app in a Fusion palette, and after you press Plan the board layers appear over the mold as see-through bodies for CAM. The add-in and its install steps are in the repo under 10 Fusion Add-in.",
-  "A mold made that way carries a Fusion section on its card: the document, body and version it came from, and a link to the document's Fusion Team page.",
+  "Plan an STL as one solid block. The mold modal has a Blank shape choice: step each layer in to the mold (the default, uses less board) or one solid block around the whole mold, where every layer gets the same footprint and the glue-up is a plain brick. The cut list and drawings work the same either way.",
+  "From Fusion, a mesh sent before the palette is signed in now waits and opens by itself once it is, and the add-in can sign the palette in with the shared team account.",
 ];
 
 /* ---------- config/release ----------

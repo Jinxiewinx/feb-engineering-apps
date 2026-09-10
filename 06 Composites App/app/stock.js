@@ -702,6 +702,7 @@ function runSliceInline(msg) {
     bounds: r.bounds, warnings: r.warnings, composition: r.composition || msg.thicknesses,
     considered: r.considered || 0, alternatives: r.alternatives || [], cost: r.cost || 0,
     usedRack: !!(msg.boards && msg.boards.length),
+    monolithic: !!r.monolithic,
     triangleCount: tris.length, meshStl,
   };
 }
@@ -814,6 +815,12 @@ function uploadMold(existing) {
   const dMin = canonDensity(e.densityMin ?? e.density) ?? 30;
   const dMax = canonDensity(e.densityMax ?? e.densityMin ?? e.density) ?? dMin;
   const counts = densityStockCounts();
+  /* A re-plan keeps the blank shape the mold was last planned with; a wrong
+     silent reset here would turn a block into a staircase without anyone
+     choosing it. New molds step, which is what every plan did before the
+     block option existed. */
+  const curPlan = existing && typeof currentPlanFor === "function" ? currentPlanFor(existing) : null;
+  const shape = curPlan && curPlan.monolithic ? "block" : "steps";
   openModal(`
     <h2>${existing ? "Re-plan " + esc(e.name || e.id) : "New mold"}</h2>
     <div class="field"><label>Name</label><input id="ml-name" value="${esc(e.name || "")}" placeholder="e.g. UT nose plug"></div>
@@ -846,6 +853,14 @@ function uploadMold(existing) {
       <div class="field"><label>STL units</label><select id="ml-unit">
         <option value="mm">millimetres</option><option value="in">inches</option>
       </select><span class="muted tny">An STL carries no units. Getting this wrong is a 25.4&times; mistake.</span></div>
+      <div class="field"><label>Blank shape</label><select id="ml-shape">
+        <option value="steps" ${shape === "steps" ? "selected" : ""}>step each layer in to the mold</option>
+        <option value="block" ${shape === "block" ? "selected" : ""}>one solid block around the whole mold</option>
+      </select><span class="muted tny">Stepped layers follow the mold's taper, so the upper boards are
+        smaller and less board is used. A block gives every layer the same footprint, the whole
+        mold's outline plus margin, so the glued stack is one rectangular brick: more board, but
+        nothing to line up between layers and a plain box for CAM stock. The cut list packs the
+        blanks onto sheets with straight-through cuts either way.</span></div>
       <div class="field"><label></label><span class="muted tny"><b>Beta.</b> Real exports still turn up surprises &mdash; assemblies holding many bodies, rough meshes, odd draft. Check the stack view before anyone cuts, and fall back to dimensions if it looks wrong.</span></div>
     </div>
     <div class="field"><label>Boards</label><select id="ml-mode" onchange="moldModeChanged()">
@@ -1004,7 +1019,9 @@ async function submitMold() {
     msg = {
       cmd: "slice", buffer: MOLD_BUF.buffer, unit, cacheKey: MOLD_BUF.key,
       bodyIndex: Number((document.getElementById("ml-body") || {}).value || 0),
-      thicknesses: thkMm, available, boards: rack, supply, densityMin: dLo, densityMax: dHi, opts: {},
+      thicknesses: thkMm, available, boards: rack, supply, densityMin: dLo, densityMax: dHi,
+      // A typed box is a block already, so the choice only exists for an STL.
+      opts: { monolithic: val("ml-shape") === "block" },
     };
     sourceName = MOLD_BUF.name; sourceBytes = MOLD_BUF.size;
   }
@@ -1023,6 +1040,7 @@ async function submitMold() {
       layers: result.layers, sections: result.sections || [],
       warnings: result.warnings || [], considered: result.considered || 0,
       alternatives: result.alternatives || [], usedRack: !!result.usedRack, cost: result.cost || 0,
+      monolithic: !!result.monolithic,
       triangleCount: result.triangleCount || 0,
       by: myEmail(), ts: new Date().toISOString(),
     };
@@ -1614,7 +1632,7 @@ function renderStackPlan() {
   </div>
   <div class="card">
     <h2>${esc(p.name)}</h2>
-    <div class="muted">${esc(p.id)} · ${p.layers.length} layers · mold ${mmIn(h)} tall · from ${esc(p.source)}${p.triangleCount ? ` (${p.triangleCount.toLocaleString()} triangles)` : ""} · ${esc(p.by || "")} ${fmtWhen(p.ts)}</div>
+    <div class="muted">${esc(p.id)} · ${p.layers.length} layers${p.monolithic ? " as one solid block" : ""} · mold ${mmIn(h)} tall · from ${esc(p.source)}${p.triangleCount ? ` (${p.triangleCount.toLocaleString()} triangles)` : ""} · ${esc(p.by || "")} ${fmtWhen(p.ts)}</div>
     ${(p.warnings || []).map(w => `<div class="warn">${icon("warning", 14)} ${esc(w)}</div>`).join("")}
     ${(p.notes || []).map(n => `<div class="muted tny">${esc(n)}</div>`).join("")}
     <h3>Mold in stock <span class="muted" style="text-transform:none">— drag to rotate, scroll or pinch to zoom</span></h3>

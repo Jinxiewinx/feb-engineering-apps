@@ -105,6 +105,7 @@ self.onmessage = function (e) {
         alternatives: result.alternatives || [],
         cost: result.cost || 0,
         usedRack: !!(msg.boards && msg.boards.length),
+        monolithic: !!result.monolithic,
         triangleCount,
       },
     }, meshStl ? [meshStl] : []);
