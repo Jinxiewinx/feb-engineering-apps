@@ -69,6 +69,7 @@ Logic and data, no browser:
 | `test_designsystem.mjs` | The app's CSS against `05 Design System/`: token and component drift, and that the CSS parses at all. ~1 second. |
 | `test_slicer.mjs` | Mold geometry: STL slicing, islands, containment. |
 | `test_packer.mjs` | Cut lists: guillotine feasibility, kerf, stock policy. |
+| `test_fusion_frame.py` | The Fusion add-in's bottom-face frame math (`febframe.py`), under plain python3. |
 | `test_qr.mjs` | QR encoding. Asserts version 3 alphanumeric exactly; see "The QR guard" below. |
 | `test_label_roll.mjs` | Labels on a roll, and the custom label. Parses the millimetres out of BOTH `labels.js` and `print.css` and compares them, because the two files say the same thing in different languages and a drift between them still previews perfectly — onto the wrong length of tape. Also the guard that stops a hand-typed label impersonating a record. |
 | `test_sheetsync.mjs` | `06 Composites App/sheets/Sync.gs`, the Apps Script that mirrors the app into the Composites Master Tracker, against fake Sheets objects. It is the only code here that writes into somebody else's live spreadsheet, unattended, every 15 minutes — so the cases that matter are the ones where it must NOT write: orphan rows kept and tinted, column A's formula untouched, unmapped columns left alone. |

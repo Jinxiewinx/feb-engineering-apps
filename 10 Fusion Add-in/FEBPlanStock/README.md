@@ -1,7 +1,8 @@
 # FEBPlanStock
 
 The composites app's stack planner, run from inside Fusion. Select the mold
-body, press **Plan stock** on the **FEB** panel (Utilities tab of the Design
+body, and the face that is its bottom if the model is not drawn bottom-down,
+press **Plan stock** on the **FEB** panel (Utilities tab of the Design
 workspace), and the app opens in a palette on the right with the mesh
 already loaded. Sign in if asked, set the board density and mode, press
 Plan. The app creates the stack plan and the mold record the same way it
@@ -16,7 +17,7 @@ Nothing is saved to the document by the add-in. You save.
 
 The add-in is a folder; Fusion loads every folder in its per-user AddIns
 directory at startup. Copy `FEBPlanStock/` (this folder, with the
-`.manifest`, the `.py` and `resources/`) there:
+`.manifest`, the two `.py` files and `resources/`) there:
 
 | Platform | AddIns folder |
 |---|---|
@@ -73,11 +74,14 @@ Either way the sign-in persists on that machine.
 
 ## Using it
 
-1. Open the mold design. The mold body should sit on the origin the way
-   CS-003 expects, with Z up; the planner slices along Z from the body's
-   lowest point.
+1. Open the mold design. The planner slices along Z from the bottom of the
+   mold, so it needs to know which way is down. If the body sits the way
+   CS-003 draws it, Z up, nothing else is needed. If it is modelled on its
+   side, a split mold rotated 90 degrees for instance, you will pick the
+   bottom face in the next step.
 2. Utilities tab, FEB panel, Plan stock. Select the mold body (a solid body;
-   one at a time). Press OK.
+   one at a time). Optionally select the **bottom face**: the flat face the
+   stack will be glued up from and machined down to. Press OK.
 3. The FEB Composites palette opens docked on the right and signs in if it
    has to. The mold modal opens with the mesh loaded in millimetres and a
    name suggested from the document and body. Until the app is signed in and
@@ -87,7 +91,28 @@ Either way the sign-in persists on that machine.
    Plan.
 5. The blanks appear as bodies with 30% opacity in a component named after
    the plan (STK-SN6-…). Use them as CAM stock. Re-running Plan stock on the
-   same mold replaces that component.
+   same mold replaces that component. With a bottom face picked, the boxes
+   are drawn in the model's own orientation, standing on that face.
+
+## The bottom face
+
+The app slices along Z from the mesh's lowest point. A mold modelled on its
+side would be sliced across its width and every blank would be wrong. So
+when a bottom face is picked, the add-in computes the face's outward normal
+(the surface normal, flipped if it points toward the body's centre), builds
+the rotation that turns that normal to -Z and the translation that puts the
+picked point on the origin, applies it to every mesh vertex before export,
+and sends the matrix along as `frame` (16 numbers, row-major, millimetres,
+model to planning). The app stores the frame on the plan and hands it back
+with the layers; `draw_plan` inverts it and draws each blank as an oriented
+box. The app's own stock STL export applies the same inverse, so a file
+exported from the plan page still lands on the model.
+
+The math is in `febframe.py`, which imports nothing from Fusion, so
+`python3 tools/test_fusion_frame.py` in the repo checks it without opening
+Fusion. Only planar faces can be picked. The face must be on the body's
+outer boundary for the normal flip to be right, which a bottom face always
+is.
 
 If the palette is closed, Plan stock reopens it; the page inside kept
 running, so nothing has to reload. If the page has died or gone stale and
@@ -116,7 +141,8 @@ guessing.
 
 `FEBPlanStock.py` meshes the body with Fusion's `MeshCalculator` (Fusion's
 API is in centimetres; the STL is written in millimetres by hand, so no
-export dialog and no unit guess), base64-encodes it and sends it to the page
+export dialog and no unit guess), rotates it onto the picked bottom face if
+there is one (`febframe.py`), base64-encodes it and sends it to the page
 with `Palette.sendInfoToHTML("mold", …)`. The page side is
 `06 Composites App/app/fusion.js`: it waits for Fusion's `adsk` bridge object,
 announces `loaded`, opens the mold modal with the mesh, and after

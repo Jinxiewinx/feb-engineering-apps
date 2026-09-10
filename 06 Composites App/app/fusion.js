@@ -27,18 +27,27 @@
    The contract, JSON strings both ways:
      page -> Fusion  "loaded"        { version, state }        the bridge is alive
      page -> Fusion  "state"         { state, guest, roster, stockSynced, ready, signedInAs }
-     Fusion -> page  "mold"          { stl (base64 binary STL, mm), body, fusion:{…} }
+     Fusion -> page  "mold"          { stl (base64 binary STL, mm), body, fusion:{…}, frame? }
      page -> Fusion  "mold-held"     { bytes, waitingOn }     held until ready
      page -> Fusion  "mold-received" { bytes, name }          the modal is open with it
      page -> Fusion  "mold-failed"   { error }
      Fusion -> page  "signin"        { user, password }       shared team account
      page -> Fusion  "signin-failed" { error }
-     page -> Fusion  "plan"          { planId, moldId, name, layers:[{index,z0,z1,thickness,section,blanks}] }
+     page -> Fusion  "plan"          { planId, moldId, name, frame, layers:[{index,z0,z1,thickness,section,blanks}] }
      page -> Fusion  "cancel"        {}                       the modal was closed without a plan
      Fusion -> page  "ping"          anything                 answered with "pong"
    `fusion` is the document identity that gets stamped on the mold record:
    { urn, versionId, versionNumber, project, folder, document, body, webUrl,
-     exportedAt, exportedBy }. */
+     exportedAt, exportedBy }.
+
+   FRAME. A mold is not always modelled bottom-down: a split mold is often
+   drawn on its side. The add-in lets the member pick the face that is the
+   bottom, lays the mesh flat on it before exporting, and sends the matrix it
+   used as `frame: { matrix:[16, row-major, mm, model -> planning], bottom:
+   { how:"face", normal, point, area } }`. The plan stores that frame, the
+   stock STL export runs the blocks back through its inverse so they land on
+   the model, and "plan" carries it back so the add-in draws the boxes in the
+   model's own orientation. No frame means the model's Z was up already. */
 
 /* Set while a Fusion-supplied mesh is in the modal; submitMold() stamps it on
    the mold and fusionPlanSaved() clears it. A global so submitMold can stay
@@ -199,7 +208,11 @@ function fusionOpenMold(payload) {
   // context is set only after the mold modal is up.
   if (typeof closeModal === "function") closeModal();
   uploadMold();
-  FUSION_CTX = { ...ctx, body };
+  const frame = payload.frame && typeof isRigidMatrix === "function" && isRigidMatrix(payload.frame.matrix)
+    ? { matrix: payload.frame.matrix.slice(), bottom: payload.frame.bottom || { how: "face" } }
+    : null;
+  if (payload.frame && !frame) throw new Error("the bottom-face frame is not a 16-number matrix");
+  FUSION_CTX = { ...ctx, body, frame };
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
   set("ml-src", "stl");
   if (typeof moldSrcChanged === "function") moldSrcChanged();
@@ -232,7 +245,17 @@ function fusionStamp() {
     urn: c.urn || "", versionId: c.versionId || "", versionNumber: c.versionNumber ?? null,
     project: c.project || "", folder: c.folder || "", document: c.document || "", body: c.body || "",
     webUrl: c.webUrl || "", exportedAt: c.exportedAt || "", exportedBy: c.exportedBy || "", by: myEmail(),
+    /* Which way was up. A picked face is recorded by its outward normal in
+       the model, so the card can say "bottom is the face facing +Y" and a
+       reviewer can find it; no face means the model's Z. */
+    bottom: c.frame && c.frame.bottom ? { how: "face", normal: (c.frame.bottom.normal || []).slice(0, 3) } : { how: "z" },
   };
+}
+
+/* The model -> planning matrix for the mold in the modal, or null when the
+   mesh came in the model's own frame. submitMold() stores it on the plan. */
+function fusionFrame() {
+  return FUSION_CTX && FUSION_CTX.frame ? { matrix: FUSION_CTX.frame.matrix.slice(), bottom: FUSION_CTX.frame.bottom } : null;
 }
 
 /* submitMold() calls this once the plan record is saved. Fusion gets exactly
@@ -244,6 +267,7 @@ function fusionPlanSaved(plan, moldId) {
   if (!wasFusion || !fusionHost()) return false;
   return fusionSend("plan", {
     planId: plan.id, moldId: moldId || plan.moldId || "", name: plan.name || "",
+    frame: plan.frame || null,
     layers: (plan.layers || []).map(L => ({
       index: L.index, z0: L.z0, z1: L.z1, thickness: L.thickness, section: L.section || 0,
       blanks: (L.blanks || []).map(b => ({ x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1 })),
@@ -260,6 +284,15 @@ function fusionModalClosed() {
 }
 
 /* ---------- the mold card ---------- */
+
+/* "+Y", "-X", or the raw numbers when the face is not axis-aligned. */
+function fusionDirWords(n) {
+  if (!Array.isArray(n) || n.length < 3 || !n.every(Number.isFinite)) return "an unknown direction";
+  const ax = ["X", "Y", "Z"];
+  const i = n.map(Math.abs).indexOf(Math.max(...n.map(Math.abs)));
+  if (Math.abs(n[i]) > 0.999) return (n[i] > 0 ? "+" : "-") + ax[i];
+  return `(${n.map(v => v.toFixed(2)).join(", ")})`;
+}
 
 async function fusionCopy(text) {
   try {
@@ -289,6 +322,7 @@ function moldFusionSection(m) {
       <div class="f"><label>Body</label><div class="ro">${esc(f.body || "—")}</div></div>
       <div class="f"><label>Version</label><div class="ro">${ver || "—"}${f.project ? ` · ${esc(f.project)}${f.folder ? " / " + esc(f.folder) : ""}` : ""}</div></div>
       <div class="f"><label>Exported</label><div class="ro">${f.exportedAt ? fmtWhen(f.exportedAt) : "—"}${who ? " by " + who : ""}</div></div>
+      ${f.bottom && f.bottom.how === "face" ? `<div class="f"><label>Bottom</label><div class="ro">a picked face, facing ${esc(fusionDirWords(f.bottom.normal))} in the model · the plan is laid flat on it</div></div>` : ""}
       ${f.webUrl && /^https:\/\//.test(f.webUrl) ? `<div class="f"><label></label><div class="ro"><a href="${esc(f.webUrl)}" target="_blank" rel="noopener">${icon("externalLink", 13)} Open in Fusion Team</a></div></div>` : ""}
     </div>`;
 }

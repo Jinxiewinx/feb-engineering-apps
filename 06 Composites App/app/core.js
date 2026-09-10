@@ -26,12 +26,13 @@ let pendingRender = false;
    `var`, not `const`: tools/test_app.mjs concatenates these files and reaches
    file-scope declarations through globalThis, which a lexical binding never
    joins. Same reason as WO_NOTES_NEW. */
-var APP_VERSION = "4.6.0";
+var APP_VERSION = "4.7.0";
 /* What this version changed, in the words a team member would use. Rewritten
    every release. ONE SHORT LINE PER ITEM, five items at most: this renders as
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
+  "From Fusion, Plan stock now takes a bottom face as well as the body. A mold modelled on its side (a split mold, say) is laid flat on that face for planning, and the boxes come back drawn in the model's own orientation. Reinstall the add-in from 10 Fusion Add-in to get it.",
   "Plan an STL as one solid block. The mold modal has a Blank shape choice: step each layer in to the mold (the default, uses less board) or one solid block around the whole mold, where every layer gets the same footprint and the glue-up is a plain brick. The cut list and drawings work the same either way.",
   "From Fusion, a mesh sent before the palette is signed in now waits and opens by itself once it is, and the add-in can sign the palette in with the shared team account.",
 ];

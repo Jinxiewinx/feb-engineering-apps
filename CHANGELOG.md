@@ -27,6 +27,13 @@ to learn**, not about API compatibility:
 
 ---
 
+## v4.7.0 — 2026-09-09
+
+- Fusion add-in: Plan stock takes an optional bottom face as well as the mold body. A mold that is not modelled bottom-down (a split mold rotated 90 degrees, say) is laid flat on the picked face before export, planned upright, and the stock boxes come back drawn in the model's own orientation. The frame matrix is stored on the plan; the app's stock STL export applies its inverse so the export still lands on the CAD model, and the mold card says which way the picked face faced
+- The frame math lives in `10 Fusion Add-in/FEBPlanStock/febframe.py`, free of the Fusion API so `tools/test_fusion_frame.py` runs it under plain python3; `slicer.js` gained the matching inverse
+
+---
+
 ## v4.6.0 — 2026-09-09
 
 - Molds: an STL can be planned as one solid block instead of stepped layers. The mold modal has a Blank shape choice under the STL fields; stepping stays the default, and a block gives every layer the whole mold's footprint plus margin, so the glue-up is one rectangular brick with nothing to line up. Re-planning a mold keeps the shape it was last planned with, and the plan page says "as one solid block"

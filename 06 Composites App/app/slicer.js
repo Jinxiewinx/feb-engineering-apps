@@ -115,6 +115,46 @@ const MONO_TOL_MM = 0.05;     // monotonicity slack; float noise on a drafted wa
    margin. Correctness is unaffected; emptiness would not be. */
 const SLICE_EPS_MM = 1e-3;
 
+/* ---------------- rigid frames ----------------
+
+   The Fusion add-in can lay a mold flat on a picked bottom face before it
+   exports the mesh (10 Fusion Add-in/FEBPlanStock/febframe.py). The matrix it
+   used, model -> planning, rides on the plan record so anything that has to
+   land back on the CAD model, the stock STL export above all, can undo it.
+   Same conventions as febframe.py: 16 numbers, row-major, translation in the
+   last column, column vectors, millimetres. */
+function isRigidMatrix(m) {
+  return Array.isArray(m) && m.length === 16 && m.every(v => typeof v === "number" && Number.isFinite(v));
+}
+function applyMatrix(m, x, y, z) {
+  return {
+    x: m[0] * x + m[1] * y + m[2] * z + m[3],
+    y: m[4] * x + m[5] * y + m[6] * z + m[7],
+    z: m[8] * x + m[9] * y + m[10] * z + m[11],
+  };
+}
+function transformTris(tris, m) {
+  if (!isRigidMatrix(m)) return tris;
+  return tris.map(t => {
+    const a = applyMatrix(m, t.ax, t.ay, t.az), b = applyMatrix(m, t.bx, t.by, t.bz), c = applyMatrix(m, t.cx, t.cy, t.cz);
+    return { ax: a.x, ay: a.y, az: a.z, bx: b.x, by: b.y, bz: b.z, cx: c.x, cy: c.y, cz: c.z };
+  });
+}
+/* Inverse of rotation + translation: transpose the rotation, rotate and negate
+   the translation. A frame matrix is never anything else. */
+function invertRigid(m) {
+  const R = [[m[0], m[1], m[2]], [m[4], m[5], m[6]], [m[8], m[9], m[10]]];
+  const t = [m[3], m[7], m[11]];
+  const Rt = [[R[0][0], R[1][0], R[2][0]], [R[0][1], R[1][1], R[2][1]], [R[0][2], R[1][2], R[2][2]]];
+  const ti = Rt.map(r => -(r[0] * t[0] + r[1] * t[1] + r[2] * t[2]));
+  return [
+    Rt[0][0], Rt[0][1], Rt[0][2], ti[0],
+    Rt[1][0], Rt[1][1], Rt[1][2], ti[1],
+    Rt[2][0], Rt[2][1], Rt[2][2], ti[2],
+    0, 0, 0, 1,
+  ];
+}
+
 /* ---------------- STL parsing ---------------- */
 
 /* Returns { tris: [{ax,ay,az,bx,by,bz,cx,cy,cz}, ...] }.
@@ -937,7 +977,7 @@ if (typeof module !== "undefined" && module.exports) {
     parseSTL, scaleTris, meshBounds, sliceAt, stitchContours, outerContours,
     polyArea, pointInPoly, bboxOf, unionBox, inflateBox, boxesOverlap, boxContains,
     boxW, boxH, mergeToFixedPoint, applyMargin, checkMonotone, simplify,
-    clipTriangleToSlab, sliceMold, quantizeUp,
+    clipTriangleToSlab, sliceMold, quantizeUp, isRigidMatrix, applyMatrix, transformTris, invertRigid,
     stitchRelaxed, splitBodies, boxTris, slabBoxes, compositionCandidates, compositionScore, sectionize, planMold, boardVolume,
     MARGIN_MIN_MM, MARGIN_MAX_MM, BLANK_QUANTUM_MM, WELD_TOL_MM, MAX_WELD_TOL_MM, DEDUPE_TOL_MM, SLICE_EPS_MM, MAX_CUT_DEPTH_MM,
   };

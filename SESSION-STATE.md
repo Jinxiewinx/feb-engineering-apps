@@ -20,6 +20,18 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**App v4.7.0 and add-in: Plan stock takes a bottom face** (2026-09-09,
+Simon's ask: split molds are modelled rotated 90 degrees). `febframe.py`
+(pure, tested by `tools/test_fusion_frame.py`) lays the mesh flat on the
+picked face; the matrix rides as `frame` on the mold message, on the plan
+record, and back on the "plan" message; `draw_plan` inverts it and draws
+oriented boxes; `sectionTrisInModelFrame` in stock.js does the same for the
+stock STL export. The add-in was reinstalled on Simon's Mac by copying the
+folder over the installed one (credentials.json and the log kept). NOT yet
+run inside Fusion: the face pick, `frame_for` (evaluator normal, bounding
+box centre flip) and the oriented-box draw are untested live; the first
+thing to check is that the drawn boxes stand on the picked face.
+
 **App v4.6.0: an STL can be planned as one solid block** (2026-09-09, Simon's
 ask). Opt-in from a Blank shape select in the mold modal's STL fields; the
 default still steps. In `sliceMold`, `opts.monolithic` gives every layer the

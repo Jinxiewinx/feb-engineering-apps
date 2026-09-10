@@ -537,10 +537,17 @@ a slicer warning nobody has read, and plans with no mold to be reached through.
 
 **From Fusion.** The FEBPlanStock add-in (`10 Fusion Add-in/FEBPlanStock/`,
 install steps in its README) runs the same modal from inside Fusion: select
-the mold body, press Plan stock on the FEB panel, and the app opens in a
-palette with the mesh already loaded in millimetres. Plan as usual; the app
-writes the same two records, and the layers go back to Fusion, which draws
-one see-through box per blank in a component named after the plan. A mold
+the mold body, optionally the face that is its bottom, press Plan stock on
+the FEB panel, and the app opens in a palette with the mesh already loaded in
+millimetres. Plan as usual; the app writes the same two records, and the
+layers go back to Fusion, which draws one see-through box per blank in a
+component named after the plan. The bottom face matters when the mold is not
+modelled bottom-down, which a split mold rotated onto its side never is: the
+add-in lays the mesh flat on that face before it exports, sends the matrix it
+used, and draws the boxes back through its inverse, so the plan is upright
+and the boxes sit over the mold as modelled. The plan keeps the matrix, the
+stock STL export undoes it too, and the mold card says which way the picked
+face faced. A mold
 made that way carries a **Fusion** section on its card: document, body,
 version, project, who exported it and when, a Copy name button, and an Open
 in Fusion Team link to the document's page in the hub. There is no deep link

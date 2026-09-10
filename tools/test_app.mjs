@@ -7868,6 +7868,59 @@ await t("a mesh that arrives before the palette is signed in is HELD, and opens 
   Object.assign(fb, was);
 });
 
+await t("a mold modelled on its side arrives laid flat with its frame, and the stock export puts it back", async () => {
+  /* Simon, 2026-09-09: molds are not always modelled bottom-down; a split
+     mold is often rotated 90 degrees. So the add-in takes a bottom face,
+     lays the mesh flat on it (febframe.py), and sends the matrix. Here the
+     member's model has its bottom facing +X; the add-in has already rotated
+     the mesh upright, so the STL in the message is the upright plug and
+     `frame` is the matrix that got there. */
+  const M = [0, 0, 1, 0,  0, 1, 0, 0,  -1, 0, 0, 0,  0, 0, 0, 1];
+  const sent = fusionArrive();
+  const was = { state: fb.state, user: fb.user, roster: fb.roster, guest: fb.guest };
+  fb.state = "ready"; fb.user = { uid: "f1", email: "fusion@members.feb-composites.app", name: "Fusion add-in" }; fb.roster = { role: "member", name: "Fusion add-in" }; fb.guest = false;
+  seedStock(); DB.molds = []; DB.stackplans = [];
+  fusionStateChanged("stock");
+  const msg = JSON.stringify({
+    stl: Buffer.from(stlOf(plugTris(200, 80, 0, 100))).toString("base64"), body: "Split mold half",
+    fusion: { ...fusionIdentity, body: "Split mold half" },
+    frame: { matrix: M, bottom: { how: "face", normal: [1, 0, 0], point: [0, 0, 0], area: 160000 } },
+  });
+  assert(fusionHandle("mold", msg) === "ok" && FUSION_CTX && FUSION_CTX.frame, "the frame rides with the mesh into the modal");
+  assert(fusionFrame() && fusionFrame().matrix.join() === M.join(), "and is readable for the plan");
+  el("ml-density-min").value = "30"; el("ml-density-max").value = ""; el("ml-mode").value = "manual";
+  el("ml-thk").value = "1, 1, 1, 1"; el("ml-thk-u").value = "in"; el("ml-shape").value = "steps";
+  el("ml-body").value = "0"; el("ml-bodies").innerHTML = ""; el("ml-file").files = [];
+  await submitMold();
+  assert(DB.molds.length === 1 && DB.stackplans.length === 1, "one mold, one plan: " + lastToast);
+  const m = DB.molds[0], p = DB.stackplans[0];
+  assert(p.frame && p.frame.matrix.join() === M.join() && p.frame.bottom.how === "face", "the plan stores the matrix and how the bottom was chosen");
+  assert(m.fusion.bottom && m.fusion.bottom.how === "face" && m.fusion.bottom.normal.join() === "1,0,0", "the mold says which way its bottom faced in the model");
+  const plan = sent.find(x => x[0] === "plan");
+  assert(plan && plan[1].frame && plan[1].frame.matrix.join() === M.join(), "the layers go back to Fusion with the frame, so the boxes can be drawn in the model's orientation");
+  // The plan itself is in the planning frame: Z up from the picked face.
+  assert(Math.abs(p.layers[0].z0) < 1e-6 && p.layers[3].z1 > 100, "planned upright: " + p.layers[0].z0 + ".." + p.layers[3].z1);
+  // The stock export goes back to where the member modelled it: the stack
+  // runs along -X from the bottom face, which sits at x = 0.
+  const modelTris = sectionTrisInModelFrame(p, 0);
+  const mb = meshBounds(modelTris);
+  assert(Math.abs(mb.x1) < 1e-6 && mb.x0 < -100, "the blocks stand on the face at x = 0 and extend into -X: " + JSON.stringify(mb));
+  const pb = meshBounds(sectionTris(p, 0));
+  assert(Math.abs((mb.x0 - mb.x1) + (pb.z1 - pb.z0)) < 1e-6 && Math.abs((mb.y1 - mb.y0) - (pb.y1 - pb.y0)) < 1e-6, "same blocks, rotated, nothing resized");
+  view = { ...view, tab: "molds", mode: "detail", id: m.id, edit: false }; render();
+  assert(main.innerHTML.includes("a picked face, facing +X in the model"), "the card says where the bottom was");
+  view = { ...view, tab: "stock", mode: "plan", id: p.id }; render();
+  assert(main.innerHTML.includes("laid flat on a face picked in Fusion"), "and the plan page says it was rotated");
+  // A browser plan has no frame, and the export is untouched by all this.
+  const plain = twoSectionPlan();
+  assert(meshBounds(sectionTrisInModelFrame(plain, 0)).x0 === meshBounds(sectionTris(plain, 0)).x0, "no frame: no transform");
+  // A frame that is not a matrix is refused loudly, not applied as garbage.
+  sent.length = 0;
+  const bad = fusionHandle("mold", JSON.stringify({ stl: Buffer.from(stlOf(plugTris(50, 20, 0, 30))).toString("base64"), body: "b", fusion: fusionIdentity, frame: { matrix: [1, 2, 3] } }));
+  assert(/^error/.test(bad) && sent.some(x => x[0] === "mold-failed"), "a three-number matrix is an error the add-in hears about: " + bad);
+  closeModal();
+  Object.assign(fb, was);
+});
 await t("a mesh arriving into a ready, stocked palette opens at once, and a second one replaces a held one", () => {
   const sent = fusionArrive();
   seedStock(); DB.molds = []; DB.stackplans = [];

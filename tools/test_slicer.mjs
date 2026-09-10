@@ -20,7 +20,7 @@ const src = readFileSync(join(root, "slicer.js"), "utf8").replace(/"use strict";
 // invisible to this module. Hand them out through globalThis, the same trick
 // test_app.mjs uses for core.js's lexical bindings.
 globalThis.__S = {};
-(0, eval)(src + "\n;Object.assign(globalThis.__S,{parseSTL,scaleTris,meshBounds,sliceAt,stitchContours,outerContours,polyArea,pointInPoly,bboxOf,inflateBox,boxesOverlap,boxContains,mergeToFixedPoint,applyMargin,quantizeUp,BLANK_QUANTUM_MM,checkMonotone,simplify,clipTriangleToSlab,sliceMold,stitchRelaxed,MARGIN_MIN_MM,MARGIN_MAX_MM,WELD_TOL_MM,MAX_WELD_TOL_MM,DEDUPE_TOL_MM,MAX_CUT_DEPTH_MM,splitBodies,boxTris,slabBoxes,planMold,compositionCandidates});");
+(0, eval)(src + "\n;Object.assign(globalThis.__S,{parseSTL,scaleTris,meshBounds,sliceAt,stitchContours,outerContours,polyArea,pointInPoly,bboxOf,inflateBox,boxesOverlap,boxContains,mergeToFixedPoint,applyMargin,quantizeUp,BLANK_QUANTUM_MM,checkMonotone,simplify,clipTriangleToSlab,sliceMold,stitchRelaxed,MARGIN_MIN_MM,MARGIN_MAX_MM,WELD_TOL_MM,MAX_WELD_TOL_MM,DEDUPE_TOL_MM,MAX_CUT_DEPTH_MM,splitBodies,boxTris,slabBoxes,planMold,compositionCandidates,isRigidMatrix,transformTris,invertRigid});");
 const S = globalThis.__S;
 
 /* ---------- mesh builders ----------
@@ -425,6 +425,32 @@ t("how a stack is judged can be swapped out, and defaults to board volume", () =
   assert(Number.isFinite(fewest.cost), "the winning score is reported so the UI can explain it");
 });
 
+t("a mold laid flat by the Fusion add-in slices like an upright one, and the inverse puts it back", () => {
+  /* The add-in's febframe.py builds model -> planning for a picked bottom
+     face; tools/test_fusion_frame.py pins this exact matrix for a bottom
+     facing +X (a half-quarter turn about Y). The JS side only ever needs to
+     UNDO it, so: a plug modelled on its side, run through the matrix, must
+     slice identically to the upright plug, and invertRigid must return every
+     point to where the model had it. */
+  const M = [0, 0, 1, 0,  0, 1, 0, 0,  -1, 0, 0, 0,  0, 0, 0, 1];
+  assert(S.isRigidMatrix(M) && !S.isRigidMatrix(M.slice(0, 3)) && !S.isRigidMatrix(null), "16 finite numbers or nothing");
+  const upright = frustum(200, 80, 0, 100);
+  const inv = S.invertRigid(M);
+  const onSide = S.transformTris(upright, inv);            // what the member modelled
+  const sb = S.meshBounds(onSide);
+  assert(sb.x1 - sb.x0 > 99 && sb.z1 - sb.z0 < 401, "on its side, the height runs along X: " + JSON.stringify(sb));
+  const back = S.transformTris(onSide, M);                 // what the add-in exports
+  const a = S.sliceMold(upright, [25, 25, 25, 25], {}), b = S.sliceMold(back, [25, 25, 25, 25], {});
+  const key = L => L.blanks.map(x => [x.x0, x.y0, x.x1, x.y1].map(v => v.toFixed(6)).join(",")).join("|");
+  assert(a.layers.length === b.layers.length && a.layers.every((L, i) => key(L) === key(b.layers[i])), "same blanks either way");
+  const rt = S.transformTris(back, inv);
+  for (let i = 0; i < upright.length; i += 97) {
+    for (const k of ["ax", "ay", "az", "bx", "by", "bz", "cx", "cy", "cz"]) {
+      assert(Math.abs(rt[i][k] - onSide[i][k]) < 1e-9, `round trip moved ${k} of tri ${i}`);
+    }
+  }
+  assert(S.transformTris(upright, [1, 2, 3]) === upright, "a bad matrix is ignored, not applied");
+});
 t("monolithic: every layer gets the same blank, the whole mold's footprint plus margin", () => {
   /* Opt-in from the mold modal. The default steps each layer in to the mold;
      a monolithic stack is one brick around it, so the four blanks of a tapered

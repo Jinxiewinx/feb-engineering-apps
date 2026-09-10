@@ -1,10 +1,16 @@
 """FEBPlanStock: the composites app's stack planner, from inside Fusion.
 
 Adds an "FEB" panel to the Design workspace's Utilities tab with one command,
-"Plan stock". Select the mold body, run it, and:
+"Plan stock". Select the mold body, optionally the face that is its bottom,
+run it, and:
 
-  1. the body is meshed and written as a binary STL in millimetres, in the
-     root component's frame;
+  1. the body is meshed and written as a binary STL in millimetres. With no
+     bottom face it is in the root component's frame, Z up, as CS-003 draws
+     a mold. With one, the mesh is rotated so that face lies flat at Z = 0
+     facing down (febframe.py), because the app slices along Z from the
+     lowest point and a split mold is often modelled on its side. The
+     matrix goes to the app with the mesh and comes back with the plan, so
+     the boxes are drawn in the model's own orientation;
   2. the composites app (feb-composites.web.app) opens in a palette, docked
      on the right, and gets the mesh plus this document's identity;
   3. the page holds the mesh until it is signed in with the rack loaded. If
@@ -23,7 +29,8 @@ Adds an "FEB" panel to the Design workspace's Utilities tab with one command,
 Nothing is saved to the document by the add-in. You save.
 
 The message contract with app/fusion.js (JSON strings) is at the top of that
-file. This side sends "mold", "signin" and "ping"; it receives "loaded",
+file. This side sends "mold" (stl, body, unit, fusion, and `frame` when a bottom
+face was picked), "signin" and "ping"; it receives "loaded",
 "state", "mold-held", "mold-received", "mold-failed", "signin-failed",
 "plan", "cancel", "pong" and Fusion's own "response".
 
@@ -45,6 +52,9 @@ Windows install, 2026-09-07):
     and opacity are set after finishEdit().
 """
 import adsk.core, adsk.fusion, traceback, os, json, time, base64, struct, threading
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import febframe
 
 APP_URL = "https://feb-composites.web.app/?fusion=1#/molds"
 PALETTE_ID = "feb_plan_stock_palette"
@@ -69,6 +79,7 @@ _state = {
     "sent_at": 0.0,
     "signin_tried": False,  # one auto sign-in per page load; a bad password must not loop
     "design": None,
+    "frame": None,          # the last model->planning matrix sent, in case the plan comes back without it
     "app_state": {},        # the page's last "state" report
     "warned_no_creds": False,
 }
@@ -107,27 +118,55 @@ def design_of(doc):
     return adsk.fusion.Design.cast(des)
 
 
-def body_to_stl_mm(body):
-    """Binary STL bytes, millimetres, root frame. A body picked inside an
-    occurrence arrives as a proxy in the root context, so its mesh is already
-    in the root frame."""
+def body_to_stl_mm(body, matrix=None):
+    """Binary STL bytes, millimetres. A body picked inside an occurrence
+    arrives as a proxy in the root context, so its mesh is already in the
+    root frame. `matrix` (febframe, mm) is applied to every point when a
+    bottom face was picked."""
     mc = body.meshManager.createMeshCalculator()
     mc.setQuality(adsk.fusion.TriangleMeshQualityOptions.NormalQualityTriangleMesh)
     tm = mc.calculate()
     coords, idx = tm.nodeCoordinatesAsDouble, tm.nodeIndices
     out = bytearray()
-    out += b"FEBPlanStock binary STL, millimetres, root frame".ljust(80, b" ")
+    out += (b"FEBPlanStock binary STL, millimetres, " + (b"planning frame" if matrix else b"root frame")).ljust(80, b" ")
     out += struct.pack("<I", tm.triangleCount)
     for t in range(tm.triangleCount):
         pts = []
         for i in (idx[3 * t], idx[3 * t + 1], idx[3 * t + 2]):
-            pts.append((coords[3 * i] * 10.0, coords[3 * i + 1] * 10.0, coords[3 * i + 2] * 10.0))
+            p = (coords[3 * i] * 10.0, coords[3 * i + 1] * 10.0, coords[3 * i + 2] * 10.0)
+            pts.append(febframe.apply(matrix, p) if matrix else p)
         (ax, ay, az), (bx, by, bz), (cx, cy, cz) = pts
         ux, uy, uz, vx, vy, vz = bx - ax, by - ay, bz - az, cx - ax, cy - ay, cz - az
         nx, ny, nz = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
         n = (nx * nx + ny * ny + nz * nz) ** 0.5 or 1.0
         out += struct.pack("<12fH", nx / n, ny / n, nz / n, ax, ay, az, bx, by, bz, cx, cy, cz, 0)
     return bytes(out), tm.triangleCount
+
+
+def frame_for(body, face):
+    """{"matrix": [16], "bottom": {...}} for a picked planar bottom face, or
+    None when the model's own Z is the bottom. Everything read from Fusion is
+    in centimetres and root context; the matrix is in millimetres."""
+    if face is None:
+        return None
+    ok, nrm = face.evaluator.getNormalAtPoint(face.pointOnFace)
+    if not ok:
+        raise RuntimeError("Fusion could not give a normal for that face")
+    p = face.pointOnFace
+    bb = body.boundingBox
+    centre = ((bb.minPoint.x + bb.maxPoint.x) / 2, (bb.minPoint.y + bb.maxPoint.y) / 2, (bb.minPoint.z + bb.maxPoint.z) / 2)
+    outward = febframe.outward_normal((nrm.x, nrm.y, nrm.z), (p.x, p.y, p.z), centre)
+    point_mm = (p.x * 10.0, p.y * 10.0, p.z * 10.0)
+    matrix = febframe.frame_matrix(outward, point_mm)
+    return {
+        "matrix": matrix,
+        "bottom": {
+            "how": "face",
+            "normal": [round(v, 6) for v in outward],
+            "point": [round(v, 3) for v in point_mm],
+            "area": round(face.area * 100.0, 1),   # cm^2 -> mm^2
+        },
+    }
 
 
 def document_identity(doc, body_name):
@@ -162,7 +201,13 @@ def document_identity(doc, body_name):
 # ---------- geometry in ----------
 
 def draw_plan(plan):
-    """One box per blank, in a new component named after the plan id."""
+    """One box per blank, in a new component named after the plan id. The
+    layers arrive in the planning frame; a plan made with a bottom face
+    carries the matrix that got there, and the boxes are drawn through its
+    inverse so they sit over the mold the way it is actually modelled."""
+    frame = plan.get("frame") or _state.get("frame")
+    matrix = frame.get("matrix") if isinstance(frame, dict) else None
+    inv = febframe.invert_rigid(matrix) if febframe.is_matrix(matrix) else None
     des = _state.get("design") or design_of(_app.activeDocument)
     root = des.rootComponent
     name = plan.get("planId") or "Stock plan"
@@ -186,9 +231,17 @@ def draw_plan(plan):
         for k, b in enumerate(blanks):
             x0, y0, x1, y1 = b["x0"] / 10.0, b["y0"] / 10.0, b["x1"] / 10.0, b["y1"] / 10.0
             z0, z1 = L["z0"] / 10.0, L["z1"] / 10.0
-            centre = adsk.core.Point3D.create((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)
+            c = ((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)
+            ldir, wdir = (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)
+            if inv:
+                # The inverse is in mm; the centre is in cm. Rotation is
+                # unit-free, so scale only the translation part.
+                c = febframe.apply(inv, (c[0] * 10, c[1] * 10, c[2] * 10))
+                c = (c[0] / 10, c[1] / 10, c[2] / 10)
+                ldir, wdir = febframe.apply_vector(inv, ldir), febframe.apply_vector(inv, wdir)
+            centre = adsk.core.Point3D.create(*c)
             obb = adsk.core.OrientedBoundingBox3D.create(
-                centre, adsk.core.Vector3D.create(1, 0, 0), adsk.core.Vector3D.create(0, 1, 0),
+                centre, adsk.core.Vector3D.create(*ldir), adsk.core.Vector3D.create(*wdir),
                 x1 - x0, y1 - y0, z1 - z0)
             tmp = tb.createBox(obb)
             if base:
@@ -205,7 +258,7 @@ def draw_plan(plan):
             body = comp.bRepBodies.item(i)
             body.name = nm
             body.opacity = 0.3
-    log("drew", len(names), "bodies in", name)
+    log("drew", len(names), "bodies in", name, "(model frame via inverse)" if inv else "(root frame)")
     return len(names)
 
 
@@ -363,10 +416,19 @@ class CommandCreated(adsk.core.CommandCreatedEventHandler):
             sel = cmd.commandInputs.addSelectionInput("body", "Mold body", "Select the mold body to plan stock for")
             sel.addSelectionFilter("SolidBodies")
             sel.setSelectionLimits(1, 1)
+            # Optional. A mold drawn on its side (a split mold, say) has its
+            # real bottom on some face other than the model's XY floor; the
+            # planner slices along Z, so it needs telling which face that is.
+            bot = cmd.commandInputs.addSelectionInput("bottom", "Bottom face",
+                "Optional: the flat face the stack will be glued up from. Leave empty if the model's Z is already up.")
+            bot.addSelectionFilter("PlanarFaces")
+            bot.setSelectionLimits(0, 1)
             cmd.commandInputs.addTextBoxCommandInput("note", "",
                 "The body is exported in millimetres and handed to the composites app, which opens on the right. "
-                "Set the board density there and press Plan. The layers come back as see-through bodies.",
-                4, True)
+                "Pick a bottom face if the mold is not modelled with its bottom on XY: the mesh is laid flat on "
+                "that face for planning and the boxes come back in the model's own orientation. "
+                "Set the board density in the app and press Plan.",
+                6, True)
             h = CommandExecute(); cmd.execute.add(h); _handlers.append(h)
         except Exception:
             _ui.messageBox("Plan stock failed to open:\n" + traceback.format_exc(), "FEB Plan stock")
@@ -378,13 +440,21 @@ class CommandExecute(adsk.core.CommandEventHandler):
             cmd = adsk.core.CommandEventArgs.cast(args).command
             sel = adsk.core.SelectionCommandInput.cast(cmd.commandInputs.itemById("body"))
             body = adsk.fusion.BRepBody.cast(sel.selection(0).entity)
+            bsel = adsk.core.SelectionCommandInput.cast(cmd.commandInputs.itemById("bottom"))
+            face = adsk.fusion.BRepFace.cast(bsel.selection(0).entity) if bsel and bsel.selectionCount else None
             doc = _app.activeDocument
             _state["design"] = design_of(doc)
-            stl, tris = body_to_stl_mm(body)
+            frame = frame_for(body, face)
+            _state["frame"] = frame
+            stl, tris = body_to_stl_mm(body, frame["matrix"] if frame else None)
             ident = document_identity(doc, body.name)
-            _state["pending"] = {"stl": base64.b64encode(stl).decode("ascii"), "body": body.name, "unit": "mm", "fusion": ident}
+            msg = {"stl": base64.b64encode(stl).decode("ascii"), "body": body.name, "unit": "mm", "fusion": ident}
+            if frame:
+                msg["frame"] = frame
+            _state["pending"] = msg
             _state["confirmed"] = False
-            log("exported", body.name, tris, "triangles,", len(stl), "bytes")
+            log("exported", body.name, tris, "triangles,", len(stl), "bytes,",
+                ("bottom face normal %s" % (frame["bottom"]["normal"],)) if frame else "model Z is up")
             p = palette()
             p.isVisible = True
             if _state["page_ready"]:

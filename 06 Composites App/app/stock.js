@@ -1044,6 +1044,10 @@ async function submitMold() {
       triangleCount: result.triangleCount || 0,
       by: myEmail(), ts: new Date().toISOString(),
     };
+    /* The mesh may have been laid flat on a picked bottom face by the Fusion
+       add-in. Its matrix rides on the plan so the stock export can undo it. */
+    const frame = typeof fusionFrame === "function" ? fusionFrame() : null;
+    if (frame) raw.frame = frame;
     const { plan, notes } = fitPlanForStorage(raw);
     plan.notes = notes;
     /* Park the mold mesh in Storage so the 3D view survives a reload. That
@@ -1527,10 +1531,19 @@ function printCutSet() {
    One file per SECTION, not per mold: a mold past the ShopSabre's 6in cut depth
    is already split by sectionize() into separate machine setups, and a single
    stock solid taller than the machine can cut is not something CAM can use. */
+/* The planned blocks of one section, in the frame the CAD model is actually
+   in. A plan made from a bottom face picked in Fusion was sliced in a rotated
+   frame; its matrix (plan.frame, model -> planning) is undone here so the
+   export lands on the model with nothing to align, same as an upright one. */
+function sectionTrisInModelFrame(plan, sectionIndex) {
+  const tris = sectionTris(plan, sectionIndex);
+  const m = plan && plan.frame && plan.frame.matrix;
+  return isRigidMatrix(m) ? transformTris(tris, invertRigid(m)) : tris;
+}
 function exportSectionStl(planId, sectionIndex) {
   const p = planById(planId);
   if (!p) { toast("That plan is gone.", "error"); return; }
-  const tris = sectionTris(p, sectionIndex);
+  const tris = sectionTrisInModelFrame(p, sectionIndex);
   if (!tris.length) { toast("That section has no blocks in it.", "error"); return; }
   const many = sectionCount(p) > 1;
   const header = `FEB ${p.id}${many ? ` section ${sectionIndex + 1}` : ""} stock - millimetres`;
@@ -1632,7 +1645,7 @@ function renderStackPlan() {
   </div>
   <div class="card">
     <h2>${esc(p.name)}</h2>
-    <div class="muted">${esc(p.id)} · ${p.layers.length} layers${p.monolithic ? " as one solid block" : ""} · mold ${mmIn(h)} tall · from ${esc(p.source)}${p.triangleCount ? ` (${p.triangleCount.toLocaleString()} triangles)` : ""} · ${esc(p.by || "")} ${fmtWhen(p.ts)}</div>
+    <div class="muted">${esc(p.id)} · ${p.layers.length} layers${p.monolithic ? " as one solid block" : ""}${p.frame && p.frame.matrix ? " · laid flat on a face picked in Fusion" : ""} · mold ${mmIn(h)} tall · from ${esc(p.source)}${p.triangleCount ? ` (${p.triangleCount.toLocaleString()} triangles)` : ""} · ${esc(p.by || "")} ${fmtWhen(p.ts)}</div>
     ${(p.warnings || []).map(w => `<div class="warn">${icon("warning", 14)} ${esc(w)}</div>`).join("")}
     ${(p.notes || []).map(n => `<div class="muted tny">${esc(n)}</div>`).join("")}
     <h3>Mold in stock <span class="muted" style="text-transform:none">— drag to rotate, scroll or pinch to zoom</span></h3>
