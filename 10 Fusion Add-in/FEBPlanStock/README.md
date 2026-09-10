@@ -110,7 +110,9 @@ exported from the plan page still lands on the model.
 
 The math is in `febframe.py`, which imports nothing from Fusion, so
 `python3 tools/test_fusion_frame.py` in the repo checks it without opening
-Fusion. Only planar faces can be picked. The face must be on the body's
+Fusion. The Fusion half (face normal, export, oriented draw) was run live on
+2026-09-09 through Fusion's MCP server (`../MCP.md`): a block whose bottom
+faced +X came back with its two boxes standing on that face. Only planar faces can be picked. The face must be on the body's
 outer boundary for the normal flip to be right, which a bottom face always
 is.
 

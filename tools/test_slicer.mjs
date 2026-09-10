@@ -301,6 +301,40 @@ t("margin applies on all four sides — never less than asked, on any edge", () 
   assert(Math.abs(-b.x0 - (b.x1 - 100)) < 1e-9 && Math.abs(-b.y0 - (b.y1 - 100)) < 1e-9,
     "the rounding margin is shared between opposite edges");
 });
+t("every blank in a plan sits on one lattice, so the layers of a stack line up", () => {
+  /* Simon, 2026-09-09, from a two-layer plan drawn over the mold in Fusion:
+     "the second layer is slightly offset from the first layer". Each layer
+     was rounded and centred on its own slab box, so a 3mm-per-side draft
+     moved the upper blank's edges by 1.5mm: not flush, not a step. Now the
+     edges snap outward to the bottom blank's half-inch grid. */
+  const q = S.BLANK_QUANTUM_MM;
+  const onGrid = (v, a) => Math.abs((v - a) / q - Math.round((v - a) / q)) < 1e-6;
+  // A gentle draft: 1.5mm per side over 100mm. Every layer should be the SAME blank.
+  const gentle = S.sliceMold(frustum(200, 198.5, 0, 100), [25, 25, 25, 25], {});
+  const k = b => [b.x0, b.y0, b.x1, b.y1].map(v => v.toFixed(6)).join(",");
+  assert(gentle.layers.every(L => L.blanks.length === 1 && k(L.blanks[0]) === k(gentle.layers[0].blanks[0])),
+    "a draft smaller than the increment gives four identical, flush blanks: " + gentle.layers.map(L => k(L.blanks[0])).join(" | "));
+  // A steep taper: real steps, but every edge on the bottom blank's grid.
+  const steep = S.sliceMold(frustum(200, 80, 0, 100), [25, 25, 25, 25], {});
+  const a = steep.layers[0].blanks[0];
+  for (const L of steep.layers) for (const b of L.blanks) {
+    assert(onGrid(b.x0, a.x0) && onGrid(b.x1, a.x0) && onGrid(b.y0, a.y0) && onGrid(b.y1, a.y0),
+      `layer ${L.index + 1} has an edge off the lattice: ${k(b)} vs anchor ${a.x0},${a.y0}`);
+    assert(b.x0 >= a.x0 - 1e-6 && b.y0 >= a.y0 - 1e-6 && b.x1 <= a.x1 + 1e-6 && b.y1 <= a.y1 + 1e-6, "and inside the bottom blank");
+  }
+  assert(steep.layers[3].blanks[0].x1 - steep.layers[3].blanks[0].x0 < a.x1 - a.x0, "the steep taper still steps");
+  // The bottom blank itself is exactly what the old symmetric rule gave.
+  const old = S.applyMargin({ x0: -200, y0: -200, x1: 200, y1: 200 }, S.MARGIN_MIN_MM);
+  assert(k(a) === k(old), "the bottom blank did not move: " + k(a) + " vs " + k(old));
+  // Islands snap to the same lattice, and still carry their full margin.
+  const spikes = prism(rect(0, 0, 900, 300), 0, 25).concat(prism(rect(50, 50, 200, 250), 0, 100), prism(rect(703, 50, 850, 250), 0, 100));
+  const sp = S.sliceMold(spikes, [25, 25, 25, 25], {});
+  const s0 = sp.layers[0].blanks[0];
+  for (const b of sp.layers[3].blanks) {
+    assert(onGrid(b.x0, s0.x0) && onGrid(b.x1, s0.x0), "island edge off the lattice: " + k(b));
+    assert(b.x0 <= 50 - S.MARGIN_MIN_MM + 1e-6 || b.x0 <= 703 - S.MARGIN_MIN_MM + 1e-6, "margin kept");
+  }
+});
 t("blanks come out in whole saw increments, because a person cuts them", () => {
   const q = S.BLANK_QUANTUM_MM;
   const mult = v => Math.abs(v / q - Math.round(v / q)) < 1e-6;

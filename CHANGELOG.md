@@ -27,6 +27,13 @@ to learn**, not about API compatibility:
 
 ---
 
+## v4.7.1 — 2026-09-09
+
+- Molds: the layers of a stepped stack line up. Each layer's blank was rounded to the half-inch and centred on its own slab, so a drafted wall shifted every layer's edges by a fraction of an increment and the corners of a glued stack did not overlay (seen on a two-layer plan drawn in Fusion). Now every blank in a plan snaps outward to one half-inch lattice anchored on the bottom blank's corner: equal-size layers coincide exactly, steps are whole half-inches, the bottom blank is unchanged. Re-plan a mold to get the aligned version
+- The bottom-face hand-off was run end to end inside Fusion over the built-in MCP server (`10 Fusion Add-in/tools/fusion_mcp.py`): the picked face, the rotated export, and the oriented boxes standing on that face all checked out
+
+---
+
 ## v4.7.0 — 2026-09-09
 
 - Fusion add-in: Plan stock takes an optional bottom face as well as the mold body. A mold that is not modelled bottom-down (a split mold rotated 90 degrees, say) is laid flat on the picked face before export, planned upright, and the stock boxes come back drawn in the model's own orientation. The frame matrix is stored on the plan; the app's stock STL export applies its inverse so the export still lands on the CAD model, and the mold card says which way the picked face faced

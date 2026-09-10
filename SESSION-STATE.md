@@ -20,17 +20,21 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
-**App v4.7.0 and add-in: Plan stock takes a bottom face** (2026-09-09,
-Simon's ask: split molds are modelled rotated 90 degrees). `febframe.py`
-(pure, tested by `tools/test_fusion_frame.py`) lays the mesh flat on the
-picked face; the matrix rides as `frame` on the mold message, on the plan
-record, and back on the "plan" message; `draw_plan` inverts it and draws
-oriented boxes; `sectionTrisInModelFrame` in stock.js does the same for the
-stock STL export. The add-in was reinstalled on Simon's Mac by copying the
-folder over the installed one (credentials.json and the log kept). NOT yet
-run inside Fusion: the face pick, `frame_for` (evaluator normal, bounding
-box centre flip) and the oriented-box draw are untested live; the first
-thing to check is that the drawn boxes stand on the picked face.
+**App v4.7.1 and add-in: Plan stock takes a bottom face, and stack layers
+line up** (2026-09-09, Simon's asks). `febframe.py` (pure, tested by
+`tools/test_fusion_frame.py`) lays the mesh flat on the picked face; the
+matrix rides as `frame` on the mold message, on the plan record, and back on
+the "plan" message; `draw_plan` inverts it and draws oriented boxes;
+`sectionTrisInModelFrame` in stock.js does the same for the stock STL
+export. VERIFIED LIVE in Fusion on 2026-09-09 over the built-in MCP server
+(raw HTTP, `10 Fusion Add-in/tools/fusion_mcp.py`, recipe in `MCP.md`): a
+side-lying block's boxes were drawn standing on the picked face to the mm.
+The add-in is installed on Simon's Mac (folder copied over, no
+credentials.json there). Not yet done by a person: the face pick in the
+actual command dialog. Separately, `applyMargin` now takes a lattice anchor
+and `sliceMold` snaps every blank to the bottom blank's half-inch grid, which
+is what fixes the layer offset Simon saw on STK-SN6-014; that plan predates
+the fix and needs a re-plan to line up.
 
 **App v4.6.0: an STL can be planned as one solid block** (2026-09-09, Simon's
 ask). Opt-in from a Blank shape select in the mold modal's STL fields; the

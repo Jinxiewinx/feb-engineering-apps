@@ -27,6 +27,26 @@ A Claude Code session started before the registration does not see the tools;
 start a new one. The server reports protocol `2024-11-05`, name
 "MCP Server Adapter" 1.0.0, no resources.
 
+## From a session whose client never connected
+
+The registered `fusion` server only exists once Fusion is running, so a
+Claude Code session started before Fusion reports the server as failed and
+cannot reconnect mid-session. `tools/fusion_mcp.py` is the way round it:
+plain HTTP JSON-RPC against `/mcp` with no MCP client at all.
+
+```bash
+python3 "10 Fusion Add-in/tools/fusion_mcp.py" tools           # list tools
+python3 "10 Fusion Add-in/tools/fusion_mcp.py" run script.py   # run a Fusion script
+```
+
+`script.py` defines `run(_context)`; whatever it prints comes back. This is
+how the bottom-face hand-off was verified live on 2026-09-09: one script
+built a side-lying block in a scratch document and exported it through the
+installed add-in's `frame_for` and `body_to_stl_mm`, node planned the STL
+with the real slicer, and a second script fed the layers to `draw_plan`,
+measured the drawn boxes (standing on the picked face, to the millimetre)
+and closed the scratch document unsaved.
+
 ## The three tools
 
 - `fusion_mcp_execute` with `featureType: "script"` runs a Python script inside

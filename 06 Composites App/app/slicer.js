@@ -492,11 +492,28 @@ function mergeToFixedPoint(islands, inflate) {
    optimizer's job in phase 2; its nesting and datum rules live in the design
    doc. Minimum applies on all four sides — a shifted glue-up needs slop
    everywhere, not on one edge. */
-function applyMargin(box, margin, quantum) {
+function applyMargin(box, margin, quantum, anchor) {
   const m = margin == null ? MARGIN_MIN_MM : margin;
   const q = quantum == null ? BLANK_QUANTUM_MM : quantum;
   const b = inflateBox(box, m);
-  /* Grown symmetrically, so the mold stays centred in its blank and the margin
+  /* WITH AN ANCHOR: every edge snaps OUTWARD onto one lattice of saw
+     increments shared by the whole plan, anchored on the bottom blank's
+     corner. This is what makes the layers of a stack line up. Without it each
+     layer was rounded on its own and centred on its own slab box, so a
+     drafted wall that shrinks the box by a couple of millimetres per layer
+     shifted every layer's edges by a fraction of an increment: not flush, not
+     a real step, and a corner that visibly did not overlay (Simon,
+     2026-09-09, on a two-layer plan drawn in Fusion). On the lattice,
+     equal-size layers coincide exactly and a step is a whole half-inch. Width
+     is still a multiple of q, since it is a difference of two lattice
+     values, and outward snapping only ever adds margin. */
+  if (anchor && q > 0) {
+    const snapDown = (v, a) => a + Math.floor((v - a) / q + 1e-6) * q;
+    const snapUp = (v, a) => a + Math.ceil((v - a) / q - 1e-6) * q;
+    return { x0: snapDown(b.x0, anchor.x), y0: snapDown(b.y0, anchor.y), x1: snapUp(b.x1, anchor.x), y1: snapUp(b.y1, anchor.y) };
+  }
+  /* No anchor (the bottom blank, which DEFINES the lattice): grown
+     symmetrically, so the mold stays centred in its blank and the margin
      added by rounding is shared between opposite edges rather than dumped on
      one. Only the blank's SIZE is quantised; its datum offset is a machining
      number, not something anybody measures with a tape. */
@@ -873,7 +890,13 @@ function sliceMold(tris, thicknesses, opts) {
      one rectangle per board, packed onto sheets with the same straight-through
      cuts as any other blank. */
   const mono = !!opts.monolithic;
-  const fullBox = mono ? { x0: bounds.x0, y0: bounds.y0, x1: bounds.x1, y1: bounds.y1 } : null;
+  const fullBox = { x0: bounds.x0, y0: bounds.y0, x1: bounds.x1, y1: bounds.y1 };
+  /* The lattice every blank in this plan snaps to (see applyMargin): the
+     corner of the mold's whole footprint, margined and rounded symmetrically.
+     For a drafted mold that IS the bottom blank, unchanged from before; the
+     upper layers now land on its grid instead of drifting. */
+  const anchorBox = applyMargin(fullBox, margin);
+  const anchor = { x: anchorBox.x0, y: anchorBox.y0 };
   const total = thicknesses.reduce((a, b) => a + b, 0);
   const height = bounds.z1 - bounds.z0;
   const warnings = [];
@@ -896,7 +919,7 @@ function sliceMold(tris, thicknesses, opts) {
       ? [{ box: fullBox, members: [0] }]
       : slabBoxes(tris, z0, Math.min(z1, bounds.z1), inflate);
     if (!groups.length) throw new Error(`Layer ${i + 1} came out empty — the mold may not sit flat on Z.`);
-    const blanks = groups.map(g => applyMargin(g.box, margin));
+    const blanks = groups.map(g => applyMargin(g.box, margin, undefined, anchor));
 
     /* CONTOURS are cosmetic: they draw the mold outline inside the block so a
        reviewer can see the fit. Best-effort — a rough or overhung mesh that
