@@ -26,7 +26,7 @@ let pendingRender = false;
    `var`, not `const`: tools/test_app.mjs concatenates these files and reaches
    file-scope declarations through globalThis, which a lexical binding never
    joins. Same reason as WO_NOTES_NEW. */
-var APP_VERSION = "4.5.0";
+var APP_VERSION = "4.5.1";
 /* What this version changed, in the words a team member would use. Rewritten
    every release. ONE SHORT LINE PER ITEM, five items at most: this renders as
    a modal in front of someone who wants to get to work, and a paragraph per
@@ -141,6 +141,8 @@ window.onFbChange = function () {
   if (typeof loadLabelMedia === "function") loadLabelMedia();
   if (typeof loadTrainingCatalog === "function") loadTrainingCatalog();
   render();
+  // The Fusion palette holds a mesh until the app is signed in; tell it.
+  if (typeof fusionStateChanged === "function") fusionStateChanged();
 };
 
 /* The collections the landing page actually reads. Waiting on these — rather
@@ -185,6 +187,8 @@ window.onFbData = function (coll, arr) {
     if (SPLASH_CORE.every(c => SPLASH_SEEN[c])) splashStep("data", 1);
   }
   DB[coll] = arr;
+  // A mesh from Fusion waits for the rack as well as for the sign-in.
+  if (coll === "stock" && typeof fusionStateChanged === "function") fusionStateChanged("stock");
   // Don't yank the DOM out from under someone mid-edit: another member's (or
   // our own echoed) update re-renders once focus leaves the field.
   const ae = document.activeElement;

@@ -27,6 +27,14 @@ to learn**, not about API compatibility:
 
 ---
 
+## v4.5.1 — 2026-09-07
+
+- Fusion hand-off: a mesh that arrives before the palette is signed in, or before the rack has loaded, waits and opens by itself once both hold, instead of opening over the sign-in card and refusing every density
+- Fusion hand-off: the add-in can sign the palette in with a shared team account from a credentials file, so members never see the sign-in card; the mold still records the Autodesk user who exported it
+- Fusion add-in: running Plan stock after closing the palette works again (the closed palette was wrongly treated as an unloaded page), and a page that stops answering is reloaded and given the mesh again
+
+---
+
 ## v4.5.0 — 2026-09-04
 
 - Molds: Plan stock from inside Fusion. The FEBPlanStock add-in (10 Fusion Add-in/) exports the selected body, hands it to the mold modal in a Fusion palette, and draws the planned blanks over the mold as semi-transparent bodies

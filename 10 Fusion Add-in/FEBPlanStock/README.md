@@ -45,6 +45,32 @@ folder.
 Verified on macOS (Fusion 2702.1.58, 2026-09-04). Windows is untested and
 the path above is Autodesk's documented one.
 
+## The shared team account
+
+Members should not have to sign in to plan a mold from Fusion (Simon,
+2026-09-07). So the palette signs itself in with one shared FEB account,
+read from `credentials.json` beside the add-in:
+
+```json
+{ "user": "fusion", "password": "…" }
+```
+
+`user` is an app username (or an email). Copy `credentials.example.json` to
+`credentials.json` and fill it in; the file is listed in the repo's
+`.gitignore` and must never be committed, since the repo is public. Hand it
+to members with the add-in folder. A lead creates the account once in the
+app itself: Create account, name "Fusion add-in", username `fusion`, a
+password. It joins as a member, which is all the add-in needs.
+
+What the account changes on a mold: `fusion.by` is the shared account, and
+`fusion.exportedBy` is the Autodesk user who pressed Plan stock, so the card
+still says who. A palette that is already signed in as a real member is left
+alone, and that member's own account stamps the mold instead.
+
+Without the file, the palette shows the app's sign-in card on first use, the
+add-in says so, and the mold opens by itself the moment someone signs in.
+Either way the sign-in persists on that machine.
+
 ## Using it
 
 1. Open the mold design. The mold body should sit on the origin the way
@@ -52,18 +78,39 @@ the path above is Autodesk's documented one.
    lowest point.
 2. Utilities tab, FEB panel, Plan stock. Select the mold body (a solid body;
    one at a time). Press OK.
-3. The FEB Composites palette opens docked on the right. The first time it
-   asks you to sign in with your app account; the palette remembers it.
-4. The mold modal is already open with the mesh loaded in millimetres and a
-   name suggested from the document and body. Set density (and thicknesses
-   if you are choosing them yourself) and press Plan.
+3. The FEB Composites palette opens docked on the right and signs in if it
+   has to. The mold modal opens with the mesh loaded in millimetres and a
+   name suggested from the document and body. Until the app is signed in and
+   has loaded the rack, the mesh waits; a toast in the palette says what it
+   is waiting on.
+4. Set density (and thicknesses if you are choosing them yourself) and press
+   Plan.
 5. The blanks appear as bodies with 30% opacity in a component named after
    the plan (STK-SN6-…). Use them as CAM stock. Re-running Plan stock on the
    same mold replaces that component.
 
-If the palette is closed, Plan stock reopens it. If the page shows the
-sign-in card and nothing else, sign in; the mesh is queued and arrives once
-the page is ready.
+If the palette is closed, Plan stock reopens it; the page inside kept
+running, so nothing has to reload. If the page has died or gone stale and
+does not answer within eight seconds, the add-in reloads it and sends the
+mesh again.
+
+## If it does not work
+
+`febplanstock.log` beside the add-in says what happened, one line per step:
+`exported`, `page loaded`, `page state`, `sent mesh`, `page holds the mesh`
+or `page took the mesh`, `sent sign-in`, `drew N bodies`. Read it before
+guessing.
+
+- "No 30 lb board stock on the rack" from the modal means the app is signed
+  in and the rack has loaded, and there really is no board of that density in
+  Inventory. Add boards, widen the range, or plan at a density that is on the
+  rack. Before 2026-09-07 this could also mean the rack had not loaded yet;
+  the mesh now waits for it.
+- A sign-in failure names itself in a Fusion message box; check
+  `credentials.json`.
+- Nothing at all after `sent mesh`: the palette page is not answering. The
+  watchdog reloads it once; if that does not help, close the palette, run
+  Utilities, Add-Ins, stop and run FEBPlanStock, and try again.
 
 ## What talks to what
 

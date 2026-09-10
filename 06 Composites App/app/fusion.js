@@ -13,19 +13,42 @@
    the bridge polls for it briefly at boot and does nothing if it never comes.
    A browser never has it, so a browser never sees any of this.
 
-   The contract, two messages each way, JSON strings:
-     Fusion -> page  "mold"   { stl (base64 binary STL, mm), body, fusion:{…} }
-     page -> Fusion  "loaded" { version }
-     page -> Fusion  "plan"   { planId, moldId, name, layers:[{index,z0,z1,thickness,section,blanks}] }
-     page -> Fusion  "cancel" {}             the modal was closed without a plan
+   READINESS. A mesh can arrive before the palette is signed in, or before
+   the rack has synced, because the add-in sends it as soon as the page is
+   alive. On a fresh machine that is exactly what happens (2026-09-07, a
+   member's Windows install: the modal opened over the sign-in card and, with
+   no stock loaded yet, refused every density). So the mesh is HELD here
+   until canEdit() is true and the stock collection has arrived, and the
+   modal opens by itself at that moment. Until then the add-in is told what
+   the page is waiting on ("state"), and if it holds the shared team
+   account's credentials it signs the page in ("signin"). A member never has
+   to type anything in the palette.
+
+   The contract, JSON strings both ways:
+     page -> Fusion  "loaded"        { version, state }        the bridge is alive
+     page -> Fusion  "state"         { state, guest, roster, stockSynced, ready, signedInAs }
+     Fusion -> page  "mold"          { stl (base64 binary STL, mm), body, fusion:{…} }
+     page -> Fusion  "mold-held"     { bytes, waitingOn }     held until ready
+     page -> Fusion  "mold-received" { bytes, name }          the modal is open with it
+     page -> Fusion  "mold-failed"   { error }
+     Fusion -> page  "signin"        { user, password }       shared team account
+     page -> Fusion  "signin-failed" { error }
+     page -> Fusion  "plan"          { planId, moldId, name, layers:[{index,z0,z1,thickness,section,blanks}] }
+     page -> Fusion  "cancel"        {}                       the modal was closed without a plan
+     Fusion -> page  "ping"          anything                 answered with "pong"
    `fusion` is the document identity that gets stamped on the mold record:
-   { urn, versionId, versionNumber, project, folder, document, body, webUrl, exportedAt }. */
+   { urn, versionId, versionNumber, project, folder, document, body, webUrl,
+     exportedAt, exportedBy }. */
 
 /* Set while a Fusion-supplied mesh is in the modal; submitMold() stamps it on
    the mold and fusionPlanSaved() clears it. A global so submitMold can stay
    ignorant of where the STL came from. */
 let FUSION_CTX = null;
-let FUSION_READY = false;   // the adsk bridge object was found
+let FUSION_READY = false;        // the adsk bridge object was found
+let FUSION_PENDING = null;       // a "mold" payload waiting for the app to be ready
+let FUSION_STOCK_SYNCED = false; // onFbData("stock") has fired at least once
+let FUSION_SIGNIN_BUSY = false;  // a "signin" is in flight; ignore repeats
+let FUSION_LAST_STATE = "";      // last "state" message sent, to send only changes
 
 const FUSION_POLL_MS = 100, FUSION_POLL_FOR_MS = 6000;
 
@@ -39,6 +62,19 @@ function fusionSend(action, data) {
   return true;
 }
 
+/* What the app is, right now, for the purpose of taking a mold: signed in as
+   a roster member with the rack loaded. A guest is "ready" to fb.js and can
+   write nothing, so canEdit() is the test, not fb.state. */
+function fusionAppState() {
+  const st = window.fb ? fb.state : "loading";
+  const can = typeof canEdit === "function" ? canEdit() : false;
+  return {
+    state: st, guest: !!(window.fb && fb.guest), roster: !!(window.fb && fb.roster),
+    stockSynced: FUSION_STOCK_SYNCED, ready: can && FUSION_STOCK_SYNCED,
+    signedInAs: (window.fb && fb.user && fb.user.email) || "",
+  };
+}
+
 /* Called from the boot path. Polls because the bridge lands late; stops on its
    own so a browser tab pays 60 cheap checks and nothing else. */
 function fusionBridgeInit() {
@@ -50,7 +86,9 @@ function fusionBridgeInit() {
       FUSION_READY = true;
       const root = document.documentElement;
       if (root && root.classList) root.classList.add("in-fusion");
-      fusionSend("loaded", { version: typeof APP_VERSION !== "undefined" ? APP_VERSION : "" });
+      fusionSend("loaded", { version: typeof APP_VERSION !== "undefined" ? APP_VERSION : "", ...fusionAppState() });
+      FUSION_LAST_STATE = "";
+      fusionStateChanged();
       return;
     }
     if (Date.now() - t0 < FUSION_POLL_FOR_MS) setTimeout(tick, FUSION_POLL_MS);
@@ -58,18 +96,55 @@ function fusionBridgeInit() {
   tick();
 }
 
+/* core.js calls this from onFbChange and from onFbData("stock"). It reports
+   the state to the add-in when it changes, and opens a held mesh the moment
+   the app can take it. Cheap and idempotent, so it can be called often. */
+function fusionStateChanged(coll) {
+  if (coll === "stock") FUSION_STOCK_SYNCED = true;
+  if (!FUSION_READY) return;
+  const s = fusionAppState();
+  const key = JSON.stringify(s);
+  if (key !== FUSION_LAST_STATE) { FUSION_LAST_STATE = key; fusionSend("state", s); }
+  if (FUSION_PENDING && s.ready) {
+    const p = FUSION_PENDING; FUSION_PENDING = null;
+    try { fusionOpenMold(p); }
+    catch (e) { toast(`Fusion handed over something this app could not read: ${e.message}`, "error"); fusionSend("mold-failed", { error: e.message }); }
+  }
+}
+
+/* What a held mesh is waiting on, in words the add-in can show. */
+function fusionWaitingOn(s) {
+  if (s.state === "loading") return "the app to connect";
+  if (s.state === "signedout") return "a sign-in";
+  if (s.state === "pending") return "the account to join the roster";
+  if (s.guest) return "a real sign-in (guests cannot create molds)";
+  if (!s.stockSynced) return "the rack to load";
+  return "nothing";
+}
+
 /* Python -> page. Fusion delivers the return string back to the add-in as an
    HTMLEvent with action "response", so return something non-empty: an empty
-   string is how Fusion signals failure. */
+   string is how Fusion signals failure. The page also answers explicitly with
+   its own message, because that "response" event proved unreliable. */
 function fusionHandle(action, data) {
   try {
     if (action === "mold") {
-      fusionOpenMold(JSON.parse(data || "{}"));
-      // Say so explicitly as well as through the return value: the add-in
-      // shows the member an error if neither arrives.
-      fusionSend("mold-received", { bytes: MOLD_BUF ? MOLD_BUF.size : 0, name: MOLD_BUF ? MOLD_BUF.name : "" });
+      const payload = JSON.parse(data || "{}");
+      if (!payload || !payload.stl) throw new Error("no STL in the message");
+      const s = fusionAppState();
+      if (!s.ready) {
+        // Hold it. A second mesh before the first opened replaces it: the
+        // member ran Plan stock again, and the later body is the one they mean.
+        FUSION_PENDING = payload;
+        const why = fusionWaitingOn(s);
+        fusionSend("mold-held", { bytes: Math.floor(String(payload.stl).length * 3 / 4), waitingOn: why });
+        if (s.state !== "loading") toast(`A mold from Fusion is waiting on ${why}.`, "info");
+        return "held";
+      }
+      fusionOpenMold(payload);
       return "ok";
     }
+    if (action === "signin") { fusionSignIn(JSON.parse(data || "{}")); return "ok"; }
     if (action === "ping") { fusionSend("pong", { data }); return "pong"; }
   } catch (e) {
     toast(`Fusion handed over something this app could not read: ${e.message}`, "error");
@@ -77,6 +152,29 @@ function fusionHandle(action, data) {
     return "error " + e.message;
   }
   return "unhandled " + action;
+}
+
+/* The shared team account, sent by the add-in from its credentials file. The
+   page does the sign-in the way the login card does, so persistence and the
+   roster check are the app's own. Nothing about the password is kept or
+   logged here. A palette that is already signed in as anyone is left alone:
+   a member who signed in with their own account keeps their name on the
+   mold. */
+async function fusionSignIn(cred) {
+  const s = fusionAppState();
+  if (s.state === "loading" || FUSION_SIGNIN_BUSY) return;
+  if (s.state === "ready" && !s.guest) return;          // already someone real
+  if (!cred || !cred.user || !cred.password) { fusionSend("signin-failed", { error: "no credentials in the message" }); return; }
+  FUSION_SIGNIN_BUSY = true;
+  try {
+    if (s.guest && window.fb && typeof fb.signOut === "function") await fb.signOut();
+    await fb.signIn(loginEmailFor(cred.user), cred.password);
+  } catch (e) {
+    fusionSend("signin-failed", { error: (e && e.message) || String(e) });
+    toast("Fusion's team account could not sign in: " + ((e && e.message) || e), "error");
+  } finally {
+    FUSION_SIGNIN_BUSY = false;
+  }
 }
 
 function fusionDecodeStl(b64) {
@@ -108,7 +206,7 @@ function fusionOpenMold(payload) {
   set("ml-unit", "mm");
   const nameEl = document.getElementById("ml-name");
   if (nameEl && !nameEl.value) nameEl.value = ctx.document ? `${ctx.document} · ${body}` : body;
-  MOLD_BUF = { buffer, name: `${body}.stl`, size: buffer.byteLength, key: `fusion:${ctx.urn || ""}:${ctx.versionNumber || ""}:${body}:${buffer.byteLength}` };
+  MOLD_BUF = { buffer, name: `${body}.stl`, size: buffer.byteLength, key: `fusion:${ctx.urn || ""}:${ctx.versionNumber || ""}:${body}:${buffer.byteLength}:${ctx.exportedAt || ""}` };
   MOLD_BODIES = null;
   const prog = document.getElementById("ml-progress");
   if (prog) prog.textContent = `From Fusion: ${body} (${Math.round(buffer.byteLength / 1024)} KB, millimetres). Set the density and press Plan.`;
@@ -119,17 +217,21 @@ function fusionOpenMold(payload) {
     const f = e && e.closest ? e.closest(".field") : null;
     if (f && f.style) f.style.display = "none"; else if (e && e.style) e.style.display = "none";
   }
+  // Say so explicitly as well as through the return value: the add-in shows
+  // the member an error if neither arrives.
+  fusionSend("mold-received", { bytes: buffer.byteLength, name: MOLD_BUF.name });
 }
 
-/* The block submitMold() stamps on the mold. `by` is the app user, not the
-   Autodesk one: the roster account is what the rest of the record uses. */
+/* The block submitMold() stamps on the mold. `by` is the app user, which with
+   the shared team account is that account; `exportedBy` is the Autodesk user
+   who pressed Plan stock, so the mold still says who. */
 function fusionStamp() {
   if (!FUSION_CTX) return null;
   const c = FUSION_CTX;
   return {
     urn: c.urn || "", versionId: c.versionId || "", versionNumber: c.versionNumber ?? null,
     project: c.project || "", folder: c.folder || "", document: c.document || "", body: c.body || "",
-    webUrl: c.webUrl || "", exportedAt: c.exportedAt || "", by: myEmail(),
+    webUrl: c.webUrl || "", exportedAt: c.exportedAt || "", exportedBy: c.exportedBy || "", by: myEmail(),
   };
 }
 
@@ -179,13 +281,14 @@ function moldFusionSection(m) {
   const f = m && m.fusion;
   if (!f || !(f.document || f.urn)) return "";
   const ver = f.versionNumber != null && f.versionNumber !== "" ? `v${esc(f.versionNumber)}` : "";
+  const who = f.exportedBy ? esc(f.exportedBy) + (f.by ? ` <span class="muted">(via ${esc(userHandle(f.by))})</span>` : "") : (f.by ? esc(f.by) : "");
   return `<h3>Fusion</h3>
     <div class="fusionblk">
       <div class="f"><label>Document</label><div class="ro">${esc(f.document || "—")}
         ${f.document ? `<button class="sm ib" title="Copy the document name to find it in Fusion" onclick="fusionCopy('${esc(String(f.document).replace(/\\/g, "\\\\").replace(/'/g, "\\'"))}')">${icon("link", 13)} Copy name</button>` : ""}</div></div>
       <div class="f"><label>Body</label><div class="ro">${esc(f.body || "—")}</div></div>
       <div class="f"><label>Version</label><div class="ro">${ver || "—"}${f.project ? ` · ${esc(f.project)}${f.folder ? " / " + esc(f.folder) : ""}` : ""}</div></div>
-      <div class="f"><label>Exported</label><div class="ro">${f.exportedAt ? fmtWhen(f.exportedAt) : "—"}${f.by ? " by " + esc(f.by) : ""}</div></div>
+      <div class="f"><label>Exported</label><div class="ro">${f.exportedAt ? fmtWhen(f.exportedAt) : "—"}${who ? " by " + who : ""}</div></div>
       ${f.webUrl && /^https:\/\//.test(f.webUrl) ? `<div class="f"><label></label><div class="ro"><a href="${esc(f.webUrl)}" target="_blank" rel="noopener">${icon("externalLink", 13)} Open in Fusion Team</a></div></div>` : ""}
     </div>`;
 }

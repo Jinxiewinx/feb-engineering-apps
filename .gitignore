@@ -50,3 +50,7 @@ ds-bundle
 08 CFD Sims Dashboard/firestore-debug.log
 08 CFD Sims Dashboard/ui-debug.log
 08 CFD Sims Dashboard/firebase-debug.log
+
+# The Fusion add-in's shared team account. Distributed by hand, never committed:
+# the repo is public.
+10 Fusion Add-in/FEBPlanStock/credentials.json

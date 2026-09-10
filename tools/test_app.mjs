@@ -7762,62 +7762,119 @@ await t("fusion.js is inert without Fusion's bridge object", () => {
   assert(fusionPlanSaved({ id: "STK-x", layers: [] }, "MOLD-x") === false, "a browser plan never tries to reach Fusion");
   assert(moldFusionSection({ id: "MOLD-x", name: "plain" }) === "", "a mold with no block gets no Fusion section");
   assert(moldFusionSection({ id: "MOLD-x", fusion: {} }) === "", "and an empty block is the same as none");
+  fusionStateChanged("stock");   // a browser syncing stock must not throw or send
 });
 
-await t("a mesh handed in from Fusion plans like any other mold and stamps where it came from", async () => {
-  /* The add-in decodes nothing about the plan itself: it hands a base64 STL
-     and the document identity to fusionHandle("mold"), the member presses
-     Plan in the ordinary modal, and the layers go back through the same
-     bridge. Ids come from allocId like every other mold; the only new data is
-     the `fusion` block on the mold record. */
+/* Pretend to be Fusion: an adsk object whose sends are recorded, and the
+   bridge found, the way fusionBridgeInit would leave things. */
+function fusionArrive() {
   const sent = [];
   globalThis.adsk = { fusionSendData: (a, d) => { sent.push([a, JSON.parse(d)]); return Promise.resolve("ok"); } };
+  FUSION_READY = true; FUSION_LAST_STATE = ""; FUSION_PENDING = null; FUSION_CTX = null; FUSION_STOCK_SYNCED = false;
+  return sent;
+}
+const fusionIdentity = {
+  urn: "urn:adsk.wipprod:dm.lineage:TESTLINEAGE", versionId: "urn:adsk.wipprod:fs.file:vf.TESTLINEAGE?version=12",
+  versionNumber: 12, project: "FEB", folder: "clamshell mold (Simon)", document: "Clamshell Mold With Mating Surface",
+  body: "Clamshell Mold Body", webUrl: "https://my1635004.autodesk360.com/g/projects/1/data/x/y", exportedAt: "2026-09-04T19:00:00",
+  exportedBy: "Nick Jepsen",
+};
+const fusionMoldMsg = (over) => JSON.stringify({ stl: Buffer.from(stlOf(plugTris(200, 80, 0, 100))).toString("base64"), body: "Clamshell Mold Body", fusion: { ...fusionIdentity, ...(over || {}) } });
+
+await t("a mesh that arrives before the palette is signed in is HELD, and opens by itself once it is", async () => {
+  /* The first Windows install (2026-09-07): the mesh arrived while the palette
+     showed the sign-in card, the modal opened over it with no rack loaded, and
+     every density was refused. Now the page keeps the mesh, tells Fusion what
+     it is waiting on, and opens the modal the moment canEdit() and the stock
+     sync both hold. */
+  const sent = fusionArrive();
+  const was = { state: fb.state, user: fb.user, roster: fb.roster, guest: fb.guest };
+  fb.state = "signedout"; fb.user = null; fb.roster = null; fb.guest = false;
   seedStock(); DB.molds = []; DB.stackplans = [];
-  els["ml-src"] = undefined; // a fresh modal, not the last test's values
-  const stl = stlOf(plugTris(200, 80, 0, 100));
-  const identity = {
-    urn: "urn:adsk.wipprod:dm.lineage:TESTLINEAGE", versionId: "urn:adsk.wipprod:fs.file:vf.TESTLINEAGE?version=12",
-    versionNumber: 12, project: "FEB", folder: "clamshell mold (Simon)", document: "Clamshell Mold With Mating Surface",
-    body: "Clamshell Mold Body", webUrl: "https://my1635004.autodesk360.com/g/projects/1/data/x/y", exportedAt: "2026-09-04T19:00:00",
-  };
-  const r = fusionHandle("mold", JSON.stringify({ stl: Buffer.from(stl).toString("base64"), body: "Clamshell Mold Body", fusion: identity }));
-  assert(r === "ok", "the handler answers non-empty (empty means failure to Fusion): " + r);
-  assert(MOLD_BUF && MOLD_BUF.size === stl.byteLength && MOLD_BUF.name === "Clamshell Mold Body.stl", "the mesh landed where a picked file lands");
+  fusionStateChanged();
+  const st = sent.find(x => x[0] === "state");
+  assert(st && st[1].state === "signedout" && st[1].ready === false, "the page reports its state: " + JSON.stringify(st));
+  const r = fusionHandle("mold", fusionMoldMsg());
+  assert(r === "held", "the handler says it is holding, not ok: " + r);
+  assert(FUSION_PENDING && !FUSION_CTX && !MOLD_BUF, "held: nothing in the modal yet");
+  const held = sent.find(x => x[0] === "mold-held");
+  assert(held && /sign-in/.test(held[1].waitingOn), "Fusion is told what the page waits on: " + JSON.stringify(held));
+  // Signing in alone is not enough: the rack has to have arrived too.
+  fb.state = "ready"; fb.user = { uid: "f1", email: "fusion@members.feb-composites.app", name: "Fusion add-in" }; fb.roster = { role: "member", name: "Fusion add-in" }; fb.guest = false;
+  fusionStateChanged();
+  assert(FUSION_PENDING && !MOLD_BUF, "signed in but no stock yet: still held");
+  assert(sent.filter(x => x[0] === "state").slice(-1)[0][1].ready === false, "and the state says so");
+  fusionStateChanged("stock");
+  assert(!FUSION_PENDING && MOLD_BUF && FUSION_CTX && FUSION_CTX.urn === fusionIdentity.urn, "stock arrived: the modal opened with the mesh");
+  assert(sent.some(x => x[0] === "mold-received"), "and Fusion was told it landed");
   assert(el("ml-src").value === "stl" && el("ml-unit").value === "mm", "STL source, millimetres, set for the member");
-  assert(el("ml-name").value.includes("Clamshell Mold Body"), "named after the document and body until the member renames it");
-  assert(FUSION_CTX && FUSION_CTX.urn === identity.urn, "the context is held for submitMold");
-  // The member's decisions, made in the modal as in a browser.
+  // Plan it, as in a browser.
   el("ml-density-min").value = "30"; el("ml-density-max").value = ""; el("ml-mode").value = "auto";
   el("ml-thk").value = ""; el("ml-body").value = "0"; el("ml-bodies").innerHTML = ""; el("ml-file").files = [];
   await submitMold();
   assert(DB.molds.length === 1 && DB.stackplans.length === 1, "one mold, one plan: " + lastToast);
   const m = DB.molds[0], p = DB.stackplans[0];
-  assert(m.fusion && m.fusion.urn === identity.urn && m.fusion.versionNumber === 12 && m.fusion.document === identity.document
-    && m.fusion.body === "Clamshell Mold Body" && m.fusion.webUrl === identity.webUrl, "the mold carries the document identity");
-  assert(m.fusion.by === myEmail(), "stamped by the app user, not the Autodesk one");
-  assert(p.unit === "mm" && p.source === "Clamshell Mold Body.stl", "the plan records the mesh as millimetres from that body");
-  assert(!p.fusion, "the plan itself carries no block; it points at its mold");
-  assert(sent.some(x => x[0] === "mold-received" && x[1].bytes === stl.byteLength), "the page acknowledges the mesh on its own, not only through Fusion's return path");
+  assert(m.fusion && m.fusion.urn === fusionIdentity.urn && m.fusion.versionNumber === 12 && m.fusion.body === "Clamshell Mold Body", "the mold carries the document identity");
+  assert(m.fusion.by === "fusion@members.feb-composites.app" && m.fusion.exportedBy === "Nick Jepsen", "stamped by the shared account AND the Autodesk user who pressed the button");
+  assert(p.unit === "mm" && p.source === "Clamshell Mold Body.stl" && !p.fusion, "the plan records the mesh as mm from that body and carries no block itself");
   const plan = sent.find(x => x[0] === "plan");
-  assert(plan, "the layers went back to Fusion: " + JSON.stringify(sent.map(x => x[0])));
-  assert(plan[1].planId === p.id && plan[1].moldId === m.id, "with the allocated ids, so the component is named after the plan");
-  assert(plan[1].layers.length === p.layers.length && plan[1].layers.every((L, i) => L.z0 === p.layers[i].z0 && L.z1 === p.layers[i].z1
-    && L.blanks.length === p.layers[i].blanks.length && "section" in L), "every layer, every blank, z and section");
+  assert(plan && plan[1].planId === p.id && plan[1].moldId === m.id, "the layers went back with the allocated ids");
+  assert(plan[1].layers.length === p.layers.length && plan[1].layers.every((L, i) => L.z0 === p.layers[i].z0 && L.blanks.length === p.layers[i].blanks.length && "section" in L), "every layer, every blank, z and section");
   assert(FUSION_CTX === null, "the context is spent once the plan is saved");
-  // The card.
   view = { ...view, tab: "molds", mode: "detail", id: m.id, edit: false }; render();
   const h = main.innerHTML;
-  assert(h.includes("<h3>Fusion</h3>") && h.includes("Clamshell Mold With Mating Surface") && h.includes("Clamshell Mold Body"), "the Fusion section names the document and body");
-  assert(h.includes("v12") && h.includes("FEB"), "and the version and project");
-  assert(h.includes("Open in Fusion Team") && h.includes(identity.webUrl), "the link is the Fusion Team page, since the deep link failed (spike S6)");
-  assert(h.includes("fusionCopy("), "the document name can be copied to find it in Fusion");
+  assert(h.includes("<h3>Fusion</h3>") && h.includes("Clamshell Mold With Mating Surface") && h.includes("v12"), "the Fusion section names the document, body and version");
+  assert(h.includes("Nick Jepsen") && h.includes("via fusion"), "the card says who exported it, and through which account");
+  assert(h.includes("Open in Fusion Team") && h.includes(fusionIdentity.webUrl) && h.includes("fusionCopy("), "link to the Fusion Team page and a copyable name");
+  Object.assign(fb, was);
+});
+
+await t("a mesh arriving into a ready, stocked palette opens at once, and a second one replaces a held one", () => {
+  const sent = fusionArrive();
+  seedStock(); DB.molds = []; DB.stackplans = [];
+  fb.state = "ready"; fb.guest = false; if (!fb.roster) fb.roster = { role: "member", name: "T" }; if (!fb.user) fb.user = { uid: "u1", email: "t@b.c", name: "T" };
+  fusionStateChanged("stock");
+  assert(fusionHandle("mold", fusionMoldMsg()) === "ok" && MOLD_BUF, "ready: straight into the modal");
+  closeModal();
+  // Held twice: the later body is the one the member means.
+  fb.state = "signedout";
+  fusionHandle("mold", fusionMoldMsg({ body: "first" }));
+  fusionHandle("mold", JSON.stringify({ stl: Buffer.from(stlOf(plugTris(100, 50, 0, 40))).toString("base64"), body: "second", fusion: { ...fusionIdentity, body: "second" } }));
+  assert(FUSION_PENDING && FUSION_PENDING.body === "second", "the second mesh replaced the first while held");
+  fb.state = "ready";
+  fusionStateChanged();
+  assert(MOLD_BUF && MOLD_BUF.name === "second.stl", "and it is the one that opened");
+  closeModal();
+});
+
+await t("the shared team account signs the palette in, and never over a real member", async () => {
+  const sent = fusionArrive();
+  const was = { state: fb.state, user: fb.user, roster: fb.roster, guest: fb.guest };
+  calls.length = 0;
+  fb.state = "signedout"; fb.user = null; fb.roster = null; fb.guest = false;
+  assert(fusionHandle("signin", JSON.stringify({ user: "fusion", password: "pw" })) === "ok");
+  await new Promise(r => setTimeout(r, 0));
+  assert(calls.some(c => c[0] === "signIn" && c[1] === "fusion@members.feb-composites.app"), "signed in as the username's synthetic address: " + JSON.stringify(calls));
+  // Already a real member: leave them alone.
+  calls.length = 0;
+  fb.state = "ready"; fb.user = { uid: "u1", email: "nico@members.feb-composites.app" }; fb.roster = { role: "member" }; fb.guest = false;
+  fusionHandle("signin", JSON.stringify({ user: "fusion", password: "pw" }));
+  await new Promise(r => setTimeout(r, 0));
+  assert(!calls.some(c => c[0] === "signIn"), "a member's own session is not replaced by the shared account");
+  // Missing credentials are reported, not thrown.
+  fb.state = "signedout";
+  fusionHandle("signin", JSON.stringify({}));
+  await new Promise(r => setTimeout(r, 0));
+  assert(sent.some(x => x[0] === "signin-failed"), "no credentials: Fusion is told");
+  Object.assign(fb, was);
 });
 
 await t("closing the modal drops a Fusion mesh, so the next hand-made mold is not stamped", async () => {
-  const sent = [];
-  globalThis.adsk = { fusionSendData: (a, d) => { sent.push([a, JSON.parse(d)]); return Promise.resolve("ok"); } };
+  const sent = fusionArrive();
   seedStock(); DB.molds = []; DB.stackplans = [];
-  fusionHandle("mold", JSON.stringify({ stl: Buffer.from(stlOf(plugTris(200, 80, 0, 100))).toString("base64"), body: "B", fusion: { urn: "urn:x", document: "Doc" } }));
+  fb.state = "ready"; fb.guest = false; if (!fb.roster) fb.roster = { role: "member", name: "T" }; if (!fb.user) fb.user = { uid: "u1", email: "t@b.c", name: "T" };
+  fusionStateChanged("stock");
+  fusionHandle("mold", fusionMoldMsg({ document: "Doc" }));
   assert(FUSION_CTX, "context set");
   closeModal();
   assert(FUSION_CTX === null, "Cancel or Escape clears it");
@@ -7826,12 +7883,12 @@ await t("closing the modal drops a Fusion mesh, so the next hand-made mold is no
   await submitMold();
   assert(DB.molds.length === 1 && !DB.molds[0].fusion, "a mold planned by hand afterwards has no Fusion block");
   // A re-plan from Fusion of an existing mold refreshes the block rather than minting a mold.
-  fusionHandle("mold", JSON.stringify({ stl: Buffer.from(stlOf(plugTris(200, 80, 0, 100))).toString("base64"), body: "B2", fusion: { urn: "urn:y", document: "Doc2", versionNumber: 3 } }));
+  fusionHandle("mold", fusionMoldMsg({ urn: "urn:y", document: "Doc2", versionNumber: 3, body: "B2" }));
   MOLD_REPLAN = DB.molds[0].id;
   el("ml-density-min").value = "30"; el("ml-density-max").value = ""; el("ml-mode").value = "auto"; el("ml-thk").value = ""; el("ml-body").value = "0"; el("ml-file").files = [];
   await submitMold();
-  assert(DB.molds.length === 1 && DB.molds[0].fusion && DB.molds[0].fusion.urn === "urn:y" && DB.molds[0].fusion.body === "B2", "re-plan stamps the existing mold: " + lastToast);
-  delete globalThis.adsk;
+  assert(DB.molds.length === 1 && DB.molds[0].fusion && DB.molds[0].fusion.urn === "urn:y", "re-plan stamps the existing mold: " + lastToast);
+  delete globalThis.adsk; FUSION_READY = false;
 });
 
 await t("the Fusion section only links to https and survives a name with a quote", () => {
