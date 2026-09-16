@@ -20,6 +20,11 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**v4.7.2 (2026-09-16): cut-list nest labels clipped.** `nestLabel` in
+stock.js (named to avoid drawings.js's `blankLabel`, which is the tag
+helper for the printed sheets and collided on first try). Print sheets have
+their own leader labelling and were not touched.
+
 **App v4.7.1 and add-in: Plan stock takes a bottom face, and stack layers
 line up** (2026-09-09, Simon's asks). `febframe.py` (pure, tested by
 `tools/test_fusion_frame.py`) lays the mesh flat on the picked face; the

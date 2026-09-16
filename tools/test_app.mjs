@@ -4734,6 +4734,27 @@ await t("the cut list says what feed rate to machine at, and the commit writes i
   assert(/Machine at the 45 lb\/ft³ feed/.test(h), "the band names the feed rate: " + h.slice(0, 400));
   assert(/Boards opened: 30, 45/.test(h), "and which grades it opened");
 
+  /* Labels stay inside their blanks (Simon, 2026-09-16: long plan names ran
+     across three neighbouring rectangles). Each label is a nested, clipping
+     <svg> exactly the blank's size, the layer tag is its own line, and the
+     name is shortened to fit rather than allowed to spill. */
+  {
+    const long = { part: { id: "Clamshell Mold With Mating Surface · Clamshell Mold Body L1" } };
+    const narrow = nestLabel(long, 10, 20, 60, 40);
+    assert(/^<svg x="10\.0" y="20\.0" width="60\.0" height="40\.0" overflow="hidden">/.test(narrow), "a clipping viewport the size of the blank: " + narrow.slice(0, 80));
+    assert(/>L1<\/text>/.test(narrow), "the layer tag is whole, on its own line");
+    const texts = narrow.match(/<text[^>]*>[^<]*<\/text>/g) || [];
+    assert(texts.some(t => /…<\/text>/.test(t)) && !texts.some(t => /Mating Surface/.test(t)), "the name is shortened with an ellipsis, not spilled: " + texts.join(" "));
+    assert(/<title>Clamshell Mold With Mating Surface · Clamshell Mold Body L1<\/title>/.test(narrow), "the full name survives as a tooltip");
+    const wide = nestLabel(long, 0, 0, 400, 60);
+    assert(/Clamshell Mold With Mating Surface · Clamshell Mold Body<\/text>/.test(wide) && /L1<\/text>/.test(wide), "a wide blank gets the whole name and the tag");
+    assert(nestLabel(long, 0, 0, 8, 6) === "", "a sliver gets nothing, not a fragment");
+    assert(/>L2b<\/text>/.test(nestLabel({ part: { id: "x L2b" } }, 0, 0, 40, 30)), "island suffixes stay with the tag");
+    const tag = nestLabel(long, 0, 0, 30, 14);
+    assert(/L1<\/text>/.test(tag) && !/…/.test(tag), "room for one line: the tag wins");
+  }
+  assert(!/<text[^>]*>[^<]*Mold Body L1<\/text>/.test(h) || /<svg x=/.test(h), "the nest uses the clipped labels");
+
   openCommitCutsModal();
   assert(/Machine at the 45/.test(document.getElementById("modal").innerHTML),
     "said again at the moment it stops being advice");

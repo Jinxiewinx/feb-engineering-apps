@@ -1271,6 +1271,45 @@ function feedRateBand(res) {
       sets the feed for the whole thing.` : `Every board opened is ${res.maxDensity} lb/ft³.`}</div>`;
 }
 
+/* The label inside one blank on the nest. Plan names are long ("Clamshell
+   Mold With Mating Surface · Clamshell Mold Body L1") and blanks are often
+   narrow, so a centred one-liner ran across three neighbours (Simon,
+   2026-09-16). Two rules: the label lives in a nested <svg> the size of the
+   blank, which clips anything that would spill, so a label can never cross
+   an edge; and it is two lines, the layer tag ("L1", "L2b") on its own line
+   because that is what somebody at the saw matches against the cut list,
+   with the plan name above it shortened to fit with an ellipsis. Width is
+   estimated at 0.55em per character, which is about right for the UI font
+   and errs long, so text that "fits" really does. Too small for either line
+   and it draws nothing rather than a fragment. */
+function nestLabel(p, x, y, w, h) {
+  const id = String(p.part.id || "");
+  const m = id.match(/^(.*?)\s*(L\d+[a-z]?)$/);
+  const name = m ? m[1] : id, tag = m ? m[2] : "";
+  const TAG = 11, NAME = 9, pad = 4;
+  const fits = (str, px, size) => str.length * size * 0.55 <= px;
+  const shorten = (str, px, size) => {
+    if (fits(str, px, size)) return str;
+    const n = Math.floor(px / (size * 0.55)) - 1;
+    return n >= 3 ? str.slice(0, n) + "…" : "";
+  };
+  const inner = w - 2 * pad;
+  const lines = [];
+  if (tag && fits(tag, inner, TAG)) lines.push({ t: tag, size: TAG, weight: 600 });
+  const short = shorten(name, inner, NAME);
+  if (short && h >= (lines.length ? TAG + NAME + 6 : NAME + 4)) lines.unshift({ t: short, size: NAME, weight: 400 });
+  if (!lines.length || h < TAG + 2) return "";
+  const total = lines.reduce((s, l) => s + l.size, 0) + (lines.length - 1) * 3;
+  let cy = h / 2 - total / 2;
+  const text = lines.map(l => {
+    cy += l.size;
+    const el = `<text x="${(w / 2).toFixed(1)}" y="${(cy - 2).toFixed(1)}" font-size="${l.size}" font-weight="${l.weight}" text-anchor="middle" fill="currentColor">${esc(l.t)}</text>`;
+    cy += 3;
+    return el;
+  }).join("");
+  return `<svg x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" overflow="hidden"><title>${esc(id)}</title>${text}</svg>`;
+}
+
 /* Top-down view of one board. Black and white only — this gets printed on the
    laser at RFS, same rule as the traveler. */
 function cutDiagram(pl) {
@@ -1279,7 +1318,7 @@ function cutDiagram(pl) {
     <rect x="0" y="0" width="${W}" height="${H.toFixed(0)}" fill="none" stroke="currentColor" stroke-width="1.5"/>
     ${pl.placed.map(p => `<rect x="${(p.x * s).toFixed(1)}" y="${((pl.board.h - p.y - p.h) * s).toFixed(1)}" width="${(p.w * s).toFixed(1)}" height="${(p.h * s).toFixed(1)}"
       fill="none" stroke="currentColor" stroke-width="1.6"/>
-      <text x="${((p.x + p.w / 2) * s).toFixed(1)}" y="${((pl.board.h - p.y - p.h / 2) * s).toFixed(1)}" font-size="10" text-anchor="middle" fill="currentColor">${esc(p.part.id)}</text>`).join("")}
+      ${nestLabel(p, p.x * s, (pl.board.h - p.y - p.h) * s, p.w * s, p.h * s)}`).join("")}
     ${pl.cuts.map((c, i) => c.axis === "x"
       ? `<line x1="${(c.at * s).toFixed(1)}" y1="${((pl.board.h - c.to) * s).toFixed(1)}" x2="${(c.at * s).toFixed(1)}" y2="${((pl.board.h - c.from) * s).toFixed(1)}" stroke="currentColor" stroke-width="0.8" stroke-dasharray="4 3"/>`
       : `<line x1="${(c.from * s).toFixed(1)}" y1="${((pl.board.h - c.at) * s).toFixed(1)}" x2="${(c.to * s).toFixed(1)}" y2="${((pl.board.h - c.at) * s).toFixed(1)}" stroke="currentColor" stroke-width="0.8" stroke-dasharray="4 3"/>`).join("")}
