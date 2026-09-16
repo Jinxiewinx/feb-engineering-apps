@@ -139,9 +139,14 @@ function seasonLine(p) {
      rendering gap; a column of placeholders down twenty-six rows would be
      louder than the values. What makes an empty cell legible is the header
      over it, which is why seasonHead() exists. */
-  return `<div class="sline${late ? " late" : ""}${named ? "" : " unnamed"}" title="${esc(p.id)}">
-    <button type="button" class="sl-open" data-open="${esc(p.id)}"
-      onclick="openRecord('parts','${esc(p.id)}')">${esc(p.partName || p.id)}</button>
+  /* In pick mode the name cell is a label holding the box, not a button: a
+     checkbox inside a button is not valid HTML, and a label makes the whole
+     name a target for the tick. Same class, so the grid track is unchanged. */
+  return `<div class="sline${late ? " late" : ""}${named ? "" : " unnamed"}${pickIs("season", p.id) ? " picked" : ""}" title="${esc(p.id)}">
+    ${pickOn("season")
+      ? `<label class="sl-open sl-pick">${pickBox("season", p.id)}<span>${esc(p.partName || p.id)}</span></label>`
+      : `<button type="button" class="sl-open" data-open="${esc(p.id)}"
+      onclick="openRecord('parts','${esc(p.id)}')">${esc(p.partName || p.id)}</button>`}
     <span class="sl-sub">${esc(p.subteam || "")}</span>
     <span class="sl-type" title="${esc(p.layupType || "")}">${esc(p.layupType || "")}</span>
     ${typeof stageRail === "function" ? stageRail(p) : ""}
@@ -426,6 +431,10 @@ function seasonBlankPart(id) {
 }
 
 /* ---------- the tab ---------- */
+/* The blueprint's rows ARE parts, so its Select… deletes through the Parts
+   path: one cascade, one wording, one lead-only rule. */
+function deletePickedSeason() { partBulkDelete(pickedIds("season")); }
+
 function renderSeason() {
   const rows = seasonRows();
   /* THE DENOMINATOR MUST APPLY THE SAME TEST AS THE ROWS. Filter seasonRows()
@@ -439,7 +448,8 @@ function renderSeason() {
 
   return `
   <div class="toolbar no-print">
-    <button class="primary"${gx("Sign in to lay out the season.")} onclick="openSeasonLayout()">Lay out the season</button>
+    ${pickOn("season") ? "" : `<button class="primary"${gx("Sign in to lay out the season.")} onclick="openSeasonLayout()">Lay out the season</button>`}
+    ${isLead() ? pickBar("season", { all: rows.map(p => p.id), onDelete: "deletePickedSeason()", hint: "Select several parts to delete them; these are the same records as Parts" }) : ""}
     ${/* R&D is stated, not silently subtracted. A row that disappears with
           nothing on screen to explain it reads as data loss; a count that names
           it and offers the way to it reads as a decision. */""}

@@ -20,6 +20,19 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**v4.8.0 (2026-09-16): Select… on every list.** Shared picker in core.js
+(`view.pick = {key, ids}`, `pickBar/pickBox/pickClick/bulkDeleteRecords`,
+`PICK_ALL` holds the on-screen ids at render so All needs a render first).
+Wired to molds (+orphan plans, `moldsBulkDelete`, which the mold's and the
+plan's single Delete now use, cascading plans+meshes), boards, budget
+(receipts), documents (uploads only), rnd (`rdBulkDeleteStudies`: batches +
+coupons, RD_UNDO), schedule (`weeksBulkDelete`), season (through
+`partBulkDelete`), people (`rosterBulkDelete`, never self). Parts, Work
+Orders and Inventory keep their older pickers (`partPick/woPick/shopPick`);
+folding them into the shared one is a possible follow-up, not started.
+`confirmProceed()` in test_app.mjs now returns the callback's promise; tests
+that confirm an async delete must `await` it.
+
 **v4.7.2 (2026-09-16): cut-list nest labels clipped.** `nestLabel` in
 stock.js (named to avoid drawings.js's `blankLabel`, which is the tag
 helper for the printed sheets and collided on first try). Print sheets have

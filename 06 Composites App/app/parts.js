@@ -385,7 +385,7 @@ async function partBulkDelete(ids) {
     catch (e) { toast("Delete failed: " + e.message, "error"); return; }
     const gone = new Set(parts.map(p => p.id));
     DB.parts = (DB.parts || []).filter(p => !gone.has(p.id));
-    view = { ...view, partPick: null, mode: "list", id: null };
+    view = { ...view, partPick: null, pick: null, mode: "list", id: null };
     toast(`${parts.length} part${parts.length === 1 ? "" : "s"} deleted.`);
     render();
   });

@@ -513,6 +513,23 @@ the plan linked to it, so the record exists from day one of design instead of
 being back-filled after machining. Three sample molds ship with the app, so the
 planner can be tried without exporting anything from Fusion.
 
+**Select… is everywhere.** Every list that holds records has the same
+picker: a quiet Select… button beside the tab's actions, then All / None / a
+count / Delete / ✕, a box on every row, and the whole row toggles because a
+checkbox is a small target on a tablet. It started on Work Orders, Parts and
+Inventory and now covers Molds (with their unlinked plans), Boards,
+Purchases, Documents (uploads; the bundled guides have nothing to delete),
+R&D studies, Schedule weeks, the Season blueprint and People. One
+implementation in core.js (`pickBar`, `pickBox`, `bulkDeleteRecords`) rather
+than a copy per tab, so they cannot drift. All picks what is on screen, so a
+search or a folded-away past week is respected. Delete is one confirm that
+names what goes with the records: a mold's stack plans and meshes, a
+purchase's receipt, an upload's file, a study's batches and coupons (undo
+offered), a week's goals and carpools. The single Delete buttons take the
+same path, so the wording and the cascade never disagree. It is offered only
+where the rules allow: leads on the lead-only lists, every member on R&D
+and Inventory, and never yourself on People.
+
 **Stepped or solid.** By default each layer's blank only covers the mold over
 its own slab, so a tapered plug gets smaller boards up top and the glued stack
 is a staircase; that is what the planner scores, because it uses the least

@@ -26,12 +26,13 @@ let pendingRender = false;
    `var`, not `const`: tools/test_app.mjs concatenates these files and reaches
    file-scope declarations through globalThis, which a lexical binding never
    joins. Same reason as WO_NOTES_NEW. */
-var APP_VERSION = "4.7.2";
+var APP_VERSION = "4.8.0";
 /* What this version changed, in the words a team member would use. Rewritten
    every release. ONE SHORT LINE PER ITEM, five items at most: this renders as
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
+  "Select… on every list. Molds, boards, purchases, documents, R&D studies, schedule weeks, the Season blueprint and People now have the same Select… button Parts and Work Orders had: tick rows (or All), press Delete, one confirm. Deleting a mold takes its stack plans with it; a purchase takes its receipt; a study takes its batches and coupons, with undo.",
   "Cut list: the label on each blank stays inside its rectangle. The layer tag (L1, L2b) is on its own line and a long mold name is shortened with an ellipsis; hover a blank for the full name.",
   "The layers of a stepped stack now line up. Every blank in a plan snaps to one half-inch grid from the bottom blank's corner, so layers of the same size sit flush and a step is a whole half-inch. Re-plan any mold whose layers looked slightly offset.",
   "From Fusion, Plan stock now takes a bottom face as well as the body. A mold modelled on its side (a split mold, say) is laid flat on that face for planning, and the boxes come back drawn in the model's own orientation. Reinstall the add-in from 10 Fusion Add-in to get it.",
@@ -2097,6 +2098,31 @@ function rosterDel(email) {
   });
 }
 
+/* Several people at once, from People's Select…. Roster rows are keyed by
+   email and have no /pub mirror, so this loops fb.rosterDelete rather than
+   using delMany. You are never in the set: removing yourself is its own
+   confirm on your own row, not something to do by accident among ten. */
+function rosterBulkDelete(emails) {
+  if (!isLead()) { toast("Only a lead can change the roster.", "error"); return; }
+  const me = myEmail();
+  const list = [...new Set((emails || []).filter(e => e && e !== me))];
+  if (!list.length) { toast("Nothing selected.", "info"); return; }
+  const who = list.length === 1 ? userHandle(list[0]) : plural(list.length, "person", "people");
+  confirmModal(`Remove ${who} from the roster? They keep their accounts and can rejoin as members; to keep someone out, disable the account in the Firebase console too.`, async () => {
+    const failed = [];
+    for (const e of list) {
+      try { await fb.rosterDelete(e); } catch (err) { failed.push(e); }
+    }
+    const gone = new Set(list.filter(e => !failed.includes(e)));
+    DB.users = (DB.users || []).filter(u => !gone.has(u.email));
+    view = { ...view, pick: null };
+    if (failed.length) toast(`${plural(failed.length, "person", "people")} could not be removed: ${failed.map(userHandle).join(", ")}`, "error");
+    else toast(`${who} removed from the roster.`);
+    render();
+  }, { ok: "Remove", danger: true });
+}
+function deletePickedPeople() { rosterBulkDelete(pickedIds("people")); }
+
 /* ---------- modal system ---------- */
 function openModal(html) {
   const m = document.getElementById("modal");
@@ -2210,6 +2236,99 @@ function confirmModal(msg, onConfirm, opts) {
       <button class="${opts.danger === false ? "primary" : "danger"}" onclick="var cb=window.__confirmCb;window.__confirmCb=null;window.__confirmDismissCb=null;closeModal();if(cb)cb()">${esc(opts.ok || "Confirm")}</button>
     </div>`);
 }
+/* ---------- Select…: one picker for every list ----------
+   Parts, Work Orders and Inventory each grew their own copy of the same state
+   machine (view.partPick, view.woPick, view.shopPick). Simon, 2026-09-16:
+   "pretty much every tab should have a select for a mass delete feature",
+   with ease of use as the first principle. So the remaining lists share ONE
+   picker rather than growing a fourth through tenth copy, and every tab reads
+   the same way: a quiet Select… button where the tab's actions are; in pick
+   mode the toolbar becomes All N / None / N selected / Delete N / ✕, a box
+   appears on every row, and the whole row toggles, because a checkbox is a
+   small target on a tablet. Delete is one confirm that names what goes
+   (records AND what hangs off them: stack plans and meshes, receipts, files).
+
+   view.pick is null (not picking) or { key, ids }, one key at a time, and
+   setTab() clears it so a half-finished Select… never waits on another tab.
+   `key` names the list, not the collection: Season picks parts but deletes
+   through partBulkDelete, Molds picks molds and orphan plans together. */
+let PICK_ALL = {};   // key -> the ids on screen at last render, for "All N"
+function pickOn(key) { return !!(view.pick && view.pick.key === key); }
+function startPick(key) { view = { ...view, pick: { key, ids: {} } }; render(); }
+function cancelPick() { view = { ...view, pick: null }; render(); }
+function togglePick(key, id) {
+  if (!pickOn(key)) return;
+  const ids = view.pick.ids;
+  if (ids[id]) delete ids[id]; else ids[id] = true;
+  render();
+}
+function pickSet(key, list) {
+  const ids = {};
+  (list || []).forEach(id => { ids[id] = true; });
+  view = { ...view, pick: { key, ids } };
+  render();
+}
+/* Only what is on screen: All under a filter must not select what it hides. */
+function pickAll(key) { pickSet(key, PICK_ALL[key] || []); }
+function pickIs(key, id) { return pickOn(key) && !!view.pick.ids[id]; }
+function pickedIds(key) { return pickOn(key) ? Object.keys(view.pick.ids) : []; }
+/* The box on a row. Empty when not picking, so a row template can always
+   include it. stopPropagation so the row's own toggle does not undo it. */
+function pickBox(key, id) {
+  if (!pickOn(key)) return "";
+  return `<input type="checkbox" class="wopick" ${pickIs(key, id) ? "checked" : ""} aria-label="Select ${esc(id)}"
+    onclick="event.stopPropagation();togglePick('${esc(key)}','${esc(id)}')">`;
+}
+/* A row's onclick: toggle while picking, otherwise whatever it did before. */
+function pickClick(key, id, otherwise) {
+  return pickOn(key) ? `togglePick('${esc(key)}','${esc(id)}')` : otherwise;
+}
+/* The toolbar. Not picking: the Select… button (or nothing when there is
+   nothing to select). Picking: the bar. `all` is the ids on screen; `onDelete`
+   the call for the danger button. */
+function pickBar(key, opts) {
+  opts = opts || {};
+  const all = opts.all || [];
+  if (!pickOn(key)) {
+    if (opts.offer === false || !all.length) return "";
+    return `<button class="sm" onclick="startPick('${esc(key)}')" title="${esc(opts.hint || "Select several rows to delete them together")}">Select…</button>`;
+  }
+  PICK_ALL[key] = all.slice();
+  const n = pickedIds(key).length;
+  return `<button class="sm" onclick="pickAll('${esc(key)}')">All ${all.length}</button>
+    <button class="sm" onclick="pickSet('${esc(key)}',[])">None</button>
+    <span class="muted tny">${n} selected</span>
+    ${opts.extra || ""}
+    <button class="danger sm" style="margin-left:auto" ${n ? "" : "disabled"} onclick="${opts.onDelete}">${esc(opts.deleteLabel || "Delete")} ${n || ""}</button>
+    <button class="sm ib" title="Stop selecting" onclick="cancelPick()">${icon("x", 14)}</button>`;
+}
+/* One confirm, one batch, one toast. `items` are {coll,id}; `files` are
+   Storage paths that go with them (a mesh, a receipt, an upload); `after`
+   prunes the local copy. Files are removed AFTER the records commit, and a
+   file that will not go is reported rather than hidden: the record is what
+   the team sees, the file is what costs money to keep. */
+function bulkDeleteRecords(opts) {
+  const items = (opts.items || []).filter(x => x && x.coll && x.id);
+  if (!items.length) { toast("Nothing selected.", "info"); return; }
+  confirmModal(opts.message, async () => {
+    try { await fb.delMany(items); }
+    catch (e) { toast("Delete failed: " + e.message, "error"); return; }
+    let note = "";
+    const files = (opts.files || []).filter(Boolean);
+    if (files.length && fb.deleteFiles) {
+      try {
+        const r = await fb.deleteFiles(files);
+        if (r && r.failed && r.failed.length) note = ` ${r.failed.length} attached file${r.failed.length === 1 ? "" : "s"} could not be removed from storage.`;
+      } catch (e) { note = " The attached files could not be removed from storage."; }
+    }
+    if (opts.after) opts.after();
+    view = { ...view, pick: null, mode: "list", id: null };
+    toast(`${opts.done}.${note}`, note ? "error" : undefined);
+    render();
+  }, { ok: opts.ok || "Delete", danger: true });
+}
+function plural(n, one, many) { return `${n} ${n === 1 ? one : (many || one + "s")}`; }
+
 // Awaitable confirmModal, for the two places that still used the native blocking
 // confirm() — which on an iPad at the bench is a jarring system sheet, and looks
 // nothing like the rest of the app.
@@ -2540,7 +2659,7 @@ function setTab(id) {
     // A half-finished Select… on one rail must not be waiting when you come back.
     // showArch is per-visit too; allSeasons is NOT reset, so a lead reading the
     // SN5 archive can walk Parts → Work Orders without re-toggling.
-    woPick: null, partPick: null, showArch: false };
+    woPick: null, partPick: null, shopPick: null, pick: null, showArch: false };
   closeDrawer();
   render(); syncUrl();
 }

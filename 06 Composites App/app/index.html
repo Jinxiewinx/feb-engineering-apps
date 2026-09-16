@@ -2094,6 +2094,15 @@
   .invrow.picked, table.list tr.picked { background: var(--accent-soft); }
   .invrow input[type="checkbox"], table.list .pickcell input { accent-color: var(--accent); flex: none; }
   table.list .pickcell { width: 34px; }
+  /* The shared picker (core.js pickBar) on the lists that are not tables. */
+  .docrow.picked, .sline.picked, .rdrow.picked { background: var(--accent-soft); }
+  .tl-wk.picked .tl-wkhd { background: var(--accent-soft); }
+  .docrow .wopick, .rdrow .wopick, .tl-wkhd .wopick, .sl-pick .wopick { accent-color: var(--accent); flex: none; margin-right: 6px; }
+  .sl-pick { display: flex; align-items: center; gap: 4px; cursor: pointer; min-width: 0; }
+  .sl-pick span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rdpick { margin-bottom: 6px; }
+  /* The Fusion section on a mold card: a stack of label/value rows. */
+  .fusionblk { display: grid; gap: 6px; }
 
   /* ---- the receiving desk ---- */
   /* The sheet is the budget line-item grid one size up, and wears the same

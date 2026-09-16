@@ -258,9 +258,9 @@ function moldsRailItem(kind, o) {
        mold to find out — whether it has a home, and whether it has a plan. */
     const home = o.location ? ((shopById("items", o.location) || {}).name || String(o.location)) : "";
     const hasPlan = !!currentPlanFor(o);
-    return `<div class="pitem ${sel ? "sel" : ""} ${done ? "isdone" : ""}" id="pi-${esc(o.id)}" role="option" aria-selected="${sel}"
-        title="${esc(o.id)} · ${esc(o.stage || "")}" onclick="${open}">
-      <span class="pi-name">${esc(o.name || o.id)}</span>
+    return `<div class="pitem ${sel ? "sel" : ""} ${done ? "isdone" : ""} ${pickIs("molds", o.id) ? "picked" : ""}" id="pi-${esc(o.id)}" role="option" aria-selected="${pickOn("molds") ? pickIs("molds", o.id) : sel}"
+        title="${esc(o.id)} · ${esc(o.stage || "")}" onclick="${pickClick("molds", o.id, open)}">
+      <span class="pi-name">${pickBox("molds", o.id)}${esc(o.name || o.id)}</span>
       <span class="pi-due">${home
         ? `<span class="tny muted">${esc(home.length > 18 ? home.slice(0, 17) + "…" : home)}</span>`
         : `<span class="tny warn">no home</span>`}</span>
@@ -274,9 +274,9 @@ function moldsRailItem(kind, o) {
   }
   if (kind === "plan") {
     const blocks = (o.layers || []).reduce((n, L) => n + (L.blanks || []).length, 0);
-    return `<div class="pitem ${sel ? "sel" : ""}" id="pi-${esc(o.id)}" role="option" aria-selected="${sel}"
-        title="${esc(o.id)}" onclick="${open}">
-      <span class="pi-name">${esc(o.name || o.id)}${(o.warnings || []).length ? ` ${icon("warning", 12)}` : ""}</span>
+    return `<div class="pitem ${sel ? "sel" : ""} ${pickIs("molds", o.id) ? "picked" : ""}" id="pi-${esc(o.id)}" role="option" aria-selected="${pickOn("molds") ? pickIs("molds", o.id) : sel}"
+        title="${esc(o.id)}" onclick="${pickClick("molds", o.id, open)}">
+      <span class="pi-name">${pickBox("molds", o.id)}${esc(o.name || o.id)}${(o.warnings || []).length ? ` ${icon("warning", 12)}` : ""}</span>
       <span class="pi-due"><span class="tny muted">${fmtWhen(o.ts)}</span></span>
       <span class="pi-sub"><span class="tny">${(o.layers || []).length} layers · ${blocks} blocks</span></span>
       <span class="pi-who">${o.moldId ? `<span class="tny muted">${esc(o.moldId)}</span>` : `<span class="tny muted">no mold</span>`}</span>
@@ -309,8 +309,9 @@ function renderMoldsRail() {
         <button class="primary ib"${gx("Sign in to plan a mold.")} onclick="uploadMold()">+ Mold</button>
       </div>
       <div class="toolbar">
-        ${(DB.stackplans || []).length ? `<button class="ib" onclick="view={...view,mode:'cuts',cutSel:''};render()">${icon("print", 15)} Cut list</button>` : ""}
-        ${(allMolds.length + (DB.stock || []).length) ? `<button class="ib" onclick="openLabelBuilder('molds')">${icon("print", 15)} Labels</button>` : ""}
+        ${pickOn("molds") ? "" : `${(DB.stackplans || []).length ? `<button class="ib" onclick="view={...view,mode:'cuts',cutSel:''};render()">${icon("print", 15)} Cut list</button>` : ""}
+        ${(allMolds.length + (DB.stock || []).length) ? `<button class="ib" onclick="openLabelBuilder('molds')">${icon("print", 15)} Labels</button>` : ""}`}
+        ${isLead() ? pickBar("molds", { all: molds.map(m => m.id).concat(plans.map(p => p.id)), onDelete: "deletePickedMolds()", hint: "Select several molds to delete them, with their stack plans" }) : ""}
       </div>
       <div class="psum">
         ${retired ? summaryChip("retired", retired, !!view.fRetired, "view.fRetired=!view.fRetired;render()") : ""}
@@ -592,6 +593,42 @@ function renderMoldsTab() {
     + (typeof cutsUndoBar === "function" ? cutsUndoBar() : "");
   return `${undo}<div class="mdsplit ${sel ? "has-sel" : ""}">${renderMoldsRail()}${pane}</div>`;
 }
+
+/* ---------- deleting molds ----------
+   ONE path for a mold's Delete button, a plan's Delete button and the rail's
+   Select…, so the cascade and the wording never disagree. A stack plan is
+   part of its mold (see the README), so deleting a mold takes its plans and
+   their stored meshes with it instead of leaving orphans on the rail; an
+   orphan plan picked on its own goes the same way. Lead-only, matching the
+   rules, and said up front rather than failing after the confirm. */
+function moldsBulkDelete(ids) {
+  if (!isLead()) { toast("Only a lead can delete molds.", "error"); return; }
+  const set = new Set(ids || []);
+  const molds = (DB.molds || []).filter(m => set.has(m.id));
+  const moldIds = new Set(molds.map(m => m.id));
+  const plans = (DB.stackplans || []).filter(p => set.has(p.id) || moldIds.has(p.moldId));
+  if (!molds.length && !plans.length) { toast("Nothing selected.", "info"); return; }
+  const linked = plans.filter(p => moldIds.has(p.moldId)).length;
+  const loose = plans.length - linked;
+  const what = [];
+  if (molds.length) what.push(molds.length === 1 ? `mold ${molds[0].name || molds[0].id}` : plural(molds.length, "mold"));
+  if (loose) what.push(plural(loose, "unlinked stack plan"));
+  const msg = `Delete ${what.join(" and ")} for everyone?`
+    + (linked ? ` ${linked === 1 ? "Its stack plan goes" : `Their ${linked} stack plans go`} with ${molds.length === 1 ? "it" : "them"}.` : "")
+    + " There is no undo — export a backup first if unsure.";
+  bulkDeleteRecords({
+    message: msg,
+    items: molds.map(m => ({ coll: "molds", id: m.id })).concat(plans.map(p => ({ coll: "stackplans", id: p.id }))),
+    files: plans.map(p => p.meshPath),
+    done: what.join(" and ") + " deleted",
+    after: () => {
+      const gone = new Set(plans.map(p => p.id));
+      DB.molds = (DB.molds || []).filter(m => !moldIds.has(m.id));
+      DB.stackplans = (DB.stackplans || []).filter(p => !gone.has(p.id));
+    },
+  });
+}
+function deletePickedMolds() { moldsBulkDelete(pickedIds("molds")); }
 
 /* ---------- keyboard ----------
    Same contract as partsKeydown: pure decisions, returns the action name so

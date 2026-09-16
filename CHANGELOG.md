@@ -27,6 +27,15 @@ to learn**, not about API compatibility:
 
 ---
 
+## v4.8.0 — 2026-09-16
+
+- Select… on every list tab. Molds (molds and unlinked plans together), Boards, Purchases, Documents (uploads only), R&D studies, Schedule weeks, the Season blueprint and People get the same picker Parts, Work Orders and Inventory had: a Select… button where the tab's actions are, then All / None / N selected / Delete N / ✕, a box on every row, the whole row toggles. One shared implementation in core.js, so every tab reads the same way. All picks what is on screen, so a filter, a folded-away past week or the archive are respected. Leaving a tab drops a half-finished pick
+- Each delete is one confirm that says what goes with the records: a mold's stack plans and their meshes, a purchase's receipt, an upload's file, a study's batches and coupons (with the undo bar), a week's goals and carpools. The single-record Delete buttons now go through the same functions, so a mold's own Delete cascades to its plans too instead of leaving orphans on the rail
+- Delete is offered only where the rules allow it: lead-only lists show Select… to leads; R&D and Inventory stay open to every member; People never lets you pick yourself
+- Fixes on the way: the Inventory picker now clears on tab change too, and the Fusion section on a mold card has its style defined
+
+---
+
 ## v4.7.2 — 2026-09-16
 
 - Cut list: blank labels no longer run across neighbouring rectangles. Each label sits in a nested, clipping SVG the size of its blank, the layer tag is on its own line, and the plan name above it is shortened with an ellipsis to fit; the full name is the tooltip. Blanks too small for a line get nothing rather than a fragment

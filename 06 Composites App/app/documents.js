@@ -94,8 +94,9 @@ function renderDocuments() {
     .filter((c, i, a) => a.indexOf(c) === i);
   return `
   <div class="toolbar no-print">
-    <button class="primary" onclick="uploadDocument()">+ Upload document</button>
-    <button onclick="openDocLinkModal({ coll: 'documents' })">+ Pin a link</button>
+    ${pickOn("documents") ? "" : `<button class="primary" onclick="uploadDocument()">+ Upload document</button>
+    <button onclick="openDocLinkModal({ coll: 'documents' })">+ Pin a link</button>`}
+    ${isLead() ? pickBar("documents", { all: docs.filter(d => d.uploaded).map(d => d.id), onDelete: "deletePickedDocuments()", hint: "Select several uploads to delete them; the bundled guides cannot be deleted" }) : ""}
   </div>
   <!-- The shelf answers the question the Slack history keeps asking: the master
        tracker, the meeting deck and the training doc were each re-pasted months
@@ -140,8 +141,8 @@ function renderDocuments() {
               document that opens perfectly reads as a broken upload. It also
               cost the title about 45px of a 393px row, which is roughly what
               the truncated datasheet names were short of. */""}
-        ${list.map(d => `<div class="docrow" onclick="openDocFromRow('${esc(d.src)}','${d.uploaded ? "up" : ""}')">
-          <span class="di">${icon(d.kind === "html" ? "print" : (d.kind || "").startsWith("image") ? "image" : "file", 18)}</span>
+        ${list.map(d => `<div class="docrow ${d.uploaded && pickIs("documents", d.id) ? "picked" : ""}" onclick="${d.uploaded ? pickClick("documents", d.id, `openDocFromRow('${esc(d.src)}','up')`) : `openDocFromRow('${esc(d.src)}','')`}">
+          ${d.uploaded ? pickBox("documents", d.id) : ""}<span class="di">${icon(d.kind === "html" ? "print" : (d.kind || "").startsWith("image") ? "image" : "file", 18)}</span>
           <span class="dl-t">${esc(d.title)}${d.uploaded ? ` <span class="muted tny">· ${esc(d.by || "")}</span>` : ""}</span>
           <span class="dsz">${(d.kind || "file").toUpperCase()}${d.size ? ` · ${fmtKB(d.size)}` : ""}${d.uploaded && isLead() ? ` <button class="danger ib" title="Delete" onclick="event.stopPropagation();delDocument('${d.id}')">${icon("trash", 14)}</button>` : ""}</span>
         </div>`).join("")}
@@ -178,15 +179,24 @@ async function submitDocument() {
     closeModal(); toast("Document uploaded.");
   } catch (e) { toast("Upload failed: " + e.message, "error"); }
 }
-function delDocument(id) {
-  confirmModal("Delete this document for everyone?", () => {
-    const d = (DB.documents || []).find(x => x.id === id);
-    del("documents", id);
-    if (d && d.path) fb.deleteFile(d.path);
-    DB.documents = DB.documents.filter(x => x.id !== id);
-    render();
+function delDocument(id) { documentsBulkDelete([id]); }
+/* Uploads only: the bundled guides and datasheets ship with the app and have
+   no record to delete, which is why the picker never offers them a box. */
+function documentsBulkDelete(ids) {
+  if (!isLead()) { toast("Only a lead can delete documents.", "error"); return; }
+  const set = new Set(ids || []);
+  const docs = (DB.documents || []).filter(d => set.has(d.id));
+  if (!docs.length) { toast("Nothing selected.", "info"); return; }
+  const what = docs.length === 1 ? (docs[0].title || docs[0].name || docs[0].id) : plural(docs.length, "document");
+  bulkDeleteRecords({
+    message: `Delete ${what} for everyone? ${docs.length === 1 ? "The file goes" : "The files go"} with ${docs.length === 1 ? "it" : "them"}.`,
+    items: docs.map(d => ({ coll: "documents", id: d.id })),
+    files: docs.map(d => d.path),
+    done: `${what} deleted`,
+    after: () => { const gone = new Set(docs.map(d => d.id)); DB.documents = (DB.documents || []).filter(d => !gone.has(d.id)); },
   });
 }
+function deletePickedDocuments() { documentsBulkDelete(pickedIds("documents")); }
 // Uploaded docs carry a full URL as src; bundled ones a relative path.
 function openDocFromRow(src, up) {
   if (up) {

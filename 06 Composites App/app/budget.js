@@ -231,15 +231,25 @@ async function newBuy() {
   DB.budget.push(b); saveBuy(b);
   view = { ...view, mode: "detail", id, edit: true }; render();
 }
-function delBuy(id) {
-  confirmModal("Delete " + id + " for everyone? Back up first if unsure.", () => {
-    const b = buyById(id);
-    del("budget", id);
-    if (b && b.receiptPath) fb.deleteFile(b.receiptPath);
-    DB.budget = DB.budget.filter(b => b.id !== id);
-    view = { ...view, mode: "list", id: null }; render();
+function delBuy(id) { buysBulkDelete([id]); }
+/* The detail page's Delete and the list's Select… share this. Receipts go
+   with their purchases; a lot bought on one keeps the purchase id as text. */
+function buysBulkDelete(ids) {
+  if (!isLead()) { toast("Only a lead can delete purchases.", "error"); return; }
+  const set = new Set(ids || []);
+  const buys = (DB.budget || []).filter(b => set.has(b.id));
+  if (!buys.length) { toast("Nothing selected.", "info"); return; }
+  const what = buys.length === 1 ? (buys[0].item || buys[0].id) : plural(buys.length, "purchase");
+  const receipts = buys.filter(b => b.receiptPath).length;
+  bulkDeleteRecords({
+    message: `Delete ${what} for everyone?${receipts ? ` ${plural(receipts, "receipt")} go${receipts === 1 ? "es" : ""} with ${buys.length === 1 ? "it" : "them"}.` : ""} Back up first if unsure.`,
+    items: buys.map(b => ({ coll: "budget", id: b.id })),
+    files: buys.map(b => b.receiptPath),
+    done: `${what} deleted`,
+    after: () => { const gone = new Set(buys.map(b => b.id)); DB.budget = (DB.budget || []).filter(b => !gone.has(b.id)); },
   });
 }
+function deletePickedBuys() { buysBulkDelete(pickedIds("budget")); }
 // "Scan" on mobile is just this input opening the camera directly via the
 // capture attribute — no OCR, no new JS for that part. Reuses fb.upload()
 // (already downscales images client-side) exactly like ticket/document files.
@@ -473,7 +483,8 @@ function renderBuyList() {
     <div class="stat-tile"><div class="bignum">${unapproved}</div><div class="stat-label">Over $50, unapproved</div></div>
   </div>
   ${budgetBoardsHtml(total)}
-  <div class="toolbar no-print"><button class="primary"${gx("Sign in to log a purchase — it is recorded against you.")} onclick="newBuy()">+ New Purchase</button></div>
+  <div class="toolbar no-print">${pickOn("budget") ? "" : `<button class="primary"${gx("Sign in to log a purchase — it is recorded against you.")} onclick="newBuy()">+ New Purchase</button>`}
+    ${isLead() ? pickBar("budget", { all: rows.map(b => b.id), onDelete: "deletePickedBuys()", hint: "Select several purchases to delete them, receipts included" }) : ""}</div>
   <div class="filters no-print">
     <select title="Where the goods are" onchange="view.fStatus=this.value;render()">
       <option value="">Any order status</option>
@@ -492,7 +503,7 @@ function renderBuyList() {
   </div>
   ${D.length === 0 ? `<div class="card">No purchases logged yet. <b>New Purchase</b> to start.</div>` : ""}
   <table class="list">
-    <tr><th>Item</th><th>Purchaser</th><th>Purpose</th><th>Order</th><th>Reimb.</th><th>Cost</th><th>Ordered</th></tr>
+    <tr>${pickOn("budget") ? "<th></th>" : ""}<th>Item</th><th>Purchaser</th><th>Purpose</th><th>Order</th><th>Reimb.</th><th>Cost</th><th>Ordered</th></tr>
     ${/* Status and cost are edited HERE, in the row (Simon, 2026-08-13): the
           week's real workflow is walking the list marking things arrived or
           reimbursed and fixing a price off the receipt, and that took a
@@ -510,7 +521,8 @@ function renderBuyList() {
          never silently recategorizes. */
       const cats = budgetCats().length ? budgetCats().map(c => c.name) : PURPOSE;
       const opts = (cats.some(c => c.toLowerCase() === String(b.purpose || "").toLowerCase()) || !b.purpose ? cats : [b.purpose, ...cats]);
-      return `<tr data-open="${b.id}" onclick="view={...view,mode:'detail',id:'${b.id}',edit:false};render()">
+      return `<tr data-open="${b.id}" class="${pickIs("budget", b.id) ? "picked" : ""}" onclick="${pickClick("budget", b.id, `view={...view,mode:'detail',id:'${b.id}',edit:false};render()`)}">
+      ${pickOn("budget") ? `<td class="pickcell">${pickBox("budget", b.id)}</td>` : ""}
       <td><b>${esc(b.item || b.id)}</b>${b.retro ? ' <span class="pill retro">retro</span>' : ""}${isOffBudget(b) ? ` <span class="pill offbudget" title="Charged to ${esc(chargedToLabel(b))} — cost tracked, not counted against the composites budget">${esc(chargedToLabel(b))}</span>` : ""}${needsApproval(b) ? ' <span class="pill OnHold" title="Over $50 — needs #purchasing sign-off before ordering">needs approval</span>' : ""}</td>
       <td>${esc(b.purchaser || "—")}</td>
       <td onclick="event.stopPropagation()"><select class="buy-cat" onchange="setBuyField('${b.id}','purpose',this.value)" aria-label="Category of ${esc(b.item || b.id)}">

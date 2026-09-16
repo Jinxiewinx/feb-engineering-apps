@@ -247,9 +247,10 @@ function delShopRec(tab, id) {
   const spec = shopSpec(tab);
   /* Inventory (items/lots) goes through the one bulk path so a single delete
      and a Select… delete share the same cascade and the same confirm wording.
-     Molds keep the plain confirm — they are lead-only deletes with no group
-     flow, and a mold is months of machining, not a jug. */
+     Molds do the same through moldsBulkDelete (molds.js), which also takes
+     the mold's stack plans and meshes: a plan is part of its mold. */
   if (spec.coll === "items" || spec.coll === "lots") { shopBulkDelete(spec.coll, [id]); return; }
+  if (spec.coll === "molds" && typeof moldsBulkDelete === "function") { moldsBulkDelete([id]); return; }
   confirmModal(`Delete ${id} for everyone? Back up first if unsure.`, () => {
     del(spec.coll, id);
     DB[spec.coll] = DB[spec.coll].filter(o => o.id !== id);

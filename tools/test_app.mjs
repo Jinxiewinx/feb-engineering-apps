@@ -48,7 +48,7 @@ function el(id) {
   return els[id];
 }
 // Drive a confirmModal opened by the last action: invoke its stored callback.
-function confirmProceed() { const cb = globalThis.__confirmCb; globalThis.__confirmCb = null; if (cb) cb(); }
+function confirmProceed() { const cb = globalThis.__confirmCb; globalThis.__confirmCb = null; return cb ? cb() : undefined; }
 let activeEl = null;
 globalThis.document = {
   getElementById: el,
@@ -2202,10 +2202,10 @@ await t("purchase detail shows add-receipt prompt when none, thumbnail when atta
   html = renderBuyDetail();
   assert(html.includes('class="thumb"') && /Replace receipt/.test(html), "receipt attached: shows thumbnail + replace: " + html);
 });
-await t("deleting a purchase with a receipt cleans up its file (regression: nothing to clean up before this feature, must not regress once there is)", () => {
+await t("deleting a purchase with a receipt cleans up its file (regression: nothing to clean up before this feature, must not regress once there is)", async () => {
   DB.budget = [{ id: "B-R2", item: "resin", receiptUrl: "https://x.test/r2.jpg", receiptPath: "budget/B-R2/r2.jpg" }];
   calls.length = 0;
-  delBuy("B-R2"); confirmProceed();
+  delBuy("B-R2"); await confirmProceed();
   assert(calls.some(c => c[0] === "deleteFile" && c[1] === "budget/B-R2/r2.jpg"), "receipt file deleted: " + JSON.stringify(calls));
   assert(!DB.budget.some(b => b.id === "B-R2"), "purchase removed");
 });
@@ -4984,7 +4984,7 @@ await t("deleting a board is lead-only in the UI and drops it from the list", as
   openRecord("stock", id);
   assert(view.tab === "inventory" && view.invView === "boards", "a board opens where boards live");
   assert(main.innerHTML.includes("delBoard"), "a lead should see the delete control");
-  delBoard(id); confirmProceed();
+  delBoard(id); await confirmProceed();
   assert(DB.stock.length === 0, "the board should be gone locally");
   assert(calls.some(c => c[0] === "del" && c[1] === "stock"), "and deleted server-side");
 });
@@ -6116,6 +6116,143 @@ await t("a member cannot bulk-delete, and the rail does not offer it", async () 
   assert(!main.innerHTML.includes("wopick"), "and cancelling puts the rail back");
 });
 
+await t("every list tab has the same Select… picker, and each delete takes what hangs off the record", async () => {
+  /* Simon, 2026-09-16: "pretty much every tab should have a select for a mass
+     delete feature", ease of use first. One picker in core.js (pickBar,
+     pickBox, bulkDeleteRecords); each tab supplies its rows and its cascade.
+     This walks every tab that got it: the Select… button appears, pick mode
+     puts a box on each row, All respects the filter, Delete is one confirm
+     that also removes what hangs off the records, and the pick clears. */
+  signInAsLead();
+  const idsDeleted = coll => calls.filter(c => c[0] === "del" && c[1] === coll).map(c => c[2]);
+  const filesDeleted = () => calls.filter(c => c[0] === "deleteFile").map(c => c[1]);
+
+  // Molds: molds and their plans (with meshes) go together; an orphan plan on its own.
+  DB.molds = [{ id: "M1", name: "Nose plug", stage: "Designed" }, { id: "M2", name: "Seat", stage: "Designed" }];
+  DB.stackplans = [{ id: "S1", name: "Nose plan", moldId: "M1", layers: [], meshPath: "stackplans/S1/mesh.stl" },
+    { id: "S2", name: "loose plan", layers: [], meshPath: "stackplans/S2/mesh.stl" }];
+  DB.stock = [];
+  view = { ...view, tab: "molds", mode: "list", id: null, pick: null, q: "", fStatus: "", fRetired: false, fNoHome: false };
+  render();
+  assert(main.innerHTML.includes("startPick('molds')"), "Molds offers Select…");
+  startPick("molds");
+  assert(main.innerHTML.includes("togglePick('molds','M1')") && main.innerHTML.includes("togglePick('molds','S2')"), "molds AND the orphan plan get boxes; rows toggle instead of opening");
+  assert(!main.innerHTML.includes("Cut list"), "the rail's other buttons step aside while picking");
+  pickAll("molds");
+  assert(pickedIds("molds").length === 3, "All picks what is on screen: " + pickedIds("molds").join());
+  calls.length = 0;
+  deletePickedMolds();
+  assert(/2 molds and 1 unlinked stack plan/.test(document.getElementById("modal").innerHTML) && /stack plan goes with/.test(document.getElementById("modal").innerHTML), "the confirm names the molds, the loose plan, and the linked plan that goes with them: " + document.getElementById("modal").innerHTML.slice(0, 300));
+  assert(!calls.length, "nothing goes before the confirm");
+  await confirmProceed();
+  assert(idsDeleted("molds").join() === "M1,M2" && idsDeleted("stackplans").sort().join() === "S1,S2", "molds and both plans deleted: " + JSON.stringify(calls));
+  assert(filesDeleted().length === 2, "both meshes removed from storage");
+  assert(!DB.molds.length && !DB.stackplans.length && view.pick === null, "local copy pruned, pick cleared");
+
+  // A single mold delete from its page takes the same path, plans included.
+  DB.molds = [{ id: "M3", name: "Wing", stage: "Designed" }]; DB.stackplans = [{ id: "S3", moldId: "M3", layers: [] }];
+  calls.length = 0; delShopRec("molds", "M3"); await confirmProceed();
+  assert(idsDeleted("molds").join() === "M3" && idsDeleted("stackplans").join() === "S3", "the mold's own Delete cascades to its plan too");
+
+  // Boards.
+  DB.stock = [1, 2, 3].map(i => ({ id: "BRD-" + i, len: { value: 96, unit: "in" }, wid: { value: 48, unit: "in" }, thk: { value: 1, unit: "in" }, density: 30, qty: 1 }));
+  view = { ...view, tab: "inventory", invView: "boards", mode: "list", id: null, pick: null, q: "BRD-1", invDens: "" };
+  render();
+  assert(main.innerHTML.includes("startPick('boards')"), "Boards offers Select…");
+  startPick("boards"); pickAll("boards");
+  assert(pickedIds("boards").join() === "BRD-1", "All under a search picks only the match");
+  view.q = ""; render(); pickAll("boards");
+  assert(pickedIds("boards").length === 3, "and all three without it");
+  calls.length = 0; deletePickedBoards(); await confirmProceed();
+  assert(idsDeleted("stock").length === 3 && !DB.stock.length, "boards removed: " + JSON.stringify(calls));
+
+  // Purchases, receipts included.
+  DB.budget = [{ id: "B1", item: "resin", receiptPath: "budget/B1/r.jpg", cost: "10" }, { id: "B2", item: "tape", cost: "5" }];
+  view = { ...view, tab: "budget", mode: "list", id: null, pick: null, q: "", fStatus: "", fReimb: "", fBudget: "" };
+  render();
+  assert(main.innerHTML.includes("startPick('budget')"), "Budget offers Select…");
+  startPick("budget");
+  assert(main.innerHTML.includes('<td class="pickcell">'), "a box column appears on the table");
+  pickAll("budget"); calls.length = 0; deletePickedBuys();
+  assert(/1 receipt goes with them/.test(document.getElementById("modal").innerHTML), "the confirm counts the receipts");
+  await confirmProceed();
+  assert(idsDeleted("budget").length === 2 && filesDeleted().join() === "budget/B1/r.jpg" && !DB.budget.length, "purchases and the one receipt gone");
+
+  // Documents: uploads only; the bundled guides never get a box.
+  DOCS_MANIFEST = [{ title: "Guide", category: "Guides", kind: "html", src: "docs/g.html" }];
+  DB.documents = [{ id: "D1", title: "Photo", category: "Uploads", kind: "image/jpeg", url: "https://x.test/p.jpg", path: "documents/D1/p.jpg" }];
+  view = { ...view, tab: "documents", mode: "list", id: null, pick: null, q: "", fSub: "" };
+  render();
+  assert(main.innerHTML.includes("startPick('documents')"), "Documents offers Select…");
+  startPick("documents");
+  assert((main.innerHTML.match(/class="wopick"/g) || []).length === 1, "one box, for the one upload, none for the bundled guide");
+  pickAll("documents"); calls.length = 0; deletePickedDocuments(); await confirmProceed();
+  assert(idsDeleted("documents").join() === "D1" && filesDeleted().join() === "documents/D1/p.jpg" && !DB.documents.length, "the upload and its file are gone");
+
+  // R&D: a picked project takes its batches and every coupon, and offers undo.
+  DB.rnd = [{ id: "RDS-1", cls: "RDS", name: "Cure study" }, { id: "RDS-2", cls: "RDS", name: "Batch A", parent: "RDS-1" },
+    { id: "CPN-1", cls: "CPN", study: "RDS-2" }, { id: "CPN-2", cls: "CPN", study: "RDS-2" }, { id: "RDS-9", cls: "RDS", name: "Other" }];
+  RD_UNDO = null;
+  view = { ...view, tab: "rnd", mode: "list", id: null, pick: null, rdStudy: "RDS-1", rdArch: false };
+  render();
+  assert(main.innerHTML.includes("startPick('rnd')"), "R&D offers Select…");
+  startPick("rnd"); togglePick("rnd", "RDS-1");
+  calls.length = 0; deletePickedStudies();
+  assert(/&quot;Cure study&quot; and 1 batch and 2 coupons/.test(document.getElementById("modal").innerHTML), "the confirm counts the batch and the coupons: " + document.getElementById("modal").innerHTML.slice(0, 300));
+  await confirmProceed();
+  assert(idsDeleted("rnd").sort().join() === "CPN-1,CPN-2,RDS-1,RDS-2", "project, batch and coupons deleted; the other study untouched");
+  assert(DB.rnd.length === 1 && RD_UNDO && RD_UNDO.recs.length === 4, "and the undo bar holds all four");
+
+  // Schedule: folded-away past weeks are not in All.
+  const y = new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10);
+  DB.schedule = [{ id: "W-old", weekOf: "2020-01-06", goals: [{ text: "g" }], cars: [] }, { id: "W-next", weekOf: y, goals: [], cars: [{ id: "c1", driver: "x", seats: 3, riders: [] }] }];
+  DB.parts = [];
+  view = { ...view, tab: "timeline", mode: "list", id: null, pick: null, tlPast: false, tlArchive: false, schedView: "timeline" };
+  render();
+  assert(main.innerHTML.includes("startPick('schedule')"), "Schedule offers Select…");
+  startPick("schedule"); pickAll("schedule");
+  assert(pickedIds("schedule").join() === "W-next", "a folded-away past week is not picked by All");
+  view.tlPast = true; render(); pickAll("schedule");
+  assert(pickedIds("schedule").length === 2, "shown, it is");
+  calls.length = 0; deletePickedWeeks();
+  assert(/1 weekly goal and 1 carpool/.test(document.getElementById("modal").innerHTML), "the confirm says what the Weekly Plan loses");
+  await confirmProceed();
+  assert(idsDeleted("schedule").length === 2 && !DB.schedule.length, "both weeks gone");
+
+  // Season: the blueprint deletes through the Parts path.
+  DB.parts = [{ id: "P-SN6-101", partName: "Nose", subteam: "Aero" }, { id: "P-SN6-102", partName: "Seat", subteam: "Chassis" }];
+  view = { ...view, tab: "season", mode: "list", id: null, pick: null, seasonQ: "", seasonSub: "", seasonSort: "", allSeasons: false };
+  render();
+  assert(main.innerHTML.includes("startPick('season')"), "Season offers Select…");
+  startPick("season");
+  assert(main.innerHTML.includes('<label class="sl-open sl-pick">'), "the name cell becomes a label holding the box, not a checkbox inside a button");
+  pickAll("season"); calls.length = 0; deletePickedSeason(); await confirmProceed();
+  assert(idsDeleted("parts").length === 2 && !DB.parts.length && view.pick === null, "both parts deleted through partBulkDelete");
+
+  // People: you are never in the set.
+  DB.users = [{ email: "simon@berkeley.edu", name: "Simon", role: "lead" }, { email: "a@b.edu", name: "A", role: "member" }, { email: "c@b.edu", name: "C", role: "member" }];
+  DB.projects = []; DB.workOrders = [];
+  view = { ...view, tab: "people", mode: "list", id: null, pick: null, q: "", fTrain: "", pplView: "list" };
+  render();
+  assert(main.innerHTML.includes("startPick('people')"), "People offers Select…");
+  startPick("people"); render();
+  assert(!main.innerHTML.includes("togglePick('people','simon@berkeley.edu')") && main.innerHTML.includes("togglePick('people','a@b.edu')"), "no box on your own row");
+  assert(!main.innerHTML.includes("setRole("), "the role controls step aside while picking, so a row tap cannot change a role");
+  pickAll("people");
+  assert(pickedIds("people").sort().join() === "a@b.edu,c@b.edu", "All is everyone but you");
+  calls.length = 0; deletePickedPeople(); await confirmProceed();
+  assert(calls.filter(c => c[0] === "rosterDelete").length === 2 && DB.users.length === 1, "two removed, you stay");
+
+  // Leaving a tab drops a half-finished pick, and a member sees no Select… on a lead-only list.
+  startPick("people"); setTab("molds");
+  assert(view.pick === null, "setTab clears the pick");
+  fb.roster = { name: "Nobody", role: "member" };
+  DB.molds = [{ id: "M1", name: "x", stage: "Designed" }]; render();
+  assert(!main.innerHTML.includes("startPick('molds')"), "a member is not offered a delete they cannot do");
+  moldsBulkDelete(["M1"]);
+  assert(/only a lead/i.test(lastToast) && DB.molds.length === 1, "and is told why if it is called anyway");
+  signInAsLead();
+});
 await t("Parts has the same Select… picker as Work orders, lead-only, one delete path", async () => {
   DB.parts = [{ id: "P-SN6-001", partName: "Nose" }, { id: "P-SN6-002", partName: "Seat" }];
   fb.roster = { name: "Nobody", role: "member" };

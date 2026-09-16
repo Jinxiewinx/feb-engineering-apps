@@ -669,8 +669,8 @@ function rdStudyRow(s, isChild) {
   const ins = cols.filter(c => c.role === "input").length;
   const res = cols.filter(c => c.role === "result").length;
   const on = view.rdStudy === s.id;
-  return `<div class="rdrow${isChild ? " rdchild" : ""}${on ? " on" : ""}">
-    <button class="rd-open" onclick="rdOpen('${esc(s.id)}')">${esc(s.name || s.id)}</button>
+  return `<div class="rdrow${isChild ? " rdchild" : ""}${on ? " on" : ""}${pickIs("rnd", s.id) ? " picked" : ""}">
+    ${pickBox("rnd", s.id)}<button class="rd-open" onclick="${pickClick("rnd", s.id, `rdOpen('${esc(s.id)}')`)}">${esc(s.name || s.id)}</button>
     <span class="tny muted">${n} coupon${n === 1 ? "" : "s"}</span>
     <span class="stage ${s.status === "Done" ? "st-done" : s.status === "Parked" ? "st-na" : "st-mid"}">${esc(s.status || "Active")}</span>${archivedPill(s, true)}
     <span class="tny muted">${ins || res ? `${ins} in · ${res} result` : ""}</span>
@@ -684,12 +684,48 @@ function rdIndexHtml(sel) {
      the open study stays listed so archiving it does not blank the sheet. */
   const arch = all.filter(isArchived).length;
   const roots = all.filter(r => view.rdArch ? isArchived(r) : (!isArchived(r) || (sel && sel.id === r.id)));
+  const shown = roots.map(r => r.id).concat(roots.flatMap(r => rdChildren(r.id).map(c => c.id)));
   return `<div class="card rdindex no-print">
+    ${canEdit() ? `<div class="toolbar rdpick">${pickBar("rnd", { all: shown, onDelete: "deletePickedStudies()", hint: "Select several studies to delete them, coupons included" })}</div>` : ""}
     ${roots.map(r => rdStudyRow(r, false) + rdChildren(r.id).map(c => rdStudyRow(c, true)).join("")).join("")}
     ${arch ? `<label class="tny muted rdarch"><input type="checkbox" ${view.rdArch ? "checked" : ""} onchange="view.rdArch=this.checked;render()"> ${arch} archived stud${arch === 1 ? "y" : "ies"}</label>` : ""}
     ${rdPartsHtml()}
   </div>`;
 }
+/* Several studies from the index's Select…. Unlike rdDelStudy, a picked
+   project takes its batches with it (the single delete refuses, because one
+   press should not be three rounds of work; picking them together is that
+   decision made out loud). Coupons go with their studies, and the whole set
+   is snapshotted for the undo bar, same as one study. Open to every member,
+   like the rest of the bench. */
+function rdBulkDeleteStudies(ids) {
+  if (guestBlocked("delete studies")) return;
+  const set = new Set(ids || []);
+  const studies = rdStudies().filter(s => set.has(s.id));
+  if (!studies.length) { toast("Nothing selected.", "info"); return; }
+  const withKids = new Map(studies.map(s => [s.id, s]));
+  studies.forEach(s => rdChildren(s.id).forEach(c => withKids.set(c.id, c)));
+  const all = [...withKids.values()];
+  const coupons = all.flatMap(s => rdCoupons(s.id));
+  const gone = all.concat(coupons);
+  const what = studies.length === 1 ? `"${studies[0].name || studies[0].id}"` : plural(studies.length, "study", "studies");
+  const extra = [];
+  if (all.length > studies.length) extra.push(plural(all.length - studies.length, "batch", "batches"));
+  if (coupons.length) extra.push(plural(coupons.length, "coupon"));
+  bulkDeleteRecords({
+    message: `Delete ${what}${extra.length ? ` and ${extra.join(" and ")}` : ""}? ${coupons.length ? "Their measurements go with them. " : ""}Undo is offered for a moment afterwards.`,
+    items: gone.map(o => ({ coll: "rnd", id: o.id })),
+    done: `${what} deleted`,
+    after: () => {
+      RD_UNDO = { kind: "delete", recs: JSON.parse(JSON.stringify(gone)), n: coupons.length, name: studies.length === 1 ? (studies[0].name || studies[0].id) : plural(studies.length, "study", "studies") };
+      const ids = new Set(gone.map(o => o.id));
+      DB.rnd = rdAll().filter(o => !ids.has(o.id));
+      if (ids.has(view.rdStudy)) view.rdStudy = null;
+    },
+  });
+}
+function deletePickedStudies() { rdBulkDeleteStudies(pickedIds("rnd")); }
+
 /* A study is archived as a whole: the batches under it follow the root, so a
    parked project does not leave stray batches in the index. */
 function rdArchiveStudy(id, on) {

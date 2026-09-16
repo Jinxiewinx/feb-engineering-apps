@@ -263,13 +263,25 @@ async function submitBoard(id) {
   closeModal(); render();
   toast(id ? "Board updated." : "Board added.");
 }
-function delBoard(id) {
-  confirmModal("Remove this board from inventory?", () => {
-    del("stock", id);
-    DB.stock = (DB.stock || []).filter(b => b.id !== id);
-    render();
+function delBoard(id) { boardsBulkDelete([id]); }
+/* The row's trash, the pane's Delete and the list's Select… all land here.
+   Lead-only like the rules; a board record is a label stuck to a real sheet,
+   so removing ten by mistake is ten labels to reprint. */
+function boardsBulkDelete(ids) {
+  if (!isLead()) { toast("Only a lead can remove boards.", "error"); return; }
+  const set = new Set(ids || []);
+  const boards = (DB.stock || []).filter(b => set.has(b.id));
+  if (!boards.length) { toast("Nothing selected.", "info"); return; }
+  const what = boards.length === 1 ? `board ${boards[0].id}` : plural(boards.length, "board");
+  bulkDeleteRecords({
+    message: `Remove ${what} from inventory for everyone? A mold cut from one keeps the board id as text.`,
+    items: boards.map(b => ({ coll: "stock", id: b.id })),
+    ok: "Remove",
+    done: `${what} removed`,
+    after: () => { const gone = new Set(boards.map(b => b.id)); DB.stock = (DB.stock || []).filter(b => !gone.has(b.id)); },
   });
 }
+function deletePickedBoards() { boardsBulkDelete(pickedIds("boards")); }
 
 /* ==========================================================================
    The Boards view of Inventory.
@@ -463,6 +475,7 @@ function renderBoardsList() {
     </select>
     <button class="sm sortdir" title="Reverse order" onclick="toggleBoardSortDir()">${view.sortDir === "desc" ? "▼" : "▲"}</button>
     ${view.q || view.invDens ? `<button class="sm" onclick="view.q='';view.invDens='';render()">Clear</button>` : ""}
+    ${isLead() ? pickBar("boards", { all: rows.map(r => r.id), onDelete: "deletePickedBoards()", deleteLabel: "Remove", hint: "Select several boards to remove them from the rack" }) : ""}
   </div>
   ${!rows.length ? `<div class="card"><span class="muted">${
     (DB.stock || []).length ? "Nothing matches these filters."
@@ -582,9 +595,10 @@ function boardSizePane(g) {
       <h3>The boards themselves</h3>
       <div class="muted tny">One record each, because a BRD- label is stuck to a physical board and a mold points at the one it was cut from.</div>
       <table class="list">
-        <tr><th>Board</th><th>Qty</th><th>Where</th><th></th></tr>
-        ${g.members.map(b => `<tr>
-          <td onclick="selectInvRec('${esc(b.id)}')"><b>${esc(b.id)}</b>${
+        <tr>${pickOn("boards") ? "<th></th>" : ""}<th>Board</th><th>Qty</th><th>Where</th><th></th></tr>
+        ${g.members.map(b => `<tr class="${pickIs("boards", b.id) ? "picked" : ""}"${pickOn("boards") ? ` onclick="togglePick('boards','${esc(b.id)}')"` : ""}>
+          ${pickOn("boards") ? `<td class="pickcell">${pickBox("boards", b.id)}</td>` : ""}
+          <td${pickOn("boards") ? "" : ` onclick="selectInvRec('${esc(b.id)}')"`}><b>${esc(b.id)}</b>${
             b.label ? ` <span class="muted tny">${esc(b.label)}</span>` : ""}${
             b.origin ? ` <span class="muted tny">· from ${esc(b.origin)}</span>` : ""}${
             b.notes ? `<div class="tny muted">${esc(b.notes)}</div>` : ""}</td>
@@ -1133,18 +1147,9 @@ async function submitMold() {
 }
 
 function planById(id) { return (DB.stackplans || []).find(p => p.id === id); }
-function delStackPlan(id) {
-  confirmModal("Delete this stack plan for everyone?", () => {
-    const p = planById(id);
-    del("stackplans", id);
-    // Take the stored mesh with it, same as delBuy/delDocument do for their
-    // uploads. Plans accumulate over a season; orphaned meshes would too.
-    if (p && p.meshPath) fb.deleteFile(p.meshPath);
-    DB.stackplans = (DB.stackplans || []).filter(x => x.id !== id);
-    view = { ...view, mode: "list", id: null };
-    render();
-  });
-}
+/* One path with the mold's own delete (molds.js moldsBulkDelete): the stored
+   mesh goes with the plan either way. */
+function delStackPlan(id) { moldsBulkDelete([id]); }
 
 /* ---------- the cut list ----------
    This is the batch view, and batching is the whole point: caking one mold by

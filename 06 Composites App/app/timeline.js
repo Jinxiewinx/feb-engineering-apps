@@ -139,24 +139,30 @@ function submitWeekDate(weekId) {
   updWeekDate(weekId, mon);
   if (mon !== val) toast(`Moved to the Monday of that week, ${mon}.`);
 }
-function delWeek(id) {
-  /* Says what it actually deletes. The doc is shared with Weekly Plan, so this
-     takes that week's goals and carpools with it — which the old wording
-     ("Delete this week from the schedule") did not tell you. Lead-only in the
-     rules as well as here, so the blast radius is bounded either way. */
-  const w = schedById(id);
+function delWeek(id) { weeksBulkDelete([id]); }
+/* Says what it actually deletes. The doc is shared with Weekly Plan, so this
+   takes the weeks' goals and carpools with them — which the old wording
+   ("Delete this week from the schedule") did not tell you. Lead-only in the
+   rules as well as here, so the blast radius is bounded either way. */
+function weeksBulkDelete(ids) {
+  if (!isLead()) { toast("Only a lead can delete weeks.", "error"); return; }
+  const set = new Set(ids || []);
+  const weeks = (DB.schedule || []).filter(w => set.has(w.id));
+  if (!weeks.length) { toast("Nothing selected.", "info"); return; }
+  const goals = weeks.reduce((n, w) => n + (w.goals || []).length, 0);
+  const cars = weeks.reduce((n, w) => n + (w.cars || []).length, 0);
   const extra = [];
-  if (w && (w.goals || []).length) extra.push(`${w.goals.length} weekly goal${w.goals.length === 1 ? "" : "s"}`);
-  if (w && (w.cars || []).length) extra.push(`${w.cars.length} carpool${w.cars.length === 1 ? "" : "s"}`);
-  confirmModal(
-    `Delete ${w && w.weekOf ? "the week of " + w.weekOf : id} for everyone?` +
-    (extra.length ? ` This also deletes its ${extra.join(" and ")} from the Weekly Plan.` : ""),
-    () => {
-      del("schedule", id);
-      DB.schedule = DB.schedule.filter(w => w.id !== id);
-      render();
-    });
+  if (goals) extra.push(plural(goals, "weekly goal"));
+  if (cars) extra.push(plural(cars, "carpool"));
+  const what = weeks.length === 1 ? (weeks[0].weekOf ? "the week of " + weeks[0].weekOf : weeks[0].id) : plural(weeks.length, "week");
+  bulkDeleteRecords({
+    message: `Delete ${what} for everyone?` + (extra.length ? ` This also deletes ${weeks.length === 1 ? "its" : "their"} ${extra.join(" and ")} from the Weekly Plan.` : ""),
+    items: weeks.map(w => ({ coll: "schedule", id: w.id })),
+    done: `${what} deleted`,
+    after: () => { const gone = new Set(weeks.map(w => w.id)); DB.schedule = (DB.schedule || []).filter(w => !gone.has(w.id)); },
+  });
 }
+function deletePickedWeeks() { weeksBulkDelete(pickedIds("schedule")); }
 
 // A cell value is a part id when it matches a known part; otherwise it's free
 // text (e.g. an imported SN5 part name we couldn't map). Render accordingly.
@@ -297,9 +303,9 @@ function updWeekDate(weekId, val) { updWeek(weekId, "weekOf", val); render(); }
 function weekColumn(w, opts) {
   const now = isThisWeek(w);
   const past = !!w.weekOf && !now && w.weekOf < today();
-  return `<section class="tl-wk${w.retro ? " retro" : ""}${now ? " now" : ""}${past ? " past" : ""}" data-week="${esc(w.id)}">
-    <div class="tl-wkhd${now ? " now" : ""}"${now ? ' aria-label="Week of ' + esc(w.weekOf) + ', the current week"' : ""}>
-      <button class="tl-wkdate" title="Change this week's date" aria-label="${w.weekOf ? "Week of " + esc(w.weekOf) : esc(w.id) + ", undated"}, change the date" onclick="openWeekDate('${esc(w.id)}')">${weekLabel(w)}</button>
+  return `<section class="tl-wk${w.retro ? " retro" : ""}${now ? " now" : ""}${past ? " past" : ""}${pickIs("schedule", w.id) ? " picked" : ""}" data-week="${esc(w.id)}">
+    <div class="tl-wkhd${now ? " now" : ""}"${now ? ' aria-label="Week of ' + esc(w.weekOf) + ', the current week"' : ""}${pickOn("schedule") ? ` onclick="togglePick('schedule','${esc(w.id)}')"` : ""}>
+      ${pickBox("schedule", w.id)}<button class="tl-wkdate" title="Change this week's date" aria-label="${w.weekOf ? "Week of " + esc(w.weekOf) : esc(w.id) + ", undated"}, change the date" onclick="openWeekDate('${esc(w.id)}')">${weekLabel(w)}</button>
       ${now ? '<span class="pill now">Now</span>' : ""}
       ${opts && opts.lead ? `<button class="ib sm tl-del no-print" title="Delete this week" aria-label="Delete the week of ${esc(w.weekOf || w.id)}" onclick="delWeek('${esc(w.id)}')">${icon("trash", 13)}</button>` : ""}
     </div>
@@ -386,9 +392,13 @@ function renderTimeline() {
     <div class="stat-tile"><div class="bignum">${unplanned}</div><div class="stat-label">Parts with no slot</div></div>
   </div>
   <div class="toolbar no-print">
-    <button class="primary" onclick="newWeek()">+ Add week</button>
+    ${pickOn("schedule") ? "" : `<button class="primary" onclick="newWeek()">+ Add week</button>
     ${cur ? `<button onclick="jumpToThisWeek()">Jump to this week</button>` : ""}
-    <span class="muted tl-hint">Tap a cell to schedule a part</span>
+    <span class="muted tl-hint">Tap a cell to schedule a part</span>`}
+    ${lead ? pickBar("schedule", {
+      // What is on screen: folded-away past weeks and a hidden archive are not.
+      all: dated.filter(w => view.tlPast || !past.length || !past.includes(w)).map(w => w.id).concat(view.tlArchive ? undated.map(w => w.id) : []),
+      onDelete: "deletePickedWeeks()", hint: "Select several weeks to delete them, goals and carpools included" }) : ""}
   </div>
   ${past.length && !view.tlPast ? `<div class="toolbar tl-earlier no-print"><button class="sm" onclick="view.tlPast=true;render()">Show ${past.length} earlier week${past.length === 1 ? "" : "s"}</button></div>` : ""}
   ${dated.length ? timelineGrid(dated, { lead, showPast: !!view.tlPast || !past.length }) : `<div class="card muted">Every week is undated, so nothing can be placed in order yet. Open one below and give it a date.</div>`}

@@ -71,6 +71,7 @@ function renderPeople() {
     ${isLead() ? `<button onclick="openTrainingSession()">＋ Record training session</button>
     <button class="ib" title="Edit the training catalog" onclick="openTrainingCatalog()">${icon("edit", 14)} Catalog</button>` : ""}
     ${mtx && archived.length ? `<label class="tny" style="align-self:center"><input type="checkbox" ${view.pplArch ? "checked" : ""} onchange="view.pplArch=this.checked;render()"> show archived</label>` : ""}
+    ${!mtx && isLead() ? pickBar("people", { all: rows.filter(u => u.email !== myEmail()).map(u => u.email), onDelete: "deletePickedPeople()", deleteLabel: "Remove", hint: "Select several people to remove them from the roster" }) : ""}
     <span class="muted" style="align-self:center">${users.length} people on the roster</span>
   </div>
   ${rows.length === 0 ? `<div class="card">${view.fTrain ? "Nobody holds " + esc(trainingById(view.fTrain).name) + " yet." : "No one on the roster yet."}</div>`
@@ -80,15 +81,17 @@ function renderPeople() {
 function renderPeopleList(rows) {
   return `
   <table class="list dash">
-    <tr><th>Person</th><th>Role</th><th>Trainings</th><th>Assignments</th></tr>
+    <tr>${pickOn("people") ? "<th></th>" : ""}<th>Person</th><th>Role</th><th>Trainings</th><th>Assignments</th></tr>
     ${rows.map(u => {
       const a = assignmentsFor(u.email);
       const me = u.email === myEmail();
-      return `<tr>
+      const picking = pickOn("people");
+      return `<tr class="${pickIs("people", u.email) ? "picked" : ""}"${picking && !me ? ` onclick="togglePick('people','${esc(u.email)}')"` : ""}>
+        ${picking ? `<td class="pickcell">${me ? "" : pickBox("people", u.email)}</td>` : ""}
         <td><div style="display:flex;align-items:center;gap:8px">${avatar(u.email, 26)}
           <div><div class="pname">${esc(u.name || u.email)}${me ? ' <span class="muted tny">(you)</span>' : ""}</div>
           <div class="muted tny">${esc(userHandle(u.email))}</div></div></div></td>
-        <td>${isLead() && !me
+        <td>${isLead() && !me && !picking
           ? `<select onchange="setRole('${esc(u.email)}',this.value)"><option ${u.role === "member" ? "selected" : ""}>member</option><option ${u.role === "lead" ? "selected" : ""}>lead</option></select>
              <button class="sm danger no-print" onclick="rosterDel('${esc(u.email)}')">Remove</button>`
           : `<span class="pill">${esc(displayRole(u))}</span>`}
