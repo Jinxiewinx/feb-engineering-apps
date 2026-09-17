@@ -97,7 +97,7 @@ Against the Firebase emulator:
 | Test | What it checks |
 |---|---|
 | `test_wo_rules.mjs` | Firestore security rules for the team collections. |
-| `test_storage_rules.mjs` | Storage rules: who can upload what, where. Deny-side only — the emulator's upload endpoint does not set request.resource.contentType, so the *allow* cases cannot be asserted here at all; the test header explains. |
+| `test_storage_rules.mjs` | Storage rules: who can upload what, where, and of what type. Path-boundary cases go over a simple upload, where the emulator reports every content type as `application/octet-stream` whatever header you send. Content-type cases, allow and deny both, go over a resumable upload, which is the protocol `fb.upload` itself uses and the only one that gets a type as far as `request.resource.contentType`. The test header explains which is which. |
 | `test_pub_rules.mjs` | The two public holes: the `pub` scan-mirror (anonymous read of one document, nothing else) and the `tracker` sheet feed (anonymous read of one secret-id document, and no way for anyone to enumerate its way to that id). |
 
 The emulator suites run like this. They target the DEMO project, so they need

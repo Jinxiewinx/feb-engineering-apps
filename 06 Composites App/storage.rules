@@ -66,12 +66,13 @@ service firebase.storage {
        runs on.
 
        lower() rather than an (?i) inline flag, because MOLD.STEP has to work as
-       well as mold.step and people name exports in caps more often than not.
-       The emulator cannot assert an ALLOW case here (its simple-upload endpoint
-       leaves request.resource.contentType unset, so every contentType-gated
-       rule evaluates false there) — which means a regex flag that silently
-       failed to apply would not show up in any test, and would surface as a
-       teammate's upload being refused at RFS. lower() cannot fail that way.
+       well as mold.step and people name exports in caps more often than not. A
+       regex flag that silently failed to apply would fail CLOSED, surfacing as
+       a teammate's upload being refused at RFS. lower() cannot fail that way,
+       and test_storage_rules.mjs now asserts the MOLD.STEP allow case directly
+       (it uses a resumable upload; the emulator's simple-upload endpoint
+       reports every content type as application/octet-stream, which is what
+       made these cases look untestable and what the scope note there covers).
 
        Bigger cap, because these are genuinely bigger: a mold assembly at 10 MiB
        is not unusual and the whole point is that it now fits. 50 MiB against a
@@ -126,8 +127,13 @@ service firebase.storage {
        rule, so nobody reported it.
 
        Exactly the bug the parts/ rule above was added to fix, invisible for
-       exactly the same reason: test_storage_rules.mjs asserted deny cases only.
-       It now covers all three trees. */
+       exactly the same reason: test_storage_rules.mjs asserted deny cases only,
+       and a missing rule and a correct rule look identical from a deny
+       assertion. It now covers all three trees, and it asserts allow cases too
+       (over a resumable upload, which is the only protocol on the emulator's
+       endpoint that carries a content type; see the scope note there). An
+       allow assertion on these three would have failed the day the composer
+       reached the Shop tab. */
     match /molds/{moldId}/{file} {
       allow read: if signedIn();
       allow write: if accountOf() && (

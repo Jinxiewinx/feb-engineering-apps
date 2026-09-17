@@ -443,6 +443,14 @@ They are built and tested against the emulator.
 
 Five sessions, newest first. Older entries live in `git log`, not here.
 
+**2026-09-17 — the storage suite can assert allow cases now.** The long-failing
+`authed write of a non-STL content type to stackplans/` was a bad assertion,
+not a rule gap: the emulator's simple-upload endpoint never reads the
+Content-Type header and reports `application/octet-stream` to the rules engine,
+which the stackplans rule accepts on purpose. A resumable upload carries the
+type through, so `writeTyped()` now covers the wrong-type and right-type cases
+both. No rule logic changed.
+
 **2026-09-17 — one version, one release** for the app and the Fusion add-in;
 `tools/release.mjs` cuts everything. Then the mold/trash/techniques plan
 approved, and Chunk 0 landed: `molds/`, `items/` and `lots/` added to

@@ -1,10 +1,14 @@
 #!/usr/bin/env node
-/* Storage-rules SMOKE test for storage.rules against the Storage emulator,
-   same scope as 06 Composites App's tools/test_storage_rules.mjs: the emulator's simple
-   upload endpoint does not set request.resource.contentType, so the ALLOW
-   cases cannot be asserted here. What this proves is the boundary: a guest or
-   an unauthenticated caller can write nowhere, and an account can write
-   nowhere outside the three allowed trees. Run from this folder:
+/* Storage-rules SMOKE test for storage.rules against the Storage emulator.
+   What this proves is the boundary: a guest or an unauthenticated caller can
+   write nowhere, and an account can write nowhere outside the three allowed
+   trees. Every write below is a SIMPLE upload, which is all a path-boundary
+   case needs. It is not enough for a contentType case: the emulator's
+   simple-upload handler never reads the Content-Type header and reports
+   application/octet-stream to the rules engine whatever you send. If a
+   contentType assertion is ever wanted here, use the resumable upload that
+   06 Composites App's tools/test_storage_rules.mjs writeTyped() shows.
+   Run from this folder:
      npm run test:storage                                                     */
 
 const PID = "demo-feb-cfd";
