@@ -1170,12 +1170,33 @@ it. A missing cost renders as absent, never as $0.00.
 
 ### Reports
 
-Reports does per-dataset CSV export for parts, work orders, projects and budget,
-plus a one-click printable Monday-meeting status board, and it is where you
-print labels in bulk. The board is a grid of cards: stage counts coloured the
-way Parts colours them, and every work order, blocker and deadline a real link
-into its record; on paper it prints one section under the next, chrome-free like
-every other printout.
+Reports reads top to bottom in the order somebody actually wants it: **this
+week's board**, then **what has been deleted**, then **the layup techniques the
+shop runs**. The exports and the one-off repairs are last, under their own
+heading, because they are not why anyone opens the tab. Nothing is folded away
+behind a disclosure triangle; demoting by position hides nothing.
+
+The board is a grid of cards: stage counts coloured the way Parts colours them,
+and every work order, blocker and deadline a real link into its record.
+
+**Recently deleted is open, not behind a button.** You come to this tab because
+something is missing, and a button you have to find first is a button you do not
+know to press.
+
+**Layup techniques** moved here from the Work Orders toolbar, where it was a
+modal. Anyone can read the checklists the shop runs to and see which steps need
+which training; a lead edits them. Details are under *Techniques*, above.
+
+**Print status board** is a real sheet now, in the same grammar as the
+manufacturing traveler and the mold drawings: black masthead, gold underrule,
+ruled section headings, tables whose headers repeat if a long week runs to a
+second page. Nothing on it depends on colour — it prints on a shop laser and
+gets photocopied — so every count is a number rather than a coloured chip and
+the R&D mark is an outline rather than a fill. The masthead carries the open
+blocker count, so somebody walking past the sheet on the wall reads the one
+number the meeting is about without picking it up. It ends in six ruled lines:
+the board is read standing up with somebody writing on it, and a printout with
+nowhere to write gets notes in the margin or not at all.
 
 A lead also gets three one-off migrations there: **Find molds in work orders**
 proposes a mold record per distinct free-text mold name and lets a human untick

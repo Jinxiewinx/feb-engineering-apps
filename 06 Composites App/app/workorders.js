@@ -1165,10 +1165,6 @@ function renderWOIndex() {
         })() : `<button class="primary ib"${gx("Sign in to start a run.")} onclick="newWO()">${icon("plus", 15)} New WO</button>
         <button class="ib" onclick="newWO(true)">${icon("plus", 15)} R&amp;D run</button>
         <button class="sm" onclick="openBlankTraveler()">Blank traveler</button>
-        ${/* The technique catalog lives on the tab whose records it defines,
-              the way the training catalog lives on People where the grants are.
-              Lead-only, like every other catalog editor. */""}
-        ${isLead() ? `<button class="sm" onclick="openTechniqueCatalog()">Techniques</button>` : ""}
         ${/* Any roster member can pick, because Archive is a plain update. The
               Delete button inside pick mode is what stays lead-only: the rules
               allow a workOrders delete to leads only, so a member's bulk delete
@@ -1706,39 +1702,6 @@ function tqEntry(t, patch) {
 function tqUsedBy(id) {
   return (DB.workOrders || []).filter(w => recProcess(w) === id).length;
 }
-function openTechniqueCatalog() {
-  if (!isLead()) { toast("Editing the technique catalog is lead-only.", "error"); return; }
-  const rows = allTechniques(true).map(t => `
-    <tr class="${t.archived ? "mtxcol-arch" : ""}">
-      <td>${esc(t.name)}${t.builtin ? ' <span class="muted tny">built-in</span>' : ""}${t.archived ? ' <span class="muted tny">archived</span>' : ""}
-        <div class="muted tny">${t.steps.length} step${t.steps.length === 1 ? "" : "s"}${t.layupLabel ? " · " + esc(t.layupLabel) : ""}</div></td>
-      <td>${tqUsedBy(t.id)}</td>
-      <td class="rowact"><button class="sm" onclick="openTechniqueEdit('${esc(t.id)}')">Edit</button>
-        ${t.builtin ? "" : t.archived
-          ? `<button class="sm" onclick="setTechniqueArchived('${esc(t.id)}',false)">Restore</button>`
-          : `<button class="sm" onclick="setTechniqueArchived('${esc(t.id)}',true)">Archive</button>`}</td>
-    </tr>`).join("");
-  openModal(`
-    <h2>Layup techniques</h2>
-    <p class="muted">A technique is a checklist and the gates on it. Editing one never changes a run
-      that already exists — its steps were copied in when it was created, which is what makes a
-      buy-off mean something. Runs on an older version say so and can adopt the new steps without
-      losing a signature. Nothing is deleted; archiving hides a technique from new runs while every
-      run made on it keeps its name.</p>
-    <table class="sub"><thead><tr><th>Technique</th><th>Runs</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table>
-    <h3>Add a technique</h3>
-    <div class="field"><label for="tq-name">Name</label><input id="tq-name" placeholder="e.g. Glass wrapped core"></div>
-    <div class="field"><label for="tq-from">Start from</label>
-      <select id="tq-from">${allTechniques().map(t => `<option value="${esc(t.id)}">${esc(t.name)} (${t.steps.length} steps)</option>`).join("")}</select>
-      <span class="muted tny">A copy of that checklist, to edit. Starting from a blank page means
-        forgetting the stack freeze and the drop test, which is what those steps are there to stop.</span></div>
-    <div class="foot">
-      <button onclick="closeModal()">Close</button>
-      <button class="primary" onclick="submitTechniqueAdd()">Add technique</button>
-    </div>
-  `, { wide: true });
-}
 async function submitTechniqueAdd() {
   const name = ((document.getElementById("tq-name") || {}).value || "").trim();
   const from = (document.getElementById("tq-from") || {}).value || "MoldInfusion";
@@ -1753,13 +1716,13 @@ async function submitTechniqueAdd() {
       steps: JSON.parse(JSON.stringify(src.steps)), archived: false,
       addedBy: myEmail(), addedAt: new Date().toISOString(), rev: 1 });
     toast(`${name} is in the catalog. Edit its steps before anyone runs it.`);
-    openTechniqueEdit(id); render();
+    openTechniqueEdit(id); render();   // straight into the editor: a clone is not a finished thing
   } catch (e) { toast("Save failed: " + e.message, "error"); }
 }
 async function setTechniqueArchived(id, on) {
   const t = techniqueById(id);
   if (t.builtin) { toast("Built-in techniques are named in code and cannot be archived.", "error"); return; }
-  try { await tqSave(id, tqEntry(t, { archived: !!on })); openTechniqueCatalog(); render(); }
+  try { await tqSave(id, tqEntry(t, { archived: !!on })); render(); }
   catch (e) { toast("Save failed: " + e.message, "error"); }
 }
 
@@ -1800,7 +1763,7 @@ function techniqueEditHtml() {
     ${e.rows.map((r, i) => tqRowHtml(r, i, e.rows.length)).join("")}
     <div class="no-print addrow"><button class="sm" onclick="tqRowAdd()">+ Add step</button></div>
     <div class="foot">
-      <button onclick="TQ_EDIT=null;openTechniqueCatalog()">Cancel</button>
+      <button onclick="TQ_EDIT=null;closeModal()">Cancel</button>
       <button class="primary" onclick="submitTechniqueEdit()">Save technique</button>
     </div>`;
 }
@@ -1889,7 +1852,7 @@ async function submitTechniqueEdit() {
     await tqSave(e.id, tqEntry(t, { name: e.name.trim() || t.name, mfgTraining: e.mfgTraining || null, steps }));
     TQ_EDIT = null;
     toast(`${e.name.trim() || t.name} saved. Runs already under way keep their steps.`);
-    openTechniqueCatalog(); render();
+    closeModal(); render();
   } catch (err) { toast("Save failed: " + err.message, "error"); }
 }
 

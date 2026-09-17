@@ -134,6 +134,25 @@
 .ws-t td.num, .ws-t th.num { text-align: center; width: 0.3in; }
 .ws-t .initial { width: 0.72in; }
 .ws-t .datec { width: 0.95in; }
+.ws-t .idc { width: 1.05in; font-variant-numeric: tabular-nums; }
+
+/* ---------- the weekly status board ----------
+   A report rather than a form, so it borrows the traveler's furniture and
+   changes two things: a count is the biggest thing in its box, and the R&D
+   mark is an outline rather than a fill so it survives a laser and a
+   photocopy. */
+.ws-f .val.big { font-size: 15pt; font-weight: 700; line-height: 1.15; }
+.ws-rnd {
+  font-size: 6.5pt; font-weight: 700; letter-spacing: .08em;
+  border: var(--hair); padding: 0 2.5pt; vertical-align: 1pt;
+}
+/* Said once, in the place where a table would otherwise be. Not a muted grey:
+   on a laser at 7.5pt, grey is the first thing to disappear. */
+.ws-none { margin: 4pt 0 0; font-size: 8.5pt; font-style: italic; }
+/* Ruled lines for the meeting. The board is read standing up with somebody
+   writing on it, and a printout with nowhere to write gets notes in the margin
+   or not at all. */
+.ws-notes td.ws-write { height: 0.3in; }
 
 /* Row heights are the whole point — these are hand-fill targets. */
 .ws-t.rows td { height: 0.34in; }

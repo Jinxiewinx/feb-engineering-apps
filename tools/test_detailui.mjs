@@ -139,8 +139,13 @@ const VIEWS = [
              stamp({ id: "PROJ-SN6-880", title: "Dry spot on the strake", workOrderId: "WO-SN6-880" }, "T-A", recent)]));
            onFbData("molds", (DB.molds || []).concat([
              stamp({ id: "MOLD-SN6-880", name: "OLD NOSE PLUG", stage: "Retired" }, "T-B", old)]));
-           view = { ...view, repTrash: true }; render();`,
+           render();`,
     needs: "" },
+  /* The status board on paper. It was the last printable in the app calling
+     window.print() on screen markup; it is a real sheet now, so it gets
+     measured like one. */
+  { id: "statusboard-sheet", tab: "reports", what: "the weekly status board as a printed sheet",
+    open: `printStatusBoard();`, needs: "" },
   /* Both cut states depend on MOLD-SN6-004 owning STK-SN6-001 in the fixture:
      the cut list only offers molds still at "Designed", and only their current
      plan, so an orphan plan photographs as an empty state. */

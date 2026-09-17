@@ -63,15 +63,23 @@ const TRASH_NOUN = {
   budget: "purchase", documents: "document", stock: "board", stackplans: "stack plan",
   molds: "mold", items: "item", lots: "material", rnd: "R&D record",
 };
-function trashCard() {
+/* ALWAYS OPEN (Simon, 2026-09-17). It was behind a toggle in the toolbar, which
+   is the wrong shape for the one thing on this tab somebody arrives already
+   worried about: you come here because something is missing, and a button you
+   have to find first is a button you do not know to press.
+
+   Empty is the normal state and says so plainly rather than rendering a bare
+   heading over nothing. */
+function trashSection() {
   const all = allTrashed();
-  const overdue = all.filter(x => x.rec.purgeAfter && x.rec.purgeAfter <= today());
-  const oldest = all.length ? Math.max(...all.map(x => daysSince(x.rec.deletedAt))) : 0;
   if (!all.length) {
-    return `<div class="card"><h3>Recently deleted</h3>
-      <p class="muted">Nothing has been deleted. Anything that is goes here for ${TRASH_DAYS} days,
-        with its uploads, and comes back whole.</p></div>`;
+    return `<h2>Recently deleted</h2>
+      <div class="card"><p class="muted">Nothing has been deleted. Anything deleted lands here for
+        ${TRASH_DAYS} days, with its uploads, and comes back whole.</p></div>`;
   }
+  const overdue = all.filter(x => x.rec.purgeAfter && x.rec.purgeAfter <= today());
+  const oldest = Math.max(...all.map(x => daysSince(x.rec.deletedAt)));
+  const files = all.reduce((n, x) => n + (x.rec.deletedFiles || []).length, 0);
   /* Grouped by the gesture, not by the day: a work order and the issues that
      went with it were one decision and are one row to put back. */
   const groups = new Map();
@@ -80,40 +88,42 @@ function trashCard() {
     if (!groups.has(k)) groups.set(k, []);
     groups.get(k).push(x);
   }
-  const rows = [...groups].map(([k, set]) => {
-    const lead = set[0].rec;
-    const age = daysSince(lead.deletedAt);
-    const left = TRASH_DAYS - age;
-    const names = set.slice(0, 3).map(x => `${esc(trashTitle(x.coll, x.rec))} <span class="muted tny">${esc(TRASH_NOUN[x.coll] || x.coll)}</span>`).join(", ");
-    const files = set.reduce((n, x) => n + (x.rec.deletedFiles || []).length, 0);
-    /* Wrapping rows, not a table. Four columns at 320px squeezed "Restore" to
-       one letter per line — the same reason the offcut pane and the technique
-       step editor are flex rows. */
-    return `<div class="trashrow">
-      <span class="trash-what">${names}${set.length > 3 ? ` <span class="muted tny">and ${set.length - 3} more</span>` : ""}
-        ${files ? `<div class="muted tny">${files} upload${files === 1 ? "" : "s"} kept with ${set.length === 1 ? "it" : "them"}</div>` : ""}</span>
-      <span class="tny muted trash-who">${esc(userName(lead.deletedBy) || lead.deletedBy || "?")} ·
-        ${age === 0 ? "today" : age + " day" + (age === 1 ? "" : "s") + " ago"}</span>
-      <span class="tny ${left <= 0 ? "done" : left <= 7 ? "mid" : "muted"}">${left <= 0 ? "past " + TRASH_DAYS + " days" : left + " day" + (left === 1 ? "" : "s") + " left"}</span>
-      <button class="sm" style="margin-left:auto" onclick="restoreTrashBatch('${esc(k)}')">Restore</button>
-    </div>`;
-  });
-  return `<div class="card">
-    <h3>Recently deleted</h3>
-    <p class="muted tny">${all.length} record${all.length === 1 ? "" : "s"} in ${groups.size} deletion${groups.size === 1 ? "" : "s"};
-      oldest ${oldest} day${oldest === 1 ? "" : "s"}. Uploads are kept until the bin is emptied, so a
-      restored record comes back whole. Restoring one brings back everything deleted with it.</p>
+  const overdueFiles = overdue.reduce((n, x) => n + (x.rec.deletedFiles || []).length, 0);
+  return `
+  <h2>Recently deleted <span class="muted" style="font-size:13px">— ${all.length} record${all.length === 1 ? "" : "s"}, oldest ${oldest} day${oldest === 1 ? "" : "s"}</span></h2>
+  <div class="card">
+    <p class="muted tny">${groups.size} deletion${groups.size === 1 ? "" : "s"}${files ? `, holding ${files} upload${files === 1 ? "" : "s"}` : ""}.
+      Uploads stay where they are until the bin is emptied, so a restored record comes back whole.
+      Restoring one brings back everything that was deleted with it.</p>
     ${overdue.length ? `<div class="warn">${icon("warning", 14)}
       <b>${overdue.length} record${overdue.length === 1 ? " is" : "s are"} past ${TRASH_DAYS} days.</b>
       ${isLead()
-        ? `Emptying deletes ${overdue.length} record${overdue.length === 1 ? "" : "s"} and
-           ${overdue.reduce((n, x) => n + (x.rec.deletedFiles || []).length, 0)} uploaded file${overdue.reduce((n, x) => n + (x.rec.deletedFiles || []).length, 0) === 1 ? "" : "s"} for good.
+        ? `Emptying deletes ${overdue.length} record${overdue.length === 1 ? "" : "s"}${overdueFiles ? ` and ${overdueFiles} uploaded file${overdueFiles === 1 ? "" : "s"}` : ""} for good.
            <button class="sm" onclick="purgeTrash()">Empty them</button>`
         : "A lead empties the bin."}
       </div>` : ""}
-    <div class="trashlist">${rows.join("")}</div>
+    <div class="trashlist">${[...groups].map(([k, set]) => trashRowHtml(k, set)).join("")}</div>
   </div>`;
 }
+function trashRowHtml(k, set) {
+  const lead = set[0].rec;
+  const age = daysSince(lead.deletedAt);
+  const left = TRASH_DAYS - age;
+  const names = set.slice(0, 3).map(x => `${esc(trashTitle(x.coll, x.rec))} <span class="muted tny">${esc(TRASH_NOUN[x.coll] || x.coll)}</span>`).join(", ");
+  const files = set.reduce((n, x) => n + (x.rec.deletedFiles || []).length, 0);
+  /* Wrapping rows, not a table. Four columns at 320px squeezed "Restore" to
+     one letter per line — the same reason the offcut pane and the technique
+     step editor are flex rows. */
+  return `<div class="trashrow">
+    <span class="trash-what">${names}${set.length > 3 ? ` <span class="muted tny">and ${set.length - 3} more</span>` : ""}
+      ${files ? `<div class="muted tny">${files} upload${files === 1 ? "" : "s"} kept with ${set.length === 1 ? "it" : "them"}</div>` : ""}</span>
+    <span class="tny muted trash-who">${esc(userName(lead.deletedBy) || lead.deletedBy || "?")} ·
+      ${age === 0 ? "today" : age + " day" + (age === 1 ? "" : "s") + " ago"}</span>
+    <span class="tny ${left <= 0 ? "done" : left <= 7 ? "mid" : "muted"}">${left <= 0 ? "past " + TRASH_DAYS + " days" : left + " day" + (left === 1 ? "" : "s") + " left"}</span>
+    <button class="sm" style="margin-left:auto" onclick="restoreTrashBatch('${esc(k)}')">Restore</button>
+  </div>`;
+}
+
 async function restoreTrashBatch(key) {
   const set = allTrashed().filter(x => (x.rec.trashBatch || x.rec.id) === key);
   if (!set.length) { render(); return; }
@@ -161,8 +171,11 @@ async function purgeTrash() {
     }, { ok: "Delete for good", danger: true });
 }
 
-function renderReports() {
-  // Status board data
+/* ---------- the numbers the board is made of ----------
+   ONE source, read by the screen and by the printed sheet. They used to be the
+   same expressions written out twice, which is the drift that puts a different
+   blocker count on paper than on the wall behind it. */
+function statusBoardData() {
   const stages = ["Not Started", "In Layup", "Layup Complete", "Polished"];
   const partStage = {}; stages.forEach(s => partStage[s] = 0);
   DB.parts.forEach(p => { if (partStage[p.layupProgress] != null) partStage[p.layupProgress]++; else partStage["Not Started"]++; });
@@ -175,35 +188,42 @@ function renderReports() {
   const upcoming = (typeof deadlineItems === "function" ? deadlineItems() : [])
     .filter(i => !i.done && i.date && daysUntil(i.date) != null && daysUntil(i.date) >= 0 && daysUntil(i.date) <= 14)
     .sort((a, b) => a.date.localeCompare(b.date));
-  // Season spend is composites' own line; purchases charged to another team's
-  // budget are summed beside it rather than into it.
+  /* Season spend is composites' own line; purchases charged to another team's
+     budget are summed beside it rather than into it. */
   const spendRows = typeof compositesBuys === "function" ? compositesBuys() : DB.budget;
   const money = rs => rs.reduce((s, b) => s + (parseFloat(String(b.cost).replace(/[^0-9.\-]/g, "")) || 0), 0);
-  const spend = money(spendRows);
-  const offSpend = typeof offBudgetBuys === "function" ? money(offBudgetBuys()) : 0;
-  const openOrders = DB.budget.filter(b => typeof buyReimbursed === "function" ? !buyReimbursed(b) : b.status !== "Reimbursed").length;
+  return {
+    stages, partStage, woInWork, openBlockers, upcoming,
+    spend: money(spendRows),
+    offSpend: typeof offBudgetBuys === "function" ? money(offBudgetBuys()) : 0,
+    openOrders: DB.budget.filter(b => typeof buyReimbursed === "function" ? !buyReimbursed(b) : b.status !== "Reimbursed").length,
+  };
+}
 
+/* ---------- the tab ----------
+   It was one very long row of buttons and then the board. Simon, 2026-09-17:
+   the exports are not what anybody comes here for. So the tab reads top to
+   bottom in the order somebody actually wants it — this week's board, what has
+   been deleted, the techniques the shop runs — and the exports and the one-off
+   maintenance actions sit at the bottom under their own heading.
+
+   Not folded away. `DESIGN-NOTES.md` is explicit that a closed <details> skips
+   PAINTING its content, which has bitten this app twice; demoting by POSITION
+   costs nothing and hides nothing. */
+function renderReports() {
   return `
   <div class="toolbar no-print">
-    <b style="align-self:center">Export CSV:</b>
-    <button onclick="exportCSV('parts')">Parts</button>
-    <button onclick="exportCSV('workOrders')">Work Orders</button>
-    <button onclick="exportCSV('projects')">Issues</button>
-    <button onclick="exportCSV('budget')">Budget</button>
-    <button onclick="invExportCSV('flat')">Inventory</button>
-    <button onclick="invExportCSV('locations')">Locations</button>
-    <button onclick="openLabelBuilder()">${icon("print", 15)} Labels</button>
-    <button onclick="openCustomLabel()">${icon("print", 15)} Custom label</button>
-    <button onclick="openLabelSetup()" title="Which stock this device prints labels on">Label media</button>
-    ${isLead() ? `<button onclick="rebuildScanMirror()" title="Re-publish the public scan nameplates for every physical record">Rebuild scan mirror</button>
-    <button onclick="setupTrackerFeed()" title="Publish the part list to the Google Sheet feed and copy its URL">Tracker feed</button>
-    <button onclick="findMoldsInWorkOrders()" title="Turn the free-text mold names on work orders into real mold records">Find molds in work orders</button>
-    <button onclick="backfillPartWorkOrderLinks()" title="Link each part to the work order with the same name">Link parts to work orders</button>` : ""}
-    <button onclick="view={...view,repTrash:!view.repTrash};render()">${icon("trash", 15)} Recently deleted${
-      (typeof allTrashed === "function" && allTrashed().length) ? ` (${allTrashed().length})` : ""}</button>
-    <button class="primary" style="margin-left:auto" onclick="window.print()">Print status board</button>
+    <button class="primary" onclick="printStatusBoard()">${icon("print", 15)} Print status board</button>
   </div>
-  ${view.repTrash && typeof trashCard === "function" ? trashCard() : ""}
+  ${statusBoardScreen()}
+  ${typeof trashSection === "function" ? trashSection() : ""}
+  ${typeof techniqueSection === "function" ? techniqueSection() : ""}
+  ${toolsSection()}`;
+}
+
+function statusBoardScreen() {
+  const d = statusBoardData();
+  return `
   <h2>Weekly status board <span class="muted" style="font-size:13px">— ${today()}</span></h2>
   <div class="rgrid">
     <div class="card">
@@ -212,33 +232,232 @@ function renderReports() {
            it: grey to start, amber under way, green done. The stage list here
            intentionally differs from PART_STAGES: this board counts every
            part's layupProgress directly, all-parts denominator. -->
-      <div class="stagerow">${stages.map(s => `<span class="stage ${stageClass(s, stages)}">${esc(s)}: <b>${partStage[s]}</b></span>`).join("")}</div>
+      <div class="stagerow">${d.stages.map(s => `<span class="stage ${stageClass(s, d.stages)}">${esc(s)}: <b>${d.partStage[s]}</b></span>`).join("")}</div>
     </div>
     <div class="card">
-      <h3>Work orders in progress (${woInWork.length})</h3>
-      ${woInWork.length ? woInWork.map(w => `<div class="srow">
+      <h3>Work orders in progress (${d.woInWork.length})</h3>
+      ${d.woInWork.length ? d.woInWork.map(w => `<div class="srow">
         <span class="sr-main"><span class="kind">WO</span> ${chip("workOrders", w.id, w.partName || w.id)}${rndBadge(woIsRnd(w))}</span>
         <span class="srow-meta">${esc(w.manufacturingEngineer || w.moldEngineer || "unassigned")}</span>
       </div>`).join("") : '<p class="muted">None marked in-work.</p>'}
     </div>
     <div class="card">
-      <h3>Open blockers (${openBlockers.length})</h3>
-      ${openBlockers.length ? openBlockers.map(b => `<div class="srow">
+      <h3>Open blockers (${d.openBlockers.length})</h3>
+      ${d.openBlockers.length ? d.openBlockers.map(b => `<div class="srow">
         <span class="sr-main">${chip("workOrders", b.wo.id, b.wo.partName || b.wo.id)}${rndBadge(woIsRnd(b.wo))} <b>${esc(stripCS(b.step.title))}</b></span>
         <span class="srow-meta">step ${esc(b.step.seq)} · unsigned</span>
       </div>`).join("") : '<p class="muted">No unsigned blockers on active work orders.</p>'}
     </div>
     <div class="card">
-      <h3>Deadlines in the next two weeks (${upcoming.length})</h3>
-      ${upcoming.length ? upcoming.map(i => `<div class="srow">
+      <h3>Deadlines in the next two weeks (${d.upcoming.length})</h3>
+      ${d.upcoming.length ? d.upcoming.map(i => `<div class="srow">
         <span class="sr-main"><span class="kind">${i.kind}</span> ${chip(i.coll, i.id, i.label)}${rndBadge(i.rnd)}</span>
         <span class="srow-meta">${esc(i.date)} (${daysUntil(i.date)}d)${i.who ? " · " + esc(i.who) : ""}</span>
       </div>`).join("") : '<p class="muted">Nothing due in the next two weeks.</p>'}
     </div>
     <div class="card">
       <h3>Budget</h3>
-      <p>Season spend <b>$${spend.toFixed(0)}</b>${offSpend ? ` · $${offSpend.toFixed(0)} on other budgets` : ""} · ${openOrders} awaiting reimbursement.</p>
+      <p>Season spend <b>$${d.spend.toFixed(0)}</b>${d.offSpend ? ` · $${d.offSpend.toFixed(0)} on other budgets` : ""} · ${d.openOrders} awaiting reimbursement.</p>
     </div>
+  </div>`;
+}
+
+/* ---------- the status board, on paper ----------
+   It used to call window.print() on the screen markup with a .no-print toolbar
+   — the last printable in the app that worked that way, and it showed: app
+   chrome in the margins, cards breaking across the fold, colour-coded pills
+   that a laser renders as four identical grey lozenges.
+
+   It is a sheet now, in the same house grammar as the traveler and the mold
+   drawings: black masthead, gold underrule, ws-h section rules, ws-t tables.
+   That grammar is designed for a laser and for a wall — nothing on it depends
+   on colour, every count is a number rather than a coloured chip, and the
+   headers repeat if a long week runs to a second page.
+
+   THE MONDAY MEETING IS THE POINT, so it ends with ruled lines. The board is
+   read standing up in Dwinelle with somebody writing on it; a printout with
+   nowhere to write gets notes in the margin or not at all. */
+
+/* The Monday of the week this is printed in, so two people printing on
+   different days of the same week file the same sheet. */
+function weekOfLabel(d) {
+  const t = d ? new Date(d) : new Date();
+  const dow = (t.getDay() + 6) % 7;                 // Monday = 0
+  t.setDate(t.getDate() - dow);
+  return t.toISOString().slice(0, 10);
+}
+/* A table, or the one line that says there is nothing in it. An empty <table>
+   with a header row and no body reads as a rendering fault on paper. */
+function boardTable(head, rows, empty) {
+  if (!rows.length) return `<p class="ws-none">${esc(empty)}</p>`;
+  return `<table class="ws-t"><thead><tr>${head}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
+}
+function statusBoardSheetHtml() {
+  const d = statusBoardData();
+  const rnd = on => on ? ' <span class="ws-rnd">R&amp;D</span>' : "";
+
+  const wo = d.woInWork.map(w => `<tr>
+    <td class="idc">${esc(w.id)}</td>
+    <td>${esc(w.partName || w.id)}${rnd(woIsRnd(w))}</td>
+    <td>${esc(w.subteam || "")}</td>
+    <td>${esc(w.manufacturingEngineer || w.moldEngineer || "unassigned")}</td></tr>`);
+
+  const blk = d.openBlockers.map(b => `<tr>
+    <td class="idc">${esc(b.wo.id)}</td>
+    <td>${esc(b.wo.partName || b.wo.id)}${rnd(woIsRnd(b.wo))}</td>
+    <td><b>${esc(stripCS(b.step.title))}</b></td>
+    <td class="num">${esc(b.step.seq)}</td></tr>`);
+
+  const due = d.upcoming.map(i => `<tr>
+    <td class="datec">${esc(i.date)}</td>
+    <td class="num">${daysUntil(i.date)}d</td>
+    <td>${esc(i.kind)} ${esc(i.label)}${rnd(i.rnd)}</td>
+    <td>${esc(i.who || "")}</td></tr>`);
+
+  /* Six lines. Enough for a meeting, not so many that the sheet becomes a
+     notebook and the board above it stops being the point. */
+  const noteLines = new Array(6).fill('<tr><td class="ws-write"></td></tr>').join("");
+
+  return `<div class="wsheet"><div class="ws-page"><table class="pgflow"><thead><tr><td></td></tr></thead><tfoot><tr><td></td></tr></tfoot><tbody><tr><td>
+  <div class="ws-head">
+    <div class="brand">FEB COMPOSITES <span class="sub">SN6</span></div>
+    ${/* The masthead's empty middle carries the one number the meeting is
+          about, when there is one. Same slot the traveler stamps RETRO or
+          DRAFT into, and the same reason: it is the thing somebody walking
+          past a sheet on the wall should read without picking it up. */""}
+    ${d.openBlockers.length ? `<div class="ws-stamp">${d.openBlockers.length} blocker${d.openBlockers.length === 1 ? "" : "s"} open</div>` : ""}
+    <div class="idblock">
+      <div class="idcell wide"><div class="lab">Report</div><div class="val">Weekly status</div></div>
+      <div class="idcell"><div class="lab">Week of</div><div class="val">${esc(weekOfLabel())}</div></div>
+    </div>
+  </div>
+  <div class="ws-rule"></div>
+  <div class="ws-sheetkind">
+    <span>Monday meeting board. Mark it up here, then put the decisions in the app.</span>
+    <span>Printed ${esc(today())}</span>
+  </div>
+
+  <div class="ws-h">Parts by layup stage <span class="hint">${DB.parts.length} part${DB.parts.length === 1 ? "" : "s"} counted</span></div>
+  <div class="ws-grid">
+    ${d.stages.map(st => `<div class="ws-f"><div class="lab">${esc(st)}</div><div class="val filled big">${d.partStage[st]}</div></div>`).join("")}
+  </div>
+
+  <div class="ws-h">Work orders in progress <span class="hint">${d.woInWork.length}</span></div>
+  ${boardTable('<th class="idc">Work order</th><th>Part</th><th>Subteam</th><th>Engineer</th>', wo,
+    "Nothing is marked in-work. If that is wrong, the status is wrong.")}
+
+  <div class="ws-h">Open blockers <span class="hint">${d.openBlockers.length}</span></div>
+  ${boardTable('<th class="idc">Work order</th><th>Part</th><th>Step waiting on a signature</th><th class="num">#</th>', blk,
+    "No unsigned blockers on active work orders.")}
+
+  <div class="ws-h">Deadlines in the next two weeks <span class="hint">${d.upcoming.length}</span></div>
+  ${boardTable('<th class="datec">Date</th><th class="num">In</th><th>What</th><th>Who</th>', due,
+    "Nothing due in the next two weeks.")}
+
+  <div class="ws-h">Budget</div>
+  <div class="ws-grid c3">
+    <div class="ws-f"><div class="lab">Season spend</div><div class="val filled big">$${d.spend.toFixed(0)}</div></div>
+    <div class="ws-f"><div class="lab">On other budgets</div><div class="val filled big">$${d.offSpend.toFixed(0)}</div></div>
+    <div class="ws-f"><div class="lab">Awaiting reimbursement</div><div class="val filled big">${d.openOrders}</div></div>
+  </div>
+
+  <div class="ws-h">Decisions and actions <span class="hint">written here, then entered in the app</span></div>
+  <table class="ws-t ws-notes"><tbody>${noteLines}</tbody></table>
+  </td></tr></tbody></table></div></div>`;
+}
+function printStatusBoard() {
+  if (typeof mountSheet !== "function") { toast("Print system not loaded.", "error"); return; }
+  mountSheet(statusBoardSheetHtml(), true,
+    `US Letter · week of ${weekOfLabel()} · this is exactly what prints`,
+    `status board ${weekOfLabel()}`);
+  document.body.classList.add("previewing");
+  if (typeof window !== "undefined" && window.scrollTo) window.scrollTo(0, 0);
+}
+
+/* ---------- layup techniques ----------
+   Moved off the Work Orders toolbar (Simon, 2026-09-17), where it was a modal
+   behind a button, and inlined here. A technique is a checklist the whole shop
+   runs to, so it is worth being able to READ without being a lead and without
+   opening anything — a member can see what the steps are and which of them
+   they are trained to sign.
+
+   The step template still edits in a modal, because it is a long form and this
+   tab is a page you scan. Everything else — add, rename, archive — is here.
+   The functions themselves stay in workorders.js beside techniqueById and the
+   gate ladder they belong to; only the screen moved. */
+function techniqueSection() {
+  if (typeof allTechniques !== "function") return "";
+  const lead = isLead();
+  const list = allTechniques(lead);   // a member has no use for the archived ones
+  const rows = list.map(t => {
+    const n = tqUsedBy(t.id);
+    const gate = t.mfgTraining && typeof trainingById === "function" ? trainingById(t.mfgTraining).name : "";
+    return `<div class="tqcard${t.archived ? " arch" : ""}">
+      <span class="tq-name"><b>${esc(t.name)}</b>${t.builtin ? ' <span class="muted tny">built-in</span>' : ""}${t.archived ? ' <span class="pill archived tny">archived</span>' : ""}
+        <div class="muted tny">${t.steps.length} step${t.steps.length === 1 ? "" : "s"}${gate ? ` · engineer needs ${esc(gate)}` : ""}${
+          n ? ` · ${n} run${n === 1 ? "" : "s"}` : " · no runs yet"}</div></span>
+      <span class="tq-steps tny muted">${t.steps.slice(0, 4).map(r => esc(r[0])).join(" → ")}${t.steps.length > 4 ? " → …" : ""}</span>
+      ${lead ? `<span class="tqact">
+        <button class="sm" onclick="openTechniqueEdit('${esc(t.id)}')">Edit steps</button>
+        ${t.builtin ? "" : t.archived
+          ? `<button class="sm" onclick="setTechniqueArchived('${esc(t.id)}',false)">Restore</button>`
+          : `<button class="sm" onclick="setTechniqueArchived('${esc(t.id)}',true)">Archive</button>`}
+      </span>` : ""}
+    </div>`;
+  }).join("");
+  return `
+  <h2>Layup techniques <span class="muted" style="font-size:13px">— ${list.filter(t => !t.archived).length} in use</span></h2>
+  <div class="card">
+    <p class="muted tny">A technique is a checklist and the gates on it. Editing one never changes a run
+      that already exists: its steps were copied in when it was created, which is what makes a buy-off
+      mean something. Runs on an older version say so and can take the new steps without losing a
+      signature. Nothing is deleted — archiving hides a technique from new runs while every run made on
+      it keeps its name.</p>
+    <div class="tqlist">${rows}</div>
+    ${lead ? `
+    <h3 style="margin-top:14px">Add a technique</h3>
+    <div class="row2">
+      <div class="field"><label for="tq-name">Name</label><input id="tq-name" placeholder="e.g. Glass wrapped core"></div>
+      <div class="field"><label for="tq-from">Start from</label>
+        <select id="tq-from">${allTechniques().map(t => `<option value="${esc(t.id)}">${esc(t.name)} (${t.steps.length} steps)</option>`).join("")}</select></div>
+    </div>
+    <div class="muted tny">A copy of that checklist, to edit. Starting from a blank page means forgetting
+      the stack freeze and the drop test, which is what those steps are there to stop.</div>
+    <div class="addrow" style="margin-top:8px"><button class="primary" onclick="submitTechniqueAdd()">Add technique</button></div>` : ""}
+  </div>`;
+}
+
+/* Last on the page on purpose. Everything here is either a once-a-term export
+   or a one-off repair, and neither is why anybody opens this tab. */
+function toolsSection() {
+  return `
+  <h2>Exports and maintenance</h2>
+  <div class="card no-print">
+    <h3>Export a CSV</h3>
+    <div class="muted tny">For the advisor spreadsheet and end-of-term reporting. R&amp;D is a column in each, never a filter.</div>
+    <div class="addrow" style="margin-top:8px">
+      <button onclick="exportCSV('parts')">Parts</button>
+      <button onclick="exportCSV('workOrders')">Work orders</button>
+      <button onclick="exportCSV('projects')">Issues</button>
+      <button onclick="exportCSV('budget')">Budget</button>
+      <button onclick="invExportCSV('flat')">Inventory</button>
+      <button onclick="invExportCSV('locations')">Locations</button>
+    </div>
+    <h3 style="margin-top:14px">Labels</h3>
+    <div class="addrow">
+      <button onclick="openLabelBuilder()">${icon("print", 15)} Label sheet</button>
+      <button onclick="openCustomLabel()">${icon("print", 15)} Custom label</button>
+      <button onclick="openLabelSetup()" title="Which stock this device prints labels on">Label media</button>
+    </div>
+    ${isLead() ? `
+    <h3 style="margin-top:14px">Maintenance</h3>
+    <div class="muted tny">One-off repairs. None of these are part of anybody's week.</div>
+    <div class="addrow" style="margin-top:8px">
+      <button onclick="rebuildScanMirror()" title="Re-publish the public scan nameplates for every physical record">Rebuild scan mirror</button>
+      <button onclick="setupTrackerFeed()" title="Publish the part list to the Google Sheet feed and copy its URL">Tracker feed</button>
+      <button onclick="findMoldsInWorkOrders()" title="Turn the free-text mold names on work orders into real mold records">Find molds in work orders</button>
+      <button onclick="backfillPartWorkOrderLinks()" title="Link each part to the work order with the same name">Link parts to work orders</button>
+    </div>` : ""}
   </div>`;
 }
 

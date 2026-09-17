@@ -1973,6 +1973,17 @@
      One row per DELETION, not per record: a work order and the issues that went
      with it were one decision and are one thing to put back. Wraps, for the
      reason the two panes above wrap. */
+  /* ---- the technique catalog, on Reports ----
+     One card per technique: name and gate on the left, the first few steps as a
+     readable chain in the middle, the lead's actions on the right. Wraps, like
+     every other row added in September 2026 — a phone is 320px. */
+  .tqlist { margin-top: 10px; }
+  .tqcard { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+    padding: 9px 0; border-top: 1px solid var(--line); }
+  .tqcard:first-child { border-top: none; }
+  .tqcard.arch { opacity: .6; }
+  .tq-name { flex: 1 1 200px; min-width: 0; }
+  .tq-steps { flex: 2 1 260px; min-width: 0; }
   .trashlist { margin-top: 10px; }
   .trashrow { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
     padding: 9px 0; border-top: 1px solid var(--line); }

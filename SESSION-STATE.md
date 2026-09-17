@@ -259,8 +259,6 @@ items in `HANDOFF.md`):
   from `conventions.md`. `conventions.md` marks them app-only meanwhile.
 - Port the traveler to the offline single-file `work-orders.html`, which
   still has the old print CSS.
-- `reports.js` "Print status board" still calls raw `window.print()`, the
-  only printable that does.
 - `04 Printables/printables.html` is open to redesign; no house style.
 - Per-record history/audit trail (Phase 5 of the inventory plan), deferred.
 - **The one label test that needs the printer in hand**: whether iOS lets a

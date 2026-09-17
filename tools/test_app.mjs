@@ -4360,9 +4360,70 @@ await t("reports CSV has header + rows", () => {
   const csv = toCSV(DB.parts, [{ label: "id", get: r => r.id }, { label: "part", get: r => r.partName }]);
   assert(csv.split("\n")[0] === "id,part" && csv.includes("P-R,SEAT"));
 });
-await t("reports renders status board sections", () => {
-  view = { ...view, tab: "reports" }; render();
-  assert(main.innerHTML.includes("Parts by layup stage") && main.innerHTML.includes("Open blockers") && main.innerHTML.includes("Export CSV"));
+await t("Reports reads top to bottom in the order somebody wants it", () => {
+  /* It was one very long row of buttons and then the board. The exports are
+     not what anybody comes here for, so they are last — demoted by POSITION,
+     never folded: DESIGN-NOTES is explicit that a closed <details> skips
+     painting its content, which has bitten this app twice. */
+  fb.roster = { name: "Simon", role: "lead" };
+  view = { ...view, tab: "reports", mode: "list", id: null }; render();
+  const h = main.innerHTML;
+  const at = t => h.indexOf(t);
+  assert(at("Parts by layup stage") > 0 && at("Open blockers") > 0, "the board is still the board");
+  assert(at("Recently deleted") > 0, "the bin is on the page with no button to press first");
+  assert(at("Layup techniques") > 0, "and so is the technique catalog, moved off Work Orders");
+  assert(at("Export a CSV") > 0, "the exports are still reachable");
+  assert(at("Parts by layup stage") < at("Recently deleted"), "board first");
+  assert(at("Recently deleted") < at("Layup techniques"), "then what is missing");
+  assert(at("Layup techniques") < at("Export a CSV"), "and the exports last of all");
+  assert(!/<details/.test(h), "nothing is folded away: " + (h.match(/<details[^>]*>/) || [""])[0]);
+
+  // A member sees the catalog and cannot edit it.
+  fb.roster = { name: "Nobody", role: "member" };
+  render();
+  const m = main.innerHTML;
+  assert(m.includes("Layup techniques") && !/openTechniqueEdit/.test(m),
+    "a member reads the checklists the shop runs to, and edits nothing");
+  assert(!/rebuildScanMirror/.test(m), "and the maintenance actions are not offered at all");
+  fb.roster = { name: "Simon", role: "lead" };
+});
+
+await t("the status board prints as a sheet, not as the screen with the toolbar hidden", () => {
+  /* It was the last printable in the app calling window.print() on the screen
+     markup with a .no-print toolbar: app chrome in the margins, cards breaking
+     across the fold, and stage pills that a laser renders as four identical
+     grey lozenges. */
+  assert(!/window\.print\(\)/.test(renderReports.toString()), "the raw print call is gone from the tab");
+  assert(/mountSheet/.test(printStatusBoard.toString()),
+    "and it goes through the house print system, so it gets the preview, the B&W proof and Save");
+
+  const h = statusBoardSheetHtml();
+  assert(/class="ws-page"/.test(h) && /class="ws-head"/.test(h) && /class="ws-rule"/.test(h),
+    "the same masthead and gold underrule as the traveler and the drawings");
+  assert(/class="pgflow"/.test(h),
+    "wrapped in pgflow, so a long week's second page keeps its margins");
+  assert((h.match(/class="ws-h"/g) || []).length >= 5, "one ruled heading per section");
+  assert(/ws-notes/.test(h) && (h.match(/ws-write/g) || []).length === 6,
+    "and it ends in ruled lines — the board is read standing up with somebody writing on it");
+
+  /* NOTHING ON IT MAY DEPEND ON COLOUR. It prints on a shop laser and gets
+     photocopied; the screen's stage pills and R&D badges are colour-coded and
+     have no business here. */
+  assert(!/class="stage /.test(h) && !/rndBadge/.test(h), "no screen pills on the sheet");
+  assert(!/style="[^"]*(color|background)\s*:/.test(h), "and nothing carries an inline colour: " +
+    (h.match(/style="[^"]*(?:color|background)[^"]*"/) || [""])[0]);
+
+  // One source for the numbers, so paper and wall cannot disagree.
+  const d = statusBoardData();
+  assert(new RegExp(">" + d.openBlockers.length + "<").test(h) || !d.openBlockers.length,
+    "the counts come from statusBoardData, same as the screen");
+});
+
+await t("the technique catalog is on Reports now, not behind a Work Orders button", () => {
+  assert(typeof openTechniqueCatalog === "undefined", "the old modal is gone, not merely unreferenced");
+  assert(typeof techniqueSection === "function", "replaced by an inline section");
+  view = { ...view, tab: "workorders", mode: "list", id: null, woPick: null }; render();
+  assert(!/Techniques</.test(main.innerHTML), "and the toolbar button went with it");
 });
 
 console.log("documents upload:");
@@ -9578,12 +9639,12 @@ await t("the bin is browsable, groups by the gesture, and restores a set at once
   const one = await trashRecords([{ coll: "workOrders", id: "WO-B-1" }, { coll: "projects", id: "PROJ-B-1" }]);
   await trashRecords([{ coll: "molds", id: "MOLD-B-1" }]);
 
-  view = { ...view, tab: "reports", mode: "list", id: null, repTrash: true };
+  view = { ...view, tab: "reports", mode: "list", id: null };
   render();
   const h = main.innerHTML;
-  assert(/Recently deleted/.test(h), "the card is on Reports, where the cross-cutting tools are");
-  assert(/3 records in 2 deletions/.test(h),
-    "grouped by the GESTURE, not the record: a run and its issue were one decision and are one row to put back: " + (h.match(/\d+ records in \d+ deletions/) || ["(absent)"])[0]);
+  assert(/Recently deleted/.test(h), "the section is on Reports, open, with no button to press first");
+  assert(/3 records, oldest/.test(h) && /2 deletions/.test(h),
+    "grouped by the GESTURE, not the record: a run and its issue were one decision and are one row to put back: " + (h.match(/2 deletions[^.]*/) || ["(absent)"])[0]);
   assert(/Nose/.test(h) && /separate/.test(h), "and both are listed by name");
   assert(/30 days left|29 days left/.test(h), "with how long is left on each");
 
@@ -9620,14 +9681,14 @@ await t("emptying the bin is lead-only, bounded, and the only thing that touches
   calls.length = 0; lastToast = "";
   await purgeTrash();
   assert(/lead-only/.test(lastToast) && !calls.length, "a member cannot empty it: " + lastToast);
-  view = { ...view, tab: "reports", mode: "list", id: null, repTrash: true };
+  view = { ...view, tab: "reports", mode: "list", id: null };
   render();
   assert(/A lead empties the bin/.test(main.innerHTML) && !/purgeTrash\(\)/.test(main.innerHTML),
     "and is not offered the button");
 
   fb.roster = { name: "Simon", role: "lead" };
   render();
-  assert(/31 records in 2 deletions/.test(main.innerHTML), "the card counts everything");
+  assert(/31 records, oldest/.test(main.innerHTML) && /2 deletions/.test(main.innerHTML), "the section counts everything");
   assert(/30 records are past 30 days/.test(main.innerHTML), "and says how many are due: " + (main.innerHTML.match(/\d+ records? (is|are) past[^<]*/) || ["(absent)"])[0]);
 
   calls.length = 0;
