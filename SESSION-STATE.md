@@ -23,11 +23,14 @@ git log -p --follow -- SESSION-STATE.md
 **Mold tracking, a trash can, and lead-addable techniques** (approved
 2026-09-17). Fifteen chunks; the plan, the order and the reasoning behind
 every decision are in `~/.claude/plans/joyful-shimmying-bunny.md`. Do not
-re-derive them. Five bundles. **0-8 ARE LANDED, PUSHED, DEPLOYED AND VERIFIED
+re-derive them. Five bundles. **0-11 ARE LANDED, PUSHED, DEPLOYED AND VERIFIED
 LIVE**: storage.rules trees, `MOLD_TRACK`, the "Tooling cut" stage,
 `cutEligiblePlans()`, the commit advancing the mold, the packer scrap
-partition, mold files and datum plans, the split waiver, and the editable
-offcut review pane. Next is **9-11** `config/techniques` in the trainings pattern, template
+partition, mold files and datum plans, the split waiver, the editable offcut
+review pane, `config/techniques`, template versioning, and the technique
+editor. **firestore.rules were deployed too** (`techniques` joined the guest
+read allowlist) — that is the only rules change in the bundle. What remains is
+the OLD **9-11** `config/techniques` in the trainings pattern, template
 versioning, then the editor — 10 before 11 without exception; **12-14** soft
 delete and the 30-day trash, last, because its blast radius is every count in
 the app.
@@ -196,17 +199,18 @@ buttons on `wo-detail` sit past the safe area (x=873; the second reaches
 
 ## Open questions for Simon
 
-**Two answers the mold plan is blocked on** (neither blocks Chunks 5, 6 or 8).
+**Two answers the mold plan is blocked on** (the second is now shipped; say if it is wrong).
 
 1. **The split waiver probably measures the wrong quantity.** `sectionize`
    splits on stack HEIGHT, but the ShopSabre's 6in limit is plunge DEPTH,
    bounded by the cavity's Z relief. Shipping the flag as asked (Chunk 7),
    labelled "Machined depth stays under 6in", but the durable fix computes
    per-layer depth from the mesh and is worth its own conversation.
-2. **`parts.js:1023` and `workorders.js:103` are the same map with disagreeing
-   fallbacks**, so a part with a blank `layupType` silently gets a ten-step
-   infusion checklist. Chunk 9 unifies them on `"Other"`. That is a behaviour
-   change on existing parts and needs confirming before it lands.
+2. **The layup-type fallback now lands on `"Other"` for both callers**
+   (was `"Other"` in one and `"MoldInfusion"` in the other, so a part with a
+   blank `layupType` silently got a ten-step infusion checklist). Shipped
+   rather than asked, because the old behaviour was a bug in one of the two
+   paths whichever way you read it. Say so if you wanted the infusion default.
 
 **Two things need a human with a real device; automation cannot settle either.**
 
