@@ -275,8 +275,13 @@ function scanToOpen() {
       const tab = tabForId(id);
       const coll = tab ? (TABS.find(t => t.id === tab) || {}).coll : null;
       if (!tab || !coll) { toast(`Don't recognise ${id}.`, "error"); return; }
-      if (!recById(coll, id)) { view = { ...view, tab, mode: "list", id: null, q: id }; render(); syncUrl();
-        toast(`No record ${id} here — searching for it.`, "error"); return; }
+      if (!recById(coll, id)) {
+        /* A label on a physical thing outlives the record: somebody scanning a
+           binned mold is holding it, and "no record here" would send them
+           looking for a thing they can see. */
+        const binned = typeof trashedNote === "function" ? trashedNote(id) : "";
+        view = { ...view, tab, mode: "list", id: null, q: id }; render(); syncUrl();
+        toast(binned || `No record ${id} here — searching for it.`, "error"); return; }
       openRecord(tab, id);
     },
     /* An EH&S tag nobody has logged yet. The person holding the container is

@@ -271,9 +271,9 @@ function delShopRec(tab, id) {
      the mold's stack plans and meshes: a plan is part of its mold. */
   if (spec.coll === "items" || spec.coll === "lots") { shopBulkDelete(spec.coll, [id]); return; }
   if (spec.coll === "molds" && typeof moldsBulkDelete === "function") { moldsBulkDelete([id]); return; }
-  confirmModal(`Delete ${id} for everyone? Back up first if unsure.`, () => {
-    del(spec.coll, id);
-    DB[spec.coll] = DB[spec.coll].filter(o => o.id !== id);
+  confirmModal(`Delete ${id} for everyone? It goes to Recently deleted and can be restored for ${TRASH_DAYS} days.`, async () => {
+    const rec = recById(spec.coll, id);
+    await trashRecords([{ coll: spec.coll, id, files: rec && typeof recStoragePaths === "function" ? recStoragePaths(rec) : [] }]);
     view = { ...view, mode: "list", id: null };
     render(); syncUrl();
   });
@@ -362,7 +362,7 @@ function shopDeletionSummary(d, coll) {
   if (d.keptBins.length) bits.push(`${d.keptBins.length} storage location${d.keptBins.length === 1 ? " is" : "s are"} left alone — ${d.keptBins.map(k => `${k.o.name || k.o.id} still holds ${k.n}`).join(", ")}. Empty a shelf before deleting it.`);
   if (d.referenced) bits.push(`${d.referenced} cure or panel record${d.referenced === 1 ? "" : "s"} reference what is being deleted; they keep the id as text, because a signed record does not get rewritten.`);
   if (d.budgets.length) bits.push(`${d.budgets.length} purchase${d.budgets.length === 1 ? "" : "s"} drop the deleted containers from their received lines.`);
-  bits.push("There is no undo.");
+  bits.push(`Everything here goes to Recently deleted and can be restored for ${TRASH_DAYS} days.`);
   return bits.join(" ");
 }
 
@@ -374,23 +374,31 @@ async function shopBulkDelete(coll, ids) {
   }
   confirmModal(shopDeletionSummary(d, coll), async () => {
     const set = new Set(d.take.map(o => o.id));
-    let failed = 0;
-    try {
-      await fb.delMany(d.take.map(o => ({ coll, id: o.id })));
-    } catch (e) {
-      failed = d.take.length;
+    /* The lotRefs scrub is recorded the way the work-order cascade records its
+       back-pointers: it is a link cleared on a record that was NOT deleted, so
+       without writing it down a restored container comes back detached from the
+       purchase that received it. Per budget line, because a line can name
+       several containers and only some of them are going. */
+    const backrefs = [];
+    for (const b of d.budgets) {
+      for (const l of (b.lines || [])) {
+        const hit = (l.lotRefs || []).filter(id => set.has(id));
+        if (hit.length) backrefs.push({ coll: "budget", id: b.id, field: "lines", lotRefs: { lineId: l.lineId, ids: hit } });
+      }
     }
+    const batch = await trashRecords(d.take.map((o, i) => ({ coll, id: o.id, backrefs: i ? [] : backrefs })));
+    const failed = !batch;
     if (!failed) {
       for (const b of d.budgets) {
         saveField("budget", b, "lines", arr => (arr || []).map(l =>
           (l.lotRefs || []).some(id => set.has(id)) ? { ...l, lotRefs: l.lotRefs.filter(id => !set.has(id)) } : l));
       }
-      DB[coll] = (DB[coll] || []).filter(o => !set.has(o.id));
     }
     view = { ...view, shopPick: null, mode: "list", id: null };
     toast(failed ? `Delete failed — nothing was removed: try again.` :
       `${d.take.length} record${d.take.length === 1 ? "" : "s"} deleted.` +
-      (d.keptBins.length ? ` ${d.keptBins.length} occupied location${d.keptBins.length === 1 ? "" : "s"} kept.` : ""),
+      (d.keptBins.length ? ` ${d.keptBins.length} occupied location${d.keptBins.length === 1 ? "" : "s"} kept.` : "") +
+      ` Recover from Recently deleted.`,
       failed ? "error" : undefined);
     render(); syncUrl();
   });

@@ -120,6 +120,27 @@ const VIEWS = [
     needs: "CAM notes" },
   { id: "dashboard", tab: "dashboard", what: "the dashboard, with populated records behind it",
     needs: "" },
+  /* Recently deleted. The tombstones are built here rather than shipped in the
+     fixture, because a deleted record is invisible to every OTHER state by
+     design and seeding one would quietly change counts across the suite. One
+     multi-record deletion and one single, plus one already past its thirty
+     days, so the card shows grouping, ages and the lead-only empty offer. */
+  { id: "trash", tab: "reports", what: "Recently deleted, with a batch, a single and one overdue",
+    open: `const old = new Date(Date.now() - 41 * 86400000).toISOString();
+           const recent = new Date(Date.now() - 2 * 86400000).toISOString();
+           // purgeAfter is thirty days from the DELETION, which is what makes
+           // one of these overdue and the other two not.
+           const stamp = (r, b, at) => ({ ...r, deleted: true, deletedAt: at, deletedBy: "rjb@berkeley.edu",
+             purgeAfter: new Date(Date.parse(at) + 30 * 86400000).toISOString().slice(0, 10),
+             trashBatch: b, deletedFiles: [], backrefs: [] });
+           onFbData("workOrders", (DB.workOrders || []).concat([
+             stamp({ id: "WO-SN6-880", partName: "UT STRAKE", status: "Draft", steps: [] }, "T-A", recent)]));
+           onFbData("projects", (DB.projects || []).concat([
+             stamp({ id: "PROJ-SN6-880", title: "Dry spot on the strake", workOrderId: "WO-SN6-880" }, "T-A", recent)]));
+           onFbData("molds", (DB.molds || []).concat([
+             stamp({ id: "MOLD-SN6-880", name: "OLD NOSE PLUG", stage: "Retired" }, "T-B", old)]));
+           view = { ...view, repTrash: true }; render();`,
+    needs: "" },
   /* Both cut states depend on MOLD-SN6-004 owning STK-SN6-001 in the fixture:
      the cut list only offers molds still at "Designed", and only their current
      plan, so an orphan plan photographs as an empty state. */

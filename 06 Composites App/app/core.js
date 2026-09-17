@@ -745,7 +745,18 @@ async function untrashRecords(items) {
        this feature exists to stop exactly that class of damage. */
     for (const b of (rec.backrefs || [])) {
       const target = (DB[b.coll] || []).find(r => r.id === b.id);
-      if (target && !target[b.field]) { target[b.field] = b.value; save(b.coll, target, b.field); }
+      if (!target) continue;
+      /* A container scrubbed off a purchase's received line. Not a plain field:
+         a line can name several containers and only some of them went, so this
+         puts back the ids it took and leaves the rest alone. */
+      if (b.lotRefs) {
+        const merge = l => l.lineId === b.lotRefs.lineId
+          ? { ...l, lotRefs: [...new Set((l.lotRefs || []).concat(b.lotRefs.ids))] } : l;
+        target.lines = (target.lines || []).map(merge);
+        saveField(b.coll, target, "lines", arr => (arr || []).map(merge));
+        continue;
+      }
+      if (!target[b.field]) { target[b.field] = b.value; save(b.coll, target, b.field); }
     }
     Object.assign(rec, clear);
     DB.trash[it.coll] = trashedIn(it.coll).filter(r => r.id !== it.id);
@@ -1529,8 +1540,25 @@ function consumePendingLink() {
      better answer than a blank detail page for a record that does not exist. */
   clearPendingLink();
   view = { ...view, tab, mode: "list", id: null, q: id };
-  if (typeof toast === "function") toast(`No record ${id} here — searching for it.`, "error");
+  if (typeof toast === "function") toast(trashedNote(id) || `No record ${id} here — searching for it.`, "error");
   return true;
+}
+
+/* THE ONE THING THE CENTRAL TOMBSTONE FILTER COSTS. recById reads DB[coll],
+   which no longer contains deleted records, so a scanned label or a pasted deep
+   link for something in the bin would otherwise say "no record here" — which is
+   both wrong and unhelpful, because the record is thirty days from gone and one
+   button from back. Returns the sentence to say, or "" when it really is
+   missing. */
+function trashedNote(id) {
+  for (const coll of Object.keys(DB.trash || {})) {
+    const rec = (DB.trash[coll] || []).find(r => r.id === id);
+    if (rec) {
+      const who = userName(rec.deletedBy) || rec.deletedBy || "somebody";
+      return `${id} was deleted by ${who} ${daysSince(rec.deletedAt) === 0 ? "today" : daysSince(rec.deletedAt) + " days ago"}. Restore it under Reports, Recently deleted.`;
+    }
+  }
+  return "";
 }
 
 function clearPendingLink() {
@@ -2424,23 +2452,36 @@ function pickBar(key, opts) {
    prunes the local copy. Files are removed AFTER the records commit, and a
    file that will not go is reported rather than hidden: the record is what
    the team sees, the file is what costs money to keep. */
+/* THE ONE DELETE IN THE APP, and since September 2026 it does not delete.
+
+   It sends records to the bin: the documents keep every field, the public
+   nameplates go, and the Storage objects stay exactly where they are until a
+   lead empties it. `files` is no longer a list to remove now — it is the list
+   to remember, frozen onto each tombstone, because Storage listing is denied
+   by rule and this is the only record of what those uploads were.
+
+   `backrefs` is new and optional: what a cascade cleared on records that were
+   NOT deleted, so restore can put the links back.
+
+   The confirm stays, and still reads as a delete, because from where the person
+   is standing it is one — the record leaves every rail. It just says where it
+   went. */
 function bulkDeleteRecords(opts) {
   const items = (opts.items || []).filter(x => x && x.coll && x.id);
   if (!items.length) { toast("Nothing selected.", "info"); return; }
+  const files = (opts.files || []).filter(Boolean);
+  const backrefs = opts.backrefs || [];
+  /* Per record, because a cascade collects different uploads and different
+     cleared links for each. A caller that passes one flat list of files (most
+     of them) is saying "these belong to this set", so they ride on the first
+     record — which is the one whose restore puts the set back. */
+  const payload = items.map((it, i) => ({ ...it, files: i ? [] : files, backrefs: i ? [] : backrefs }));
   confirmModal(opts.message, async () => {
-    try { await fb.delMany(items); }
-    catch (e) { toast("Delete failed: " + e.message, "error"); return; }
-    let note = "";
-    const files = (opts.files || []).filter(Boolean);
-    if (files.length && fb.deleteFiles) {
-      try {
-        const r = await fb.deleteFiles(files);
-        if (r && r.failed && r.failed.length) note = ` ${r.failed.length} attached file${r.failed.length === 1 ? "" : "s"} could not be removed from storage.`;
-      } catch (e) { note = " The attached files could not be removed from storage."; }
-    }
+    const batch = await trashRecords(payload);
+    if (!batch) return;
     if (opts.after) opts.after();
     view = { ...view, pick: null, mode: "list", id: null };
-    toast(`${opts.done}.${note}`, note ? "error" : undefined);
+    toast(`${opts.done}. Recover it from Recently deleted for ${TRASH_DAYS} days.`);
     render();
   }, { ok: opts.ok || "Delete", danger: true });
 }

@@ -295,9 +295,9 @@ async function submitNewProject() {
   view = { ...view, tab: "projects", mode: "detail", id, edit: false }; render();
 }
 function delProject(id) {
-  confirmModal("Delete " + id + " for everyone? Back up first if unsure.", () => {
-    del("projects", id);
-    DB.projects = DB.projects.filter(p => p.id !== id);
+  const rec = recById("projects", id);
+  confirmModal(`Delete ${id} for everyone? It goes to Recently deleted and can be restored for ${TRASH_DAYS} days.`, async () => {
+    await trashRecords([{ coll: "projects", id, files: rec ? recStoragePaths(rec) : [] }]);
     view = { ...view, mode: "list", id: null }; render();
   });
 }

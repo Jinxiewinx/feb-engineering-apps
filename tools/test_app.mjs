@@ -2207,12 +2207,19 @@ await t("purchase detail shows add-receipt prompt when none, thumbnail when atta
   html = renderBuyDetail();
   assert(html.includes('class="thumb"') && /Replace receipt/.test(html), "receipt attached: shows thumbnail + replace: " + html);
 });
-await t("deleting a purchase with a receipt cleans up its file (regression: nothing to clean up before this feature, must not regress once there is)", async () => {
+await t("deleting a purchase REMEMBERS its receipt rather than removing it", async () => {
+  /* It used to delete the file immediately, which was right while a delete was
+     final. Now the purchase goes to the bin, so the receipt has to survive it —
+     and the path has to be written down, because Storage listing is denied by
+     rule and nothing else records what that upload was. */
   DB.budget = [{ id: "B-R2", item: "resin", receiptUrl: "https://x.test/r2.jpg", receiptPath: "budget/B-R2/r2.jpg" }];
   calls.length = 0;
   delBuy("B-R2"); await confirmProceed();
-  assert(calls.some(c => c[0] === "deleteFile" && c[1] === "budget/B-R2/r2.jpg"), "receipt file deleted: " + JSON.stringify(calls));
-  assert(!DB.budget.some(b => b.id === "B-R2"), "purchase removed");
+  assert(!calls.some(c => c[0] === "deleteFile"), "the receipt is NOT removed: " + JSON.stringify(calls));
+  assert(!DB.budget.some(b => b.id === "B-R2"), "the purchase leaves the list");
+  const binned = trashedIn("budget").find(b => b.id === "B-R2");
+  assert(binned && binned.deletedFiles[0] === "budget/B-R2/r2.jpg",
+    "and the path rides on the tombstone, for the purge to use: " + JSON.stringify(binned && binned.deletedFiles));
 });
 
 await t("line items: total and count typed, the unit price works itself out", () => {
@@ -5172,8 +5179,9 @@ await t("deleting a board is lead-only in the UI and drops it from the list", as
   assert(view.tab === "inventory" && view.invView === "boards", "a board opens where boards live");
   assert(main.innerHTML.includes("delBoard"), "a lead should see the delete control");
   delBoard(id); await confirmProceed();
-  assert(DB.stock.length === 0, "the board should be gone locally");
-  assert(calls.some(c => c[0] === "del" && c[1] === "stock"), "and deleted server-side");
+  assert(DB.stock.length === 0, "the board should be gone from the rack");
+  assert(calls.some(c => c[0] === "trash" && c[1] === "stock"), "binned server-side, not deleted");
+  assert(trashedIn("stock").some(b => b.id === id), "and recoverable for thirty days");
 });
 
 console.log("mold slicing (stack plans):");
@@ -6253,8 +6261,9 @@ await t("deleting a work order takes its issues and its uploads with it", async 
 
   const msg = woDeletionSummary(d);
   assert(/1 issue/.test(msg) && /4 uploaded files/.test(msg), "the confirm counts the collateral: " + msg);
-  assert(/no undo/i.test(msg) && /stays consumed/.test(msg),
-    "and says what cannot be taken back: " + msg);
+  assert(/stays consumed/.test(msg), "and says what cannot be taken back: " + msg);
+  assert(/Recently deleted/.test(msg) && !/no undo/i.test(msg),
+    "and, since the records go to a bin instead, where to get them back: " + msg);
 
   fb.roster = { name: "Simon", role: "lead" };
   calls.length = 0;
@@ -6262,14 +6271,30 @@ await t("deleting a work order takes its issues and its uploads with it", async 
   await confirmProceed();
   await new Promise(r => setTimeout(r, 0));
 
-  const deleted = calls.filter(c => c[0] === "del").map(c => c[1] + "/" + c[2]);
-  assert(deleted.includes("workOrders/WO-SN6-001"), "the run is gone");
-  assert(deleted.includes("projects/PROJ-SN6-001"), "and the issue that could not exist without it");
-  assert(!deleted.includes("projects/PROJ-SN6-002"), "but not the issue belonging to another run");
-  assert(calls.filter(c => c[0] === "deleteFile").length === 4, "every upload it was the only reason for");
+  const binned = calls.filter(c => c[0] === "trash").map(c => c[1] + "/" + c[2]);
+  assert(binned.includes("workOrders/WO-SN6-001"), "the run leaves the rail");
+  assert(binned.includes("projects/PROJ-SN6-001"), "and the issue that could not exist without it");
+  assert(!binned.includes("projects/PROJ-SN6-002"), "but not the issue belonging to another run");
+  assert(!calls.some(c => c[0] === "del"), "nothing is actually deleted: " + JSON.stringify(calls.filter(c => c[0] === "del")));
+  /* The bytes are the whole reason this is a bin and not an undo bar. They stay
+     until a lead empties it, and their paths ride on the tombstone because
+     Storage LISTING is denied by rule and nothing else records them. */
+  assert(!calls.some(c => c[0] === "deleteFile"), "and not one upload is removed");
+  const wo = trashedIn("workOrders").find(w => w.id === "WO-SN6-001");
+  assert(wo.deletedFiles.length === 3, "the run's three uploads are on its tombstone: " + JSON.stringify(wo.deletedFiles));
+  assert(trashedIn("projects")[0].deletedFiles.length === 1,
+    "and the issue carries its own, so restoring it alone takes its photo with it");
   assert(DB.workOrders.length === 1 && DB.projects.length === 1, "and the in-memory copy agrees");
   assert(DB.parts[0].workOrderId === "" && DB.molds[0].wo === "" && DB.items[0].wo === "",
-    "a part outlives its run, but a pointer to a deleted run is exactly the artifact this removes");
+    "a part outlives its run, and while the run is binned the pointer is cleared");
+
+  /* Recording the cleared links is what makes this reversible rather than
+     merely survivable: without it the part comes back pointing at nothing. */
+  assert(wo.backrefs.length === 3, "what was cleared is written down: " + JSON.stringify(wo.backrefs));
+  await untrashRecords([{ coll: "workOrders", id: "WO-SN6-001" }, { coll: "projects", id: "PROJ-SN6-001" }]);
+  assert(DB.workOrders.length === 2 && DB.projects.length === 2, "the run and its issue come back");
+  assert(DB.parts[0].workOrderId === "WO-SN6-001" && DB.molds[0].wo === "WO-SN6-001" && DB.items[0].wo === "WO-SN6-001",
+    "and so do the links: " + JSON.stringify({ p: DB.parts[0].workOrderId, m: DB.molds[0].wo, i: DB.items[0].wo }));
 });
 
 await t("a member cannot bulk-delete, and the rail does not offer it", async () => {
@@ -6281,7 +6306,7 @@ await t("a member cannot bulk-delete, and the rail does not offer it", async () 
   fb.roster = { name: "Nobody", role: "member" };
   calls.length = 0;
   await woBulkDelete(["WO-SN6-001"]);
-  assert(!calls.some(c => c[0] === "del"), "nothing was deleted");
+  assert(!calls.some(c => c[0] === "del" || c[0] === "trash"), "nothing was deleted or binned");
   assert(/only a lead/i.test(lastToast), "and it said why: " + lastToast);
 
   view = { ...view, tab: "workorders", mode: "list", id: null, woPick: null };
@@ -6314,7 +6339,7 @@ await t("every list tab has the same Select… picker, and each delete takes wha
      puts a box on each row, All respects the filter, Delete is one confirm
      that also removes what hangs off the records, and the pick clears. */
   signInAsLead();
-  const idsDeleted = coll => calls.filter(c => c[0] === "del" && c[1] === coll).map(c => c[2]);
+  const idsDeleted = coll => calls.filter(c => (c[0] === "del" || c[0] === "trash") && c[1] === coll).map(c => c[2]);
   const filesDeleted = () => calls.filter(c => c[0] === "deleteFile").map(c => c[1]);
 
   // Molds: molds and their plans (with meshes) go together; an orphan plan on its own.
@@ -6335,8 +6360,11 @@ await t("every list tab has the same Select… picker, and each delete takes wha
   assert(/2 molds and 1 unlinked stack plan/.test(document.getElementById("modal").innerHTML) && /stack plan goes with/.test(document.getElementById("modal").innerHTML), "the confirm names the molds, the loose plan, and the linked plan that goes with them: " + document.getElementById("modal").innerHTML.slice(0, 300));
   assert(!calls.length, "nothing goes before the confirm");
   await confirmProceed();
-  assert(idsDeleted("molds").join() === "M1,M2" && idsDeleted("stackplans").sort().join() === "S1,S2", "molds and both plans deleted: " + JSON.stringify(calls));
-  assert(filesDeleted().length === 2, "both meshes removed from storage");
+  assert(idsDeleted("molds").join() === "M1,M2" && idsDeleted("stackplans").sort().join() === "S1,S2", "molds and both plans binned: " + JSON.stringify(calls));
+  /* The meshes stay in Storage until the bin is emptied — that is what makes
+     restoring a mold give you back its 3D view and not an empty box. */
+  assert(!filesDeleted().length, "no mesh is removed yet: " + JSON.stringify(filesDeleted()));
+  assert(trashedIn("molds").length === 2, "the molds are in the bin");
   assert(!DB.molds.length && !DB.stackplans.length && view.pick === null, "local copy pruned, pick cleared");
 
   // A single mold delete from its page takes the same path, plans included.
@@ -6366,7 +6394,10 @@ await t("every list tab has the same Select… picker, and each delete takes wha
   pickAll("budget"); calls.length = 0; deletePickedBuys();
   assert(/1 receipt goes with them/.test(document.getElementById("modal").innerHTML), "the confirm counts the receipts");
   await confirmProceed();
-  assert(idsDeleted("budget").length === 2 && filesDeleted().join() === "budget/B1/r.jpg" && !DB.budget.length, "purchases and the one receipt gone");
+  assert(idsDeleted("budget").length === 2 && !DB.budget.length, "both purchases leave the list");
+  assert(!filesDeleted().length, "the receipt is kept, not deleted: " + JSON.stringify(filesDeleted()));
+  assert(trashedIn("budget").some(b => (b.deletedFiles || []).includes("budget/B1/r.jpg")),
+    "its path is on the tombstone instead: " + JSON.stringify(trashedIn("budget").map(b => b.deletedFiles)));
 
   // Documents: uploads only; the bundled guides never get a box.
   DOCS_MANIFEST = [{ title: "Guide", category: "Guides", kind: "html", src: "docs/g.html" }];
@@ -6377,7 +6408,9 @@ await t("every list tab has the same Select… picker, and each delete takes wha
   startPick("documents");
   assert((main.innerHTML.match(/class="wopick"/g) || []).length === 1, "one box, for the one upload, none for the bundled guide");
   pickAll("documents"); calls.length = 0; deletePickedDocuments(); await confirmProceed();
-  assert(idsDeleted("documents").join() === "D1" && filesDeleted().join() === "documents/D1/p.jpg" && !DB.documents.length, "the upload and its file are gone");
+  assert(idsDeleted("documents").join() === "D1" && !DB.documents.length, "the upload leaves the shelf");
+  assert(!filesDeleted().length && trashedIn("documents").some(d => (d.deletedFiles || []).includes("documents/D1/p.jpg")),
+    "and its file waits on the tombstone until the bin is emptied: " + JSON.stringify(filesDeleted()));
 
   // R&D: a picked project takes its batches and every coupon, and offers undo.
   DB.rnd = [{ id: "RDS-1", cls: "RDS", name: "Cure study" }, { id: "RDS-2", cls: "RDS", name: "Batch A", parent: "RDS-1" },
@@ -8511,7 +8544,9 @@ await t("anyone can delete an inventory record from read mode, one click and one
   delShopRec("items", "JIG-SN6-001"); confirmProceed();
   await new Promise(r => setTimeout(r, 0));   // the bulk path awaits delMany before splicing
   assert(DB.items.length === 0, "deleting removes it locally");
-  assert(calls.some(c => c[0] === "del" && c[1] === "items" && c[2] === "JIG-SN6-001"), "and server-side");
+  assert(calls.some(c => c[0] === "trash" && c[1] === "items" && c[2] === "JIG-SN6-001"),
+    "binned server-side rather than deleted: " + JSON.stringify(calls));
+  assert(trashedIn("items").some(o => o.id === "JIG-SN6-001"), "and recoverable");
 });
 
 await t("setTab('stock') still works and paints the merged tab (legacy links, tests)", () => {
@@ -9530,6 +9565,83 @@ await t("a cascade records the links it clears, so restore can put them back", a
     backrefs: [{ coll: "parts", id: "P-GONE", field: "workOrderId", value: "WO-T-1" }] }]);
   await untrashRecords([{ coll: "workOrders", id: "WO-T-1" }]);
   assert(!recById("parts", "P-GONE"), "the missing target stays missing rather than being invented");
+});
+
+await t("the bin is browsable, groups by the gesture, and restores a set at once", async () => {
+  // The bin is global and every earlier test in this file has been filling it.
+  DB.trash = {};
+  onFbData("workOrders", []); onFbData("projects", []); onFbData("molds", []);
+  onFbData("workOrders", [{ id: "WO-B-1", partName: "Nose", status: "Draft", steps: [] }]);
+  onFbData("projects", [{ id: "PROJ-B-1", title: "Void", workOrderId: "WO-B-1" }]);
+  onFbData("molds", [{ id: "MOLD-B-1", name: "separate", stage: "Designed" }]);
+
+  const one = await trashRecords([{ coll: "workOrders", id: "WO-B-1" }, { coll: "projects", id: "PROJ-B-1" }]);
+  await trashRecords([{ coll: "molds", id: "MOLD-B-1" }]);
+
+  view = { ...view, tab: "reports", mode: "list", id: null, repTrash: true };
+  render();
+  const h = main.innerHTML;
+  assert(/Recently deleted/.test(h), "the card is on Reports, where the cross-cutting tools are");
+  assert(/3 records in 2 deletions/.test(h),
+    "grouped by the GESTURE, not the record: a run and its issue were one decision and are one row to put back: " + (h.match(/\d+ records in \d+ deletions/) || ["(absent)"])[0]);
+  assert(/Nose/.test(h) && /separate/.test(h), "and both are listed by name");
+  assert(/30 days left|29 days left/.test(h), "with how long is left on each");
+
+  await restoreTrashBatch(one);
+  assert(DB.workOrders.length === 1 && DB.projects.length === 1, "restoring one gesture takes everything in it");
+  assert(trashedIn("molds").length === 1, "and leaves the other alone");
+});
+
+await t("scanning something that is in the bin says so, instead of 'no record here'", async () => {
+  DB.trash = {};
+  /* The one thing the central filter costs: recById reads DB[coll], which no
+     longer contains it. Somebody scanning a binned mold is HOLDING it, so "no
+     record here" would send them looking for a thing they can see. */
+  onFbData("molds", [{ id: "MOLD-B-9", name: "scanned one", stage: "Sealed" }]);
+  await trashRecords([{ coll: "molds", id: "MOLD-B-9" }]);
+  const note = trashedNote("MOLD-B-9");
+  assert(/was deleted by/.test(note) && /Recently deleted/.test(note), "it says who, when, and where to get it back: " + note);
+  assert(!trashedNote("MOLD-NEVER-EXISTED"), "and a genuinely missing id still gets the ordinary answer");
+});
+
+await t("emptying the bin is lead-only, bounded, and the only thing that touches Storage", async () => {
+  DB.trash = {};
+  onFbData("documents", []);
+  const old = new Date(Date.now() - 40 * 86400000).toISOString();
+  const docs = [];
+  for (let i = 1; i <= 30; i++) docs.push({ id: "DOC-P-" + i, title: "old " + i, deleted: true,
+    deletedAt: old, deletedBy: "a@b.c", purgeAfter: old.slice(0, 10), trashBatch: "T-OLD",
+    deletedFiles: ["documents/DOC-P-" + i + "/f.pdf"], backrefs: [] });
+  docs.push({ id: "DOC-P-NEW", title: "fresh", deleted: true, deletedAt: new Date().toISOString(),
+    deletedBy: "a@b.c", purgeAfter: plusDays(TRASH_DAYS), trashBatch: "T-NEW", deletedFiles: [], backrefs: [] });
+  onFbData("documents", docs);
+
+  fb.roster = { name: "Nobody", role: "member" };
+  calls.length = 0; lastToast = "";
+  await purgeTrash();
+  assert(/lead-only/.test(lastToast) && !calls.length, "a member cannot empty it: " + lastToast);
+  view = { ...view, tab: "reports", mode: "list", id: null, repTrash: true };
+  render();
+  assert(/A lead empties the bin/.test(main.innerHTML) && !/purgeTrash\(\)/.test(main.innerHTML),
+    "and is not offered the button");
+
+  fb.roster = { name: "Simon", role: "lead" };
+  render();
+  assert(/31 records in 2 deletions/.test(main.innerHTML), "the card counts everything");
+  assert(/30 records are past 30 days/.test(main.innerHTML), "and says how many are due: " + (main.innerHTML.match(/\d+ records? (is|are) past[^<]*/) || ["(absent)"])[0]);
+
+  calls.length = 0;
+  await purgeTrash(); await confirmProceed();
+  await new Promise(r => setTimeout(r, 0));
+  /* BOUNDED per press. A lead on shop wifi emptying four hundred documents plus
+     their Storage objects fails somewhere in the middle; a partial sweep of a
+     bounded batch leaves a sane state and a partial sweep of everything does not. */
+  assert(calls.filter(c => c[0] === "del").length === PURGE_BATCH,
+    "a bounded batch, not all thirty: " + calls.filter(c => c[0] === "del").length);
+  assert(calls.filter(c => c[0] === "deleteFile").length === PURGE_BATCH,
+    "and THIS is where the Storage objects finally go — nowhere else in the app deletes one");
+  assert(trashedIn("documents").length === 31 - PURGE_BATCH, "the rest stay: " + trashedIn("documents").length);
+  assert(trashedIn("documents").some(d => d.id === "DOC-P-NEW"), "and nothing inside its thirty days is touched");
 });
 
 console.log("techniques:");

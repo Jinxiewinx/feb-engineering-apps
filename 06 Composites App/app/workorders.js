@@ -377,9 +377,17 @@ function resetSteps(wo) {
    decremented stock and flipped lots to opened. Deleting the run that consumed
    them does not put material back on the shelf, because it was really used.
 
-   NO UNDO. A deleted Storage object cannot be restored, so an Undo bar here
-   would be the lying button firestore.rules already warns about — the offer is
-   a backup export beforehand instead. */
+   THAT COMMENT USED TO SAY "NO UNDO", and it argued the case well: a deleted
+   Storage object cannot be restored, so an Undo bar here would be the lying
+   button firestore.rules already warns about, and the offer was a backup export
+   beforehand instead.
+
+   The premise is what changed, in September 2026. This path no longer deletes
+   anything. The records get a tombstone and leave every rail; the Storage
+   objects are NOT touched, their paths are frozen onto the tombstone, and a
+   lead empties the bin after thirty days. So the undo is real, and the argument
+   above is the reason it had to be built this way round rather than as a bar
+   over a delete that had already happened. */
 
 /* Firebase download URLs carry their own object path, percent-encoded, between
    /o/ and the query string. Recovering it is the only way to delete an image
@@ -438,43 +446,44 @@ function woDeletionSummary(d) {
   return `Delete ${n(d.wos.length, "work order")} from the team database for everyone?`
     + (also.length ? ` This also deletes ${also.join(" and ")}.` : "")
     + (links.length ? ` It clears the work-order link on ${list(links)}.` : "")
-    + ` Material already consumed by these runs stays consumed. There is no undo —`
-    + ` export a backup first if unsure.`;
+    + ` Material already consumed by these runs stays consumed.`
+    + ` Everything here goes to Recently deleted and can be restored for ${TRASH_DAYS} days,`
+    + ` uploads and links included.`;
 }
 async function woBulkDelete(ids) {
   if (!isLead()) { toast("Only a lead can delete work orders.", "error"); return; }
   const d = woDeletionSet(ids);
   if (!d.wos.length) { toast("Nothing selected.", "info"); return; }
   confirmModal(woDeletionSummary(d), async () => {
-    const gone = new Set(d.wos.map(w => w.id));
-    const issueIds = new Set(d.issues.map(p => p.id));
-    try {
-      await fb.delMany(
-        d.wos.map(w => ({ coll: "workOrders", id: w.id }))
-          .concat(d.issues.map(p => ({ coll: "projects", id: p.id }))));
-    } catch (e) { toast("Delete failed: " + e.message, "error"); return; }
+    /* RECORD THE BACK-POINTERS BEFORE CLEARING THEM. Clearing was right while
+       this was final — a pointer to a deleted run is a lingering artifact. On a
+       trash it is wrong on its own: the link would stay broken even after the
+       run came back, which is the difference between reversible and "the
+       document survived". They ride on the work order's own tombstone, so
+       restoring the run restores its links. */
+    const backrefs = []
+      .concat(d.parts.map(p => ({ coll: "parts", id: p.id, field: "workOrderId", value: p.workOrderId })))
+      .concat(d.molds.map(m => ({ coll: "molds", id: m.id, field: "wo", value: m.wo })))
+      .concat(d.items.map(i => ({ coll: "items", id: i.id, field: "wo", value: i.wo })));
 
-    // Records are gone; now the bytes they were the only reason for.
-    let failed = [];
-    if (d.paths.length) {
-      try { failed = (await fb.deleteFiles(d.paths)).failed; }
-      catch (e) { failed = d.paths; }
-    }
-    /* Back-pointers, one field each. Not batched with the deletes: these are a
-       handful of records and save() is the path that stamps updatedAt and keeps
-       the pub mirror right. */
+    /* The uploads go on the WOs and issues that own them, one record at a
+       time, rather than as one flat list on the first: an issue restored by
+       itself has to take its own photos with it. */
+    const items = d.wos.map(w => ({ coll: "workOrders", id: w.id, files: recStoragePaths(w) }))
+      .concat(d.issues.map(p => ({ coll: "projects", id: p.id, files: recStoragePaths(p) })));
+    items[0].backrefs = backrefs;
+
+    const batch = await trashRecords(items);
+    if (!batch) return;
+
     d.parts.forEach(p => { p.workOrderId = ""; save("parts", p, "workOrderId"); });
     d.molds.forEach(m => { m.wo = ""; save("molds", m, "wo"); });
     d.items.forEach(i => { i.wo = ""; save("items", i, "wo"); });
 
-    DB.workOrders = (DB.workOrders || []).filter(w => !gone.has(w.id));
-    DB.projects = (DB.projects || []).filter(p => !issueIds.has(p.id));
     view = { ...view, woPick: null, mode: "list", id: null };
     toast(`${d.wos.length} work order${d.wos.length === 1 ? "" : "s"} deleted`
       + (d.issues.length ? `, with ${d.issues.length} issue${d.issues.length === 1 ? "" : "s"}` : "")
-      + (d.paths.length ? ` and ${d.paths.length - failed.length} of ${d.paths.length} uploaded file${d.paths.length === 1 ? "" : "s"}` : "")
-      + ".", failed.length ? "error" : "info");
-    if (failed.length) toast(`${failed.length} upload${failed.length === 1 ? "" : "s"} could not be removed from storage — the records are gone but the bytes are still there.`, "error");
+      + `. Recover from Recently deleted for ${TRASH_DAYS} days.`);
     render();
   });
 }

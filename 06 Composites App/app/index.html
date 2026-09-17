@@ -1969,6 +1969,16 @@
   .tqrow select { flex: 1 1 150px; min-width: 0; }
   .tqact { display: flex; gap: 2px; margin-left: auto; }
   .tqwarn { flex: 1 1 100%; color: var(--amber); }
+  /* ---- Recently deleted ----
+     One row per DELETION, not per record: a work order and the issues that went
+     with it were one decision and are one thing to put back. Wraps, for the
+     reason the two panes above wrap. */
+  .trashlist { margin-top: 10px; }
+  .trashrow { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+    padding: 9px 0; border-top: 1px solid var(--line); }
+  .trashrow:first-child { border-top: none; }
+  .trash-what { flex: 1 1 220px; min-width: 0; }
+  .trash-who { flex: 0 1 auto; }
   .undobar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 8px 12px; font-size: 13px;
     border: 1px solid var(--ok-border); border-radius: var(--r-md); background: var(--ok-bg); color: var(--ink);
     position: sticky; top: calc(var(--topbar-h) + 8px); z-index: 4; box-shadow: var(--shadow-md); }

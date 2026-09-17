@@ -42,6 +42,125 @@ function exportCSV(which) {
   toast(s.file + " CSV downloaded.");
 }
 
+/* ---------- recently deleted ----------
+   Deleting stopped being final in September 2026: every delete path in the app
+   writes a tombstone, the record leaves every rail and every count, its public
+   nameplate goes, and its uploads are left exactly where they are. This is the
+   only screen that can see any of it, because DB[coll] deliberately cannot.
+
+   It lives on Reports rather than on a tab of its own: it spans every
+   collection, so it belongs to none of them, and Reports is already where the
+   cross-cutting lead tools are.
+
+   Any roster member restores, because any roster member can delete. Only a lead
+   empties, because emptying is the one irreversible step in the feature and the
+   one that takes the Storage objects with it. */
+function trashTitle(coll, rec) {
+  return rec.name || rec.partName || rec.title || rec.item || rec.label || rec.id;
+}
+const TRASH_NOUN = {
+  workOrders: "work order", parts: "part", projects: "issue", schedule: "week",
+  budget: "purchase", documents: "document", stock: "board", stackplans: "stack plan",
+  molds: "mold", items: "item", lots: "material", rnd: "R&D record",
+};
+function trashCard() {
+  const all = allTrashed();
+  const overdue = all.filter(x => x.rec.purgeAfter && x.rec.purgeAfter <= today());
+  const oldest = all.length ? Math.max(...all.map(x => daysSince(x.rec.deletedAt))) : 0;
+  if (!all.length) {
+    return `<div class="card"><h3>Recently deleted</h3>
+      <p class="muted">Nothing has been deleted. Anything that is goes here for ${TRASH_DAYS} days,
+        with its uploads, and comes back whole.</p></div>`;
+  }
+  /* Grouped by the gesture, not by the day: a work order and the issues that
+     went with it were one decision and are one row to put back. */
+  const groups = new Map();
+  for (const x of all) {
+    const k = x.rec.trashBatch || x.rec.id;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(x);
+  }
+  const rows = [...groups].map(([k, set]) => {
+    const lead = set[0].rec;
+    const age = daysSince(lead.deletedAt);
+    const left = TRASH_DAYS - age;
+    const names = set.slice(0, 3).map(x => `${esc(trashTitle(x.coll, x.rec))} <span class="muted tny">${esc(TRASH_NOUN[x.coll] || x.coll)}</span>`).join(", ");
+    const files = set.reduce((n, x) => n + (x.rec.deletedFiles || []).length, 0);
+    /* Wrapping rows, not a table. Four columns at 320px squeezed "Restore" to
+       one letter per line — the same reason the offcut pane and the technique
+       step editor are flex rows. */
+    return `<div class="trashrow">
+      <span class="trash-what">${names}${set.length > 3 ? ` <span class="muted tny">and ${set.length - 3} more</span>` : ""}
+        ${files ? `<div class="muted tny">${files} upload${files === 1 ? "" : "s"} kept with ${set.length === 1 ? "it" : "them"}</div>` : ""}</span>
+      <span class="tny muted trash-who">${esc(userName(lead.deletedBy) || lead.deletedBy || "?")} ·
+        ${age === 0 ? "today" : age + " day" + (age === 1 ? "" : "s") + " ago"}</span>
+      <span class="tny ${left <= 0 ? "done" : left <= 7 ? "mid" : "muted"}">${left <= 0 ? "past " + TRASH_DAYS + " days" : left + " day" + (left === 1 ? "" : "s") + " left"}</span>
+      <button class="sm" style="margin-left:auto" onclick="restoreTrashBatch('${esc(k)}')">Restore</button>
+    </div>`;
+  });
+  return `<div class="card">
+    <h3>Recently deleted</h3>
+    <p class="muted tny">${all.length} record${all.length === 1 ? "" : "s"} in ${groups.size} deletion${groups.size === 1 ? "" : "s"};
+      oldest ${oldest} day${oldest === 1 ? "" : "s"}. Uploads are kept until the bin is emptied, so a
+      restored record comes back whole. Restoring one brings back everything deleted with it.</p>
+    ${overdue.length ? `<div class="warn">${icon("warning", 14)}
+      <b>${overdue.length} record${overdue.length === 1 ? " is" : "s are"} past ${TRASH_DAYS} days.</b>
+      ${isLead()
+        ? `Emptying deletes ${overdue.length} record${overdue.length === 1 ? "" : "s"} and
+           ${overdue.reduce((n, x) => n + (x.rec.deletedFiles || []).length, 0)} uploaded file${overdue.reduce((n, x) => n + (x.rec.deletedFiles || []).length, 0) === 1 ? "" : "s"} for good.
+           <button class="sm" onclick="purgeTrash()">Empty them</button>`
+        : "A lead empties the bin."}
+      </div>` : ""}
+    <div class="trashlist">${rows.join("")}</div>
+  </div>`;
+}
+async function restoreTrashBatch(key) {
+  const set = allTrashed().filter(x => (x.rec.trashBatch || x.rec.id) === key);
+  if (!set.length) { render(); return; }
+  const n = await untrashRecords(set.map(x => ({ coll: x.coll, id: x.rec.id })));
+  if (n) toast(`${n} record${n === 1 ? "" : "s"} restored.`);
+  render();
+}
+
+/* THE PURGE. Client-side and lead-only, because this project has no scheduler:
+   functions/index.js is one parseReceipt callable, and a scheduled function
+   would be a second deploy target and a billing surface for a tidying job. So
+   retention is best-effort and the card says the oldest age out loud, rather
+   than implying a clock that does not exist.
+
+   BOUNDED per press. A lead on shop wifi emptying four hundred documents plus
+   their Storage objects will fail somewhere in the middle, and bulkDeleteRecords
+   reports failures rather than hiding them — but a partial sweep of a bounded
+   batch leaves a sane state, and a partial sweep of everything does not. */
+const PURGE_BATCH = 25;
+async function purgeTrash() {
+  if (!isLead()) { toast("Emptying the bin is lead-only — it cannot be undone.", "error"); return; }
+  const due = allTrashed().filter(x => x.rec.purgeAfter && x.rec.purgeAfter <= today());
+  if (!due.length) { toast("Nothing is past " + TRASH_DAYS + " days yet.", "info"); return; }
+  const take = due.slice(0, PURGE_BATCH);
+  const files = [].concat(...take.map(x => x.rec.deletedFiles || []));
+  const oldest = Math.max(...take.map(x => daysSince(x.rec.deletedAt)));
+  confirmModal(
+    `Permanently delete ${take.length} record${take.length === 1 ? "" : "s"}`
+    + (files.length ? ` and ${files.length} uploaded file${files.length === 1 ? "" : "s"}` : "")
+    + `? The oldest was deleted ${oldest} days ago. This cannot be undone — the files in particular are gone for good.`
+    + (due.length > take.length ? ` ${due.length - take.length} more stay for now; press again to continue.` : ""),
+    async () => {
+      try { await fb.delMany(take.map(x => ({ coll: x.coll, id: x.rec.id }))); }
+      catch (e) { toast("Empty failed: " + e.message, "error"); return; }
+      take.forEach(x => { DB.trash[x.coll] = trashedIn(x.coll).filter(r => r.id !== x.rec.id); });
+      let note = "";
+      if (files.length && fb.deleteFiles) {
+        try {
+          const r = await fb.deleteFiles(files);
+          if (r && r.failed && r.failed.length) note = ` ${r.failed.length} file${r.failed.length === 1 ? "" : "s"} could not be removed from storage.`;
+        } catch (e) { note = " The files could not be removed from storage."; }
+      }
+      toast(`${take.length} record${take.length === 1 ? "" : "s"} permanently deleted.${note}`, note ? "error" : undefined);
+      render();
+    }, { ok: "Delete for good", danger: true });
+}
+
 function renderReports() {
   // Status board data
   const stages = ["Not Started", "In Layup", "Layup Complete", "Polished"];
@@ -80,8 +199,11 @@ function renderReports() {
     <button onclick="setupTrackerFeed()" title="Publish the part list to the Google Sheet feed and copy its URL">Tracker feed</button>
     <button onclick="findMoldsInWorkOrders()" title="Turn the free-text mold names on work orders into real mold records">Find molds in work orders</button>
     <button onclick="backfillPartWorkOrderLinks()" title="Link each part to the work order with the same name">Link parts to work orders</button>` : ""}
+    <button onclick="view={...view,repTrash:!view.repTrash};render()">${icon("trash", 15)} Recently deleted${
+      (typeof allTrashed === "function" && allTrashed().length) ? ` (${allTrashed().length})` : ""}</button>
     <button class="primary" style="margin-left:auto" onclick="window.print()">Print status board</button>
   </div>
+  ${view.repTrash && typeof trashCard === "function" ? trashCard() : ""}
   <h2>Weekly status board <span class="muted" style="font-size:13px">— ${today()}</span></h2>
   <div class="rgrid">
     <div class="card">

@@ -390,13 +390,14 @@ async function partBulkDelete(ids) {
   const parts = (DB.parts || []).filter(p => set.has(p.id));
   if (!parts.length) { toast("Nothing selected.", "info"); return; }
   const what = parts.length === 1 ? parts[0].id : `${parts.length} parts`;
-  confirmModal(`Delete ${what} from the team database for everyone? There is no undo — export a backup first if unsure.`, async () => {
-    try { await fb.delMany(parts.map(p => ({ coll: "parts", id: p.id }))); }
-    catch (e) { toast("Delete failed: " + e.message, "error"); return; }
-    const gone = new Set(parts.map(p => p.id));
-    DB.parts = (DB.parts || []).filter(p => !gone.has(p.id));
+  confirmModal(`Delete ${what} from the team database for everyone? It goes to Recently deleted and can be restored for ${TRASH_DAYS} days.`, async () => {
+    /* A part's own uploads live under parts/ and go on its tombstone, so
+       restoring the part gives back its CAD and its photos rather than a
+       record pointing at nothing. */
+    const batch = await trashRecords(parts.map(p => ({ coll: "parts", id: p.id, files: recStoragePaths(p) })));
+    if (!batch) return;
     view = { ...view, partPick: null, pick: null, mode: "list", id: null };
-    toast(`${parts.length} part${parts.length === 1 ? "" : "s"} deleted.`);
+    toast(`${parts.length} part${parts.length === 1 ? "" : "s"} deleted. Recover from Recently deleted.`);
     render();
   });
 }

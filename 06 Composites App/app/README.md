@@ -843,6 +843,29 @@ One thing the editor watches for you: a step whose title reads like a blocker
 carries no blocker rule. On runs created before September 2026 the title alone
 makes it a hard blocker, so the editor says so while you are typing.
 
+**Deleting is not final any more.** Every delete in the app sends the record to
+**Recently deleted**, on the Reports tab. It leaves every rail, every count and
+every report, its QR nameplate stops resolving, and it comes back whole for
+thirty days — with its uploads, and with the links that were cleared on other
+records when it went. A work order and the issues that went with it were one
+decision, so they are one row in the bin and one press to restore.
+
+The uploads are the reason this is a bin and not an undo bar. A deleted Storage
+object cannot be brought back, so nothing deletes one until a lead empties the
+bin. Until then the paths sit on the record, which matters because Storage
+listing is denied by the rules and nothing else records what those files were.
+
+**Any member deletes; only a lead empties.** Deleting is reversible and the bin
+names who did it, so it is a smaller thing to hand out than it used to be.
+Emptying is the one irreversible step in the app, so it is a lead's, and it goes
+twenty-five records at a time — a phone on shop wifi will not empty four hundred
+documents and their files in one press without failing somewhere in the middle.
+
+There is no scheduled job behind the thirty days: a lead empties the bin when
+they open it, so the card shows the oldest item's age rather than implying a
+clock. Scanning a label for something in the bin says who deleted it and when,
+instead of "no record here" — the person holding it can see it exists.
+
 Documents is the team shelf (pinned links to the things people keep asking for),
 member uploads, and the **25 manufacturer datasheets**. Anyone can upload a doc.
 
