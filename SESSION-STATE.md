@@ -32,11 +32,14 @@ versioning, then the editor — 10 before 11 without exception; **12-14** soft
 delete and the 30-day trash, last, because its blast radius is every count in
 the app.
 
-**Pre-existing test failure, not ours.** `authed write of a non-STL content
-type to stackplans/` returns 200 in `tools/test_storage_rules.mjs` under
-firebase-tools 15.24.0, and fails identically at the commit before this work.
-`fb.upload` always sends a contentType, so this is very likely the emulator
-and not a hole. Spawned as its own task.
+**A storage-rules assertion was asserting nothing** (closed 2026-09-17, by the
+spawned task at 3591308, and worth keeping only for the fact underneath).
+firebase-tools' emulator does NOT leave `request.resource.contentType` unset on
+a simple upload to `/v0/...`, as that suite's scope note claimed for a year: it
+defaults the value to `application/octet-stream` and never reads the
+Content-Type header. So no contentType-gated allow case is assertable there,
+and any assertion that thinks it is sending a PDF is really sending
+octet-stream.
 
 **The Fusion add-in ships as a download, on the app's version** (2026-09-17).
 `tools/release.mjs` cuts it in one command; the procedure is in `CLAUDE.md`,
