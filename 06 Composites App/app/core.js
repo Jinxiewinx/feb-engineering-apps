@@ -32,12 +32,12 @@ var APP_VERSION = "5.0.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Deleting is not final any more. Anything you delete goes to Recently deleted on the Reports tab and comes back whole for 30 days, with its photos and its links. Any member can delete; only a lead empties the bin.",
-  "Molds have a new stage, Tooling cut: boards off the ShopSabre, not glued yet. The cut list now offers only molds still at Designed, and marking boards cut moves the mold to Tooling cut, so nothing gets nested twice. To cut one again, walk its stage back first.",
-  "Mark cut now shows every offcut before it becomes a board: its size, its name, which board it came off. Fix a size, add a piece the planner did not predict, drop one that did not survive. Pieces under 4in are listed too, unticked.",
-  "Molds take files now, for datum cut plans, and a PDF opens in the app instead of downloading. Photos pasted into a mold, item or lot note also work at last — they had been failing silently.",
-  "Leads can add layup techniques from Work Orders: copy an existing checklist, edit the steps and their gates. A run keeps the checklist it started with, and says so when the technique has moved on.",
+  "The Reports tab reads top to bottom now: this week's board, then what has been deleted, then the layup techniques. The CSV exports and the one-off repairs moved to the bottom, under their own heading.",
+  "Recently deleted is open on the page instead of behind a button. You come to that tab because something is missing.",
+  "Layup techniques moved off the Work Orders toolbar onto Reports, where anyone can read the checklists and see which steps need which training. Leads still edit them.",
+  "Print status board is a proper printed sheet, like the travelers and the mold drawings: masthead, ruled sections, tables that carry their headers onto a second page, and six ruled lines at the bottom to write the meeting's decisions on.",
 ];
+
 
 
 /* ---------- config/release ----------
