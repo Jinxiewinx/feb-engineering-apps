@@ -310,7 +310,8 @@ function renderMoldsRail() {
       </div>
       <div class="toolbar">
         ${pickOn("molds") ? "" : `${(DB.stackplans || []).length ? `<button class="ib" onclick="view={...view,mode:'cuts',cutSel:''};render()">${icon("print", 15)} Cut list</button>` : ""}
-        ${(allMolds.length + (DB.stock || []).length) ? `<button class="ib" onclick="openLabelBuilder('molds')">${icon("print", 15)} Labels</button>` : ""}`}
+        ${(allMolds.length + (DB.stock || []).length) ? `<button class="ib" onclick="openLabelBuilder('molds')">${icon("print", 15)} Labels</button>` : ""}
+        ${fusionHost() ? "" : `<button class="ib" onclick="window.open(ADDIN_RELEASE_URL, '_blank', 'noopener')" title="Plan a mold's stack from inside Fusion. Opens the add-in download.">${icon("download", 15)} Plan from Fusion</button>`}`}
         ${isLead() ? pickBar("molds", { all: molds.map(m => m.id).concat(plans.map(p => p.id)), onDelete: "deletePickedMolds()", hint: "Select several molds to delete them, with their stack plans" }) : ""}
       </div>
       <div class="psum">

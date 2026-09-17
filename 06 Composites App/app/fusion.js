@@ -27,7 +27,7 @@
    The contract, JSON strings both ways:
      page -> Fusion  "loaded"        { version, state }        the bridge is alive
      page -> Fusion  "state"         { state, guest, roster, stockSynced, ready, signedInAs }
-     Fusion -> page  "mold"          { stl (base64 binary STL, mm), body, fusion:{…}, frame? }
+     Fusion -> page  "mold"          { stl (base64 binary STL, mm), body, fusion:{…}, frame?, addinVersion? }
      page -> Fusion  "mold-held"     { bytes, waitingOn }     held until ready
      page -> Fusion  "mold-received" { bytes, name }          the modal is open with it
      page -> Fusion  "mold-failed"   { error }
@@ -58,6 +58,16 @@ let FUSION_PENDING = null;       // a "mold" payload waiting for the app to be r
 let FUSION_STOCK_SYNCED = false; // onFbData("stock") has fired at least once
 let FUSION_SIGNIN_BUSY = false;  // a "signin" is in flight; ignore repeats
 let FUSION_LAST_STATE = "";      // last "state" message sent, to send only changes
+let FUSION_ADDIN_VERSION = "";   // reported by the add-in on the "mold" message
+let FUSION_STALE_WARNED = false; // the out-of-date nudge is shown once per page
+
+/* The oldest add-in build this app still works with, and where to get a newer
+   one. Raise MIN_ADDIN_VERSION when a change here needs a matching change in
+   FEBPlanStock.py, not on every add-in release: every bump makes somebody
+   reinstall. An add-in older than 1.1.0 sends no version at all, which is the
+   same signal, so a missing version counts as stale. */
+const MIN_ADDIN_VERSION = "1.1.0";
+const ADDIN_RELEASE_URL = "https://github.com/Jinxiewinx/feb-engineering-apps/releases/latest";
 
 const FUSION_POLL_MS = 100, FUSION_POLL_FOR_MS = 6000;
 
@@ -135,11 +145,27 @@ function fusionWaitingOn(s) {
    HTMLEvent with action "response", so return something non-empty: an empty
    string is how Fusion signals failure. The page also answers explicitly with
    its own message, because that "response" event proved unreliable. */
+/* Nudge a member running an add-in older than this app expects. Once per page,
+   and never fatal: an old add-in usually still plans a mold, it just misses
+   whatever the newer one learned to send. */
+function fusionCheckAddinVersion(v) {
+  FUSION_ADDIN_VERSION = String(v || "");
+  if (FUSION_STALE_WARNED) return false;
+  if (FUSION_ADDIN_VERSION && !versionNewer(MIN_ADDIN_VERSION, FUSION_ADDIN_VERSION)) return false;
+  FUSION_STALE_WARNED = true;
+  const have = FUSION_ADDIN_VERSION || "older than 1.1.0";
+  // toast() takes no duration and has no warning level, so this rides the error
+  // styling, which is the one that stays up long enough to read.
+  toast(`This machine's Fusion add-in is ${have} and the app expects ${MIN_ADDIN_VERSION}. Reinstall it from Plan from Fusion on the Molds tab.`, "error");
+  return true;
+}
+
 function fusionHandle(action, data) {
   try {
     if (action === "mold") {
       const payload = JSON.parse(data || "{}");
       if (!payload || !payload.stl) throw new Error("no STL in the message");
+      fusionCheckAddinVersion(payload.addinVersion);
       const s = fusionAppState();
       if (!s.ready) {
         // Hold it. A second mesh before the first opened replaces it: the

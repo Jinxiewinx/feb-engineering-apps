@@ -56,6 +56,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import febframe
 
+ADDIN_VERSION = "1.1.0"   # keep in step with FEBPlanStock.manifest; tools/package_addin.mjs checks
 APP_URL = "https://feb-composites.web.app/?fusion=1#/molds"
 PALETTE_ID = "feb_plan_stock_palette"
 CMD_ID = "FEB_PlanStock"
@@ -356,6 +357,7 @@ def send_pending():
         return
     _state["confirmed"] = False
     _state["sent_at"] = time.time()
+    msg["addinVersion"] = ADDIN_VERSION
     p = palette()
     p.sendInfoToHTML("mold", json.dumps(msg))
     log("sent mesh", len(msg.get("stl", "")), "chars")
@@ -493,7 +495,8 @@ def run(context):
             pass
         _watchdog_event = _app.registerCustomEvent(WATCHDOG_EVENT)
         w = Watchdog(); _watchdog_event.add(w); _handlers.append(w)
-        log("FEBPlanStock loaded; Fusion", _app.version, "; credentials.json", "present" if credentials() else "absent")
+        log("FEBPlanStock", ADDIN_VERSION, "loaded; Fusion", _app.version,
+            "; credentials.json", "present" if credentials() else "absent")
     except Exception:
         if _ui:
             _ui.messageBox("FEBPlanStock failed to load:\n" + traceback.format_exc(), "FEB Plan stock")

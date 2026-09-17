@@ -1,0 +1,51 @@
+FEB Composites - Plan stock add-in for Fusion
+=============================================
+
+WHAT IT DOES
+  Adds a FEB panel with a Plan stock button to the Utilities tab in Fusion.
+  Select a mold body, press it, and the composites app opens in a side panel
+  with the mesh already loaded. Plan the stack there and the tooling board
+  layers appear over your mold.
+
+INSTALL
+  Mac      double-click "Install on Mac.command"
+  Windows  double-click "Install on Windows.bat"
+
+  Unzip the whole download first. The installer has to be able to see the
+  FEBPlanStock folder sitting next to it.
+
+  Then quit Fusion and open it again.
+
+IF MACOS REFUSES TO OPEN IT
+  macOS blocks scripts downloaded from the internet the first time. You get
+  "Apple could not verify it is free of malware", with only a Done button.
+  That is expected and it takes one pass to clear:
+
+    1. Open System Settings > Privacy & Security.
+    2. Scroll down to Security. There is a line about "Install on Mac.command"
+       with an Open Anyway button. Press it.
+    3. Double-click the installer again and press Open.
+
+  Paying Apple to remove that dialog costs the team $99 a year, so we do not.
+
+FIRST USE
+  The panel shows the app's normal sign-in card. Sign in with your own
+  composites app account. It remembers you on that machine from then on, and
+  your name is what gets stamped on the molds you plan.
+
+UPDATING
+  Download the newer zip and run the installer again. It replaces the add-in
+  and keeps your settings. Quit and reopen Fusion afterwards.
+
+REMOVING
+  Delete the FEBPlanStock folder from Fusion's AddIns directory:
+    Mac      ~/Library/Application Support/Autodesk/Autodesk Fusion 360/API/AddIns/
+    Windows  %APPDATA%\Autodesk\Autodesk Fusion 360\API\AddIns\
+
+IF SOMETHING GOES WRONG
+  There is a febplanstock.log beside the installed add-in, one line per step.
+  Send it to the composites lead with what you were doing.
+
+  Verified on macOS. The Windows installer is written to Autodesk's documented
+  path but has not been run on a Windows machine yet, so tell the composites
+  lead how it goes.

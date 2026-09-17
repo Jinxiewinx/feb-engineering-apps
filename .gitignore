@@ -54,3 +54,6 @@ ds-bundle
 # The Fusion add-in's shared team account. Distributed by hand, never committed:
 # the repo is public.
 10 Fusion Add-in/FEBPlanStock/credentials.json
+
+# Built add-in packages. The zip lives on a GitHub Release, not in git.
+dist/
