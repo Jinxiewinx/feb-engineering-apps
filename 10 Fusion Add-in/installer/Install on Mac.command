@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install on Mac.command — put FEBPlanStock into Fusion's add-ins folder.
+# Install on Mac.command: put FEBPlanStock into Fusion's add-ins folder.
 #
 # Double-click this file. It copies the FEBPlanStock folder sitting next to it
 # into Fusion's per-user AddIns directory, keeping any credentials.json that is
@@ -15,7 +15,7 @@ ADDINS="$HOME/Library/Application Support/Autodesk/Autodesk Fusion 360/API/AddIn
 DEST="$ADDINS/FEBPlanStock"
 
 echo
-echo "FEB Composites — Plan stock add-in for Fusion"
+echo "FEB Composites: Plan stock add-in for Fusion"
 echo "---------------------------------------------"
 echo
 

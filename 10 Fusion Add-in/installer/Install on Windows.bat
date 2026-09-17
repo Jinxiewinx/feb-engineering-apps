@@ -12,7 +12,7 @@ set "ADDINS=%APPDATA%\Autodesk\Autodesk Fusion 360\API\AddIns"
 set "DEST=%ADDINS%\FEBPlanStock"
 
 echo.
-echo FEB Composites - Plan stock add-in for Fusion
+echo FEB Composites: Plan stock add-in for Fusion
 echo ---------------------------------------------
 echo.
 

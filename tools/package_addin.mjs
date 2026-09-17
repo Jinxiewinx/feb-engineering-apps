@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* package_addin.mjs — build the shareable FEBPlanStock zip.
+/* package_addin.mjs: build the shareable FEBPlanStock zip.
  *
  *   node tools/package_addin.mjs            # build dist/FEBPlanStock-<ver>.zip
  *   node tools/package_addin.mjs --release  # build, then cut a GitHub Release

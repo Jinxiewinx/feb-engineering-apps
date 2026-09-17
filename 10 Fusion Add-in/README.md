@@ -1,29 +1,62 @@
 # 10 Fusion Add-in
 
-A Fusion add-in that runs the composites app's stack planner from inside
-Fusion: select the mold body, sign in, and the tooling-board layers come back
-as semi-transparent bodies over the mold for CAM, with the mold record created
-in the app and linked to its Fusion document.
+FEBPlanStock: plan a mold's tooling board stack from inside Fusion, using the
+composites app's own planner. Select the mold body, press **Plan stock** on the
+**FEB** panel of the Utilities tab, and the app opens in a palette with the mesh
+already loaded. The planned blanks come back as see-through boxes over the mold.
 
-**`FEBPlanStock/` is the add-in.** Its README has the install steps for macOS
-and Windows and how it works; the page side lives in the app as
-`06 Composites App/app/fusion.js` and shipped in app v4.5.0. Built 2026-09-04
-on the study's recommendation.
+## Installing it
 
-`FEASIBILITY-PLAN.md` is the approved plan for the
-feasibility study (2026-09-04): the user story, the two architectures to
-compare, the questions to answer, and six throwaway spikes. `spikes/` holds
-the spike scripts and `spikes/README.md` their results: all six ran on macOS on
-2026-09-04 and passed, except the `fusion360://` deep link, which opened
-nothing. `FEASIBILITY.md` is the study: go, with the real app in a Fusion
-palette (architecture A), sized at two sessions. The spike add-ins under `spikes/` are throwaway and are installed nowhere
-but Simon's Mac.
+Download the zip from the
+[latest release](https://github.com/Jinxiewinx/feb-engineering-apps/releases/latest)
+and double-click the installer inside. `FEBPlanStock/README.md` has the full
+walkthrough, including the one-time macOS security dialog and what to do when it
+misbehaves. The app links the same download: **Plan from Fusion**, on the Molds
+tab.
 
-`MCP.md` records Fusion's built-in MCP server and how Claude Code connects
-to it; `tools/find_fusion_mcp.py` finds its port. That is the path the spikes
-run over.
+## Cutting a release
 
-The app-side facts the plan relies on (the stack plan's stored layer blanks in
-millimetres in the mold's CAD frame, the pure-JS slicer, email/password auth
-usable over REST) are documented in `06 Composites App/app/README.md` and
-`DESIGN-NOTES.md`; the plan quotes the file and line for each.
+From the repo root:
+
+```bash
+node tools/test_addin_package.mjs
+node tools/package_addin.mjs
+node tools/package_addin.mjs --release
+```
+
+The first builds and checks, the second writes `dist/FEBPlanStock-<ver>.zip` so
+you can look at it, and the third tags `addin-v<ver>`, pushes, and creates the
+GitHub Release with the zip attached.
+
+Bump the version in **both** `FEBPlanStock/FEBPlanStock.manifest` and
+`ADDIN_VERSION` in `FEBPlanStock/FEBPlanStock.py` first. The packager refuses to
+build when they disagree, since a version the add-in cannot report is a version
+nobody can act on.
+
+Raise `MIN_ADDIN_VERSION` in `06 Composites App/app/fusion.js` only when a
+change to the page side needs a matching change in the add-in. Every bump makes
+somebody reinstall.
+
+After releasing, download the zip in a browser and run the installer from that
+copy. A local build is not quarantined, so it cannot tell you whether the macOS
+instructions in `INSTALL.txt` are right.
+
+## What is in here
+
+| Path | What it is |
+|---|---|
+| `FEBPlanStock/` | The add-in. This folder, and only this folder, goes into Fusion's AddIns directory. |
+| `installer/` | The three files the packager puts beside the add-in in the zip: `INSTALL.txt` and one installer per platform. |
+| `FEASIBILITY.md`, `FEASIBILITY-PLAN.md` | The 2026-09-04 study that chose this architecture, a real app in a Fusion palette. |
+| `MCP.md` | Driving a live Fusion session from Claude Code over Fusion's built-in MCP server on `127.0.0.1:27182`. |
+| `spikes/` | The six throwaway spikes behind the feasibility study, with their results. |
+| `tools/` | `fusion_mcp.py` and `find_fusion_mcp.py`, the MCP client used to verify the add-in against a running Fusion. |
+
+`NEXT-SESSION-PROMPT.md` is a handoff from 2026-09-04 and is now history.
+
+## Known gaps
+
+The Windows installer targets Autodesk's documented per-user path but has never
+been run on Windows. Neither has the add-in itself, beyond one member's install
+on 2026-09-07 that surfaced two real bugs. A Windows member trying the installer
+and reporting back is the outstanding task.

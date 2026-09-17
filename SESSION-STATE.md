@@ -20,6 +20,22 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**FEBPlanStock 1.1.0 (2026-09-17): the add-in ships as a download.**
+`node tools/package_addin.mjs [--release]`; `addin-v*` is a third tag series
+and the repo's first GitHub Release of any kind. Decisions that cost
+something to reach and should not be quietly reversed: no .dmg or .exe,
+because an UNSIGNED one is blocked harder than a plain script is and signing
+runs about $99/yr per platform (Simon, 2026-09-17); the two installers sit
+beside the add-in folder in the zip, never inside it, or they get copied into
+Fusion's AddIns directory too; the zip ships no `credentials.json`, so a
+member signs in as themselves and their own name stamps the mold. The
+manifest version and `ADDIN_VERSION` in the .py must match or the packager
+refuses to build.
+
+**OPEN: nobody has run the Windows installer**, or the add-in itself beyond
+one member's 2026-09-07 install. Needs a Windows member. `INSTALL.txt` says
+so in as many words until then.
+
 **v4.8.0 (2026-09-16): Select… on every list.** Shared picker in core.js
 (`view.pick = {key, ids}`, `pickBar/pickBox/pickClick/bulkDeleteRecords`,
 `PICK_ALL` holds the on-screen ids at render so All needs a render first).
@@ -47,8 +63,7 @@ the "plan" message; `draw_plan` inverts it and draws oriented boxes;
 export. VERIFIED LIVE in Fusion on 2026-09-09 over the built-in MCP server
 (raw HTTP, `10 Fusion Add-in/tools/fusion_mcp.py`, recipe in `MCP.md`): a
 side-lying block's boxes were drawn standing on the picked face to the mm.
-The add-in is installed on Simon's Mac (folder copied over, no
-credentials.json there). Not yet done by a person: the face pick in the
+Not yet done by a person: the face pick in the
 actual command dialog. Separately, `applyMargin` now takes a lattice anchor
 and `sliceMold` snaps every blank to the bottom blank's half-inch grid, which
 is what fixes the layer offset Simon saw on STK-SN6-014; that plan predates
@@ -66,30 +81,19 @@ against a block plan live. `tools/test_drawings.mjs` has three pre-existing
 failures (cutlist, cutcrowd, cutbatch, "findings" from the visual audit) that
 were there before this change and are not from it.
 
-**Fusion add-in built: app v4.5.0 and `10 Fusion Add-in/FEBPlanStock/`**
-(2026-09-04). Study at `FEASIBILITY.md` chose the palette-hosted app; all six
-spikes passed on macOS (`spikes/README.md`), the `fusion360://` deep link
-failed so the mold card links to `dataFile.fusionWebURL`. The app side is
-`app/fusion.js` (two messages each way, contract at the top of the file),
-two stamps in `submitMold`, a Fusion section on the mold card; no rules
-change, since molds create/update is `onRoster()` with no field list. The
-add-in is installed on Simon's Mac and its FEB panel shows on the Utilities
-tab. Verified live on 2026-09-04 up to the page taking the mesh (the palette
-loaded v4.5.0, the add-in sent 75,884 bytes, the page answered
-`mold-received`); the palette was left open with the modal loaded, and the
-press of Plan, the records and the drawn bodies still need a signed-in
-person. Fusion's own `response` HTMLEvent did not arrive on the first two
-sends to the https page and did on the third, so the add-in relies on the
-page's explicit `mold-received` and not on that path. Not done:
-the Windows repeat of every spike and of the install (needs a member), and
-the S4 spike add-ins are still installed beside it (`S4PaletteBridge`,
-`S5RestSignin`, delete when no longer wanted). Build-shaping facts not in the
-code: `STLExportOptions.unitType` reads inches but writes mm at its default,
-so the add-in meshes through `MeshCalculator` in cm and writes mm itself;
-parametric mode needs a base feature for temporary bodies and names are set
-after `finishEdit()`; the `adsk` bridge object appears in the palette page
-about a second after load and a `sendInfoToHTML` before the page has loaded
-is dropped, so the page speaks first and the add-in queues the mesh.
+**Fusion build-shaping facts** (2026-09-04, from the six spikes; all cost a
+live experiment to find). `STLExportOptions.unitType` reads inches but writes
+mm at its default, so the add-in meshes through `MeshCalculator` in cm and
+writes mm itself. Parametric mode needs a base feature for temporary bodies,
+and names are set after `finishEdit()`. The `adsk` bridge object appears in
+the palette page about a second after load, and a `sendInfoToHTML` before the
+page has loaded is dropped, so the page speaks first and the add-in queues
+the mesh. Fusion's own `response` HTMLEvent is unreliable over https, so the
+add-in relies on the page's explicit `mold-received`. The `fusion360://` deep
+link opens nothing, which is why the mold card links `dataFile.fusionWebURL`.
+
+The S4/S5 spike add-ins are still installed beside FEBPlanStock on Simon's
+Mac (`S4PaletteBridge`, `S5RestSignin`); delete when no longer wanted.
 
 **The CFD app is at cfd-v0.3.1** (2026-09-03). Decisions that must not be
 re-asked: open access with no sign-in; shared library in Storage; 07

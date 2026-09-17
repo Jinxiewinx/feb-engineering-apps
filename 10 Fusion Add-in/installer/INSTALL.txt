@@ -1,4 +1,4 @@
-FEB Composites - Plan stock add-in for Fusion
+FEB Composites: Plan stock add-in for Fusion
 =============================================
 
 WHAT IT DOES

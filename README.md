@@ -21,7 +21,7 @@ for everything in here.
 | `07 CFD PDF Viewer/` | The desktop original of the CFD viewer, kept buildable; the hosted version lives in `08` | `README.md` |
 | `08 CFD Sims Dashboard/` | The CFD app, live at feb-cfd.web.app on its own Firebase project: a dashboard of every report with its downforce and drag by design point, saved views, and the report viewer from `07`, all in the composites app's shell | `README.md` |
 | `09 Website/` | The public team website, built on the design system. Not deployed; its README has the state of it | `README.md` |
-| `10 Fusion Add-in/` | `FEBPlanStock/`, a Fusion add-in that runs the stack planner from inside Fusion and draws the board layers over the mold, plus the feasibility study and spikes that led to it | `FEBPlanStock/README.md` |
+| `10 Fusion Add-in/` | `FEBPlanStock/`, a Fusion add-in that runs the stack planner from inside Fusion and draws the board layers over the mold, plus the feasibility study and spikes that led to it. Install it from the [latest release](https://github.com/Jinxiewinx/feb-engineering-apps/releases/latest): download the zip, unzip, double-click the installer | `10 Fusion Add-in/README.md` |
 | `tools/` | Everything that builds and checks the rest: the docx builder, the generators, the servers, and 19 test suites | `README.md` |
 
 ## Getting started

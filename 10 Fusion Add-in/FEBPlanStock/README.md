@@ -15,9 +15,46 @@ Nothing is saved to the document by the add-in. You save.
 
 ## Install
 
-The add-in is a folder; Fusion loads every folder in its per-user AddIns
-directory at startup. Copy `FEBPlanStock/` (this folder, with the
-`.manifest`, the two `.py` files and `resources/`) there:
+Download **`FEBPlanStock-<version>.zip`** from the
+[latest release](https://github.com/Jinxiewinx/feb-engineering-apps/releases/latest),
+unzip it, and double-click the installer inside:
+
+| Platform | Double-click |
+|---|---|
+| macOS | `Install on Mac.command` |
+| Windows | `Install on Windows.bat` |
+
+Then quit Fusion and open it again. The FEB panel appears on the Utilities tab
+of the Design workspace, with a Plan stock button on it. Without restarting:
+Utilities, Add-Ins, the Add-Ins tab, select FEBPlanStock, press Run.
+
+The installer copies the add-in folder into Fusion's per-user AddIns directory,
+keeps any `credentials.json` that is already installed, and on macOS clears the
+quarantine flag a browser puts on every file in a downloaded zip. Running it
+again over an older install is how you update. To remove the add-in, delete its
+folder from the AddIns directory.
+
+The app also links the download: **Plan from Fusion**, on the Molds tab, next
+to Cut list and Labels.
+
+### The macOS security dialog
+
+macOS blocks scripts downloaded from the internet the first time, so the first
+double-click gives "Apple could not verify it is free of malware" with only a
+Done button. Open System Settings, Privacy & Security, scroll to Security,
+and press Open Anyway on the line naming the installer. Double-click it again
+and press Open. Once per download, and it does not come back.
+
+Signing the installer to remove that dialog needs an Apple Developer account at
+$99 a year, and the Windows equivalent is a code-signing certificate at a
+similar price. Neither is worth it for a dialog that clears in three clicks.
+Note that an unsigned `.dmg` or `.exe` would be blocked *harder* than these
+scripts are, which is why the release is a zip.
+
+### From a checkout
+
+For working on the add-in rather than using it. The add-in is a folder, and
+Fusion loads every folder in its per-user AddIns directory at startup:
 
 | Platform | AddIns folder |
 |---|---|
@@ -36,17 +73,23 @@ On Windows, in PowerShell from the repo folder:
 Copy-Item -Recurse "10 Fusion Add-in\FEBPlanStock" "$env:APPDATA\Autodesk\Autodesk Fusion 360\API\AddIns\"
 ```
 
-Then either restart Fusion (the manifest says `runOnStartup`) or open
-Utilities, Add-Ins, the Add-Ins tab, select FEBPlanStock and press Run. The
-FEB panel appears on the Utilities tab of the Design workspace.
+Copying by hand this way **overwrites `credentials.json`**, unlike the
+installer. Move it aside first if you have one.
 
-To update, replace the folder and restart Fusion. To remove, delete the
-folder.
+To cut a release, see `../README.md` and `tools/package_addin.mjs`.
 
-Verified on macOS (Fusion 2702.1.58, 2026-09-04). Windows is untested and
-the path above is Autodesk's documented one.
+Verified on macOS (Fusion 2702.1.58, 2026-09-04; installer 2026-09-17). The
+Windows path is Autodesk's documented one and the Windows installer has not
+been run on a Windows machine yet.
 
 ## The shared team account
+
+**The release does not carry this file, and does not need it.** A member who
+installs from the zip gets the app's ordinary sign-in card the first time, signs
+in as themselves, and is remembered on that machine from then on. Their own name
+is then what stamps the molds they plan. The rest of this section is for a lead
+who wants the shared account anyway, and for understanding what changes if they
+use it.
 
 Members should not have to sign in to plan a mold from Fusion (Simon,
 2026-09-07). So the palette signs itself in with one shared FEB account,
@@ -58,8 +101,10 @@ read from `credentials.json` beside the add-in:
 
 `user` is an app username (or an email). Copy `credentials.example.json` to
 `credentials.json` and fill it in; the file is listed in the repo's
-`.gitignore` and must never be committed, since the repo is public. Hand it
-to members with the add-in folder. A lead creates the account once in the
+`.gitignore`, is excluded from the release zip, and must never be committed,
+since the repo and its releases are public. Hand the password to members
+separately if you use this at all; the installers keep the file across an
+update, so it survives reinstalls. A lead creates the account once in the
 app itself: Create account, name "Fusion add-in", username `fusion`, a
 password. It joins as a member, which is all the add-in needs.
 

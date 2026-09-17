@@ -70,6 +70,7 @@ Logic and data, no browser:
 | `test_slicer.mjs` | Mold geometry: STL slicing, islands, containment. |
 | `test_packer.mjs` | Cut lists: guillotine feasibility, kerf, stock policy. |
 | `test_fusion_frame.py` | The Fusion add-in's bottom-face frame math (`febframe.py`), under plain python3. |
+| `test_addin_package.mjs` | Builds a real FEBPlanStock zip and inspects the unpacked tree: no credentials, both installers present and outside the add-in folder, the `.command` still executable after the round trip. |
 | `test_qr.mjs` | QR encoding. Asserts version 3 alphanumeric exactly; see "The QR guard" below. |
 | `test_label_roll.mjs` | Labels on a roll, and the custom label. Parses the millimetres out of BOTH `labels.js` and `print.css` and compares them, because the two files say the same thing in different languages and a drift between them still previews perfectly — onto the wrong length of tape. Also the guard that stops a hand-typed label impersonating a record. |
 | `test_sheetsync.mjs` | `06 Composites App/sheets/Sync.gs`, the Apps Script that mirrors the app into the Composites Master Tracker, against fake Sheets objects. It is the only code here that writes into somebody else's live spreadsheet, unattended, every 15 minutes — so the cases that matter are the ones where it must NOT write: orphan rows kept and tinted, column A's formula untouched, unmapped columns left alone. |
@@ -133,7 +134,26 @@ python3 tools/gen_docs_manifest.py
 python3 tools/check_traceability.py
 ```
 
+## Releasing the Fusion add-in
+
+Separate from the app release below, and on its own cadence. The app ships far
+more often than the add-in does, and coupling them would either spam members
+with reinstalls or hold app releases back.
+
+```bash
+node tools/package_addin.mjs            # build dist/FEBPlanStock-<ver>.zip
+node tools/package_addin.mjs --release  # tag addin-v<ver>, push, create the Release
+```
+
+Bump the version in both `10 Fusion Add-in/FEBPlanStock/FEBPlanStock.manifest`
+and `ADDIN_VERSION` in `FEBPlanStock.py` first; the packager refuses to build
+when they disagree. The zip carries the add-in plus a double-clickable
+installer per platform, and never carries `credentials.json`, which matters
+because the repo and its releases are public. See `10 Fusion Add-in/README.md`.
+
 ## Cutting a release
+
+The app. For the add-in see above.
 
 ```bash
 node tools/release.mjs 1.1.0          # from the repo root
