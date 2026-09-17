@@ -20,23 +20,32 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
-**FEBPlanStock 1.1.0 (2026-09-17): the add-in ships as a download.**
-`node tools/package_addin.mjs [--release]`; `addin-v*` is a third tag series
-and the repo's first GitHub Release of any kind. Decisions that cost
-something to reach and should not be quietly reversed: no .dmg or .exe,
-because an UNSIGNED one is blocked harder than a plain script is and signing
-runs about $99/yr per platform (Simon, 2026-09-17); the two installers sit
-beside the add-in folder in the zip, never inside it, or they get copied into
-Fusion's AddIns directory too; the zip ships no `credentials.json`, so a
-member signs in as themselves and their own name stamps the mold. The
-manifest version and `ADDIN_VERSION` in the .py must match or the packager
-refuses to build.
+**The Fusion add-in ships as a download, on the app's version** (2026-09-17).
+It went out first as `addin-v1.1.0` with its own 1.x line; Simon asked for
+coherence the same day, so that release and tag were deleted (0 downloads) and
+the add-in now carries `APP_VERSION` and rides the app's release as an asset.
+Live at
+[v4.8.0](https://github.com/Jinxiewinx/feb-engineering-apps/releases/tag/v4.8.0).
+`tools/release.mjs` does all of it in one command; the procedure and the rules
+around it are in `CLAUDE.md`, not here.
 
-Released as
-[addin-v1.1.0](https://github.com/Jinxiewinx/feb-engineering-apps/releases/tag/addin-v1.1.0).
-Verified by installing from the downloaded zip, over an existing install and
-onto a clean one, with the quarantine flag applied by hand: 13 quarantined
-files in, 0 left in AddIns.
+Decisions that cost something to reach and should not be quietly reversed. No
+.dmg or .exe: an UNSIGNED one is blocked harder than a plain script is, and
+signing runs about $99/yr per platform. The two installers sit beside the
+add-in folder in the zip, never inside it, or they get copied into Fusion's
+AddIns directory too. The zip ships no `credentials.json`, so a member signs
+in as themselves and their own name stamps the mold. Verified by installing
+from the downloaded zip, over an existing install and onto a clean one, with
+the quarantine flag applied by hand: 13 quarantined files in, 0 left in
+AddIns.
+
+Also backfilled every app tag from v4.2.0 to v4.8.0, sixteen of them; five
+releases had gone out untagged. The commit for each was found by walking
+`core.js` for the commit that INTRODUCED each `APP_VERSION`, validated against
+the tags that already existed. Watch two traps if this is ever redone:
+`git log --follow` silently returns one commit when combined with `--reverse`,
+and v4.2.0 predates the folder renumber, so its real commit is under
+`03 App/app/core.js` and not the one `--follow` reports.
 
 **OPEN, two things nobody has done.** (1) The Windows installer has never
 been run, nor the add-in itself beyond one member's 2026-09-07 install; needs

@@ -10,12 +10,15 @@
  *   2. finds the previous tag
  *   3. reads the commit subjects since it — they are already prose sentences
  *      describing user-visible outcomes, which is why this is cheap
- *   4. bumps APP_VERSION and rewrites WHATS_NEW in core.js
+ *   4. bumps APP_VERSION in core.js, and the Fusion add-in's two version
+ *      strings with it, since the add-in ships on the app's number
  *   5. prepends a CHANGELOG.md section
  *   6. runs the test suites, and refuses to ship over a failure
  *   7. commits, tags, pushes over HTTPS
  *   8. deploys hosting — ONLY hosting
  *   9. verifies the new version is actually live, by fetching it
+ *  9a. builds the Fusion add-in zip and publishes the GitHub Release for the
+ *      tag, with the zip attached
  *  9b. shoots the release pictures — AFTER the live check, so the picture is
  *      provably of the version that shipped (Major and Minor only)
  *  10. prints the Slack note — built from WHATS_NEW, not from subjects — with
@@ -75,6 +78,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const APP = join(ROOT, "06 Composites App");
 const CORE = join(APP, "app", "core.js");
 const CHANGELOG = join(ROOT, "CHANGELOG.md");
+const ADDIN = join(ROOT, "10 Fusion Add-in", "FEBPlanStock");
 const HOST = "https://feb-composites.web.app";
 
 const args = process.argv.slice(2);
@@ -178,6 +182,33 @@ if (prev) {
 core = core.replace(vRe, `var APP_VERSION = "${version}";`);
 act("write core.js (APP_VERSION only — WHATS_NEW is yours)", () => writeFileSync(CORE, core));
 
+/* ---- 4a. the Fusion add-in rides the same number ------------------------
+   The add-in used to carry its own 1.x line, so the project talked about
+   itself in two numbers that were built the same afternoon (Simon, 2026-09-17:
+   make it coherent). It now ships as an asset on this release, at this
+   version, which also makes the app's MIN_ADDIN_VERSION check readable: it
+   compares two things measured on the same ruler.
+
+   Both files are rewritten here rather than asserted, because a release that
+   stops to tell you to go and edit two more files by hand is a release that
+   eventually ships with them stale. */
+const MANIFEST = join(ADDIN, "FEBPlanStock.manifest");
+const ADDIN_PY = join(ADDIN, "FEBPlanStock.py");
+const mRe = /^(\s*"version":\s*)"[^"]*"/m;
+const aRe = /^ADDIN_VERSION = "[^"]*"/m;
+let manifestSrc = readFileSync(MANIFEST, "utf8");
+let addinSrc = readFileSync(ADDIN_PY, "utf8");
+if (!mRe.test(manifestSrc)) die('Couldn\'t find `"version": "…"` in FEBPlanStock.manifest.');
+if (!aRe.test(addinSrc)) die('Couldn\'t find `ADDIN_VERSION = "…"` in FEBPlanStock.py.');
+const addinFrom = addinSrc.match(/^ADDIN_VERSION = "([^"]*)"/m)[1];
+say(`  add-in:  v${addinFrom} → v${version}`);
+manifestSrc = manifestSrc.replace(mRe, `$1"${version}"`);
+addinSrc = addinSrc.replace(aRe, `ADDIN_VERSION = "${version}"`);
+act("write the add-in's version into the manifest and the .py", () => {
+  writeFileSync(MANIFEST, manifestSrc);
+  writeFileSync(ADDIN_PY, addinSrc);
+});
+
 /* Parsed AFTER the stale check, so what is shown is what will ship — and parsed
    ONCE, because this is now the source for the Slack note as well as this
    preview. Two parses would be two chances to disagree about what the team was
@@ -275,7 +306,9 @@ for (const s of SUITES) {
 /* ---- 7. commit, tag, push ---------------------------------------------- */
 const msg = `Release v${version}\n\n` + subjects.map(l => `- ${l}`).join("\n") + "\n";
 act("commit, tag and push", () => {
-  run("git", ["add", "CHANGELOG.md", "06 Composites App/app/core.js"]);
+  run("git", ["add", "CHANGELOG.md", "06 Composites App/app/core.js",
+              "10 Fusion Add-in/FEBPlanStock/FEBPlanStock.manifest",
+              "10 Fusion Add-in/FEBPlanStock/FEBPlanStock.py"]);
   run("git", ["commit", "-m", msg]);
   run("git", ["tag", "-a", "v" + version, "-m", msg]);
   // HTTPS, never SSH: the machine's SSH key authenticates as the wrong account
@@ -326,6 +359,60 @@ if (!DRY) {
         `before telling anyone it shipped.`);
   }
   say(`  ✓ ${HOST} is serving v${version}`);
+}
+
+/* ---- 9a. the GitHub Release, with the add-in attached ------------------
+   AFTER the live check, for the same reason as the pictures: a release page
+   that points at a version nobody can load is worse than no release page.
+
+   The tag is already pushed by step 7. This is what turns it into something a
+   member can be sent a link to, and it is the only place the Fusion add-in
+   zip is published. There is no separate add-in release to remember, which is
+   the whole point of folding it in here.
+
+   Non-fatal on purpose. By this point the app IS deployed and live, and the
+   tag IS pushed. A `gh` that is not installed or not logged in must not read
+   as "the release failed", so it says what is true and prints the one command
+   that finishes the job. */
+if (!DRY) {
+  say("\n  building the Fusion add-in zip");
+  try {
+    const built = execFileSync(process.execPath, [join(ROOT, "tools", "package_addin.mjs")],
+      { cwd: ROOT, encoding: "utf8" });
+    const zip = join(ROOT, "dist", `FEBPlanStock-${version}.zip`);
+    if (!built.includes(`FEBPlanStock-${version}.zip`)) {
+      die(`package_addin.mjs did not build FEBPlanStock-${version}.zip.\n` +
+          `v${version} IS DEPLOYED AND LIVE; only the release page is missing.`);
+    }
+    say(`    dist/FEBPlanStock-${version}.zip`);
+
+    /* WHATS_NEW, not the commit subjects. The subjects are written for the
+       next engineer reading git log; this page is read by whoever was sent
+       the link to download the add-in. Same reasoning as the Slack note. */
+    const notes = whatsNew.map(h => `- ${h}`).join("\n") +
+      `\n\n**The app** is live at ${HOST} — reload to get this version.\n\n` +
+      `**The Fusion add-in**: download \`FEBPlanStock-${version}.zip\` below, unzip it, and ` +
+      `double-click \`Install on Mac.command\` or \`Install on Windows.bat\`. ` +
+      `\`INSTALL.txt\` inside covers the one-time macOS security dialog. ` +
+      `It carries the app's version so the two always match.\n\n` +
+      `Full notes: [CHANGELOG.md](https://github.com/Jinxiewinx/feb-engineering-apps/blob/v${version}/CHANGELOG.md)\n`;
+
+    say("  publishing the GitHub Release");
+    execFileSync("gh", ["release", "create", "v" + version, zip,
+                        "--title", `Composites app v${version}`, "--notes", notes],
+                 { cwd: ROOT, encoding: "utf8" });
+    say(`  ✓ https://github.com/Jinxiewinx/feb-engineering-apps/releases/tag/v${version}`);
+  } catch (e) {
+    const detail = ((e.stdout || "") + (e.stderr || "") + (e.message || "")).trim();
+    say(`\n  ⚠ v${version} IS DEPLOYED, LIVE AND TAGGED — only the GitHub Release page failed.`);
+    say("    " + detail.split("\n").slice(-6).join("\n    "));
+    say(`\n    Finish it with:  node tools/package_addin.mjs && gh release create v${version} dist/FEBPlanStock-${version}.zip`);
+  }
+} else {
+  // --dry has to say this happens, or the one step it cannot rehearse is also
+  // the one step nobody knows to expect.
+  say(`\n  (dry) would build dist/FEBPlanStock-${version}.zip and publish the`);
+  say(`        GitHub Release for v${version} with it attached`);
 }
 
 /* ---- 9b. the picture ---------------------------------------------------

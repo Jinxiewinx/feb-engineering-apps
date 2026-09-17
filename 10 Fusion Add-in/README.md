@@ -14,32 +14,36 @@ walkthrough, including the one-time macOS security dialog and what to do when it
 misbehaves. The app links the same download: **Plan from Fusion**, on the Molds
 tab.
 
-## Cutting a release
+## Releasing it
 
-From the repo root:
+The add-in has no release of its own. It carries the app's version and ships as
+a zip attached to the app's GitHub Release, so one command does both:
 
 ```bash
-node tools/test_addin_package.mjs
-node tools/package_addin.mjs
-node tools/package_addin.mjs --release
+node tools/release.mjs <version>     # from the repo root
 ```
 
-The first builds and checks, the second writes `dist/FEBPlanStock-<ver>.zip` so
-you can look at it, and the third tags `addin-v<ver>`, pushes, and creates the
-GitHub Release with the zip attached.
+`release.mjs` writes the version into `FEBPlanStock.manifest` and
+`ADDIN_VERSION` in `FEBPlanStock.py` in the same step that bumps `APP_VERSION`
+in `core.js`, then builds the zip and attaches it to the release. Never edit
+the add-in's version by hand; `tools/package_addin.mjs` refuses to build when
+the three disagree, and `tools/test_addin_package.mjs` fails if `release.mjs`
+stops writing them.
 
-Bump the version in **both** `FEBPlanStock/FEBPlanStock.manifest` and
-`ADDIN_VERSION` in `FEBPlanStock/FEBPlanStock.py` first. The packager refuses to
-build when they disagree, since a version the add-in cannot report is a version
-nobody can act on.
+To look at a zip without releasing anything:
+
+```bash
+node tools/package_addin.mjs         # dist/FEBPlanStock-<ver>.zip
+node tools/test_addin_package.mjs    # builds one and checks the unpacked tree
+```
 
 Raise `MIN_ADDIN_VERSION` in `06 Composites App/app/fusion.js` only when a
 change to the page side needs a matching change in the add-in. Every bump makes
 somebody reinstall.
 
-After releasing, download the zip in a browser and run the installer from that
-copy. A local build is not quarantined, so it cannot tell you whether the macOS
-instructions in `INSTALL.txt` are right.
+After releasing, download the zip from the Release page in a browser and run the
+installer from that copy. A local build is not quarantined, so it cannot tell
+you whether the macOS instructions in `INSTALL.txt` are right.
 
 ## What is in here
 

@@ -27,6 +27,50 @@ land or ship work himself:
 - After deploying, verify: `curl` a changed file off the live host and check
   the new code is actually in it. The CLI's "Deploy complete" is not the check.
 
+## One version, one release (2026-09-17)
+
+Simon asked for the versioning to be coherent, so there is one number and one
+release page for the whole thing. Keep it that way.
+
+**The app's `APP_VERSION` in `06 Composites App/app/core.js` is the only
+version this project has.** The Fusion add-in carries the same number, in
+`10 Fusion Add-in/FEBPlanStock/FEBPlanStock.manifest` and as `ADDIN_VERSION`
+in `FEBPlanStock.py`, and ships as a zip attached to the app's GitHub Release.
+There is no separate add-in version and no separate add-in release. The CFD
+dashboard is a different app and keeps its own `cfd-v*` line.
+
+**Everything is cut by one command**, from the repo root:
+
+```bash
+node tools/release.mjs <version>
+```
+
+It bumps `APP_VERSION`, writes the same version into the add-in's two files,
+updates the CHANGELOG, runs the suites, commits, tags `v<version>`, pushes,
+deploys hosting, verifies the deploy is live, builds
+`dist/FEBPlanStock-<version>.zip`, publishes the GitHub Release with that zip
+attached, shoots the release pictures, and prints a Slack note for a human to
+send. `--dry` says what it would do and touches nothing.
+
+Do not hand-edit the add-in's version, do not run `gh release create` by hand,
+and do not add an `addin-v*` tag back. `tools/test_addin_package.mjs` fails if
+the three version strings disagree or if `release.mjs` stops writing them, so a
+drift is caught before it ships rather than by a member reporting a version
+that does not exist.
+
+**When the add-in changes but the app does not**, still cut an ordinary
+release. A patch version is cheap and it keeps the rule that a member can read
+one number off the app and off the add-in and compare them.
+
+**`MIN_ADDIN_VERSION` in `06 Composites App/app/fusion.js`** is what warns a
+member their add-in is stale. Raise it only when the page side genuinely needs
+a newer add-in, not on every release: every bump makes somebody reinstall.
+
+**What to verify after a release**, beyond what the script checks itself:
+download the zip from the Release page in a browser and run the installer from
+that copy. A locally built zip is not quarantined, so it cannot tell you
+whether the macOS instructions in `INSTALL.txt` are still right.
+
 ## Push over HTTPS, never SSH
 
 The machine's SSH key authenticates as `starbuckgold`, but the repo belongs to

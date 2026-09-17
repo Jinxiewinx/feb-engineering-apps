@@ -14,13 +14,11 @@ app keeps the bare `vX.Y.Z` tags this file has always used, so every existing
 tag and link stays valid. The dashboard tags as `cfd-vX.Y.Z` and keeps its own
 changelog in its folder. `tools/release.mjs` only looks at bare `v` tags.
 
-Since September 2026 there is a third series. The FEBPlanStock Fusion add-in
-tags as `addin-vX.Y.Z` and ships as a downloadable zip on a GitHub Release, cut
-with `node tools/package_addin.mjs --release`. Its version lives in
-`10 Fusion Add-in/FEBPlanStock/FEBPlanStock.manifest` and is independent of the
-app's, since the app releases far more often. What changed in each add-in
-release is in that release's notes, built from the commit subjects touching
-`10 Fusion Add-in/`.
+The FEBPlanStock Fusion add-in has no series of its own. It carries the app's
+version and ships as a zip attached to the app's GitHub Release, so a `v4.9.0`
+release page holds both the notes and the add-in a member downloads. That is
+also why every `vX.Y.Z` from v4.2.0 on is tagged: the tags were backfilled on
+2026-09-17 after five releases had gone out untagged.
 
 ## What the numbers mean
 

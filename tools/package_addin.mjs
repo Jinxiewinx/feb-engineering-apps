@@ -2,17 +2,24 @@
 /* package_addin.mjs: build the shareable FEBPlanStock zip.
  *
  *   node tools/package_addin.mjs            # build dist/FEBPlanStock-<ver>.zip
- *   node tools/package_addin.mjs --release  # build, then cut a GitHub Release
  *   node tools/package_addin.mjs --out DIR  # stage somewhere else (tests use this)
  *
- * WHY THIS EXISTS. Until now the only way to give somebody the add-in was to
- * clone a repo and cp -R a folder, which is not something you can ask fifteen
- * composites members to do. This makes one file with a version on it.
+ * WHY THIS EXISTS. Until this landed the only way to give somebody the add-in
+ * was to clone a repo and cp -R a folder, which is not something you can ask
+ * fifteen composites members to do. This makes one file with a version on it.
  *
- * WHY IT IS NOT PART OF release.mjs. That script ships the web app, which
- * releases far more often than the add-in does. Coupling them would either
- * spam members with add-in reinstalls or hold app releases back. They share
- * nothing but the repo.
+ * ONE NUMBER FOR THE WHOLE THING (Simon, 2026-09-17). The add-in used to carry
+ * its own 1.x line on its own `addin-v*` tags, which meant the project spoke
+ * about itself in two numbers: an app at 4.8.0 and an add-in at 1.1.0 that were
+ * built the same afternoon. To a member the add-in is a window into the app, so
+ * it now carries the APP's version and ships as an asset on the APP's release.
+ * `APP_VERSION` in core.js is the source of truth and this script only reads it;
+ * release.mjs is what writes it into the manifest and the .py, in the same step
+ * that bumps core.js, so the three cannot drift.
+ *
+ * That means this script does not cut releases any more. `tools/release.mjs`
+ * does, for the app and the add-in together. There is no separate add-in
+ * release to forget.
  *
  * WHAT IT REFUSES TO DO. Ship credentials.json. The repo is public and so is
  * every release attached to it, so the exclusion is an assertion over the
@@ -21,7 +28,7 @@
  *
  * THE LAYOUT, and why the installers sit outside the add-in folder:
  *
- *   FEBPlanStock-1.1.0/
+ *   FEBPlanStock-4.8.0/
  *     INSTALL.txt
  *     Install on Mac.command
  *     Install on Windows.bat
@@ -45,7 +52,6 @@ const INSTALLER = path.join(ROOT, "10 Fusion Add-in", "installer");
 const NAME = "FEBPlanStock";
 
 const argv = process.argv.slice(2);
-const DO_RELEASE = argv.includes("--release");
 const outIdx = argv.indexOf("--out");
 const OUT = outIdx >= 0 ? path.resolve(argv[outIdx + 1]) : path.join(ROOT, "dist");
 
@@ -57,21 +63,30 @@ function sh(cmd, args, opts) {
   return execFileSync(cmd, args, { encoding: "utf8", cwd: ROOT, ...opts }).trim();
 }
 
-/* The manifest is the single source of truth for the version; the Python
- * constant exists so the add-in can report itself to the app and to its log,
- * and the two drifting apart is exactly the bug that makes a version useless. */
+/* APP_VERSION in core.js is the source of truth. The manifest is what Fusion
+ * reads, and the Python constant is what the add-in reports to its log and to
+ * the app; all three have to say the same thing or a member cannot tell anyone
+ * what they are running. release.mjs writes all three together, so a mismatch
+ * here means somebody edited one by hand. */
 function versions() {
+  const core = fs.readFileSync(path.join(ROOT, "06 Composites App", "app", "core.js"), "utf8");
+  const app = (core.match(/^var APP_VERSION = "([^"]+)";$/m) || [])[1];
+  if (!app) die("No APP_VERSION in core.js, so there is no version to build against.");
+
   const manifest = JSON.parse(fs.readFileSync(path.join(ADDIN, NAME + ".manifest"), "utf8"));
   const py = fs.readFileSync(path.join(ADDIN, NAME + ".py"), "utf8");
-  const m = py.match(/^ADDIN_VERSION\s*=\s*"([^"]+)"/m);
-  if (!m) die(`No ADDIN_VERSION in ${NAME}.py. The add-in cannot report its own version.`);
-  if (m[1] !== manifest.version) {
+  const pyVer = (py.match(/^ADDIN_VERSION\s*=\s*"([^"]+)"/m) || [])[1];
+  if (!pyVer) die(`No ADDIN_VERSION in ${NAME}.py. The add-in cannot report its own version.`);
+
+  if (manifest.version !== app || pyVer !== app) {
     die(`Version mismatch, refusing to build:\n` +
+        `  core.js APP_VERSION    ${app}   <- the source of truth\n` +
         `  ${NAME}.manifest  ${manifest.version}\n` +
-        `  ${NAME}.py        ${m[1]}\n` +
-        `Set both to the same thing.`);
+        `  ${NAME}.py        ${pyVer}\n\n` +
+        `Set the add-in's two to the app's. tools/release.mjs does this for you;\n` +
+        `doing it by hand is only for a build you are testing.`);
   }
-  return manifest.version;
+  return app;
 }
 
 function copyTree(src, dest) {
@@ -132,30 +147,5 @@ const kb = Math.round(fs.statSync(zipPath).size / 1024);
 console.log(`\nBuilt ${path.relative(ROOT, zipPath)}  (${kb} KB, ${staged.length} files, v${version})`);
 for (const f of staged.sort()) console.log("    " + f);
 
-if (!DO_RELEASE) {
-  console.log(`\nTo publish it:  node tools/package_addin.mjs --release\n`);
-  process.exit(0);
-}
-
-/* --release. Same shape as release.mjs: refuse a dirty tree, tag, push, and
- * let gh do the upload. Notes come from the commit subjects touching the
- * add-in since the last addin-v tag, which are already written as prose. */
-const tag = `addin-v${version}`;
-if (sh("git", ["status", "--porcelain"])) die("Working tree is dirty. Commit first; a release has to point at a commit.");
-if (sh("git", ["tag", "-l", tag])) die(`Tag ${tag} already exists. Bump the version in the manifest and the .py.`);
-
-let prev = "";
-try {
-  prev = sh("git", ["describe", "--tags", "--abbrev=0", "--match", "addin-v*"], { stdio: ["pipe", "pipe", "ignore"] });
-} catch { /* no earlier addin-v tag: this is the first release */ }
-const range = prev ? `${prev}..HEAD` : "HEAD";
-const subjects = sh("git", ["log", "--format=- %s", range, "--", "10 Fusion Add-in"]) || "- First packaged release.";
-
-const notes = `${subjects}\n\n**Install:** download \`${stem}.zip\`, unzip it, and double-click ` +
-  `\`Install on Mac.command\` or \`Install on Windows.bat\`. See \`INSTALL.txt\` inside for the ` +
-  `one-time macOS Gatekeeper step.\n`;
-
-sh("git", ["tag", "-a", tag, "-m", `FEBPlanStock ${version}`]);
-sh("git", ["push", "origin", tag]);
-sh("gh", ["release", "create", tag, zipPath, "--title", `FEBPlanStock ${version}`, "--notes", notes]);
-console.log(`\nReleased ${tag}. Verify by downloading the zip in a browser and running the installer from THAT copy.\n`);
+console.log(`\nThis zip ships as an asset on the app's release. To cut one:\n` +
+            `    node tools/release.mjs <version>\n`);

@@ -35,15 +35,29 @@ function ok(cond, what) {
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "feb-addin-test-"));
 const dist = path.join(tmp, "dist"), unzipped = path.join(tmp, "unzipped");
 
-// ---------- the manifest and the Python constant agree ----------
+// ---------- one version across the app and the add-in ----------
+// The add-in ships as an asset on the app's release and carries the app's
+// number (Simon, 2026-09-17). Three files have to say the same thing, and
+// release.mjs writes all three, so a mismatch means a hand edit.
 const addin = path.join(ROOT, "10 Fusion Add-in", "FEBPlanStock");
+const coreSrc = fs.readFileSync(path.join(ROOT, "06 Composites App", "app", "core.js"), "utf8");
+const appVer = (coreSrc.match(/^var APP_VERSION = "([^"]+)";$/m) || [])[1];
 const manifest = JSON.parse(fs.readFileSync(path.join(addin, "FEBPlanStock.manifest"), "utf8"));
 const pySrc = fs.readFileSync(path.join(addin, "FEBPlanStock.py"), "utf8");
 const pyVer = (pySrc.match(/^ADDIN_VERSION\s*=\s*"([^"]+)"/m) || [])[1];
+ok(!!appVer, "core.js declares APP_VERSION");
 ok(!!pyVer, "FEBPlanStock.py declares ADDIN_VERSION");
-ok(pyVer === manifest.version,
-   `manifest (${manifest.version}) and ADDIN_VERSION (${pyVer}) agree`);
-ok(/^\d+\.\d+\.\d+$/.test(manifest.version), `manifest version ${manifest.version} is three numbers`);
+ok(manifest.version === appVer, `manifest (${manifest.version}) matches APP_VERSION (${appVer})`);
+ok(pyVer === appVer, `ADDIN_VERSION (${pyVer}) matches APP_VERSION (${appVer})`);
+ok(/^\d+\.\d+\.\d+$/.test(appVer), `version ${appVer} is three numbers`);
+
+// release.mjs has to keep writing all three, or they drift on the next release
+// and nobody notices until a member reports a version that does not exist.
+const relSrc = fs.readFileSync(path.join(ROOT, "tools", "release.mjs"), "utf8");
+ok(/ADDIN_VERSION = "\$\{version\}"/.test(relSrc), "release.mjs writes ADDIN_VERSION");
+ok(relSrc.includes("FEBPlanStock.manifest"), "release.mjs writes the manifest version");
+ok(/gh", \["release", "create"/.test(relSrc), "release.mjs publishes a GitHub Release");
+ok(relSrc.includes("package_addin.mjs"), "release.mjs builds the add-in zip");
 
 // The add-in has to actually tell the app its version, or the app's staleness
 // check in fusion.js silently never fires.
@@ -52,8 +66,8 @@ const fusionJs = fs.readFileSync(path.join(ROOT, "06 Composites App", "app", "fu
 const minVer = (fusionJs.match(/MIN_ADDIN_VERSION\s*=\s*"([^"]+)"/) || [])[1];
 ok(!!minVer, "fusion.js declares MIN_ADDIN_VERSION");
 // A minimum ahead of what we ship would nag every member on a fresh install.
-ok(minVer && !cmpNewer(minVer, manifest.version),
-   `MIN_ADDIN_VERSION (${minVer}) is not ahead of the shipped version (${manifest.version})`);
+ok(minVer && !cmpNewer(minVer, appVer),
+   `MIN_ADDIN_VERSION (${minVer}) is not ahead of the shipped version (${appVer})`);
 function cmpNewer(a, b) {
   const pa = String(a).split(".").map(Number), pb = String(b).split(".").map(Number);
   for (let i = 0; i < 3; i++) { const x = pa[i] || 0, y = pb[i] || 0; if (x !== y) return x > y; }
@@ -73,7 +87,7 @@ try {
   fs.rmSync(tmp, { recursive: true, force: true });
   process.exit(1);
 }
-const stem = `FEBPlanStock-${manifest.version}`;
+const stem = `FEBPlanStock-${appVer}`;
 const zip = path.join(dist, stem + ".zip");
 ok(fs.existsSync(zip), `built ${stem}.zip`);
 
@@ -138,7 +152,7 @@ ok(mac.includes("com.apple.quarantine"), "the Mac installer clears quarantine");
 
 // ---------- the version is legible from the artifact ----------
 const shipped = JSON.parse(fs.readFileSync(path.join(top, "FEBPlanStock", "FEBPlanStock.manifest"), "utf8"));
-ok(shipped.version === manifest.version, "the shipped manifest carries the version the zip is named for");
+ok(shipped.version === appVer, "the shipped manifest carries the version the zip is named for");
 ok(shipped.runOnStartup === true, "the shipped add-in still runs on startup");
 
 fs.rmSync(tmp, { recursive: true, force: true });

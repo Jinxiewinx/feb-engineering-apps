@@ -66,7 +66,7 @@ let FUSION_STALE_WARNED = false; // the out-of-date nudge is shown once per page
    FEBPlanStock.py, not on every add-in release: every bump makes somebody
    reinstall. An add-in older than 1.1.0 sends no version at all, which is the
    same signal, so a missing version counts as stale. */
-const MIN_ADDIN_VERSION = "1.1.0";
+const MIN_ADDIN_VERSION = "4.8.0";
 const ADDIN_RELEASE_URL = "https://github.com/Jinxiewinx/feb-engineering-apps/releases/latest";
 
 const FUSION_POLL_MS = 100, FUSION_POLL_FOR_MS = 6000;

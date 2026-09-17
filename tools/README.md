@@ -134,26 +134,28 @@ python3 tools/gen_docs_manifest.py
 python3 tools/check_traceability.py
 ```
 
-## Releasing the Fusion add-in
+## The Fusion add-in
 
-Separate from the app release below, and on its own cadence. The app ships far
-more often than the add-in does, and coupling them would either spam members
-with reinstalls or hold app releases back.
+Built by `tools/package_addin.mjs`, published by `tools/release.mjs`. There is
+no separate add-in release.
 
 ```bash
-node tools/package_addin.mjs            # build dist/FEBPlanStock-<ver>.zip
-node tools/package_addin.mjs --release  # tag addin-v<ver>, push, create the Release
+node tools/package_addin.mjs   # dist/FEBPlanStock-<ver>.zip, to look at
 ```
 
-Bump the version in both `10 Fusion Add-in/FEBPlanStock/FEBPlanStock.manifest`
-and `ADDIN_VERSION` in `FEBPlanStock.py` first; the packager refuses to build
-when they disagree. The zip carries the add-in plus a double-clickable
-installer per platform, and never carries `credentials.json`, which matters
-because the repo and its releases are public. See `10 Fusion Add-in/README.md`.
+The add-in carries the APP's version. `APP_VERSION` in `core.js` is the source
+of truth; `release.mjs` writes it into `FEBPlanStock.manifest` and
+`ADDIN_VERSION` in `FEBPlanStock.py` in the same step that bumps core.js, and
+`package_addin.mjs` refuses to build if the three disagree. Never edit the
+add-in's version by hand.
+
+The zip carries the add-in plus a double-clickable installer per platform, and
+never carries `credentials.json`, which matters because the repo and its
+releases are public. See `10 Fusion Add-in/README.md` and `CLAUDE.md`.
 
 ## Cutting a release
 
-The app. For the add-in see above.
+One command ships the app and the add-in together.
 
 ```bash
 node tools/release.mjs 1.1.0          # from the repo root

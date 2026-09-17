@@ -37,6 +37,12 @@ folder from the AddIns directory.
 The app also links the download: **Plan from Fusion**, on the Molds tab, next
 to Cut list and Labels.
 
+The add-in carries the **app's** version, not one of its own, and ships as an
+asset on the app's release. So the version on the zip is the app version it was
+built against, and an add-in and an app that agree are a matched pair. If the
+app says your add-in is out of date, download the newest release and run the
+installer again.
+
 ### The macOS security dialog
 
 macOS blocks scripts downloaded from the internet the first time, so the first

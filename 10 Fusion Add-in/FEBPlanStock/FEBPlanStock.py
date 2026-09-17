@@ -56,7 +56,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import febframe
 
-ADDIN_VERSION = "1.1.0"   # keep in step with FEBPlanStock.manifest; tools/package_addin.mjs checks
+ADDIN_VERSION = "4.8.0"   # keep in step with FEBPlanStock.manifest; tools/package_addin.mjs checks
 APP_URL = "https://feb-composites.web.app/?fusion=1#/molds"
 PALETTE_ID = "feb_plan_stock_palette"
 CMD_ID = "FEB_PlanStock"
