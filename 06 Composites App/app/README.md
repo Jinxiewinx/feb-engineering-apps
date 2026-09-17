@@ -581,6 +581,17 @@ document when it was tried; the Fusion Team page has Autodesk's own Open in
 Fusion button. The page side is `fusion.js`, which does nothing unless
 Fusion's bridge object is present.
 
+**Datum cut plans** hang off the mold as files: the drawing of the reference
+cuts taken off a mold once a part has come out of it. Most molds never need
+one, so it is a file field and not a stage. Attach anything the rest of the app
+accepts, native CAD included; a PDF opens in the app rather than sending you to
+Preview, and a photo joins the mold's lightbox roll.
+
+This is also the first time anything could be attached to a mold at all.
+`storage.rules` had no `molds/` tree, and a path with no rule is denied, so the
+photos people had been pasting into a mold's Notes had been failing at upload
+for a season behind a toast that read like bad wifi. Same for Items and Lots.
+
 **The cut list only offers molds still at "Designed".** It used to pack every
 stack plan on file, forever — retired molds, last season's, molds already
 machined, and both halves of every re-plan. That is worse than a long list:
@@ -1540,6 +1551,10 @@ been wired up on the Shop tab for a season, but `storage.rules` had no rule for
 `molds/`, `items/` or `lots/`, and a path with no rule is denied, so every
 pasted photo failed at upload behind a toast that read like bad wifi. If you
 tried this before and gave up, try it again.
+
+Clicking a PDF in a file grid opens it in the app, in the same viewer the
+Documents tab uses. The filename underneath it is still a download, because
+reading a drawing and keeping a copy are different jobs.
 
 Clicking a photo opens it full screen without leaving the app. The arrows walk
 every photo on that record (the Files grid and the comment thread as one set),

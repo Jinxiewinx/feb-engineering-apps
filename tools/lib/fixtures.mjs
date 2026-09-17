@@ -186,9 +186,15 @@ export const weekPlanPatch = (weekId) => ({
    long enough to clip, a stack string at full CS-002 length, an item with
    nothing but an id. */
 export const MOLDS = [
+  /* The one mold with datum cut plans on it: three parts have come off it, so
+     it is the only one in the fixture that would plausibly have any. Every
+     other mold photographs the empty state, which is the common case. */
   { id: "MOLD-SN6-001", name: "UT INLET L/H", stage: "Ready for layup", location: "BIN-SN6-001",
     board: "BRD-SN5-002", density: "30", layers: "2 x 3in", sealingType: "XCR",
-    sealedDate: "2026-09-14", sealedBy: "RJB", uses: 3, rev: "A" },
+    sealedDate: "2026-09-14", sealedBy: "RJB", uses: 3, rev: "A",
+    files: [{ id: "F-DATUM-1", name: "UT INLET datum cuts rev B.pdf", type: "application/pdf",
+      url: "https://fixture.invalid/datum.pdf", by: "rjb@berkeley.edu", ts: "2026-09-15T18:04:00.000Z",
+      path: "molds/MOLD-SN6-001/datum.pdf" }] },
   { id: "MOLD-SN6-002", name: "UNDERTRAY LEFT SIDE POD OUTBOARD SKIN LOWER SECTION TWO",
     stage: "Machined", density: "60", uses: 0, rev: "A" },
   { id: "MOLD-SN6-003", name: "NOSECONE", stage: "Board glued", uses: 0 },

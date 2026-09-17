@@ -152,6 +152,16 @@ const VIEWS = [
   /* The three modals added with scanning. All get opened on a phone because
      that is the only device any of them will ever be used on: nobody scans a
      mold from a laptop, and the cure modal is filled in standing at the part. */
+  /* The in-app PDF viewer, which every file grid in the app can now open. It
+     is a WIDE modal, so 320px is where it either works or does not. The iframe
+     will not load (the fixture url is .invalid on purpose — a screenshot must
+     not depend on the network), which is fine: what is measured here is the
+     chrome around it. */
+  { id: "filepreview-modal", tab: "molds", what: "a datum cut plan open in the in-app PDF viewer",
+    open: `openRecord("molds", "MOLD-SN6-001");
+           const b = document.querySelector("#main .fileitem button.thumb[data-pdf]");
+           if (b) b.click();`,
+    needs: "" },
   { id: "scan-modal", tab: "molds", what: "the scanner, with the typed-code fallback",
     open: `scanToOpen();`, needs: "" },
   { id: "move-modal", tab: "molds", what: "moving something to a shelf",

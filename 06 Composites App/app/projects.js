@@ -1027,9 +1027,35 @@ function renderProjDetail() {
    grid. So the viewer is told about it by data-lb-src instead, which is also
    what lets the arrows walk a mixed run of grid tiles and inline comment
    photos. Anything that is not an image keeps the download anchor it had. */
+/* A PDF in a file grid used to be a download and nothing else: the drawing you
+   wanted to glance at made you leave the app, open Preview, and come back. The
+   Documents tab has had a real viewer since it shipped, so this reuses its
+   iframe rather than inventing a second one. The filename underneath stays a
+   download link, because reading it here and having a copy are different jobs. */
+function isPdfFile(f) {
+  return (f.type || "") === "application/pdf" || /\.pdf$/i.test(f.name || "");
+}
+function openFilePreview(url, name) {
+  openModal(`<h2>${esc(name)}</h2>
+    <iframe class="docview" src="${esc(url)}" title="${esc(name)}"></iframe>
+    <div class="foot">
+      <a href="${esc(url)}" download="${esc(name)}" target="_blank" rel="noopener"><button>Download</button></a>
+      <button class="primary" onclick="closeModal()">Close</button>
+    </div>`, { wide: true });
+}
 function fileItem(f) {
   const isImg = (f.type || "").startsWith("image/");
   const name = esc(f.name || "");
+  if (!isImg && isPdfFile(f)) {
+    return `<div class="fileitem">
+      ${/* url and name ride as data-, not as arguments inside an onclick string:
+            esc() escapes " but not ', so a file called "Bob's plan.pdf" would
+            end the JS literal. Same reason .thumb already carries data-lb-name. */""}
+      <button type="button" class="thumb" title="${name}" aria-label="Preview ${name}"
+        data-pdf="${esc(f.url)}" data-pdf-name="${name}"
+        onclick="openFilePreview(this.dataset.pdf, this.dataset.pdfName)">${icon("file", 26)}</button>
+      <div class="fn"><a href="${esc(f.url)}" download="${name}" target="_blank" rel="noopener" title="${name}">${name}</a></div></div>`;
+  }
   /* The icon is a link, not a decoration. On a phone the only thing you could
      tap on a non-image file was the filename underneath it — one line of 11.5px
      text, 14px tall, about a third of a fingertip — while the 84px square above

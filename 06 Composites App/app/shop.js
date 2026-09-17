@@ -755,6 +755,7 @@ function renderShopDetail(tab, opts) {
     ${tab === "molds" && typeof moldPlanSection === "function" ? moldPlanSection(o) : ""}
     ${tab === "molds" && typeof moldFusionSection === "function" ? moldFusionSection(o) : ""}
     ${tab === "molds" ? moldUses(o) : ""}
+    ${tab === "molds" && typeof moldFilesSection === "function" ? moldFilesSection(o) : ""}
 
     <h3>Notes</h3>
     ${richField(spec.coll, o.id, "notes", {

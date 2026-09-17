@@ -2124,9 +2124,14 @@ function rosterBulkDelete(emails) {
 function deletePickedPeople() { rosterBulkDelete(pickedIds("people")); }
 
 /* ---------- modal system ---------- */
-function openModal(html) {
+/* `opts.wide` for a modal that SHOWS something rather than asking something —
+   a drawing to read, a table to correct. 640px is right for a form and wrong
+   for a PDF. Everything else about the modal is unchanged, so a wide one still
+   closes on Escape, on the backdrop and through the same closeModal. */
+function openModal(html, opts) {
   const m = document.getElementById("modal");
-  m.innerHTML = `<div class="backdrop" onclick="if(event.target===this)closeModal()"><div class="modal" role="dialog">${html}</div></div>`;
+  const cls = "modal" + (opts && opts.wide ? " wide" : "");
+  m.innerHTML = `<div class="backdrop" onclick="if(event.target===this)closeModal()"><div class="${cls}" role="dialog">${html}</div></div>`;
   m.classList.add("open");
   document.addEventListener("keydown", escClose);
   // Prefer an explicit [autofocus] over "first field in the DOM". The new-ticket

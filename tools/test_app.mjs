@@ -7975,6 +7975,53 @@ await t("Log offcuts is offered when the blanks are cut, and starts a board off 
   assert(!shopUndoBar().includes("Log offcuts"), "no offer where it would make no sense");
 });
 
+await t("a mold carries datum cut plans, in the tree storage.rules now allows", () => {
+  /* The drawing of the reference cuts taken off a mold after a part comes out.
+     Optional and sparse, so a file field rather than a stage. */
+  const m = { id: "MOLD-SN6-060", name: "clamshell", stage: "Sealed", files: [
+    { id: "F1", name: "datum cuts rev A.pdf", type: "application/pdf", url: "https://x.test/d.pdf" }] };
+  DB.molds = [m];
+  view = { ...view, tab: "molds", mode: "detail", id: m.id, edit: false, moldFilesAll: false };
+  render();
+  const h = main.innerHTML;
+  assert(/Datum cut plans/.test(h), "the section is on the mold: " + h.slice(0, 200));
+  assert(/addRecordFiles\('molds','MOLD-SN6-060','molds'\)/.test(h),
+    "attaching through the SHARED helper, into the molds/ tree — a mold's files went nowhere before that rule existed");
+  assert(/datum cuts rev A\.pdf/.test(h), "and the file is listed");
+
+  // Empty is the normal case and says so, rather than reading as broken.
+  m.files = []; render();
+  assert(/Most molds never need one/.test(main.innerHTML), "an empty section explains itself");
+});
+
+await t("a PDF in a file grid previews in the app instead of leaving it", () => {
+  /* It used to be a download and nothing else: the drawing you wanted to
+     glance at made you open Preview and come back. The viewer is the
+     Documents tab's, reused, not a second one. */
+  const pdf = fileItem({ name: "plan.pdf", type: "application/pdf", url: "https://x.test/p.pdf" });
+  assert(/openFilePreview\(this\.dataset\.pdf/.test(pdf), "the tile opens the viewer: " + pdf.slice(0, 200));
+  assert(/data-pdf="https:\/\/x\.test\/p\.pdf"/.test(pdf), "carrying the url as data, not as an argument");
+  assert(/download="plan\.pdf"/.test(pdf), "and the filename underneath is still a download");
+
+  /* esc() escapes " but not ', so a name in a JS string literal inside an
+     onclick would end the literal. This is why both ride as data-. */
+  const apos = fileItem({ name: "Bob's plan.pdf", type: "application/pdf", url: "https://x.test/b.pdf" });
+  assert(/data-pdf-name="Bob's plan\.pdf"/.test(apos), "an apostrophe in the name is inert: " + apos.slice(0, 220));
+  assert(!/onclick="[^"]*Bob/.test(apos), "because the name never reaches the onclick");
+
+  // A PDF is the only non-image that previews; everything else keeps its anchor.
+  const step = fileItem({ name: "mold.step", type: "application/octet-stream", url: "https://x.test/m.step" });
+  assert(!/openFilePreview/.test(step), "CAD has nothing to preview and keeps its download tile");
+  const img = fileItem({ name: "photo.jpg", type: "image/jpeg", url: "https://x.test/p.jpg" });
+  assert(/data-lb-src/.test(img) && !/openFilePreview/.test(img), "and an image still goes to the lightbox");
+
+  openFilePreview("https://x.test/p.pdf", "plan.pdf");
+  const mod = document.getElementById("modal").innerHTML;
+  assert(/class="modal wide"/.test(mod), "wide, because 640px is a form width and this is a drawing");
+  assert(/<iframe class="docview"/.test(mod), "the Documents tab's viewer, reused");
+  closeModal();
+});
+
 await t("embedded shop detail is opt-in; Materials and Items keep the bare shape", () => {
   DB.lots = [{ id: "FAB-SN6-001", cls: "FAB", name: "195 twill", stage: "Sealed" }];
   view = { ...view, tab: "lots", mode: "detail", id: "FAB-SN6-001", edit: false };

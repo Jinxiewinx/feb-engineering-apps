@@ -560,6 +560,38 @@ function linkPlanToMold(planId, moldId) {
    and renderStackPlan, and renderMoldsTab reaches them through mutually
    exclusive branches of one if/else chain. mvMount's per-element guard is the
    backstop, and mvSweep in render() releases a context whose canvas has gone. */
+/* ---------- datum cut plans ----------
+   The drawing of the reference cuts taken off a mold AFTER a part has come out
+   of it. Most molds never get one, which is why this is a file field and not a
+   stage: it is optional, it is sparse, and the app has no business knowing
+   what is inside the drawing.
+
+   Deliberately the Parts tab's Files section call for call — addRecordFiles
+   plus a fileItem grid — rather than a mold-shaped variant of it. The only
+   thing different is the tree: `molds/`, which storage.rules did not have
+   until September 2026, and which is why nothing could be attached to a mold
+   before, including the photos people had been pasting into Notes.
+
+   The card around this already carries data-lbgroup, so a photographed datum
+   cut joins the same lightbox roll as everything else on the mold, and a PDF
+   opens in fileItem's viewer rather than leaving the app. */
+function moldFilesSection(o) {
+  const files = o.files || [];
+  // Eight behind a real button, the Parts and WO precedent (a button, never a
+  // <details> — the tickets postmortem).
+  const capped = files.length > 8 && !view.moldFilesAll;
+  const shown = capped ? files.slice(0, 8) : files;
+  return `
+    <h3>Datum cut plans</h3>
+    <div class="muted tny">The reference cuts taken off this mold once a part has come out of it.
+      Most molds never need one.</div>
+    <div class="filegrid" style="margin-top:8px">
+      ${shown.map(fileItem).join("") || '<span class="muted tny">None.</span>'}
+    </div>
+    ${capped ? `<div class="no-print addrow"><button class="sm" onclick="view.moldFilesAll=true;render()">Show all ${files.length}</button></div>` : ""}
+    <div class="no-print" style="margin-top:6px"><button class="sm" onclick="addRecordFiles('molds','${esc(o.id)}','molds')">+ Add files</button></div>`;
+}
+
 function moldPlanSection(m) {
   const plans = plansForMold(m);
   if (!plans.length) {
