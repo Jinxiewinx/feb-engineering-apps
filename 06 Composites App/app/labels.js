@@ -764,11 +764,17 @@ const LABELABLE = [
 
 let LB = { coll: "parts", picked: {}, skip: 0, media: "5161", cal: true, copies: 1 };
 
-function openLabelBuilder(coll) {
+/* `ids` preselects a set, for the caller that already knows which records are
+   new — the cut commit's undo bar, which is the one moment anybody knows which
+   offcuts came off today. Without it you are hunting BRD numbers in a list of
+   sixty. */
+function openLabelBuilder(coll, ids) {
   // Opens on the device's media, so the shed iPad lands on the roll and a
   // laptop seeding an inventory lands on the sheet, without either having to
   // remember to change it.
-  LB = { coll: coll || "parts", picked: {}, skip: 0, media: labelMedia(), cal: true, copies: 1 };
+  const picked = {};
+  (ids || []).forEach(id => { picked[id] = true; });
+  LB = { coll: coll || "parts", picked, skip: 0, media: labelMedia(), cal: true, copies: 1 };
   openModal(labelBuilderHtml());
 }
 

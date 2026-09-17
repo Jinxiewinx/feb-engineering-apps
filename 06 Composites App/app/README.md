@@ -622,6 +622,29 @@ There is no "show everything" checkbox. To cut a mold again, walk its stage
 back, which asks first and says it erases recorded work. That leaves a trail
 where a checkbox would leave nothing.
 
+**Every offcut is reviewed before it becomes a board.** The mark-cut confirm
+used to be one checkbox per board and the words "keeps 2 offcuts": the board
+left the rack and two `BRD-` records appeared with dimensions nobody had looked
+at. A remnant is the thing the packer is most likely to be wrong about, because
+it is whatever is left after everything that mattered was placed.
+
+So the confirm is a pane. Every offcut is a row saying which board it came off,
+what it will be called, and how big it is, and all of that is editable. Add a
+piece the packer never predicted, drop one that did not survive, correct a size
+that was measured rather than computed. Sizes are typed in **millimetres**, with
+the inches beside them, because this app stores what the packer measured and
+redisplaying canonical millimetres in inches drifts a little on every edit.
+
+Pieces under 4 in. are shown too, greyed and unticked. The packer has always
+treated them as loss rather than stock, and still does when it chooses how to
+split a board — but whether a 3 × 20 in. strip is worth keeping is a judgement
+for whoever is holding it, and hiding the piece made the pane lie about what
+comes off the board. Type a real size into one and it stops being scrap.
+
+New offcuts carry a real link back to the board they came off, not just the
+sentence they always had, and the undo bar offers to print their labels. That
+is the only moment anybody knows which `BRD-` numbers are new.
+
 **Marking boards cut moves the mold to "Tooling cut"**, and the toast says so.
 Otherwise the filter would just be an irritation: every commit would need
 somebody to remember to advance the mold by hand, and within a month people

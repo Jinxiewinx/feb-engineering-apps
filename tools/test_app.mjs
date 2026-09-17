@@ -4872,6 +4872,104 @@ await t("the drawings carry the board grade on every sheet, and the title block 
     "and each layer sheet names the grade that layer actually came off");
 });
 
+await t("every offcut is reviewed by a person before it becomes a board", async () => {
+  /* It used to say "keeps 2 offcuts" and nothing else. A board left the rack
+     and two BRD- records appeared with dimensions nobody had looked at — and a
+     remnant is the thing the packer is most likely to be wrong about, because
+     it is whatever is left after everything that mattered was placed. */
+  DB.molds = [{ id: "MOLD-REV-1", name: "REVIEW", stage: "Designed", currentPlanId: "STK-REV-1" }];
+  DB.stackplans = [{ id: "STK-REV-1", name: "REVIEW", moldId: "MOLD-REV-1", density: 30, layers: [
+    { thickness: 25.4, blanks: [{ x0: 0, x1: 900, y0: 0, y1: 500 }] }] }];
+  DB.stock = [{ id: "BRD-REV-1", label: "SHEET", len: { value: 1220, unit: "mm" }, wid: { value: 610, unit: "mm" },
+    thk: { value: 25.4, unit: "mm" }, qty: 1, density: 30, location: "BIN-X" }];
+  view = { ...view, cutSel: "" };
+  openCommitCutsModal();
+
+  const p0 = CUT_PROPOSAL[0];
+  assert(p0.take === true, "the board is ticked in the SNAPSHOT, not only in the DOM");
+  assert(p0.offcuts.length, "and every remnant is a row: " + JSON.stringify(p0.offcuts));
+  assert(p0.offcuts.every(o => o.uid && o.label && Number.isFinite(o.w) && Number.isFinite(o.h)),
+    "each with an id, an editable label and a size: " + JSON.stringify(p0.offcuts));
+  const m = document.getElementById("modal").innerHTML;
+  assert(/class="modal wide"/.test(m), "wide, because this is a table to correct and not a question to answer");
+  assert(new RegExp(String(p0.offcuts[0].w)).test(m), "the sizes are ON SCREEN, which was the whole complaint");
+
+  /* Correct a size, drop a row, add one the packer never predicted. */
+  const keepUid = p0.offcuts[0].uid;
+  ccOffUpd(0, keepUid, "w", "305");
+  ccOffUpd(0, keepUid, "label", "long strip off the sheet");
+  if (p0.offcuts[1]) ccOffDel(0, p0.offcuts[1].uid);
+  ccOffAdd(0);
+  const added = p0.offcuts[p0.offcuts.length - 1];
+  assert(added.w === 0 && added.h === 0,
+    "an added row starts with NO size — only the person holding it can measure it, same as logOffcutFromMold");
+
+  // A kept row with no size stops the commit rather than writing a nonsense board.
+  /* The stub renders innerHTML as a string and does not reflect a `checked`
+     ATTRIBUTE into the property, and its elements persist between tests — so
+     say what a browser would have painted. ccSyncFromDom reads this. */
+  document.getElementById("cc-0").checked = true;
+
+  calls.length = 0; lastToast = "";
+  await submitCommitCuts();
+  assert(/has no size/.test(lastToast), "told which row, before any write: " + lastToast);
+  assert(!calls.some(c => c[0] === "save" || c[0] === "del"), "and nothing was written: " + JSON.stringify(calls));
+
+  ccOffUpd(0, added.uid, "w", "200"); ccOffUpd(0, added.uid, "h", "150");
+  await submitCommitCuts();
+
+  const offs = DB.stock.filter(b => b.id !== "BRD-REV-1");
+  assert(offs.length === 2, "exactly the two rows that survived the review: " + JSON.stringify(offs.map(o => o.label)));
+  const edited = offs.find(o => o.label === "long strip off the sheet");
+  assert(edited && edited.len.value === 305 && edited.len.unit === "mm",
+    "the CORRECTED size is what got written, in mm: " + JSON.stringify(edited && edited.len));
+  const hand = offs.find(o => o.len.value === 200 && o.wid.value === 150);
+  assert(hand, "and the row a person added exists: " + JSON.stringify(offs));
+
+  /* parentId: the structured back-link the two free-text provenance strings
+     could never be parsed into. Both strings stay, because the label printer
+     and a season of records depend on them. */
+  assert(offs.every(o => o.parentId === "BRD-REV-1"), "every offcut points at its parent");
+  assert(offs.every(o => /^cut \d{4}-\d{2}-\d{2} from BRD-REV-1$/.test(o.origin)), "and the old string is untouched");
+
+  /* mold.board is read by the size view, the board detail's join and the
+     printed label, and was written by nothing at all until this commit. */
+  assert(moldRecById("MOLD-REV-1").board === "BRD-REV-1",
+    "the mold records which board it came off: " + moldRecById("MOLD-REV-1").board);
+
+  // The undo bar is where labels get printed — the receiving idiom, and the one
+  // moment anybody knows which BRD numbers are new.
+  const bar = cutsUndoBar();
+  assert(/openLabelBuilder\('stock'/.test(bar), "labels are offered on the undo bar: " + bar);
+  assert(offs.every(o => new RegExp(o.id).test(bar)), "preselecting exactly the new offcuts");
+
+  undoCuts();
+  assert(boardById("BRD-REV-1") && !DB.stock.some(b => b.parentId), "undo restores the rack exactly");
+});
+
+await t("a sliver is shown unticked, not hidden, and typing a real size promotes it", () => {
+  /* MIN_REMNANT_MM stays the PACKER's answer to "what counts as recovered
+     value when choosing a split". It is not the answer to "is this worth
+     keeping", which only the person holding the piece can give. */
+  DB.molds = [{ id: "MOLD-SCR-1", name: "SCRAP", stage: "Designed", currentPlanId: "STK-SCR-1" }];
+  DB.stackplans = [{ id: "STK-SCR-1", name: "SCRAP", moldId: "MOLD-SCR-1", density: 30, layers: [
+    { thickness: 25.4, blanks: [{ x0: 0, x1: 950, y0: 0, y1: 560 }] }] }];
+  DB.stock = [{ id: "BRD-SCR-1", len: { value: 1000, unit: "mm" }, wid: { value: 600, unit: "mm" },
+    thk: { value: 25.4, unit: "mm" }, qty: 1, density: 30 }];
+  view = { ...view, cutSel: "" };
+  openCommitCutsModal();
+  const scr = CUT_PROPOSAL[0].offcuts.filter(o => o.scrap);
+  assert(scr.length, "the slivers are in the pane at all: " + JSON.stringify(CUT_PROPOSAL[0].offcuts));
+  assert(scr.every(o => !o.keep), "unticked, so doing nothing writes nothing");
+  assert(scr.every(o => o.w < MIN_REMNANT_MM || o.h < MIN_REMNANT_MM), "and each is genuinely under the bar");
+  assert(/scrap/.test(document.getElementById("modal").innerHTML), "and the pane says which ones they are");
+
+  // Measure it properly and it stops being scrap.
+  ccOffUpd(0, scr[0].uid, "w", "300"); ccOffUpd(0, scr[0].uid, "h", "300");
+  assert(!scr[0].scrap && scr[0].keep, "a measured sliver promotes itself: " + JSON.stringify(scr[0]));
+  CUT_PROPOSAL = null; closeModal();
+});
+
 await t("mark cut: an unticked unit stays, and a rack changed under the plan aborts whole", async () => {
   DB.molds = [{ id: "MOLD-CUT-2", name: "TWO", stage: "Designed", currentPlanId: "STK-CUT-2" }];
   DB.stackplans = [{ id: "STK-CUT-2", name: "TWO", moldId: "MOLD-CUT-2", density: 30, layers: [

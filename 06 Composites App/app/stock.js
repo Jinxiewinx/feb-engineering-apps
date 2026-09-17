@@ -657,7 +657,14 @@ function boardPane(b) {
         <div class="f"><label>Quantity</label><div class="ro">${esc(b.qty || 1)}</div></div>
         <div class="f"><label>Volume</label><div class="ro">${boardVolumeFt3(b).toFixed(2)} ft³ <span class="muted tny">≈ ${Math.round(boardVolumeFt3(b) * (canonDensity(b.density) ?? 30))} lb</span></div></div>
         <div class="f"><label>Stored at</label><div class="ro">${b.location ? shopRefChip(String(b.location)) : "—"}</div></div>
-        ${b.origin ? `<div class="f"><label>From</label><div class="ro">${esc(b.origin)}</div></div>` : ""}
+        ${/* parentId since September 2026; before that the only provenance was
+              the two free-text strings, which nothing could parse back into a
+              link. Not backfilled — regexing unparsed text is a guess — so the
+              string is still the fallback and still what older boards show. */""}
+        ${b.parentId && boardById(b.parentId)
+          ? `<div class="f"><label>From</label><div class="ro">${shopRefChip(String(b.parentId))}${
+              b.origin ? ` <span class="muted tny">${esc(b.origin)}</span>` : ""}</div></div>`
+          : b.origin ? `<div class="f"><label>From</label><div class="ro">${esc(b.origin)}</div></div>` : ""}
       </div>
       ${b.notes ? `<h3>Notes</h3><p class="ro">${esc(b.notes)}</p>` : ""}
       ${/* The list is one row per board now, so the size view — and the
@@ -1456,11 +1463,24 @@ function cutDiagram(pl) {
      stale plan would silently eat somebody's stock. */
 let CUT_PROPOSAL = null;
 let CUTS_UNDO = null;
+let CUT_FEED = "";      // the feed-rate band, kept so the pane can repaint without re-packing
 
 function openCommitCutsModal() {
   const plans = cutScopePlans().plans;
   const res = packAll(blanksFromPlans(plans), boardsForPacking(), {});
   if (!res.plans.length) { toast("Nothing to cut.", "info"); return; }
+  /* uid per offcut, minted once, the plyTable/stackMutate idiom: the pane
+     re-renders itself after every add and delete, and a row identified by its
+     index loses the caret the moment a row above it goes. */
+  let seq = 0;
+  const off = (pl, o, scrap) => ({
+    uid: "o" + (++seq),
+    label: `offcut of ${pl.board.src.id}`,
+    // mm, as the packer measured them, rounded once here rather than at write.
+    // The row shows these as inches beside the field; the value stays mm.
+    w: Math.round(o.w), h: Math.round(o.h),
+    keep: !scrap, scrap: !!scrap,
+  });
   CUT_PROPOSAL = res.plans.map(pl => ({
     boardId: pl.board.src.id, label: pl.board.src.label || "",
     w: pl.board.w, h: pl.board.h, thickness: pl.thickness, density: pl.density,
@@ -1470,32 +1490,152 @@ function openCommitCutsModal() {
        planned range says what was allowed, only the commit says what happened. */
     refs: pl.placed.map(p => ({ planId: p.part.planId, layer: p.part.layer }))
       .filter(r => r.planId),
-    leftovers: pl.leftover.map(o => ({ w: o.w, h: o.h })),
+    take: true,
+    /* Ticked remnants first, then the sub-4in slivers unticked. The packer
+       never counted those as recovered value and still does not; whether one
+       is worth keeping is a judgement for the person holding it. */
+    offcuts: pl.leftover.map(o => off(pl, o, false))
+      .concat((pl.scrap || []).map(o => off(pl, o, true))),
   }));
-  const nOff = CUT_PROPOSAL.reduce((s, p) => s + p.leftovers.length, 0);
+  CUT_FEED = feedRateBand(res);
   openModal(`
     <h2>Mark these boards cut?</h2>
-    <p class="muted tny">${CUT_PROPOSAL.length} board${CUT_PROPOSAL.length === 1 ? " leaves" : "s leave"} the rack;
-      ${nOff ? `${nOff} reusable offcut${nOff === 1 ? "" : "s"} go${nOff === 1 ? "es" : ""} back on it as new stock.` : "nothing reusable comes back."}
-      Untick anything you did not actually cut.</p>
-    ${feedRateBand(res)}
-    ${CUT_PROPOSAL.map((p, i) => `<label class="cutrow"><input type="checkbox" id="cc-${i}" checked>
-      <span><b>${esc(p.boardId)}</b>${p.label ? " · " + esc(p.label) : ""} — ${mmIn(p.w)} &times; ${mmIn(p.h)} &times; ${mmIn(p.thickness)}
-        <span class="muted tny">yields ${p.yields.map(esc).join(", ")}${p.leftovers.length ? ` · keeps ${p.leftovers.length} offcut${p.leftovers.length === 1 ? "" : "s"}` : ""}</span></span>
-    </label>`).join("")}
+    <p class="muted tny">These boards leave the rack and the offcuts below come back on it as new
+      stock. <b>Correct the sizes before you commit</b> — the packer's numbers are what it planned
+      to cut, not what is in your hand. Untick a board you did not actually cut.</p>
+    ${CUT_FEED}
+    <div id="cc-body">${ccBodyHtml()}</div>
     <div class="foot">
       <button onclick="CUT_PROPOSAL=null;closeModal()">Cancel</button>
       <button class="primary" onclick="submitCommitCuts()">Mark cut</button>
     </div>
-  `);
+  `, { wide: true });
+}
+
+/* ---------- the review pane ----------
+   It used to be one checkbox per board and the words "keeps 2 offcuts". The
+   sizes were never shown, so a board left the rack and two BRD- records
+   appeared with dimensions nobody had looked at — and a remnant is exactly the
+   thing the packer is most likely to be wrong about, because it is whatever is
+   left after everything that mattered was placed.
+
+   Re-rendered on its own, never through render(): the app re-renders on every
+   Firestore snapshot, and a half-typed dimension cannot survive that. */
+function ccBodyHtml() {
+  return (CUT_PROPOSAL || []).map((p, i) => `
+    <div class="ccboard${p.take ? "" : " off"}">
+      <label class="cutrow"><input type="checkbox" id="cc-${i}" ${p.take ? "checked" : ""}
+        onchange="ccBoardTake(${i}, this.checked)">
+        <span><b>${esc(p.boardId)}</b>${p.label ? " · " + esc(p.label) : ""} — ${mmIn(p.w)} &times; ${mmIn(p.h)} &times; ${mmIn(p.thickness)}
+          <span class="muted tny">yields ${p.yields.map(esc).join(", ")}</span></span>
+      </label>
+      <div class="ccoffs">
+        ${p.offcuts.length ? p.offcuts.map(o => ccOffHtml(i, o)).join("")
+          : '<div class="muted tny">Nothing comes back off this one.</div>'}
+        <div class="no-print addrow"><button class="sm" onclick="ccOffAdd(${i})">+ Add offcut</button></div>
+      </div>
+    </div>`).join("");
+}
+function ccOffHtml(i, o) {
+  const u = esc(o.uid);
+  return `<div class="ccoff${o.scrap ? " scrap" : ""}">
+    <input type="checkbox" ${o.keep ? "checked" : ""} aria-label="Keep this offcut"
+      onchange="ccOffUpd(${i},'${u}','keep',this.checked)">
+    <input class="ccoff-label" value="${esc(o.label)}" aria-label="Label"
+      onchange="ccOffUpd(${i},'${u}','label',this.value)">
+    <span class="ccoff-dims">
+      <input type="number" min="0" step="1" value="${o.w}" aria-label="X in millimetres"
+        onchange="ccOffUpd(${i},'${u}','w',this.value)">
+      <span aria-hidden="true">&times;</span>
+      <input type="number" min="0" step="1" value="${o.h}" aria-label="Y in millimetres"
+        onchange="ccOffUpd(${i},'${u}','h',this.value)">
+      <span class="muted tny">mm · ${mmIn(o.w)} &times; ${mmIn(o.h)}${o.scrap ? " · scrap" : ""}</span>
+    </span>
+    <button type="button" class="sm ib" title="Drop this offcut" aria-label="Drop this offcut"
+      onclick="ccOffDel(${i},'${u}')">${icon("x", 14)}</button>
+  </div>`;
+}
+/* Repaint the pane only. render() would rebuild the page behind the modal and
+   is not what changed. */
+function ccRefresh() {
+  const host = document.getElementById("cc-body");
+  if (host) host.innerHTML = ccBodyHtml();
+}
+function ccOffFind(i, uid) {
+  const p = (CUT_PROPOSAL || [])[i];
+  return p ? (p.offcuts || []).find(o => o.uid === uid) : null;
+}
+function ccBoardTake(i, on) {
+  const p = (CUT_PROPOSAL || [])[i];
+  if (p) { p.take = !!on; ccRefresh(); }
+}
+function ccOffUpd(i, uid, key, val) {
+  const o = ccOffFind(i, uid);
+  if (!o) return;
+  if (key === "w" || key === "h") {
+    const n = Math.round(Number(val));
+    o[key] = Number.isFinite(n) && n > 0 ? n : 0;
+    /* Typed a real size into a sliver and it stops being scrap — that is the
+       whole point of showing them. It never goes back the other way on its
+       own; unticking is how you say no. */
+    if (o.scrap && o.w >= MIN_REMNANT_MM && o.h >= MIN_REMNANT_MM) { o.scrap = false; o.keep = true; }
+  } else if (key === "keep") {
+    o.keep = !!val;
+  } else {
+    o[key] = String(val);
+  }
+  ccRefresh();
+}
+function ccOffAdd(i) {
+  const p = (CUT_PROPOSAL || [])[i];
+  if (!p) return;
+  /* Zero, not a guess. The packer knows what it planned to leave; a piece the
+     packer did not predict is one only the person holding it can measure —
+     same reasoning as the blank dimensions in logOffcutFromMold. A kept offcut
+     still at zero stops the commit rather than writing a nonsense board. */
+  p.offcuts.push({ uid: "o" + Date.now() + Math.random().toString(36).slice(2, 5),
+    label: `offcut of ${p.boardId}`, w: 0, h: 0, keep: true, scrap: false });
+  ccRefresh();
+}
+function ccOffDel(i, uid) {
+  const p = (CUT_PROPOSAL || [])[i];
+  if (!p) return;
+  p.offcuts = (p.offcuts || []).filter(o => o.uid !== uid);
+  ccRefresh();
+}
+/* Anything typed but not yet committed by a change event, plus a checkbox set
+   directly. The snapshot is authoritative; this only stops it going stale. */
+function ccSyncFromDom() {
+  (CUT_PROPOSAL || []).forEach((p, i) => {
+    const el = document.getElementById("cc-" + i);
+    /* Only when the element actually reports a boolean. A real checkbox always
+       does; a node that does not is telling us nothing, and taking `undefined`
+       as "unticked" would untick the whole pane. */
+    if (el && typeof el.checked === "boolean") p.take = el.checked;
+  });
 }
 
 async function submitCommitCuts() {
   const prop = CUT_PROPOSAL || [];
-  /* Checkboxes read BEFORE any await: an offline allocId opens its own modal
-     over this one, and the form must already be read by then. */
-  const checked = prop.filter((p, i) => { const el = document.getElementById("cc-" + i); return el ? !!el.checked : true; });
+  /* THE SNAPSHOT IS THE FORM. It used to be the other way round: the DOM was
+     read here, before any await, because an offline allocId opens its own modal
+     over this one and the fields would be gone by then. That worked for a row
+     of checkboxes and would not survive a pane full of editable dimensions.
+
+     So every control writes straight into CUT_PROPOSAL as it changes, and this
+     reads only the snapshot. ccSyncFromDom is belt and braces for a value typed
+     and not yet committed — an in-flight IME composition, or a test that sets
+     .checked directly without firing onchange. */
+  ccSyncFromDom();
+  const checked = prop.filter(p => p.take);
   if (!checked.length) { toast("Nothing ticked — nothing marked.", "info"); return; }
+  /* A kept offcut still at zero is an added row nobody measured. Abort whole
+     rather than write a board with no size or drop the row silently — the same
+     stance the stale-rack check below takes, for the same reason. */
+  for (const p of checked) {
+    const bad = (p.offcuts || []).find(o => o.keep && !(o.w > 0 && o.h > 0));
+    if (bad) { toast(`"${bad.label}" off ${p.boardId} has no size. Measure it, or untick it.`, "error"); return; }
+  }
   const perBoard = new Map();
   checked.forEach(p => perBoard.set(p.boardId, (perBoard.get(p.boardId) || 0) + 1));
   for (const [id, k] of perBoard) {
@@ -1521,16 +1661,23 @@ async function submitCommitCuts() {
     const parent = undo.decremented.find(d => d.id === p.boardId);
     const live = boardById(p.boardId);
     const loc = (parent && parent.deleted ? parent.deleted.location : live && live.location) || "";
-    for (const o of p.leftovers) {
+    for (const o of p.offcuts) {
+      if (!o.keep) continue;                     // reviewed and declined, or a sliver left as scrap
       const nid = await allocId("stock");
       if (!nid) continue;                        // offline and declined: skip this offcut, keep the rest honest
       const row = {
-        id: nid, label: `offcut of ${p.boardId}`,
-        // mm, as the packer measured them — never round-tripped through the
-        // entry units (the header rule of this file).
+        id: nid, label: o.label || `offcut of ${p.boardId}`,
+        // mm, as the packer measured them or as the person at the saw corrected
+        // them — never round-tripped through the entry units (this file's
+        // header rule). The pane types in mm for exactly that reason.
         len: { value: Math.round(o.w), unit: "mm" }, wid: { value: Math.round(o.h), unit: "mm" },
         thk: { value: p.thickness, unit: "mm" }, qty: 1, density: p.density,
         origin: `cut ${today()} from ${p.boardId}`, location: loc,
+        /* The structured back-link the two provenance STRINGS above could never
+           be parsed into. label and origin stay verbatim — the label printer
+           and a season of records depend on them — and nothing is backfilled,
+           because regexing unparsed free text is a guess. */
+        parentId: p.boardId, parentLabel: p.label || "",
         createdBy: myEmail(), ts: new Date().toISOString(),
       };
       (DB.stock = DB.stock || []).push(row);
@@ -1582,6 +1729,13 @@ async function submitCommitCuts() {
          asks before skipping or reversing — it is a side effect of an action
          the person already confirmed, so it moves exactly one step and the
          undo bar puts it back. */
+      /* Which board this mold came off. Read by the size view, the board
+         detail's "Molds cut from this board" join and the printed label, and
+         written by NOTHING until now, so that join has been aspirational since
+         it was added. Only when the answer is unambiguous: a mold nested
+         across two boards has no single one. */
+      const from = [...new Set(checked.filter(c => (c.refs || []).some(r => r.planId === pid)).map(c => c.boardId))];
+      if (from.length === 1 && !mold.board) { mold.board = from[0]; save("molds", mold, "board"); }
       if (mold.stage === "Designed") {
         mold.stage = "Tooling cut";
         save("molds", mold, "stage");
@@ -1646,6 +1800,10 @@ function cutsUndoBar() {
   return `<div class="undobar no-print">
     <span class="ub-i">${icon("check", 15)}</span>
     <span class="ub-t"><b>${u.nBoards} board${u.nBoards === 1 ? "" : "s"} marked cut</b>${u.nOff ? ` · ${u.nOff} offcut${u.nOff === 1 ? "" : "s"} added` : ""} — saved for everyone.</span>
+    ${/* The receiving desk's idiom: records first, labels when you are at the
+          printer. An unlabelled offcut is an unidentifiable board inside a
+          week, and this is the only moment anybody knows which ones are new. */""}
+    ${u.nOff ? `<button class="sm" onclick="openLabelBuilder('stock', ${JSON.stringify(u.created)})">${icon("print", 14)} Print labels</button>` : ""}
     <button class="sm" onclick="undoCuts()">Undo</button>
     <button class="sm ib" onclick="dismissCutsUndo()">${icon("x", 14)}</button>
   </div>`;
