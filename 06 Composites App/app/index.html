@@ -1957,6 +1957,18 @@
      would make the pane lie about what comes off the board; whether a sliver is
      worth keeping is the judgement of whoever is holding it. */
   .ccoff.scrap { opacity: .62; }
+  /* ---- the technique step editor ----
+     One row per step: sequence, title, and three closed-set dropdowns. Wraps
+     rather than tabulating, for the same reason .ccoff does — this is a wide
+     row and a phone is 320px. */
+  .tqrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    padding: 7px 0; border-top: 1px solid var(--line); }
+  .tqrow:first-of-type { border-top: none; }
+  .tqseq { flex: 0 0 18px; text-align: right; }
+  .tqtitle { flex: 1 1 200px; min-width: 0; }
+  .tqrow select { flex: 1 1 150px; min-width: 0; }
+  .tqact { display: flex; gap: 2px; margin-left: auto; }
+  .tqwarn { flex: 1 1 100%; color: var(--amber); }
   .undobar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 8px 12px; font-size: 13px;
     border: 1px solid var(--ok-border); border-radius: var(--r-md); background: var(--ok-bg); color: var(--ink);
     position: sticky; top: calc(var(--topbar-h) + 8px); z-index: 4; box-shadow: var(--shadow-md); }

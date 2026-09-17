@@ -814,6 +814,35 @@ curriculum) archive instead of deleting, so every historic grant keeps rendering
 its name. A new training gates nothing until a step template references it —
 adding to the catalog is bookkeeping, gating stays a deliberate act.
 
+**Layup techniques are lead-editable too**, from the Techniques button on Work
+Orders — the catalog lives on the tab whose records it defines, the way
+trainings live where the grants are. A technique is a checklist and the gates
+on it: each step can be a blocker, can start the cure, can wait on one, can
+demand evidence, and can require a training to sign. The four that shipped with
+the app (mold infusion, glass infusion, mold wet lay, foam wrapped) can be
+renamed and their steps edited, but never archived, because code refers to them
+by name.
+
+A new technique is a **copy of an existing one**, not a blank page. A blank page
+means forgetting the stack freeze and the drop test, which is what those steps
+exist to stop.
+
+Rule kinds and evidence are fixed lists you pick from. Each one has a check
+behind it in the app, so a name the app does not know would be a gate that
+silently never fires, which is worse than no gate.
+
+Editing a technique **never changes a run that already exists**. Its steps were
+copied in when it was created, and that is what makes a buy-off mean something.
+A run on an older version says so, names the steps that are new, and offers to
+add them without touching a single thing already recorded. The old "reset steps
+to standard" is still there and still wipes every buy-off, which is why almost
+nobody should press it.
+
+One thing the editor watches for you: a step whose title reads like a blocker
+("drop test", "design review", "stack frozen", "acceptance criterion") but
+carries no blocker rule. On runs created before September 2026 the title alone
+makes it a hard blocker, so the editor says so while you are typing.
+
 Documents is the team shelf (pinned links to the things people keep asking for),
 member uploads, and the **25 manufacturer datasheets**. Anyone can upload a doc.
 

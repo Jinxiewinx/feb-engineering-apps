@@ -171,6 +171,10 @@ const VIEWS = [
     open: `uploadMold((DB.molds || []).find(m => m.id === "MOLD-SN6-004"));
            if (typeof moldSrcChanged === "function") moldSrcChanged();`,
     needs: "" },
+  /* The technique step editor. Six controls to a row and three of them are
+     dropdowns, so 320px is the width that decides whether it is usable. */
+  { id: "technique-edit-modal", tab: "workorders", what: "a layup technique's step template, being edited",
+    open: `openTechniqueEdit("MoldInfusion");`, needs: "" },
   { id: "scan-modal", tab: "molds", what: "the scanner, with the typed-code fallback",
     open: `scanToOpen();`, needs: "" },
   { id: "move-modal", tab: "molds", what: "moving something to a shelf",

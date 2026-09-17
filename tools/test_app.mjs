@@ -9504,6 +9504,91 @@ await t("techniqueById folds config over STD_STEPS, the trainings pattern verbat
   window.TECHNIQUE_OVERRIDES = saved;
 });
 
+await t("a lead builds a technique by cloning one, and the closed sets stay closed", async () => {
+  const saved = window.TECHNIQUE_OVERRIDES;
+  window.TECHNIQUE_OVERRIDES = null;
+  DB.workOrders = [];
+
+  /* Cloned, never blank. A blank page means forgetting the stack freeze and
+     the drop test, which is exactly what those steps exist to stop. */
+  document.getElementById("tq-name").value = "Glass wrapped core";
+  document.getElementById("tq-from").value = "FoamWrapped";
+  await submitTechniqueAdd();
+  const id = Object.keys(window.TECHNIQUE_OVERRIDES)[0];
+  assert(id === "glassWrappedCore", "a slug id, minted once and never editable: " + id);
+  assert(techniqueById(id).steps.length === STD_STEPS.FoamWrapped.length, "the clone carried the checklist");
+  assert(TQ_EDIT && TQ_EDIT.id === id, "and drops you straight into the editor, because a clone is not finished");
+
+  // Edit it: retitle, add a step, gate it, move it, drop one.
+  const first = TQ_EDIT.rows[0].uid;
+  tqRowUpd(first, "title", "Shape the glass core");
+  tqRowAdd();
+  const last = TQ_EDIT.rows[TQ_EDIT.rows.length - 1].uid;
+  tqRowUpd(last, "title", "Record the demould force");
+  tqRowUpd(last, "needs", "note");
+  tqRowUpd(last, "training", "wetLayup");
+  tqRowMove(last, -1);
+  tqRowDel(TQ_EDIT.rows[TQ_EDIT.rows.length - 1].uid);
+  // One plain step, to prove a row with nothing to say saves with no rule at all.
+  tqRowAdd();
+  tqRowUpd(TQ_EDIT.rows[TQ_EDIT.rows.length - 1].uid, "title", "Trim the edge");
+  const nRows = TQ_EDIT.rows.length;
+  await submitTechniqueEdit();
+
+  const t = techniqueById(id);
+  assert(t.steps.length === nRows, "what you saw is what got saved: " + t.steps.length + " vs " + nRows);
+  assert(t.steps[0][0] === "Shape the glass core" && t.steps[0][1] && t.steps[0][1].kind === "blocker",
+    "retitling a step keeps the rule it was cloned with: " + JSON.stringify(t.steps[0]));
+  const plain = t.steps.find(r => r[0] === "Trim the edge");
+  assert(plain && plain[1] === undefined,
+    "and a step with nothing to say carries no rule object at all, like a hand-written one: " + JSON.stringify(plain));
+  const gated = t.steps.find(r => r[0] === "Record the demould force");
+  assert(gated && gated[1].needs[0] === "note" && gated[1].training === "wetLayup", JSON.stringify(gated));
+  assert(t.rev >= 2, "the rev moved, which is how a run knows it is behind: " + t.rev);
+
+  /* The closed sets. Each EVIDENCE key has a has(wo, s) predicate and each rule
+     kind has a gate behind it, so a typed name would be a rule that never
+     fires — worse than no rule. */
+  openTechniqueEdit(id);
+  const html = techniqueEditHtml();
+  for (const k of Object.keys(EVIDENCE)) assert(new RegExp(`value="${k}"`).test(html), "evidence " + k + " is offered");
+  assert(!/type="text"[^>]*needs/.test(html), "and never as free text");
+  assert(/hold:resin/.test(html), "the cure hold is a kind you pick, not a string you spell");
+
+  /* The BLOCKER_WORDS trap, caught while it is being written rather than at a
+     bench: on older runs this title alone makes the step a hard blocker. */
+  // A row with NO rule, which is the case the trap bites: a row that already
+  // carries a blocker rule has nothing to warn about.
+  const plainUid = TQ_EDIT.rows.find(r => r.title === "Trim the edge").uid;
+  tqRowUpd(plainUid, "title", "Drop test the core");
+  assert(/makes the step a blocker/.test(techniqueEditHtml()), "the editor warns while it is being written");
+  tqRowUpd(plainUid, "kind", "blocker");
+  assert(!/makes the step a blocker/.test(techniqueEditHtml()), "and stops once you say what you mean");
+
+  TQ_EDIT = null; closeModal();
+  window.TECHNIQUE_OVERRIDES = saved;
+});
+
+await t("a built-in cannot be archived, and an archived custom keeps naming its old runs", async () => {
+  const saved = window.TECHNIQUE_OVERRIDES;
+  window.TECHNIQUE_OVERRIDES = { wrapX: { name: "Wrap X", steps: [["Do it"]], rev: 1 } };
+  DB.workOrders = [{ id: "WO-WX", processType: "wrapX", steps: [], revision: "A", status: "Draft" }];
+
+  lastToast = "";
+  await setTechniqueArchived("MoldInfusion", true);
+  assert(/named in code/.test(lastToast), "built-ins are referenced by MFG_ENG_TRAINING and three call sites: " + lastToast);
+  assert(!techniqueById("MoldInfusion").archived, "so the flag never sticks");
+
+  await setTechniqueArchived("wrapX", true);
+  assert(!allTechniques().some(t => t.id === "wrapX"), "an archived custom leaves the list for new runs");
+  assert(techniqueById("wrapX").name === "Wrap X", "but still names the run that was made on it");
+  view = { ...view, tab: "workorders", mode: "detail", id: "WO-WX", edit: true };
+  render();
+  assert(/value="wrapX"[^>]*selected/.test(main.innerHTML),
+    "and the run's own picker still offers it, or editing any other field would move the run silently");
+  window.TECHNIQUE_OVERRIDES = saved;
+});
+
 await t("a step title only makes a blocker on records that predate the editor", () => {
   /* BLOCKER_WORDS title-matching exists because 26 retro SN5 work orders and
      everything else already in Firestore predate the rule field. The moment a

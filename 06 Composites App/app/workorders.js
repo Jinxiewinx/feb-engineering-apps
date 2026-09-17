@@ -1156,6 +1156,10 @@ function renderWOIndex() {
         })() : `<button class="primary ib"${gx("Sign in to start a run.")} onclick="newWO()">${icon("plus", 15)} New WO</button>
         <button class="ib" onclick="newWO(true)">${icon("plus", 15)} R&amp;D run</button>
         <button class="sm" onclick="openBlankTraveler()">Blank traveler</button>
+        ${/* The technique catalog lives on the tab whose records it defines,
+              the way the training catalog lives on People where the grants are.
+              Lead-only, like every other catalog editor. */""}
+        ${isLead() ? `<button class="sm" onclick="openTechniqueCatalog()">Techniques</button>` : ""}
         ${/* Any roster member can pick, because Archive is a plain update. The
               Delete button inside pick mode is what stays lead-only: the rules
               allow a workOrders delete to leads only, so a member's bulk delete
@@ -1642,6 +1646,242 @@ function woBomPushBtn(wo, b) {
   const pl = p && (p.bom || []).find(x => x.lineId === b.lineId);
   if (!pl || String(pl.qty) === String(b.usedQty || "")) return "";
   return `<button class="sm" title="Update the plan on ${esc(p.id)} to what this run actually used" onclick="pushBomToPlan('${esc(b.lineId)}')">↩ plan</button>`;
+}
+
+/* ---------- the technique catalog (lead-only) ----------
+   The training catalog's shape, for the same reasons and with the same rules:
+   renames reach everything at once, nothing is ever deleted, customs archive
+   and built-ins rename only.
+
+   Two things it does that the training editor does not have to. It edits a STEP
+   TEMPLATE, which is a list, so it borrows the plyTable idiom — rows with a
+   uid, move/insert/delete, one mutator. And its closed sets stay closed: rule
+   kinds and evidence keys are dropdowns, never free text, because each one has
+   a predicate or a gate behind it in code and a typed key would be a rule that
+   silently never fires, which is worse than no rule.
+
+   The whole `steps` array is written on every save. setConfig MERGES, and a
+   merge cannot delete, so replacing the array is the only way to remove a step.
+   Per-technique keys mean two leads editing two different techniques is safe;
+   two on the same one is last-write-wins on that technique alone. */
+const RULE_KINDS = [
+  ["", "no rule — an ordinary step"],
+  ["blocker", "blocker — nothing later may be signed until this is"],
+  ["startsHold", "starts the cure — asks for resin and finish time"],
+  ["hold:resin", "a wait, as long as the recorded resin needs"],
+];
+function tqSlug(name) {
+  let base = String(name).replace(/[^A-Za-z0-9]+/g, " ").trim().split(" ")
+    .map((w, i) => i ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w.toLowerCase()).join("") || "technique";
+  let id = base, n = 2;
+  while (Object.prototype.hasOwnProperty.call(STD_STEPS, id) || (window.TECHNIQUE_OVERRIDES || {})[id]) id = base + (n++);
+  return id;
+}
+async function tqSave(id, entry) {
+  const next = { ...(window.TECHNIQUE_OVERRIDES || {}), [id]: entry };
+  await fb.setConfig("techniques", next);
+  window.TECHNIQUE_OVERRIDES = next;
+}
+/* The whole entry as it should be stored, so every writer sends the same shape
+   and a built-in that has never been overridden gains one cleanly. */
+function tqEntry(t, patch) {
+  const base = (window.TECHNIQUE_OVERRIDES || {})[t.id] || {};
+  return { name: t.name, layupLabel: t.layupLabel || "", mfgTraining: t.mfgTraining || null,
+    steps: t.steps, archived: !!t.archived, addedBy: base.addedBy || myEmail(),
+    addedAt: base.addedAt || new Date().toISOString(),
+    ...patch,
+    /* Bumped on every save that touches the steps, because a run compares its
+       stamped templateVersion against this to know it is behind. */
+    rev: (Number(base.rev) || 0) + 1 };
+}
+function tqUsedBy(id) {
+  return (DB.workOrders || []).filter(w => recProcess(w) === id).length;
+}
+function openTechniqueCatalog() {
+  if (!isLead()) { toast("Editing the technique catalog is lead-only.", "error"); return; }
+  const rows = allTechniques(true).map(t => `
+    <tr class="${t.archived ? "mtxcol-arch" : ""}">
+      <td>${esc(t.name)}${t.builtin ? ' <span class="muted tny">built-in</span>' : ""}${t.archived ? ' <span class="muted tny">archived</span>' : ""}
+        <div class="muted tny">${t.steps.length} step${t.steps.length === 1 ? "" : "s"}${t.layupLabel ? " · " + esc(t.layupLabel) : ""}</div></td>
+      <td>${tqUsedBy(t.id)}</td>
+      <td class="rowact"><button class="sm" onclick="openTechniqueEdit('${esc(t.id)}')">Edit</button>
+        ${t.builtin ? "" : t.archived
+          ? `<button class="sm" onclick="setTechniqueArchived('${esc(t.id)}',false)">Restore</button>`
+          : `<button class="sm" onclick="setTechniqueArchived('${esc(t.id)}',true)">Archive</button>`}</td>
+    </tr>`).join("");
+  openModal(`
+    <h2>Layup techniques</h2>
+    <p class="muted">A technique is a checklist and the gates on it. Editing one never changes a run
+      that already exists — its steps were copied in when it was created, which is what makes a
+      buy-off mean something. Runs on an older version say so and can adopt the new steps without
+      losing a signature. Nothing is deleted; archiving hides a technique from new runs while every
+      run made on it keeps its name.</p>
+    <table class="sub"><thead><tr><th>Technique</th><th>Runs</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    <h3>Add a technique</h3>
+    <div class="field"><label for="tq-name">Name</label><input id="tq-name" placeholder="e.g. Glass wrapped core"></div>
+    <div class="field"><label for="tq-from">Start from</label>
+      <select id="tq-from">${allTechniques().map(t => `<option value="${esc(t.id)}">${esc(t.name)} (${t.steps.length} steps)</option>`).join("")}</select>
+      <span class="muted tny">A copy of that checklist, to edit. Starting from a blank page means
+        forgetting the stack freeze and the drop test, which is what those steps are there to stop.</span></div>
+    <div class="foot">
+      <button onclick="closeModal()">Close</button>
+      <button class="primary" onclick="submitTechniqueAdd()">Add technique</button>
+    </div>
+  `, { wide: true });
+}
+async function submitTechniqueAdd() {
+  const name = ((document.getElementById("tq-name") || {}).value || "").trim();
+  const from = (document.getElementById("tq-from") || {}).value || "MoldInfusion";
+  if (!name) { toast("Name the technique.", "error"); return; }
+  if (allTechniques(true).some(t => t.name.toLowerCase() === name.toLowerCase())) {
+    toast(`There is already a technique called ${name}.`, "error"); return;
+  }
+  const src = techniqueById(from);
+  const id = tqSlug(name);
+  try {
+    await tqSave(id, { name, layupLabel: name.toUpperCase(), mfgTraining: src.mfgTraining || null,
+      steps: JSON.parse(JSON.stringify(src.steps)), archived: false,
+      addedBy: myEmail(), addedAt: new Date().toISOString(), rev: 1 });
+    toast(`${name} is in the catalog. Edit its steps before anyone runs it.`);
+    openTechniqueEdit(id); render();
+  } catch (e) { toast("Save failed: " + e.message, "error"); }
+}
+async function setTechniqueArchived(id, on) {
+  const t = techniqueById(id);
+  if (t.builtin) { toast("Built-in techniques are named in code and cannot be archived.", "error"); return; }
+  try { await tqSave(id, tqEntry(t, { archived: !!on })); openTechniqueCatalog(); render(); }
+  catch (e) { toast("Save failed: " + e.message, "error"); }
+}
+
+/* The editor. TQ_EDIT is the working copy: every keystroke lands here and
+   nothing reaches Firestore until Save, so a half-renamed step never becomes
+   the checklist somebody is working to. */
+let TQ_EDIT = null;
+function openTechniqueEdit(id) {
+  if (!isLead()) return;
+  const t = techniqueById(id);
+  TQ_EDIT = { id, name: t.name, layupLabel: t.layupLabel || "", mfgTraining: t.mfgTraining || "",
+    builtin: t.builtin,
+    rows: (t.steps || []).map((row, i) => ({ uid: "s" + i + "-" + Math.random().toString(36).slice(2, 5),
+      title: row[0], kind: row[1] && row[1].kind === "hold" ? "hold:resin" : (row[1] && row[1].kind) || "",
+      needs: (row[1] && row[1].needs) || [], training: (row[1] && row[1].training) || "" })) };
+  openModal(techniqueEditHtml(), { wide: true });
+}
+function techniqueEditHtml() {
+  const e = TQ_EDIT;
+  if (!e) return "";
+  const used = tqUsedBy(e.id);
+  return `
+    <h2>${esc(e.name)}</h2>
+    <p class="muted tny">${used} run${used === 1 ? "" : "s"} on this technique. None of them change when you
+      save — they keep the steps they were created with, and are offered the new ones without losing a buy-off.</p>
+    <div class="row2">
+      <div class="field"><label for="tq-e-name">Name</label>
+        <input id="tq-e-name" value="${esc(e.name)}" onchange="tqEdit('name',this.value)"></div>
+      <div class="field"><label for="tq-e-train">Engineer training</label>
+        <select id="tq-e-train" onchange="tqEdit('mfgTraining',this.value)">
+          <option value="">none</option>
+          ${allTrainings().map(t => `<option value="${esc(t.id)}" ${e.mfgTraining === t.id ? "selected" : ""}>${esc(t.name)}</option>`).join("")}
+        </select></div>
+    </div>
+    <h3>Steps</h3>
+    <div class="muted tny">Rule kinds and evidence are fixed lists: each one has a check behind it in the
+      app, so a name it does not know would be a gate that never fires.</div>
+    ${e.rows.map((r, i) => tqRowHtml(r, i, e.rows.length)).join("")}
+    <div class="no-print addrow"><button class="sm" onclick="tqRowAdd()">+ Add step</button></div>
+    <div class="foot">
+      <button onclick="TQ_EDIT=null;openTechniqueCatalog()">Cancel</button>
+      <button class="primary" onclick="submitTechniqueEdit()">Save technique</button>
+    </div>`;
+}
+function tqRowHtml(r, i, n) {
+  const u = esc(r.uid);
+  /* BLOCKER_WORDS still title-matches on every record that predates versioning,
+     so a title reading like one, without the rule, is worth flagging while it
+     is being written rather than discovering at a bench. */
+  const looksBlocking = !r.kind && BLOCKER_WORDS.some(w => String(r.title || "").toLowerCase().includes(w));
+  return `<div class="tqrow">
+    <span class="tqseq tny muted">${i + 1}</span>
+    <input class="tqtitle" value="${esc(r.title)}" aria-label="Step ${i + 1} title"
+      onchange="tqRowUpd('${u}','title',this.value)">
+    <select aria-label="Rule" onchange="tqRowUpd('${u}','kind',this.value)">
+      ${RULE_KINDS.map(([v, lab]) => `<option value="${esc(v)}" ${r.kind === v ? "selected" : ""}>${esc(lab)}</option>`).join("")}
+    </select>
+    <select aria-label="Evidence required" onchange="tqRowUpd('${u}','needs',this.value)">
+      <option value="">no evidence</option>
+      ${Object.keys(EVIDENCE).map(k => `<option value="${esc(k)}" ${r.needs[0] === k ? "selected" : ""}>needs ${esc(EVIDENCE[k].label)}</option>`).join("")}
+    </select>
+    <select aria-label="Training to sign" onchange="tqRowUpd('${u}','training',this.value)">
+      <option value="">anyone may sign</option>
+      ${allTrainings().map(t => `<option value="${esc(t.id)}" ${r.training === t.id ? "selected" : ""}>${esc(t.name)}</option>`).join("")}
+    </select>
+    <span class="tqact">
+      <button class="sm ib" title="Move up" aria-label="Move step ${i + 1} up" ${i ? "" : "disabled"} onclick="tqRowMove('${u}',-1)">${icon("chevronLeft", 13)}</button>
+      <button class="sm ib" title="Move down" aria-label="Move step ${i + 1} down" ${i < n - 1 ? "" : "disabled"} onclick="tqRowMove('${u}',1)">${icon("chevronRight", 13)}</button>
+      <button class="sm ib" title="Delete step" aria-label="Delete step ${i + 1}" onclick="tqRowDel('${u}')">${icon("x", 13)}</button>
+    </span>
+    ${looksBlocking ? `<div class="tqwarn tny">${icon("warning", 13)} On runs made before September 2026 this title
+      alone makes the step a blocker. Set the blocker rule if that is what you mean, or reword it.</div>` : ""}
+  </div>`;
+}
+/* Repaint the editor only, never render(): the app re-renders on every
+   Firestore snapshot and a half-typed step title cannot survive that. Guarded
+   because the node test harness has no querySelector — the same guard
+   syncHoldTick uses a few hundred lines down. */
+function tqRepaint() {
+  if (typeof document.querySelector !== "function") return;
+  const m = document.querySelector("#modal .modal");
+  if (m) m.innerHTML = techniqueEditHtml();
+}
+function tqEdit(key, val) { if (TQ_EDIT) TQ_EDIT[key] = String(val); }
+function tqRowFind(uid) { return TQ_EDIT ? TQ_EDIT.rows.find(r => r.uid === uid) : null; }
+function tqRowUpd(uid, key, val) {
+  const r = tqRowFind(uid);
+  if (!r) return;
+  if (key === "needs") r.needs = val ? [String(val)] : [];
+  else r[key] = String(val);
+  tqRepaint();
+}
+function tqRowAdd() {
+  if (!TQ_EDIT) return;
+  TQ_EDIT.rows.push({ uid: "s" + Date.now() + Math.random().toString(36).slice(2, 5), title: "", kind: "", needs: [], training: "" });
+  tqRepaint();
+}
+function tqRowDel(uid) { if (TQ_EDIT) { TQ_EDIT.rows = TQ_EDIT.rows.filter(r => r.uid !== uid); tqRepaint(); } }
+function tqRowMove(uid, d) {
+  if (!TQ_EDIT) return;
+  const i = TQ_EDIT.rows.findIndex(r => r.uid === uid), j = i + d;
+  if (i < 0 || j < 0 || j >= TQ_EDIT.rows.length) return;
+  const [row] = TQ_EDIT.rows.splice(i, 1);
+  TQ_EDIT.rows.splice(j, 0, row);
+  tqRepaint();
+}
+/* The working copy back into template rows: [title, rule] with the rule object
+   omitted entirely when there is nothing to say, so a saved technique looks
+   exactly like a hand-written STD_STEPS entry. */
+function tqRowsToSteps(rows) {
+  return rows.filter(r => String(r.title || "").trim()).map(r => {
+    const rule = {};
+    if (r.kind === "hold:resin") { rule.kind = "hold"; rule.from = "resin"; }
+    else if (r.kind) rule.kind = r.kind;
+    if (r.needs && r.needs.length) rule.needs = r.needs.slice();
+    if (r.training) rule.training = r.training;
+    return Object.keys(rule).length ? [r.title.trim(), rule] : [r.title.trim()];
+  });
+}
+async function submitTechniqueEdit() {
+  const e = TQ_EDIT;
+  if (!e) return;
+  const steps = tqRowsToSteps(e.rows);
+  if (!steps.length) { toast("A technique needs at least one step.", "error"); return; }
+  const t = techniqueById(e.id);
+  try {
+    await tqSave(e.id, tqEntry(t, { name: e.name.trim() || t.name, mfgTraining: e.mfgTraining || null, steps }));
+    TQ_EDIT = null;
+    toast(`${e.name.trim() || t.name} saved. Runs already under way keep their steps.`);
+    openTechniqueCatalog(); render();
+  } catch (err) { toast("Save failed: " + err.message, "error"); }
 }
 
 /* ---------- a run on an older checklist ----------
