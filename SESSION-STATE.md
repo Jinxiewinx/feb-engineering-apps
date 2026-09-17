@@ -23,11 +23,11 @@ git log -p --follow -- SESSION-STATE.md
 **Mold tracking, a trash can, and lead-addable techniques** (approved
 2026-09-17). Fifteen chunks; the plan, the order and the reasoning behind
 every decision are in `~/.claude/plans/joyful-shimmying-bunny.md`. Do not
-re-derive them. Five bundles: **0** storage.rules trees (LANDED); **1-4**
-`MOLD_TRACK`, the "Tooling cut" stage, `cutEligiblePlans()`, and the commit
-advancing the mold — 3 without 4 makes the app worse, so they land together;
-**5-8** packer scrap partition, mold files, split waiver, the editable offcut
-modal; **9-11** `config/techniques` in the trainings pattern, template
+re-derive them. Five bundles. **0-4 ARE LANDED, PUSHED, DEPLOYED AND VERIFIED
+LIVE**: storage.rules trees, `MOLD_TRACK`, the "Tooling cut" stage,
+`cutEligiblePlans()`, and the commit advancing the mold. Next is **5-8**,
+packer scrap partition, mold files and datum plans, split waiver, then the
+editable offcut modal; then **9-11** `config/techniques` in the trainings pattern, template
 versioning, then the editor — 10 before 11 without exception; **12-14** soft
 delete and the 30-day trash, last, because its blast radius is every count in
 the app.
@@ -196,7 +196,7 @@ buttons on `wo-detail` sit past the safe area (x=873; the second reaches
 
 ## Open questions for Simon
 
-**Two answers the mold plan is blocked on.**
+**Two answers the mold plan is blocked on** (neither blocks Chunks 5, 6 or 8).
 
 1. **The split waiver probably measures the wrong quantity.** `sectionize`
    splits on stack HEIGHT, but the ShopSabre's 6in limit is plunge DEPTH,
