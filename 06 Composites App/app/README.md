@@ -1506,8 +1506,14 @@ so pasted scripts and handlers can't run for other viewers.
 Descriptions are comments that happen to always be there, so they use the same
 editor: click the text and write, no Edit button and no form. That covers a
 ticket's description, an issue's What happened, a work order's notes, the part
-note and a purchase's notes. All of them take photos, tables and pasted Google
-Docs.
+note, a purchase's notes and the notes on a mold, an item or a lot. All of them
+take photos, tables and pasted Google Docs.
+
+Photos in the last three only started working in September 2026. The editor had
+been wired up on the Shop tab for a season, but `storage.rules` had no rule for
+`molds/`, `items/` or `lots/`, and a path with no rule is denied, so every
+pasted photo failed at upload behind a toast that read like bad wifi. If you
+tried this before and gave up, try it again.
 
 Clicking a photo opens it full screen without leaving the app. The arrows walk
 every photo on that record (the Files grid and the comment thread as one set),

@@ -20,14 +20,27 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**Mold tracking, a trash can, and lead-addable techniques** (approved
+2026-09-17). Fifteen chunks; the plan, the order and the reasoning behind
+every decision are in `~/.claude/plans/joyful-shimmying-bunny.md`. Do not
+re-derive them. Five bundles: **0** storage.rules trees (LANDED); **1-4**
+`MOLD_TRACK`, the "Tooling cut" stage, `cutEligiblePlans()`, and the commit
+advancing the mold — 3 without 4 makes the app worse, so they land together;
+**5-8** packer scrap partition, mold files, split waiver, the editable offcut
+modal; **9-11** `config/techniques` in the trainings pattern, template
+versioning, then the editor — 10 before 11 without exception; **12-14** soft
+delete and the 30-day trash, last, because its blast radius is every count in
+the app.
+
+**Pre-existing test failure, not ours.** `authed write of a non-STL content
+type to stackplans/` returns 200 in `tools/test_storage_rules.mjs` under
+firebase-tools 15.24.0, and fails identically at the commit before this work.
+`fb.upload` always sends a contentType, so this is very likely the emulator
+and not a hole. Spawned as its own task.
+
 **The Fusion add-in ships as a download, on the app's version** (2026-09-17).
-It went out first as `addin-v1.1.0` with its own 1.x line; Simon asked for
-coherence the same day, so that release and tag were deleted (0 downloads) and
-the add-in now carries `APP_VERSION` and rides the app's release as an asset.
-Live at
-[v4.8.0](https://github.com/Jinxiewinx/feb-engineering-apps/releases/tag/v4.8.0).
-`tools/release.mjs` does all of it in one command; the procedure and the rules
-around it are in `CLAUDE.md`, not here.
+`tools/release.mjs` cuts it in one command; the procedure is in `CLAUDE.md`,
+not here.
 
 Decisions that cost something to reach and should not be quietly reversed. No
 .dmg or .exe: an UNSIGNED one is blocked harder than a plain script is, and
@@ -39,14 +52,6 @@ from the downloaded zip, over an existing install and onto a clean one, with
 the quarantine flag applied by hand: 13 quarantined files in, 0 left in
 AddIns.
 
-Also backfilled every app tag from v4.2.0 to v4.8.0, sixteen of them; five
-releases had gone out untagged. The commit for each was found by walking
-`core.js` for the commit that INTRODUCED each `APP_VERSION`, validated against
-the tags that already existed. Watch two traps if this is ever redone:
-`git log --follow` silently returns one commit when combined with `--reverse`,
-and v4.2.0 predates the folder renumber, so its real commit is under
-`03 App/app/core.js` and not the one `--follow` reports.
-
 **OPEN, two things nobody has done.** (1) The Windows installer has never
 been run, nor the add-in itself beyond one member's 2026-09-07 install; needs
 a Windows member. (2) Nobody has DOUBLE-CLICKED the Mac installer from a
@@ -55,50 +60,17 @@ the "Open Anyway" walkthrough in `INSTALL.txt` is written from Apple's
 behaviour and not from watching it happen. Both are labelled untested in
 `INSTALL.txt`.
 
-**v4.8.0 (2026-09-16): Select… on every list.** Shared picker in core.js
-(`view.pick = {key, ids}`, `pickBar/pickBox/pickClick/bulkDeleteRecords`,
-`PICK_ALL` holds the on-screen ids at render so All needs a render first).
-Wired to molds (+orphan plans, `moldsBulkDelete`, which the mold's and the
-plan's single Delete now use, cascading plans+meshes), boards, budget
-(receipts), documents (uploads only), rnd (`rdBulkDeleteStudies`: batches +
-coupons, RD_UNDO), schedule (`weeksBulkDelete`), season (through
-`partBulkDelete`), people (`rosterBulkDelete`, never self). Parts, Work
-Orders and Inventory keep their older pickers (`partPick/woPick/shopPick`);
-folding them into the shared one is a possible follow-up, not started.
-`confirmProceed()` in test_app.mjs now returns the callback's promise; tests
-that confirm an async delete must `await` it.
+**A test trap from the shared picker** (v4.8.0): `confirmProceed()` in
+`test_app.mjs` returns the callback's promise, so a test that confirms an
+async delete must `await` it.
 
-**v4.7.2 (2026-09-16): cut-list nest labels clipped.** `nestLabel` in
-stock.js (named to avoid drawings.js's `blankLabel`, which is the tag
-helper for the printed sheets and collided on first try). Print sheets have
-their own leader labelling and were not touched.
-
-**App v4.7.1 and add-in: Plan stock takes a bottom face, and stack layers
-line up** (2026-09-09, Simon's asks). `febframe.py` (pure, tested by
-`tools/test_fusion_frame.py`) lays the mesh flat on the picked face; the
-matrix rides as `frame` on the mold message, on the plan record, and back on
-the "plan" message; `draw_plan` inverts it and draws oriented boxes;
-`sectionTrisInModelFrame` in stock.js does the same for the stock STL
-export. VERIFIED LIVE in Fusion on 2026-09-09 over the built-in MCP server
-(raw HTTP, `10 Fusion Add-in/tools/fusion_mcp.py`, recipe in `MCP.md`): a
-side-lying block's boxes were drawn standing on the picked face to the mm.
-Not yet done by a person: the face pick in the
-actual command dialog. Separately, `applyMargin` now takes a lattice anchor
-and `sliceMold` snaps every blank to the bottom blank's half-inch grid, which
-is what fixes the layer offset Simon saw on STK-SN6-014; that plan predates
-the fix and needs a re-plan to line up.
-
-**App v4.6.0: an STL can be planned as one solid block** (2026-09-09, Simon's
-ask). Opt-in from a Blank shape select in the mold modal's STL fields; the
-default still steps. In `sliceMold`, `opts.monolithic` gives every layer the
-mesh's full XY bounds plus margin as its one blank; the worker, the inline
-fallback and the plan record carry `monolithic`, a re-plan prefills it from
-`currentPlanFor`, and the plan page header says "as one solid block". The
-packer, sections, drawings and STL export are untouched by design. Not done:
-nothing on the Fusion side needed changing, but the add-in has not been run
-against a block plan live. `tools/test_drawings.mjs` has three pre-existing
-failures (cutlist, cutcrowd, cutbatch, "findings" from the visual audit) that
-were there before this change and are not from it.
+**Still open from v4.7.1 and v4.6.0.** Nobody has picked a bottom face in
+the actual Fusion command dialog; the add-in has never been run against a
+monolithic block plan. `applyMargin` now snaps every blank to the bottom
+blank's half-inch grid, which fixed the layer offset Simon saw, but
+STK-SN6-014 predates the fix and needs a re-plan to line up.
+`tools/test_drawings.mjs` has three pre-existing failures (cutlist, cutcrowd,
+cutbatch) from the visual audit, unrelated to any of this.
 
 **Fusion build-shaping facts** (2026-09-04, from the six spikes; all cost a
 live experiment to find). `STLExportOptions.unitType` reads inches but writes
@@ -221,6 +193,18 @@ buttons on `wo-detail` sit past the safe area (x=873; the second reaches
 
 ## Open questions for Simon
 
+**Two answers the mold plan is blocked on.**
+
+1. **The split waiver probably measures the wrong quantity.** `sectionize`
+   splits on stack HEIGHT, but the ShopSabre's 6in limit is plunge DEPTH,
+   bounded by the cavity's Z relief. Shipping the flag as asked (Chunk 7),
+   labelled "Machined depth stays under 6in", but the durable fix computes
+   per-layer depth from the mesh and is worth its own conversation.
+2. **`parts.js:1023` and `workorders.js:103` are the same map with disagreeing
+   fallbacks**, so a part with a blank `layupType` silently gets a ten-step
+   infusion checklist. Chunk 9 unifies them on `"Other"`. That is a behaviour
+   change on existing parts and needs confirming before it lands.
+
 **Two things need a human with a real device; automation cannot settle either.**
 
 1. **Tab through the Budget grid by hand.** The Tab-moves-field-to-field
@@ -247,6 +231,7 @@ items in `HANDOFF.md`):
 
 ## Next up (not started)
 
+- Chunks 1 through 14 of the mold/trash/techniques plan, above.
 - The dashboard and guest mode follow-ups named in **Now**.
 - Decide the four app-only families (Receiving, Export, Storage map, Search
   results, plus `table.sub`): lift them into `components.css` or drop them
@@ -458,6 +443,12 @@ They are built and tested against the emulator.
 
 Five sessions, newest first. Older entries live in `git log`, not here.
 
+**2026-09-17 — one version, one release** for the app and the Fusion add-in;
+`tools/release.mjs` cuts everything. Then the mold/trash/techniques plan
+approved, and Chunk 0 landed: `molds/`, `items/` and `lots/` added to
+`storage.rules`, which had been silently refusing every photo pasted into a
+Shop-tab note.
+
 **2026-09-04 — Fusion add-in study, Stage 1 and 2.** Spikes S1, S2, S3, S6
 through Fusion's built-in MCP server; S4 and S5 as throwaway add-ins.
 
@@ -473,5 +464,3 @@ renumbered (`03 App/` is `06 Composites App/`), repo renamed to
 **2026-08-28 — v4.0.0** (R&D bench, boot gate), mold stage stepper, inventory
 round 2 and EH&S phases complete.
 
-**2026-08-26/27 — v2.0.0 to v3.2.0:** the Season tab, the splash, the
-blueprint as a read, cut sheets on paper, EH&S tags and iPhone scanning.

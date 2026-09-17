@@ -5,9 +5,11 @@ rules_version = '2';
 // Storage rules can't read Firestore and can't split get/list (that's a
 // Firestore feature), so we can't do the full roster check here. What we DO
 // enforce: only a signed-in user can touch storage at all; a user can only
-// write their OWN avatar (avatars/{their-uid}); project files must be images or
-// common doc types under a size cap; and no path outside these two trees is
-// writable. Reads require sign-in — needed because the client calls
+// write their OWN avatar (avatars/{their-uid}); record attachments must be
+// images, common doc types or native CAD under a size cap; and no path outside
+// the trees named below is writable. A tree that is not declared here is denied,
+// which is a safe default to fail in and also an easy one to forget: see the
+// Shop-tab block for a season's worth of silently refused uploads. Reads require sign-in — needed because the client calls
 // getDownloadURL() to display images.
 //
 // RESIDUAL (documented, low severity): a signed-in account that a lead hasn't
@@ -102,6 +104,45 @@ service firebase.storage {
     // Same shape and same allowlist as projects/, CAD included — the mold CAD
     // evidence on the "Mold CAD/CAM Done" stage is attached here.
     match /parts/{partId}/{file} {
+      allow read: if signedIn();
+      allow write: if accountOf() && (
+        (sizeOk() && request.resource.contentType.matches('(image/.*|application/pdf|application/msword|application/vnd.openxmlformats-officedocument.*|text/.*)'))
+        || cadOk(file));
+    }
+
+    /* ---- the Shop tab's three record types ----
+       molds/, items/ and lots/, same shape and same allowlist as parts/ above,
+       CAD included. A mold's DATUM CUT PLANS live here: the drawing of the
+       reference cuts taken off a mold after a part has come out of it, uploaded
+       on the mold's detail page. So does anything pasted into the rich-text
+       Notes field on any of the three.
+
+       THESE WERE MISSING UNTIL SEPTEMBER 2026, AND THIS FILE ENDS WITH "no rule
+       = deny". renderShopDetail has wired richField's upload to
+       `${spec.coll}/${o.id}/${Date.now()}-${name}` since the composer reached
+       the Shop tab, so every photo anyone pasted into a mold, item or lot note
+       was refused at upload. The toast says "Upload failed" and the note keeps
+       its 1x1 placeholder, which reads as a flaky connection rather than a
+       rule, so nobody reported it.
+
+       Exactly the bug the parts/ rule above was added to fix, invisible for
+       exactly the same reason: test_storage_rules.mjs asserted deny cases only.
+       It now covers all three trees. */
+    match /molds/{moldId}/{file} {
+      allow read: if signedIn();
+      allow write: if accountOf() && (
+        (sizeOk() && request.resource.contentType.matches('(image/.*|application/pdf|application/msword|application/vnd.openxmlformats-officedocument.*|text/.*)'))
+        || cadOk(file));
+    }
+
+    match /items/{itemId}/{file} {
+      allow read: if signedIn();
+      allow write: if accountOf() && (
+        (sizeOk() && request.resource.contentType.matches('(image/.*|application/pdf|application/msword|application/vnd.openxmlformats-officedocument.*|text/.*)'))
+        || cadOk(file));
+    }
+
+    match /lots/{lotId}/{file} {
       allow read: if signedIn();
       allow write: if accountOf() && (
         (sizeOk() && request.resource.contentType.matches('(image/.*|application/pdf|application/msword|application/vnd.openxmlformats-officedocument.*|text/.*)'))

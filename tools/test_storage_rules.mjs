@@ -5,10 +5,21 @@
    cases (which gate on contentType) can't be asserted here without the full
    resumable protocol — those are exercised by the app's Firebase SDK in prod.
    What this proves cleanly is the security boundary that matters: sign-in is
-   required, and writes outside the six allowed path trees (avatars/, projects/,
-   parts/, documents/, budget/, stackplans/) are denied. Run from "06 Composites App/":
+   required, and writes outside the nine allowed path trees (avatars/, projects/,
+   parts/, molds/, items/, lots/, documents/, budget/, stackplans/) are denied.
+
+   Because no allow case is assertable here, a tree that is MISSING from the
+   rules looks identical to a tree that is present: both refuse this endpoint's
+   simple upload. That is exactly how molds/, items/ and lots/ went a season
+   without a rule while the app uploaded to them. So this file also reads
+   storage.rules off disk and asserts each tree has a match block at all —
+   crude, but it is the only thing here that would have caught it.
+
+   Run from "06 Composites App/":
      firebase emulators:exec --only auth,storage --project demo-feb-work-orders \
        "node '../tools/test_storage_rules.mjs'"                                */
+
+import { readFileSync } from "node:fs";
 
 const PID = "demo-feb-work-orders";
 const BUCKET = `${PID}.appspot.com`;
@@ -64,6 +75,9 @@ console.log("storage boundary — a guest may not write anywhere:");
 await denied("anonymous write to documents/", anon, "documents/x.pdf");
 await denied("anonymous write to projects/", anon, "projects/P-1/x.pdf");
 await denied("anonymous write to parts/", anon, "parts/P-SN6-001/photo.jpg");
+await denied("anonymous write to molds/", anon, "molds/MOLD-SN6-001/datum.pdf");
+await denied("anonymous write to items/", anon, "items/ITEM-SN6-001/photo.jpg");
+await denied("anonymous write to lots/", anon, "lots/LOT-SN6-001/photo.jpg");
 await denied("anonymous write to budget/", anon, "budget/BUY-1/receipt.jpg");
 await denied("anonymous write to stackplans/", anon, "stackplans/STK-1/mesh.stl");
 await denied("anonymous write to its OWN avatar path", anon, "avatars/uid-guest");
@@ -78,6 +92,14 @@ await denied("unauthenticated write to stackplans/", null, "stackplans/STK-1/mes
 // the file ends in "no rule = deny", so a photo in a part comment failed
 // silently at upload. The tree exists now, and must still be roster-gated.
 await denied("unauthenticated write to parts/", null, "parts/P-SN6-001/photo.jpg");
+/* molds/, items/ and lots/ arrived in September 2026 for the same reason
+   parts/ did, one tab later: renderShopDetail wires richField's upload to
+   `${coll}/${id}/...` and there was no rule, so a pasted photo failed at
+   upload with a toast that read like bad wifi. A mold's datum cut plans live
+   in molds/ too. All three must still be roster-gated. */
+await denied("unauthenticated write to molds/", null, "molds/MOLD-SN6-001/datum.pdf");
+await denied("unauthenticated write to items/", null, "items/ITEM-SN6-001/photo.jpg");
+await denied("unauthenticated write to lots/", null, "lots/LOT-SN6-001/photo.jpg");
 // The mold mesh behind the Stock tab's 3D view. Its rule accepts only
 // model/stl and application/octet-stream, so this PDF-typed write must be
 // refused even though the path itself is allowed — the one contentType case
@@ -95,6 +117,20 @@ await denied("a .step name does not open the bucket root", token, "mold.step");
 await denied("a .step name does not open someone else's avatar", token, "avatars/not-my-uid.step");
 await denied("CAD by name is still denied where the tree itself is denied", token, "cad/MOLD.STEP");
 await denied("authed write to bucket root", token, "rootfile.pdf");
+
+/* ---------- the trees exist at all ----------
+   Source-level, because the emulator cannot tell a denied path from an absent
+   one (see the scope note). Every tree the app writes to must have a match
+   block; addRecordFiles(coll, id, tree) and richField's upload path are the
+   two places that pick one. */
+const RULES = readFileSync(new URL("../06 Composites App/storage.rules", import.meta.url), "utf8");
+function hasTree(tree) {
+  const ok = new RegExp(`match /${tree}/\\{`).test(RULES);
+  ok ? pass++ : fail++;
+  console.log(`${ok ? "  ok" : "FAIL"}  storage.rules declares ${tree}/`);
+}
+console.log("\nevery tree the app uploads to has a rule:");
+["avatars", "projects", "parts", "molds", "items", "lots", "documents", "budget", "stackplans"].forEach(hasTree);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
