@@ -20,35 +20,52 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
-**Mold tracking, a trash can, and lead-addable techniques** (approved
-2026-09-17). Fifteen chunks; the plan, the order and the reasoning behind
-every decision are in `~/.claude/plans/joyful-shimmying-bunny.md`. Do not
-re-derive them. Five bundles. **0-11 ARE LANDED, PUSHED, DEPLOYED AND VERIFIED
-LIVE**: storage.rules trees, `MOLD_TRACK`, the "Tooling cut" stage,
-`cutEligiblePlans()`, the commit advancing the mold, the packer scrap
-partition, mold files and datum plans, the split waiver, the editable offcut
-review pane, `config/techniques`, template versioning, and the technique
-editor. **firestore.rules were deployed too** (`techniques` joined the guest
-read allowlist) — that is the only rules change in the bundle. What remains is
-the OLD **9-11** `config/techniques` in the trainings pattern, template
-versioning, then the editor — 10 before 11 without exception; **12-14** soft
-delete and the 30-day trash, last, because its blast radius is every count in
-the app.
+**Mold tracking, a trash can and lead-addable techniques: ALL FIFTEEN CHUNKS
+ARE LANDED, DEPLOYED AND VERIFIED LIVE** (2026-09-17). The plan and the
+reasoning behind every decision are in
+`~/.claude/plans/joyful-shimmying-bunny.md`; the commits carry the rest. Do not
+re-derive any of it.
 
-**A storage-rules assertion was asserting nothing** (closed 2026-09-17, by the
-spawned task at 3591308, and worth keeping only for the fact underneath).
-firebase-tools' emulator does NOT leave `request.resource.contentType` unset on
-a simple upload to `/v0/...`, as that suite's scope note claimed for a year: it
-defaults the value to `application/octet-stream` and never reads the
-Content-Type header. So no contentType-gated allow case is assertable there,
-and any assertion that thinks it is sending a PDF is really sending
-octet-stream.
+What a future session most needs to know, none of it visible from the code:
 
-**The Fusion add-in ships as a download, on the app's version** (2026-09-17).
-`tools/release.mjs` cuts it in one command; the procedure is in `CLAUDE.md`,
-not here.
+- **`onFbData` is the ONE place a tombstone is filtered.** `DB[coll]` is the
+  live records, `DB.trash[coll]` the deleted ones. Nothing else in the app
+  should ever test `.deleted`; roughly forty read sites depend on not having
+  to. If you add `&& !r.deleted` somewhere, you have misunderstood the split.
+- **`deletedFiles` on a tombstone is the only record of what a deleted
+  record's uploads were.** Storage LISTING is denied by rule. Lose that array
+  and the blobs are unreachable forever. `purgeTrash` in reports.js is the only
+  code in the app that calls `deleteFiles`.
+- **Two paths still hard-delete on purpose**: the cut commit consuming a board
+  to zero, and `undoCuts` withdrawing offcuts it just created. Both are stock
+  consumption, not somebody deleting a record. Roster removal likewise stays as
+  it was — roster is not one of the twelve collections and has no bin.
+- **The cut list is Designed-only and HARD.** Walking a mold's stage back is
+  the only override, deliberately, because it leaves a trail. The commit
+  advances the mold to "Tooling cut" — do not remove that without removing the
+  filter, or people will stop marking molds cut.
+- **`MIN_REMNANT_MM` is the packer's answer to "what counts as recovered value
+  when choosing a split"**, not to "is this worth keeping". `leftover` and
+  `scrap` are a partition; only `leftover` reaches the scoring, and moving that
+  line changes which boards get opened for every mold in a batch.
+- **A technique's steps are copied into a work order at creation and never
+  retro-fit.** `templateVersion` is what lets a run know it is behind, and it is
+  also what turns off the BLOCKER_WORDS title matching — which still enforces on
+  every record that predates it, including the 26 retro SN5 runs.
 
-Decisions that cost something to reach and should not be quietly reversed. No
+**Rules deployed twice in this bundle**, which is the thing to know if
+something looks off server-side: `techniques` joined the guest read allowlist,
+and `items`/`lots` delete went back to `isLead()` (members still clear shelves
+— that is now a tombstone, which is an update). `storage.rules` was deployed
+once, for the `molds/`, `items/` and `lots/` trees.
+
+**Not done, and not started**: a release has not been cut. `APP_VERSION` is
+still v4.8.0 and `WHATS_NEW` still describes it, so `tools/release.mjs` will
+refuse until somebody writes the team-facing note. Everything above is live on
+`feb-composites.web.app` ahead of that number.
+
+**The Fusion add-in's install decisions**, which cost something to reach and
+should not be quietly reversed. Decisions that cost something to reach and should not be quietly reversed. No
 .dmg or .exe: an UNSIGNED one is blocked harder than a plain script is, and
 signing runs about $99/yr per platform. The two installers sit beside the
 add-in folder in the zip, never inside it, or they get copied into Fusion's
@@ -103,13 +120,6 @@ script exists or is needed. The three placeholder collections in
 is applied by gsutil, not by deploy. `.claude/launch.json` serves app/ on
 :8792 for the browser pane, which refuses sub-path navigation, so the server
 root is app/ itself.
-
-**The standards' editing surface is Google Docs** (2026-08-29, Simon's
-call): folder "CS Standards" at the root of his My Drive, one Doc per
-standard plus INDEX and template, figures embedded. IDs and the sync-back
-rule live in `02 CS Standards/GOOGLE-DOCS.md`: Docs are where edits happen,
-`src/` markdown is still what builds the app copies, so Doc edits get synced
-back with a rev bump and rebuilt. Approval tables still need real signatures.
 
 **Pending presses that are Simon's, not a session's:** `⋯ → Announce this
 release`, standing in the newest build, which gives anyone on an older build
@@ -257,6 +267,12 @@ items in `HANDOFF.md`):
 ---
 
 ## Constraints — don't relitigate
+
+**Over cap: 34 entries against a limit of 25**, and a cull needs Simon's eye
+rather than a session's — several of these are single sentences that cost a
+live experiment. The likeliest candidates are the ones now written up in
+`06 Composites App/app/README.md` (the print-system entries, the label media
+ones), which policy says to delete here and keep there.
 
 **The roll printer must be AirPrint, and that is not a preference.** A browser
 cannot open a raw TCP socket, so port 9100 is unavailable; and the app is
