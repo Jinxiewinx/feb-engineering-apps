@@ -32,13 +32,13 @@ var APP_VERSION = "4.8.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Select… on every list. Molds, boards, purchases, documents, R&D studies, schedule weeks, the Season blueprint and People now have the same Select… button Parts and Work Orders had: tick rows (or All), press Delete, one confirm. Deleting a mold takes its stack plans with it; a purchase takes its receipt; a study takes its batches and coupons, with undo.",
-  "Cut list: the label on each blank stays inside its rectangle. The layer tag (L1, L2b) is on its own line and a long mold name is shortened with an ellipsis; hover a blank for the full name.",
-  "The layers of a stepped stack now line up. Every blank in a plan snaps to one half-inch grid from the bottom blank's corner, so layers of the same size sit flush and a step is a whole half-inch. Re-plan any mold whose layers looked slightly offset.",
-  "From Fusion, Plan stock now takes a bottom face as well as the body. A mold modelled on its side (a split mold, say) is laid flat on that face for planning, and the boxes come back drawn in the model's own orientation. Reinstall the add-in from 10 Fusion Add-in to get it.",
-  "Plan an STL as one solid block. The mold modal has a Blank shape choice: step each layer in to the mold (the default, uses less board) or one solid block around the whole mold, where every layer gets the same footprint and the glue-up is a plain brick. The cut list and drawings work the same either way.",
-  "From Fusion, a mesh sent before the palette is signed in now waits and opens by itself once it is, and the add-in can sign the palette in with the shared team account.",
+  "Deleting is not final any more. Anything you delete goes to Recently deleted on the Reports tab and comes back whole for 30 days, with its photos and its links. Any member can delete; only a lead empties the bin.",
+  "Molds have a new stage, Tooling cut: boards off the ShopSabre, not glued yet. The cut list now offers only molds still at Designed, and marking boards cut moves the mold to Tooling cut, so nothing gets nested twice. To cut one again, walk its stage back first.",
+  "Mark cut now shows every offcut before it becomes a board: its size, its name, which board it came off. Fix a size, add a piece the planner did not predict, drop one that did not survive. Pieces under 4in are listed too, unticked.",
+  "Molds take files now, for datum cut plans, and a PDF opens in the app instead of downloading. Photos pasted into a mold, item or lot note also work at last — they had been failing silently.",
+  "Leads can add layup techniques from Work Orders: copy an existing checklist, edit the steps and their gates. A run keeps the checklist it started with, and says so when the technique has moved on.",
 ];
+
 
 /* ---------- config/release ----------
    { version, notes[], publishedAt }, written by a lead from the ⋯ menu after a

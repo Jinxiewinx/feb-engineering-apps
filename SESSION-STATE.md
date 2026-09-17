@@ -59,10 +59,12 @@ and `items`/`lots` delete went back to `isLead()` (members still clear shelves
 — that is now a tombstone, which is an update). `storage.rules` was deployed
 once, for the `molds/`, `items/` and `lots/` trees.
 
-**Not done, and not started**: a release has not been cut. `APP_VERSION` is
-still v4.8.0 and `WHATS_NEW` still describes it, so `tools/release.mjs` will
-refuse until somebody writes the team-facing note. Everything above is live on
-`feb-composites.web.app` ahead of that number.
+**Releases no longer wait on Simon** (2026-09-17). Cutting one is standing
+authorization, same as pushing to main; the #composites note the script used to
+print is gone because he does not send it, and the release pictures went opt-in
+with it since they existed to be attached to that post. `WHATS_NEW` is the ONLY
+thing that reaches the team now, so its stale gate stayed — whoever cuts the
+release writes it. Announcing in `#composites` still needs asking.
 
 **The Fusion add-in's install decisions**, which cost something to reach and
 should not be quietly reversed. Decisions that cost something to reach and should not be quietly reversed. No
@@ -211,11 +213,13 @@ buttons on `wo-detail` sit past the safe area (x=873; the second reaches
 
 **Two answers the mold plan is blocked on** (the second is now shipped; say if it is wrong).
 
-1. **The split waiver probably measures the wrong quantity.** `sectionize`
-   splits on stack HEIGHT, but the ShopSabre's 6in limit is plunge DEPTH,
-   bounded by the cavity's Z relief. Shipping the flag as asked (Chunk 7),
-   labelled "Machined depth stays under 6in", but the durable fix computes
-   per-layer depth from the mesh and is worth its own conversation.
+1. **The split waiver measures stack HEIGHT; the real limit is plunge DEPTH.**
+   Left open deliberately (Simon, 2026-09-17): the per-mold flag shipped in
+   Chunk 7 and is fine, and a "find the max plunge" feature is wanted one day,
+   but depth is not the only constraint. **His list, which is the reason not to
+   build it yet: collision with the collet, and the gantry's own maximum
+   height.** Computing cut depth from the mesh alone would answer a third of
+   the question and read as if it had answered all of it.
 2. **The layup-type fallback now lands on `"Other"` for both callers**
    (was `"Other"` in one and `"MoldInfusion"` in the other, so a part with a
    blank `layupType` silently got a ten-step infusion checklist). Shipped

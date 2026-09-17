@@ -3,9 +3,14 @@
 Every released version of the FEB Composites app, newest first.
 
 Releases are cut with `node tools/release.mjs <version>`, which tags the commit,
-deploys hosting and prints a Slack note for `#composites` — with one or two
-pictures to attach to it, on every Major and Minor. See
-[the release section of the tools README](tools/README.md).
+deploys hosting, publishes the GitHub Release with the Fusion add-in attached,
+and stops. See [the release section of the tools README](tools/README.md).
+
+It used to print a `#composites` note for a human to paste, with a picture or
+two to attach. Simon does not send those (2026-09-17), so the note is gone and
+the pictures are opt-in (`--shots`). What reaches the team is the **What's New**
+panel in the app, which is hand-written every release and which the script
+refuses to ship stale.
 
 ## Two apps, two tag series
 
@@ -27,8 +32,8 @@ to learn**, not about API compatibility:
 
 - **Major** (`2.0.0`) — a new top-level area, or the way the team works changes.
   Navigation moves. People need telling before they open it.
-- **Minor** (`1.1.0`) — a new capability inside an area that already exists. Worth
-  a Slack note; nobody has to relearn anything.
+- **Minor** (`1.1.0`) — a new capability inside an area that already exists.
+  Worth a line in What's New; nobody has to relearn anything.
 - **Patch** (`1.0.1`) — fixes and copy. Nothing new to learn.
 
 ---

@@ -19,10 +19,9 @@
  *   9. verifies the new version is actually live, by fetching it
  *  9a. builds the Fusion add-in zip and publishes the GitHub Release for the
  *      tag, with the zip attached
- *  9b. shoots the release pictures — AFTER the live check, so the picture is
- *      provably of the version that shipped (Major and Minor only)
- *  10. prints the Slack note — built from WHATS_NEW, not from subjects — with
- *      the pictures to attach under it, and STOPS
+ *  9b. shoots the release pictures, if --shots — AFTER the live check, so the
+ *      picture is provably of the version that shipped
+ *  10. says what is live, and STOPS
  *
  * WHAT IT REFUSES TO GUESS:
  *
@@ -41,24 +40,26 @@
  * The #composites note had the SAME bug one step further on, and v2.1.0 shipped
  * with it: the note was built from subjects, so it opened with "What's New for
  * the board and work-order release" and "Write down what v2.0.0 actually was" —
- * two internal sentences, in front of the whole team. Slack and the What's New
- * panel have exactly one audience between them, so they now say the same thing:
- * the note is WHATS_NEW. Subjects stay where they were always right, in the
- * CHANGELOG.
+ * two internal sentences, in front of the whole team.
+ *
+ * That note is gone (Simon, 2026-09-17: he does not send them), which leaves
+ * WHATS_NEW as the ONLY thing that reaches the team. So the gate on it is the
+ * one requirement here that did not get relaxed with it — it protects the panel
+ * from going out describing the previous release. Subjects stay where they were
+ * always right, in the CHANGELOG.
  *
  * RELEASE_SHOTS, for the same reason one step further on. A shot list picked
  * from what changed photographs the biggest diff, and the biggest diff is
- * almost never the thing worth showing — the same failure mode as generating
- * WHATS_NEW from subjects, in pictures. So tools/lib/release-shots.mjs is
- * hand-written, capped at two, and this script CHECKS that it moved since the
- * last tag and refuses to ship if it did not. A patch skips the whole thing:
- * "fixes and copy, nothing new to learn" has nothing to photograph.
+ * almost never the thing worth showing. So tools/lib/release-shots.mjs is
+ * hand-written and capped at two — but it is OPT-IN (--shots) now rather than
+ * required, because the pictures existed to be dragged into the Slack post and
+ * there is no Slack post. The stale check still applies when you ask for them.
  *
  * WHAT IT DELIBERATELY DOES NOT DO:
  *
- * It does not post to Slack. `#composites` announcements need Simon's explicit
- * ask (CLAUDE.md), so this prints the message and a human sends it. The webhook
- * exists in the app already if that is ever relaxed.
+ * It does not post to Slack, and no longer writes a message for anyone to post.
+ * `#composites` announcements still need Simon's explicit ask (CLAUDE.md). The
+ * webhook exists in the app already if that is ever relaxed.
  *
  * It does not write config/release. That is the "Announce this release" button
  * in the app's ⋯ menu, pressed by a lead who is standing in the new version.
@@ -209,14 +210,12 @@ act("write the add-in's version into the manifest and the .py", () => {
   writeFileSync(ADDIN_PY, addinSrc);
 });
 
-/* Parsed AFTER the stale check, so what is shown is what will ship — and parsed
-   ONCE, because this is now the source for the Slack note as well as this
-   preview. Two parses would be two chances to disagree about what the team was
-   told.
+/* Parsed AFTER the stale check, so what is shown is what will ship.
 
-   Empty is fatal, and fatal HERE rather than at step 10: the note is printed
-   after the deploy has already gone out, which is far too late to find out
-   there was nothing to say. */
+   Empty is fatal, and fatal HERE rather than after the deploy: an empty panel
+   is a release that tells the team nothing, and finding that out once it is
+   live is far too late. This was the source for the #composites note too until
+   that note went; the panel is now the whole audience. */
 const whatsNew = ((core.match(nRe) || [""])[0].match(/"(?:[^"\\]|\\.)*"/g) || [])
   .map(q => { try { return JSON.parse(q); } catch { return q; } })
   .filter(s => String(s).trim());
@@ -226,12 +225,12 @@ if (!whatsNew.length) {
       "This release's commit subjects, as raw material:\n\n" +
       highlights.map(h => "  - " + h).join("\n") + "\n");
 }
-say("\n  WHATS_NEW — the What's New panel on their next reload, and the");
-say("  #composites note at the bottom of this run:");
+say("\n  WHATS_NEW — the What's New panel on their next reload, which is");
+say("  the only thing the team is told about this release:");
 whatsNew.forEach(n => say("    • " + n));
 
-/* ---- 4b. the picture -----------------------------------------------------
-   Every Major and Minor release goes out with one or two pictures. A bulleted
+/* ---- 4b. the picture, if asked for ---------------------------------------
+   Opt-in since the #composites note went. A bulleted
    list of sentences is what we had, and the one thing that actually makes
    fifteen people open the app is a picture of the new thing.
 
@@ -245,24 +244,22 @@ whatsNew.forEach(n => say("    • " + n));
    A patch is "fixes and copy, nothing new to learn" (CHANGELOG.md), so there is
    normally nothing to photograph and this is skipped. --shots overrides that,
    because a patch that changes what a LIST SHOWS has plenty to look at. */
-const isPatch = /^\d+\.\d+\.[1-9]\d*$/.test(version);
-const wantShots = !NO_SHOTS && (!isPatch || FORCE_SHOTS);
-if (isPatch && !FORCE_SHOTS && !NO_SHOTS) {
-  say("\n  a patch ships no pictures — nothing new to look at");
-  say("  (--shots if this one does)");
-} else if (NO_SHOTS) {
-  say("\n  --no-shots: this release will be announced WITHOUT a picture");
-} else {
+/* OPT-IN SINCE SEPTEMBER 2026. The pictures existed to be dragged into the
+   #composites post, and Simon does not send that post any more, so requiring
+   them was requiring work with nowhere to go. `--shots` still shoots them for
+   anyone who wants something to attach by hand; the stale check comes with it,
+   because a picture is only worth taking if it is of THIS release. */
+const wantShots = FORCE_SHOTS && !NO_SHOTS;
+if (wantShots) {
   const shotsMoved = prev
     ? run("git", ["diff", "--name-only", `${prev}..HEAD`, "--", "tools/lib/release-shots.mjs"]).trim()
     : "first release";
   if (!shotsMoved) {
-    die(`tools/lib/release-shots.mjs has not changed since ${prev}, so this release\n` +
-        `would be announced with the LAST one's pictures.\n\n` +
-        `Write the one or two pictures that show what changed, then cut again.\n` +
+    die(`--shots, but tools/lib/release-shots.mjs has not changed since ${prev},\n` +
+        `so you would get the LAST release's pictures.\n\n` +
+        `Write the one or two that show what changed, then cut again.\n` +
         `Iterate on the framing without cutting a release:\n\n` +
-        `    node tools/shoot_release.mjs --version ${version}\n\n` +
-        `Or ship without a picture on purpose:  node tools/release.mjs ${version} --no-shots`);
+        `    node tools/shoot_release.mjs --version ${version}`);
   }
 }
 
@@ -453,35 +450,23 @@ if (wantShots && !DRY) {
   }
 }
 
-/* ---- 10. the Slack note, for a human to send --------------------------- */
-/* Slack mrkdwn, not HTML: *bold* is a single asterisk and there is no entity
-   escaping — the app's own slackIssueCreatedMsg carries the same warning.
+/* ---- 10. what is left for a human --------------------------------------
+   THERE IS NO SLACK NOTE ANY MORE. This used to print one, built from
+   WHATS_NEW, for Simon to paste into #composites; he said on 2026-09-17 that he
+   does not send them, so printing a message nobody sends was theatre at the end
+   of every release.
 
-   The three characters Slack DOES want escaped in message text are & < >, and
-   they have to be escaped in the copy but NOT in the link below it, where the
-   angle brackets are the link syntax. Prose is unlikely to contain them; a note
-   silently turning into half a link because somebody wrote "<1/8 in" is the kind
-   of thing nobody catches until it is on fifteen screens. */
-const slackEscape = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-const slack = [
-  `*Composites app v${version} is out* — <${HOST}|feb-composites.web.app>`,
-  "",
-  ...whatsNew.map(h => `• ${slackEscape(h)}`),
-  "",
-  "Reload the app to get it. If you have it installed on a tablet, it will prompt you.",
-].join("\n");
+   That makes the WHATS_NEW panel the ONLY thing that reaches the team, which is
+   why the check on it above is still a hard gate and is the one requirement
+   here that did not go. Whoever cuts the release writes it.
 
+   The webhook is still in the app if posting is ever wanted; see the header. */
 say("\n" + "─".repeat(64));
-say("Paste into #composites (Simon's call — this script never posts):\n");
-say(slack);
-say("─".repeat(64));
+say(`v${version} is live at ${HOST} and the What's New panel describes it.`);
 if (shots.length) {
-  say(`\n${shots.length === 1 ? "One image" : "Two images"} to attach (drag ${shots.length === 1 ? "it" : "them"} into the message):`);
+  say(`\n${shots.length === 1 ? "One picture" : "Two pictures"}, if you want something to attach by hand:`);
   shots.forEach(f => say("  " + f));
-} else if (wantShots && DRY) {
-  say("\n(a real run would shoot the release pictures here and list them)");
-} else if (!wantShots) {
-  say(`\nNO PICTURE with this one${NO_SHOTS ? " (--no-shots)" : " — a patch has nothing new to look at; --shots if it does"}.`);
 }
-say(`\nThen open the app as a lead and hit ⋯ → "Announce this release",`);
-say("so anyone still on an older build gets the reload prompt.\n");
+say(`\nOne thing left, and it is a lead's: open the app and hit the ⋯ menu,`);
+say('then "Announce this release", so anyone still on an older build gets the');
+say("reload prompt.\n");

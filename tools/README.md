@@ -168,24 +168,27 @@ and refuses to ship over a failure**, then commits, tags, pushes, deploys
 hosting, and fetches `core.js` off the live host to check the new version is
 genuinely there — "Deploy complete" is not the check.
 
-**`WHATS_NEW` is yours, and it is the only thing the team reads.** The script
-does not write it: it checks you changed it since the last tag, refuses to ship
-if you did not, and prints the subjects as raw material. Both team-facing
-surfaces read that one list — the What's New panel in the app and the
-`#composites` note this prints — so they cannot say different things.
+**`WHATS_NEW` is yours, and it is now the only thing the team reads.** The
+script does not write it: it checks you changed it since the last tag, refuses
+to ship if you did not, and prints the subjects as raw material. Five short
+lines, in the words somebody at a layup table would use.
 
-**Every Major and Minor release ships one or two pictures.** Write them into
-`tools/lib/release-shots.mjs` before you cut. It is the same hand-written act as
-`WHATS_NEW` and it is checked the same way: the script refuses to ship if that
-file has not moved since the last tag, because a shot list picked from what
-changed photographs the biggest diff, and the biggest diff is almost never the
-thing worth showing. **Two is the cap** — three pictures in a Slack post is a
-blog entry and nobody reads the third.
+That gate is the one requirement here that did not get relaxed in September
+2026, and it is the last thing standing between the team and a panel describing
+the previous release. It used to have a twin — a `#composites` note this script
+printed for a human to paste — and Simon does not send those, so the note is
+gone and the panel carries the whole job.
+
+**Pictures are opt-in** (`--shots`). They existed to be dragged into that Slack
+post, so requiring them was requiring work with nowhere to go. Ask for them and
+the stale check comes too: `tools/lib/release-shots.mjs` must have moved since
+the last tag, because a shot list picked from what changed photographs the
+biggest diff, and the biggest diff is almost never the thing worth showing.
+**Two is the cap** — nobody reads the third.
 
 `release.mjs` shoots them at step 9b, *after* it has verified the deploy is live,
 so the picture is provably of the version that actually shipped, and prints
-their paths under the Slack note for you to drag in. Iterate on the framing
-without cutting a release:
+their paths at the end. Iterate on the framing without cutting a release:
 
 ```bash
 node tools/shoot_release.mjs --version 2.2.0

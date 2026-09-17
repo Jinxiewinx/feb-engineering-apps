@@ -58,6 +58,21 @@ the three version strings disagree or if `release.mjs` stops writing them, so a
 drift is caught before it ships rather than by a member reporting a version
 that does not exist.
 
+**Cutting a release does not need asking** (Simon, 2026-09-17). Same standing
+authorization as pushing to main and deploying hosting, and for the same
+reason: he does not want to be the step the work waits on. Pick the version off
+the scale in `CHANGELOG.md` — Major when the way the team works changes, which
+is a real category and not a flourish — and run the one command.
+
+**Writing `WHATS_NEW` is part of cutting the release, not a favour.** It is now
+the ONLY thing that reaches the team: the #composites note the script used to
+print is gone, because Simon does not send it. Five short lines, in the words
+somebody at a layup table would use, about what changed for them. `release.mjs`
+refuses to ship a stale one, deliberately — that gate is the last thing between
+the team and a panel describing the previous version. Announcing in
+`#composites` is still outward-facing and still needs asking; the in-app
+⋯ → "Announce this release" press is a lead's.
+
 **When the add-in changes but the app does not**, still cut an ordinary
 release. A patch version is cheap and it keeps the rule that a member can read
 one number off the app and off the add-in and compare them.
