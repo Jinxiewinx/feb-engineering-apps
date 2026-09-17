@@ -17,7 +17,17 @@
    the Timeline lands here correctly with no special case. */
 
 const SUBTEAMS = ["AERO", "BERGO", "AUTO-MECH"];
+/* The part-level vocabulary: frozen SCREAMING CASE from the SN5 spreadsheet,
+   living on real part records and mirrored into the tracker's column whitelist.
+   NOT renamed when techniques became lead-editable — that would be a data
+   migration for no benefit. layupTypes() in workorders.js derives the live list
+   from the catalog, so a lead-added technique offers its own string here; this
+   const stays as the built-in floor and as what a part written in 2025 says. */
 const LAYUP_TYPES = ["MOLD INFUSION", "GLASS INFUSION", "MOLD WET LAY", "FOAM WRAPPED"];
+function layupTypeOpts() {
+  const live = typeof layupTypes === "function" ? layupTypes() : [];
+  return [...new Set(LAYUP_TYPES.concat(live))];
+}
 // Ordered so the last value = fully done (drives the progress color).
 const STAGE_CAD = ["Not Started", "Part CAD Done", "Mold CAD/CAM Done"];
 const STAGE_MOLD = ["N/A (Flat)", "Not Started", "Machining", "Machine Complete", "Sealed", "Ready For Layup"];
@@ -1019,8 +1029,13 @@ async function newRunForPart(partId, opts) {
   if (!p) return;
   const id = await allocId("workOrders");
   if (!id) return;
-  const proc = { "MOLD INFUSION": "MoldInfusion", "GLASS INFUSION": "GlassInfusion",
-    "MOLD WET LAY": "MoldWetLay", "FOAM WRAPPED": "FoamWrapped" }[p.layupType] || "MoldInfusion";
+  /* "Other" and not "MoldInfusion". This map lived here AND in workorders.js
+     with two different fallbacks, so a part with a blank layup type quietly got
+     the full ten-step infusion checklist from one path and the three-step
+     Other one from the other. Other is the honest default: it asks for an
+     acceptance criterion before work starts, which is what you want when
+     nobody has said what this part is. */
+  const proc = processForLayupType(p.layupType, "Other");
   const wo = {
     id, partName: p.partName || "", subteam: p.subteam || "AERO", revision: "A", status: "Draft",
     processType: proc, moldEngineer: p.moldEngineer || "", manufacturingEngineer: p.manufacturingEngineer || "",
@@ -1034,7 +1049,7 @@ async function newRunForPart(partId, opts) {
     // frozen copy with no provenance is a number nobody trusts later.
     stackNote: "", bom: JSON.parse(JSON.stringify(p.bom || [])), standardsRefs: [],
     bomFrom: (p.bom || []).length ? p.id : "", bomCopiedOn: (p.bom || []).length ? today() : "",
-    steps: (STD_STEPS[proc] || STD_STEPS.Other).map(stepFromTemplate),
+    steps: techniqueSteps(proc).map(stepFromTemplate),
     qualityChecks: [{ criterion: "mass", target: p.weightG || "", actual: "", pass: null }],
     weightTargetG: p.weightG || null, weightActualG: null, timeline: [], notes: "", retro: false,
     createdBy: myEmail(),
@@ -1142,7 +1157,7 @@ function ptSecDetails(p, E) {
   const engs = partEngineers(p);
   return `
       <div class="grid pgrid">
-        ${pfld(p, "Part name", "partName")}${pfld(p, "Subteam", "subteam", SUBTEAMS)}${pfld(p, "Layup type", "layupType", LAYUP_TYPES)}
+        ${pfld(p, "Part name", "partName")}${pfld(p, "Subteam", "subteam", SUBTEAMS)}${pfld(p, "Layup type", "layupType", layupTypeOpts())}
         ${pfld(p, "Layup deadline", "layupDeadline", null, "date")}${pfld(p, "Mold location", "moldLocation")}${
           // An SN5 record has no workOrderId — the link is inferred from the part
           // name. Say so, rather than printing "—" next to a header that clearly

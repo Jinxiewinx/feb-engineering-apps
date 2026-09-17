@@ -89,6 +89,103 @@ function allTrainings(includeArchived) {
   return includeArchived ? out : out.filter(t => !t.archived);
 }
 
+/* ---------- lead-editable technique catalog (config/techniques) ----------
+   The trainings pattern above, verbatim: a config doc folds over the code
+   consts through ONE accessor. Same rules and for the same reasons — slug ids
+   minted once and never editable (wo.processType, part.layupType and step
+   rules reference them forever), customs ARCHIVE rather than delete so an old
+   run keeps its name, built-ins are renameable but not archivable because
+   MFG_ENG_TRAINING and three call sites name them in code, and a rubbish
+   override is ignored at read time rather than trusted.
+
+   Entry: { name, layupLabel, mfgTraining, steps: [[title, rule], ...],
+            rev, archived, addedBy, addedAt }. null is the revert marker
+   (setConfig merges, and a merge cannot delete).
+
+   `rev` is what a work order stamps at birth, so a run can say which version
+   of the checklist it was created from. Editing a technique never touches a
+   run that already exists: stepFromTemplate copies the steps INTO the document.
+
+   window.*, not a lexical binding, so fixtures and tests can reach it. */
+const TECHNIQUE_LAYUP = {
+  MoldInfusion: "MOLD INFUSION", GlassInfusion: "GLASS INFUSION",
+  MoldWetLay: "MOLD WET LAY", FoamWrapped: "FOAM WRAPPED", Other: "",
+};
+window.TECHNIQUE_OVERRIDES = null;
+let techniqueCatalogFetched = false;
+function loadTechniqueCatalog() {
+  if (techniqueCatalogFetched || !window.fb || fb.state !== "ready" || !fb.getConfig) return;
+  techniqueCatalogFetched = true;
+  fb.getConfig("techniques").then(d => { if (d) { window.TECHNIQUE_OVERRIDES = d; render(); } }).catch(() => {});
+}
+/* A step row is [title, rule]. Anything else in a config doc is somebody's
+   half-written edit, and a template that throws at instantiation would take a
+   work order with it. */
+function validSteps(v) {
+  if (!Array.isArray(v) || !v.length) return null;
+  const out = [];
+  for (const row of v) {
+    if (!Array.isArray(row) || typeof row[0] !== "string" || !row[0].trim()) return null;
+    out.push(row[1] && typeof row[1] === "object" ? [row[0].trim(), row[1]] : [row[0].trim()]);
+  }
+  return out;
+}
+function techniqueById(id) {
+  const builtin = Object.prototype.hasOwnProperty.call(STD_STEPS, id);
+  const base = builtin
+    ? { id, name: humanTechnique(id), layupLabel: TECHNIQUE_LAYUP[id] || "",
+        mfgTraining: MFG_ENG_TRAINING[id] || null, steps: STD_STEPS[id],
+        rev: 0, archived: false, builtin: true, unknown: false }
+    : { id, name: String(id), layupLabel: "", mfgTraining: null, steps: STD_STEPS.Other,
+        rev: 0, archived: false, builtin: false, unknown: true };
+  const o = window.TECHNIQUE_OVERRIDES && window.TECHNIQUE_OVERRIDES[id];
+  if (!o || typeof o !== "object") return base;
+  // A custom with no usable name is not a technique; a built-in survives one.
+  if (!builtin && !(typeof o.name === "string" && o.name.trim())) return base;
+  const out = { ...base, unknown: false };
+  if (typeof o.name === "string" && o.name.trim()) out.name = o.name.trim();
+  if (typeof o.layupLabel === "string" && o.layupLabel.trim()) out.layupLabel = o.layupLabel.trim().toUpperCase();
+  if (typeof o.mfgTraining === "string" && o.mfgTraining.trim()) out.mfgTraining = o.mfgTraining.trim();
+  const steps = validSteps(o.steps);
+  if (steps) out.steps = steps;
+  if (Number.isFinite(o.rev)) out.rev = o.rev;
+  if (!builtin && o.archived === true) out.archived = true;
+  return out;
+}
+/* "MoldWetLay" is a database value, not something to hand a person at a bench.
+   Built-ins get their name from the id; a custom carries its own. */
+function humanTechnique(id) {
+  // Sentence case, not Title Case: "Mold infusion", the way it is said.
+  return String(id).replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase()
+    .replace(/^./, c => c.toUpperCase());
+}
+function allTechniques(includeArchived) {
+  const customs = Object.keys(window.TECHNIQUE_OVERRIDES || {})
+    .filter(id => !Object.prototype.hasOwnProperty.call(STD_STEPS, id))
+    .map(techniqueById)
+    .filter(t => !t.unknown)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  // Built-ins in template order, which is how the shop learned them.
+  const out = PROCESSES.map(techniqueById).concat(customs);
+  return includeArchived ? out : out.filter(t => !t.archived);
+}
+function techniqueSteps(id) { return techniqueById(id).steps || STD_STEPS.Other; }
+/* The part-level vocabulary, for the tracker's frozen SCREAMING CASE strings. */
+function layupTypes() {
+  return allTechniques().map(t => t.layupLabel).filter(Boolean);
+}
+/* ONE map between the two vocabularies. It used to be written out verbatim in
+   workorders.js and again in parts.js, with DISAGREEING fallbacks — "Other"
+   here and "MoldInfusion" there — so a part with a blank layupType silently
+   got a full ten-step infusion checklist instead of the three-step Other one.
+   The fallback is now the caller's to state, and both state "Other". */
+function processForLayupType(t, fallback) {
+  const want = String(t || "").trim().toUpperCase();
+  if (!want) return fallback || "Other";
+  const hit = allTechniques(true).find(x => x.layupLabel && x.layupLabel.toUpperCase() === want);
+  return hit ? hit.id : (fallback || "Other");
+}
+
 /* ---------- engineer fields ----------
    One field renderer for both parts and work orders. The name string stays
    authoritative (20+ read sites, travellers, reports — none change); the input
@@ -98,11 +195,10 @@ function allTrainings(includeArchived) {
    buy-off is the enforced record — they just carry a quiet warning. */
 function recProcess(rec) {
   if (rec.processType) return rec.processType;
-  return { "MOLD INFUSION": "MoldInfusion", "GLASS INFUSION": "GlassInfusion",
-    "MOLD WET LAY": "MoldWetLay", "FOAM WRAPPED": "FoamWrapped" }[rec.layupType] || "Other";
+  return processForLayupType(rec.layupType, "Other");
 }
 function engTrainingFor(rec, key) {
-  return key === "moldEngineer" ? "moldDesign" : MFG_ENG_TRAINING[recProcess(rec)] || null;
+  return key === "moldEngineer" ? "moldDesign" : techniqueById(recProcess(rec)).mfgTraining || null;
 }
 function engWarnHtml(rec, key) {
   const v = String(rec[key] || "").trim();
@@ -223,7 +319,7 @@ async function newWO(rnd) {
     createdDate: today(), dueDate: "", partId: "",
     mold: { moldId: "", layers: "", density: "", sealingType: "XCR", location: "" },
     layupStack: [], stackNote: "", bom: [], standardsRefs: [],
-    steps: STD_STEPS.MoldInfusion.map(stepFromTemplate),
+    steps: techniqueSteps("MoldInfusion").map(stepFromTemplate),
     qualityChecks: [{ criterion: "mass", target: "", actual: "", pass: null }],
     /* `rnd` here is ONLY the fallback for a run with no part. woIsRnd() asks
        the part first and every time, so a run that gets linked reads its part's
@@ -243,7 +339,7 @@ function resetSteps(wo) {
   const signed = (wo.steps || []).filter(isSigned).length;
   confirmModal("Replace steps with the standard list for " + wo.processType + "?" +
     (signed ? " This erases " + signed + " recorded buy-off(s) from the team database. There is no undo." : ""), () => {
-    wo.steps = (STD_STEPS[wo.processType] || STD_STEPS.Other).map(stepFromTemplate);
+    wo.steps = techniqueSteps(wo.processType).map(stepFromTemplate);
     saveWO(wo, "steps"); render();
   });
 }
@@ -1085,7 +1181,7 @@ function openBlankTraveler() {
   openModal(`<h3>Print a blank traveler</h3>
     <p class="muted">A paper form with the standard steps for one process and nothing filled in.</p>
     <div class="f"><label>Process</label>
-      <select id="blankproc">${PROCESSES.map(p => `<option>${esc(p)}</option>`).join("")}</select></div>
+      <select id="blankproc">${allTechniques().map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</select></div>
     <div class="foot">
       <button onclick="closeModal()">Cancel</button>
       <button class="primary" onclick="(function(){var v=document.getElementById('blankproc').value;closeModal();printBlankWO(v);})()">Print</button>
@@ -1156,7 +1252,15 @@ function fld(wo, label, key, type) {
   const v = wo[key] ?? "";
   if (!view.edit) return `<div class="f"><label>${label}</label><div class="ro">${esc(v) || "—"}</div></div>`;
   if (type === "select-status") return `<div class="f"><label>${label}</label><select onchange="updWO('${key}',this.value)">${WO_STATUSES.map(s => `<option ${v === s ? "selected" : ""}>${s}</option>`).join("")}</select></div>`;
-  if (type === "select-process") return `<div class="f"><label>${label}</label><select onchange="updWO('${key}',this.value)">${PROCESSES.map(s => `<option ${v === s ? "selected" : ""}>${s}</option>`).join("")}</select></div>`;
+  /* The stored VALUE is the id and the label is the technique's name, so a
+     lead renaming "Mold wet lay" renames it here too. An archived technique is
+     still offered when the run is already on it, or editing any other field
+     would silently move the run onto a different process. */
+  if (type === "select-process") {
+    const opts = allTechniques().concat(allTechniques(true).filter(t => t.archived && t.id === v));
+    return `<div class="f"><label>${label}</label><select onchange="updWO('${key}',this.value)">${
+      opts.map(t => `<option value="${esc(t.id)}" ${v === t.id ? "selected" : ""}>${esc(t.name)}${t.archived ? " (archived)" : ""}</option>`).join("")}</select></div>`;
+  }
   return `<div class="f"><label>${label}</label><input value="${esc(v)}" onchange="updWO('${key}',this.value)"></div>`;
 }
 

@@ -76,7 +76,7 @@ const SEASON_COLS = [
   { key: "moldProgress", label: "Mold", type: "stage", where: "grid" },
   { key: "layupProgress", label: "Layup", type: "stage", where: "grid" },
   { key: "subteam", label: "Subteam", type: "select", where: "grid", opts: () => SUBTEAMS },
-  { key: "layupType", label: "Layup type", type: "select", where: "grid", opts: () => LAYUP_TYPES },
+  { key: "layupType", label: "Layup type", type: "select", where: "grid", opts: () => layupTypeOpts() },
   { key: "layupSchedule", label: "Schedule", type: "text", where: "part" },
   { key: "moldLocation", label: "Mold loc.", type: "text", where: "grid" },
   { key: "moldEngineer", label: "Mold eng.", type: "person", where: "part" },

@@ -192,10 +192,18 @@ service cloud.firestore {
 
          So an ALLOWLIST and not a denylist: a config key added next season is
          private until somebody decides otherwise, which is the safe direction
-         for a default to fail in. These six are the ones the UI needs to render
-         a page at all. */
+         for a default to fail in. These are the ones the UI needs to render a
+         page at all.
+
+         'techniques' joined in September 2026, when the layup techniques became
+         lead-editable. A guest can read workOrders (reader() above), and every
+         run names its technique on the list, on the record and on the printed
+         traveler. Without this a run on a LEAD-ADDED technique renders its raw
+         slug — "glassWrap" where the shop says "Glass wrapped core". It holds
+         step titles and training ids, which a guest can already read off any
+         work order, so it is a display fix and not a widening. */
       allow read: if onRoster()
-        || (guest() && key in ['season', 'release', 'resins', 'restock', 'trainings', 'budget']);
+        || (guest() && key in ['season', 'release', 'resins', 'restock', 'trainings', 'techniques', 'budget']);
       allow create, update: if isLead();
     }
 

@@ -57,9 +57,13 @@ function pcell(v, extra) {
 function pfield(label, v, cls, extra) {
   return `<div class="ws-f ${cls || ""}"><div class="lab">${esc(label)}</div>${pcell(v, extra)}</div>`;
 }
-/* "MoldWetLay" is a database value, not something to hand a person at a bench. */
+/* "MoldWetLay" is a database value, not something to hand a person at a bench.
+   Reads the catalog since September 2026, so a technique a lead renamed prints
+   under the name the shop actually calls it. Falls back to un-camel-casing the
+   id, which is what this did for everything before the catalog existed. */
 function humanProcess(p) {
-  return pv(p).replace(/([a-z])([A-Z])/g, "$1 $2").toUpperCase();
+  const name = typeof techniqueById === "function" && p ? techniqueById(p).name : "";
+  return (name || pv(p).replace(/([a-z])([A-Z])/g, "$1 $2")).toUpperCase();
 }
 function blankRows(n, cells) {
   let out = "";
@@ -73,7 +77,7 @@ function blankRows(n, cells) {
 // carries the step rules (and therefore prints its hold lines) rather than
 // quietly being a different shape from a real work order.
 function blankSteps(process) {
-  return (STD_STEPS[process] || STD_STEPS.Other).map(stepFromTemplate);
+  return techniqueSteps(process).map(stepFromTemplate);
 }
 
 function woSheetHtml(wo, opts) {

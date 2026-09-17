@@ -9456,6 +9456,102 @@ await t("trainingById folds config over the consts and validates at read time", 
     "archived customs leave the default list but stay reachable");
   window.TRAINING_OVERRIDES = saved;
 });
+console.log("techniques:");
+
+await t("techniqueById folds config over STD_STEPS, the trainings pattern verbatim", () => {
+  const saved = window.TECHNIQUE_OVERRIDES;
+  window.TECHNIQUE_OVERRIDES = null;
+  const mi = techniqueById("MoldInfusion");
+  assert(mi.builtin && mi.steps === STD_STEPS.MoldInfusion && mi.name === "Mold infusion",
+    "no config: the const stands, under a human name: " + JSON.stringify({ n: mi.name, b: mi.builtin }));
+  assert(mi.layupLabel === "MOLD INFUSION" && mi.mfgTraining === "infusion", "carrying both vocabularies and its gate");
+  const stub = techniqueById("ghost-process");
+  assert(stub.unknown && stub.steps === STD_STEPS.Other,
+    "an unknown id renders a stub with the Other checklist, never blank and never a throw");
+
+  window.TECHNIQUE_OVERRIDES = {
+    MoldWetLay: { name: "Wet lay in a mold", archived: true },     // rename wins; archive refused on a built-in
+    glassWrap: { name: "Glass wrapped core", layupLabel: "glass wrapped", mfgTraining: "wetLayup", rev: 3,
+                 steps: [["Shape the core", { training: "foamCore" }], ["Wrap and bag", { kind: "startsHold" }],
+                         ["Cure", { kind: "hold", from: "resin" }]] },
+    nameless: { steps: [["x"]] },                                   // custom with no name = ignored
+    ragged: { name: "Ragged", steps: [["ok"], ["", {}]] },          // a half-written step list is refused whole
+    reverted: null,
+  };
+  const wl = techniqueById("MoldWetLay");
+  assert(wl.name === "Wet lay in a mold" && !wl.archived && wl.builtin,
+    "rename wins, archive is refused on a built-in: " + JSON.stringify({ n: wl.name, a: wl.archived }));
+  const gw = techniqueById("glassWrap");
+  assert(gw.name === "Glass wrapped core" && gw.layupLabel === "GLASS WRAPPED" && gw.rev === 3 && gw.steps.length === 3,
+    "a custom carries its own everything: " + JSON.stringify(gw.layupLabel));
+  assert(techniqueById("nameless").unknown, "a nameless custom is ignored");
+  assert(techniqueById("reverted").unknown, "a null override is absent");
+  /* A template that throws at instantiation takes a work order with it, so a
+     half-written step list is refused WHOLE rather than partly honoured. */
+  assert(techniqueById("ragged").steps === STD_STEPS.Other, "a ragged step list falls back, it does not half-apply");
+
+  /* "ragged" IS a technique — it has a name, so somebody made it; only its step
+     list was refused. A named entry disappearing because one field was wrong
+     would be worse than one with a fallback checklist. Customs sort by name. */
+  assert(allTechniques().map(t => t.id).join(",") === PROCESSES.join(",") + ",glassWrap,ragged",
+    "built-ins in template order, then customs by name: " + allTechniques().map(t => t.id).join(","));
+  assert(layupTypes().includes("GLASS WRAPPED"), "and the part-level vocabulary grows with it");
+
+  window.TECHNIQUE_OVERRIDES = { ...window.TECHNIQUE_OVERRIDES, glassWrap: { ...window.TECHNIQUE_OVERRIDES.glassWrap, archived: true } };
+  assert(!allTechniques().some(t => t.id === "glassWrap"), "archived customs leave the list");
+  assert(techniqueById("glassWrap").name === "Glass wrapped core",
+    "but stay resolvable, or every run ever made on one goes nameless");
+  window.TECHNIQUE_OVERRIDES = saved;
+});
+
+await t("every config key the app fetches is a key a guest may read", () => {
+  /* firestore.rules:198 is an ALLOWLIST, deliberately, because two config keys
+     are live credentials. That makes it exactly the kind of thing that drifts
+     from the code that fetches: a key added to one and not the other fails
+     quietly in a .catch(() => {}) and the page renders a raw slug. Same class
+     of bug as the storage tree that had no rule for a season. */
+  const rules = readFileSync(join(root, "..", "..", "06 Composites App", "firestore.rules"), "utf8");
+  const allowed = new Set((/key in \[([^\]]*)\]/.exec(rules) || [, ""])[1].match(/'[^']+'/g)?.map(x => x.slice(1, -1)) || []);
+  assert(allowed.size, "found the guest allowlist at all: " + allowed.size);
+  /* Keys the UI needs to render a page a guest can open. Not every getConfig
+     call — 'slack' and 'tracker' are credentials and must stay off it. */
+  for (const k of ["season", "release", "resins", "trainings", "techniques"]) {
+    assert(allowed.has(k), `a guest cannot read config/${k}, so that page renders wrong for them`);
+  }
+  assert(!allowed.has("slack") && !allowed.has("tracker"),
+    "and the two live credentials are still not on it: " + [...allowed].join(","));
+});
+
+await t("one map between the two vocabularies, and the fallback bug is gone", () => {
+  /* It was written out verbatim in workorders.js AND parts.js with DISAGREEING
+     fallbacks — "Other" in one and "MoldInfusion" in the other — so a part with
+     a blank layup type silently got a ten-step infusion checklist from one path
+     and a three-step Other from the other. */
+  const pairs = [["MOLD INFUSION", "MoldInfusion"], ["GLASS INFUSION", "GlassInfusion"],
+                 ["MOLD WET LAY", "MoldWetLay"], ["FOAM WRAPPED", "FoamWrapped"]];
+  for (const [layup, proc] of pairs) {
+    assert(processForLayupType(layup) === proc, `${layup} -> ${proc}, got ${processForLayupType(layup)}`);
+    assert(recProcess({ layupType: layup }) === proc, "and recProcess agrees");
+  }
+  assert(processForLayupType("") === "Other" && processForLayupType("SOMETHING ELSE") === "Other",
+    "an unknown or blank layup type is Other, in BOTH callers now");
+  assert(!/MOLD INFUSION"/.test(newRunForPart.toString()) && !/MOLD INFUSION"/.test(recProcess.toString()),
+    "and neither caller carries its own copy of the map any more");
+  assert(recProcess({ processType: "glassWrap", layupType: "MOLD INFUSION" }) === "glassWrap",
+    "an explicit processType always wins over the legacy string");
+});
+
+await t("a blank layup type starts an Other run, not a ten-step infusion one", async () => {
+  DB.parts = [{ id: "P-TQ-1", partName: "MYSTERY", layupType: "", subteam: "AERO" }];
+  DB.workOrders = [];
+  await newRunForPart("P-TQ-1");
+  const wo = DB.workOrders[0];
+  assert(wo, "a run was made: " + lastToast);
+  assert(wo.processType === "Other", "on Other: " + wo.processType);
+  assert(wo.steps.length === STD_STEPS.Other.length,
+    "with the Other checklist, which asks for an acceptance criterion before work starts: " + wo.steps.length);
+});
+
 await t("the catalog editor refuses a duplicate code and mints stable slug ids", () => {
   const saved = window.TRAINING_OVERRIDES;
   window.TRAINING_OVERRIDES = { trimming: { name: "Trimming", code: "TRIM" } };

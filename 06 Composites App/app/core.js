@@ -144,6 +144,7 @@ window.onFbChange = function () {
   if (typeof loadRestockRules === "function") loadRestockRules();
   if (typeof loadLabelMedia === "function") loadLabelMedia();
   if (typeof loadTrainingCatalog === "function") loadTrainingCatalog();
+  if (typeof loadTechniqueCatalog === "function") loadTechniqueCatalog();
   render();
   // The Fusion palette holds a mesh until the app is signed in; tell it.
   if (typeof fusionStateChanged === "function") fusionStateChanged();
