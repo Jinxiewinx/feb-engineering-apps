@@ -984,10 +984,22 @@ function sliceMold(tris, thicknesses, opts) {
   // in rather than improvised at the bed.
   const maxDepth = opts.maxCutDepth == null ? MAX_CUT_DEPTH_MM : opts.maxCutDepth;
   const sections = sectionize(layers, maxDepth);
+  const tall = bounds.z1 - bounds.z0 > MAX_CUT_DEPTH_MM + 1e-6;
   if (sections.length > 1) {
     warnings.push(`This mold is ${((bounds.z1 - bounds.z0) / 25.4).toFixed(2)}in tall, past the ShopSabre's ${(maxDepth / 25.4).toFixed(0)}in cut depth, so it is split into ${sections.length} sections machined separately. Design dowel and datum features into the mating faces in CAD — do not improvise them at the machine.`);
+  } else if (tall && maxDepth > MAX_CUT_DEPTH_MM) {
+    /* THE WAIVER SUPPRESSES THE SPLIT, NEVER THE FACT. Somebody decided this
+       design gets the cutter to the bottom without sectioning — dowelled
+       inserts, a shallow cavity in a tall blank, a face that is machined from
+       both sides. The plan honours that, and still says out loud that the
+       blank is taller than the machine reaches, because the person reading the
+       drawing at the bed is not the person who ticked the box. */
+    warnings.push(`This stack is ${((bounds.z1 - bounds.z0) / 25.4).toFixed(2)}in tall, past the ShopSabre's ${(MAX_CUT_DEPTH_MM / 25.4).toFixed(0)}in cut depth, but the section split was waived at planning: the design is meant to keep the MACHINED depth under it. Check that before the first setup — nothing here measures the cavity.`);
   }
-  const tooThick = layers.find(L => L.thickness > maxDepth + 1e-6);
+  /* Against the REAL depth, never the waived one. No design trick makes a
+     single board machinable deeper than the cutter reaches; that one is
+     physics, and a waiver that silenced it would be a waiver of arithmetic. */
+  const tooThick = layers.find(L => L.thickness > MAX_CUT_DEPTH_MM + 1e-6);
   if (tooThick) warnings.push(`Layer ${tooThick.index + 1} is a single board ${(tooThick.thickness / 25.4).toFixed(2)}in thick, deeper than the machine can cut. Use thinner boards for that layer.`);
 
   return { layers, sections, bounds, warnings, monolithic: mono };

@@ -5097,8 +5097,11 @@ function plugTris(hb, ht, z0, z1) {
   }
   return out;
 }
-function fillMold({ tris = plugTris(200, 80, 0, 100), name = "test plug", unit = "mm", thk = "", thkU = "mm", size = null, src = "stl", mode = "auto", body = null, box = null, density = "30", densityMax = "", shape = "steps" } = {}) {
+function fillMold({ tris = plugTris(200, 80, 0, 100), name = "test plug", unit = "mm", thk = "", thkU = "mm", size = null, src = "stl", mode = "auto", body = null, box = null, density = "30", densityMax = "", shape = "steps", noSplit = false } = {}) {
   el("ml-name").value = name; el("ml-unit").value = unit;
+  // Reset every time, same reason as ml-shape: a test that waived the split
+  // must not leak the waiver into the next one.
+  el("ml-nosplit").checked = !!noSplit;
   // Stubs persist between tests, so the blank shape is reset every time —
   // a test that planned a block must not leak it into the next one.
   el("ml-shape").value = shape;
@@ -7973,6 +7976,47 @@ await t("Log offcuts is offered when the blanks are cut, and starts a board off 
   quickAdvance("molds", "MOLD-SN6-050");
   assert(DB.molds[0].stage === "Machined", "fixture: advanced past the glue-up");
   assert(!shopUndoBar().includes("Log offcuts"), "no offer where it would make no sense");
+});
+
+await t("waiving the section split is the mold's, recorded on the plan, and owned by a person", async () => {
+  /* A 9in stack normally sections, because the ShopSabre cannot plunge deeper
+     than 6in. Sometimes the design gets around that, and sectioning a mold
+     that does not need it costs a setup and a mating surface. */
+  seedStock(); DB.stackplans = []; DB.molds = [];
+  fillMold({ name: "TALL PLUG", tris: plugTris(200, 80, 0, 9 * 25.4), thk: "1, 1, 1, 1, 1, 1, 1, 1, 1", thkU: "in", noSplit: true });
+  await submitMold();
+  const plan = DB.stackplans[0], mold = DB.molds[0];
+  assert(plan, "a plan was saved: " + lastToast);
+
+  /* THE PLAN records the cap it was actually sliced under, because every
+     consumer of the split reads the plan — the drawings, planSetups,
+     exportSectionStl. Without it a re-plan would silently change the wall
+     drawings. */
+  assert(plan.splitWaived === true, "the plan says it was waived");
+  assert(plan.maxCutDepthMm > 1e5 && Number.isFinite(plan.maxCutDepthMm),
+    "under a large FINITE cap, never Infinity, which the warning text would print: " + plan.maxCutDepthMm);
+  assert((plan.sections || []).length === 1, "so there is one section: " + (plan.sections || []).length);
+  assert(plan.layers.every(L => (L.section || 0) === 0), "and every layer is in it");
+
+  /* THE MOLD records the claim, because it is a fact about how the tool was
+     designed and it has to survive a re-plan — and because somebody has to
+     own it. Nothing in the app measures the cavity. */
+  assert(mold.noSplit === true && mold.noSplitBy && mold.noSplitAt,
+    "the mold carries the claim and who made it: " + JSON.stringify({ n: mold.noSplit, by: mold.noSplitBy, at: mold.noSplitAt }));
+
+  view = { ...view, tab: "molds", mode: "detail", id: mold.id, edit: false };
+  render();
+  assert(/split waived/.test(main.innerHTML),
+    "and says so on the mold, or the drawings look like a planner bug to whoever did not tick the box");
+
+  // Unwaived, the same stack behaves exactly as it always did.
+  DB.stackplans = []; DB.molds = [];
+  fillMold({ name: "TALL PLUG 2", tris: plugTris(200, 80, 0, 9 * 25.4), thk: "1, 1, 1, 1, 1, 1, 1, 1, 1", thkU: "in" });
+  await submitMold();
+  const p2 = DB.stackplans[0];
+  assert(!p2.splitWaived && (p2.sections || []).length === 2, "a mold that does not waive still splits: " + (p2.sections || []).length);
+  assert(!DB.molds[0].noSplit, "and nothing is claimed on its behalf");
+  assert(!/split waived/.test((view = { ...view, id: DB.molds[0].id }, render(), main.innerHTML)), "no pill either");
 });
 
 await t("a mold carries datum cut plans, in the tree storage.rules now allows", () => {

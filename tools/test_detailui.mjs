@@ -162,6 +162,15 @@ const VIEWS = [
            const b = document.querySelector("#main .fileitem button.thumb[data-pdf]");
            if (b) b.click();`,
     needs: "" },
+  /* The planner form. It is the longest modal in the app — name, two density
+     fields, source, units, blank shape, machined depth, boards, thicknesses —
+     and it had never been photographed at any width, which is exactly where a
+     new field breaks quietly. Opened as a RE-PLAN so every field renders with
+     a value rather than a placeholder. */
+  { id: "moldplan-modal", tab: "molds", what: "the mold planner form, re-planning an existing mold",
+    open: `uploadMold((DB.molds || []).find(m => m.id === "MOLD-SN6-004"));
+           if (typeof moldSrcChanged === "function") moldSrcChanged();`,
+    needs: "" },
   { id: "scan-modal", tab: "molds", what: "the scanner, with the typed-code fallback",
     open: `scanToOpen();`, needs: "" },
   { id: "move-modal", tab: "molds", what: "moving something to a shelf",

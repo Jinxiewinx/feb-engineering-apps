@@ -731,6 +731,7 @@ function renderShopDetail(tab, opts) {
       spec.classes ? " · " + esc(c.label) : ""}${
       o.updatedAt ? " · saved " + fmtWhen(o.updatedAt) + " by " + esc(o.updatedBy || "?") : ""}</div>
     ${tab === "molds" && typeof moldStageRow === "function" ? moldStageRow(o) : ""}
+    ${tab === "molds" && typeof moldSplitPill === "function" ? moldSplitPill(o) : ""}
     ${/* Where this came from and what it cost, when receiving stamped it.
           buyRef is written by the receive flow, never hand-edited, so it is
           a read-only chip here rather than a schema field. */""}

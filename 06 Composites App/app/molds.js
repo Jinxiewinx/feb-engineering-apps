@@ -575,6 +575,17 @@ function linkPlanToMold(planId, moldId) {
    The card around this already carries data-lbgroup, so a photographed datum
    cut joins the same lightbox roll as everything else on the mold, and a PDF
    opens in fileItem's viewer rather than leaving the app. */
+/* Why this 9in mold has one setup. Without it the drawings look like a
+   planner bug to anyone who did not tick the box. */
+function moldSplitPill(m) {
+  if (!m || !m.noSplit) return "";
+  const who = m.noSplitBy ? " by " + esc(userName(m.noSplitBy)) : "";
+  return `<div class="muted tny" style="margin-top:6px">
+    <span class="pill">split waived</span> Machined depth is claimed under 6in, so this stack is
+    not sectioned${who}${m.noSplitAt ? " on " + esc(m.noSplitAt) : ""}. Nothing in the app measures
+    the cavity — check it before the first setup.</div>`;
+}
+
 function moldFilesSection(o) {
   const files = o.files || [];
   // Eight behind a real button, the Parts and WO precedent (a button, never a

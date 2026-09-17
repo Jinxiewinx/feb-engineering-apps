@@ -581,6 +581,24 @@ document when it was tried; the Fusion Team page has Autodesk's own Open in
 Fusion button. The page side is `fusion.js`, which does nothing unless
 Fusion's bridge object is present.
 
+**The section split can be waived, per mold, at planning.** A stack over 6in
+is normally split into sections machined separately, because that is as deep as
+the ShopSabre plunges. Sometimes the design gets around it: a shallow cavity in
+a tall blank, dowelled inserts, a face machined from both sides. Sectioning a
+mold that does not need it costs a setup and a mating surface, so the planner
+has a **Machined depth stays under 6in** tick.
+
+It is worded as the claim, not the outcome, because the claim is the thing that
+can be wrong. Nothing in the app measures the cavity, so the plan takes your
+word for it, records who gave it, shows a **split waived** note on the mold, and
+still says on the drawing that the blank is taller than the machine reaches. The
+person reading that drawing at the bed is not the person who ticked the box.
+Molds that do not waive are untouched: same split, same `SPLIT` callouts, same
+expectation of dowel and datum features in CAD.
+
+One thing a waiver never silences: a single board thicker than the machine can
+cut still warns. No design trick makes that one go away.
+
 **Datum cut plans** hang off the mold as files: the drawing of the reference
 cuts taken off a mold once a part has come out of it. Most molds never need
 one, so it is a file field and not a stage. Attach anything the rest of the app

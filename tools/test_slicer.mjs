@@ -418,6 +418,45 @@ t("a mold taller than the 6in cut depth splits into sections at board boundaries
   assert(total === out.layers.length, "every layer belongs to exactly one section");
   assert(out.warnings.some(w => /cut depth|section/i.test(w)), "and the split must be called out for CS-003 §7.1.6 dowels");
 });
+t("waiving the split leaves one section, and still says the stack is tall", () => {
+  /* Sometimes the design gets the cutter to the bottom without sectioning — a
+     shallow cavity in a tall blank, dowelled inserts, a face machined from
+     both sides — and sectioning a mold that does not need it costs a setup and
+     a mating surface. The waiver is a big FINITE cap, not Infinity, because
+     the warning text formats it. */
+  const tris = frustum(200, 120, 0, 9 * 25.4);
+  const out = S.sliceMold(tris, new Array(9).fill(25.4), { maxCutDepth: 1e6 });
+  assert(out.sections.length === 1, "one section, so nothing downstream sees a split: " + out.sections.length);
+  assert(out.layers.every(L => (L.section || 0) === 0),
+    "and every layer is in it, which is what drawings, planSetups and exportSectionStl read");
+
+  /* THE WAIVER SUPPRESSES THE SPLIT, NEVER THE FACT. The person reading the
+     drawing at the bed is not the person who ticked the box. */
+  const said = out.warnings.filter(w => /tall/i.test(w));
+  assert(said.length === 1, "the height is still called out: " + JSON.stringify(out.warnings));
+  assert(/waived/i.test(said[0]), "as a waiver rather than as a split: " + said[0]);
+  assert(!/Infinity/.test(said.join(" ")), "and the cap never prints as Infinity");
+  assert(!out.warnings.some(w => /split into \d+ sections/.test(w)), "no section warning, because there is no split");
+
+  // Unwaived, the same stack behaves exactly as it always did.
+  const plain = S.sliceMold(tris, new Array(9).fill(25.4), {});
+  assert(plain.sections.length === 2 && plain.warnings.some(w => /split into 2 sections/.test(w)),
+    "a mold that does NOT waive is untouched by any of this");
+});
+
+t("CRITICAL a waiver never silences the board that is thicker than the machine", () => {
+  /* No design trick makes a single board machinable deeper than the cutter
+     reaches. That one is physics, and measuring it against the waived cap
+     instead of the real one would be waiving arithmetic. */
+  const tris = frustum(200, 120, 0, 8 * 25.4);
+  const thick = [7 * 25.4, 25.4];          // one board 7in thick, past the 6in reach
+  for (const opts of [{}, { maxCutDepth: 1e6 }]) {
+    const out = S.sliceMold(tris, thick, opts);
+    assert(out.warnings.some(w => /deeper than the machine can cut/.test(w)),
+      "still warned with opts " + JSON.stringify(opts) + ": " + JSON.stringify(out.warnings));
+  }
+});
+
 t("a two-spike mold gives two blanks on the upper layers and one below", () => {
   const base = prism(rect(0, 0, 900, 300), 0, 25);
   const spikeA = prism(rect(50, 50, 200, 250), 0, 100);

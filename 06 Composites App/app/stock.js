@@ -74,6 +74,23 @@ function densityInput(id, value, attrs) {
 }
 const UNITS = ["in", "mm"];
 const MAX_DIM_MM = 10000;            // 10 m. Anything larger is a typo or a unit mistake.
+/* The cap handed to the slicer when a mold's section split has been waived.
+   1 km, which no stack reaches, so sectionize returns one section. FINITE on
+   purpose: slicer.js prints the cap into its warning text as
+   (maxDepth / 25.4).toFixed(0), and Infinity renders as "Infinity in". */
+const NO_SPLIT_DEPTH_MM = 1e6;
+
+/* The waiver is the MOLD's, not the plan's: it is a fact about how the tool was
+   designed and it has to survive a re-plan. The plan records the cap it was
+   actually sliced under (splitWaived / maxCutDepthMm) because the drawings read
+   the plan; this records who made the claim, because somebody has to own it. */
+function setNoSplit(mold, on) {
+  if (!mold || !!mold.noSplit === !!on) return;
+  mold.noSplit = !!on;
+  mold.noSplitBy = on ? myEmail() : "";
+  mold.noSplitAt = on ? today() : "";
+  save("molds", mold, "noSplit"); save("molds", mold, "noSplitBy"); save("molds", mold, "noSplitAt");
+}
 
 /* ---------- units: one conversion point ---------- */
 function toMm(d) {
@@ -877,6 +894,23 @@ function uploadMold(existing) {
         blanks onto sheets with straight-through cuts either way.</span></div>
       <div class="field"><label></label><span class="muted tny"><b>Beta.</b> Real exports still turn up surprises &mdash; assemblies holding many bodies, rough meshes, odd draft. Check the stack view before anyone cuts, and fall back to dimensions if it looks wrong.</span></div>
     </div>
+    ${/* A stack over 6in is sectioned because the ShopSabre cannot plunge
+          deeper than that. Sometimes the design gets around it — a shallow
+          cavity in a tall blank, dowelled inserts, a face machined from both
+          sides — and sectioning a mold that does not need it costs a setup and
+          a mating surface. Outside the STL block on purpose: a typed box stack
+          gets tall the same way an STL does.
+
+          Worded as the claim being made ("machined depth stays under"), not as
+          the outcome ("no split"), because the claim is the thing that can be
+          wrong and the thing the next person has to check. */""}
+    <div class="field"><label>Machined depth</label>
+      <label class="chk"><input type="checkbox" id="ml-nosplit" ${e.noSplit ? "checked" : ""}>
+        Machined depth stays under 6in — do not section this stack</label>
+      <span class="muted tny">Tick this only when the DESIGN keeps the cutter inside 6in of a face
+        it can reach. Nothing here measures the cavity, so the plan takes your word for it, says so
+        on the drawing, and records who said it. Leave it clear and a tall stack is split into
+        sections with dowel and datum features expected in CAD.</span></div>
     <div class="field"><label>Boards</label><select id="ml-mode" onchange="moldModeChanged()">
       <option value="auto">choose them for me, from stock</option>
       <option value="manual">I'll pick the thicknesses</option>
@@ -985,6 +1019,14 @@ async function submitMold() {
   const prog = document.getElementById("ml-progress");
   const setProg = m => { if (prog) prog.textContent = m; };
 
+  /* A LARGE FINITE SENTINEL, never Infinity: slicer.js formats the cap into
+     warning text with (maxDepth / 25.4).toFixed(0), and Infinity prints as
+     "Infinity in". sectionize with a huge cap returns one section with
+     L.section === 0 on every layer, so every consumer of the split — the
+     drawings, planSetups, exportSectionStl — works unchanged with no edits. */
+  const noSplit = !!(document.getElementById("ml-nosplit") || {}).checked;
+  const noSplitOpts = noSplit ? { maxCutDepth: NO_SPLIT_DEPTH_MM } : {};
+
   let msg, sourceName, sourceBytes = 0;
   if (isBox) {
     const dim = (k) => parseDim(val("ml-b" + k), val(`ml-b${k}-u`));
@@ -992,7 +1034,7 @@ async function submitMold() {
     for (const [r, label] of [[L, "Length"], [W, "Width"], [H, "Height"]]) {
       if (r.err) { toast(`${label} ${r.err}.`, "error"); return; }
     }
-    msg = { cmd: "slice", box: { len: toMm(L.dim), wid: toMm(W.dim), hgt: toMm(H.dim) }, thicknesses: thkMm, available, boards: rack, supply, densityMin: dLo, densityMax: dHi, opts: {} };
+    msg = { cmd: "slice", box: { len: toMm(L.dim), wid: toMm(W.dim), hgt: toMm(H.dim) }, thicknesses: thkMm, available, boards: rack, supply, densityMin: dLo, densityMax: dHi, opts: { ...noSplitOpts } };
     sourceName = `block ${fmtDim(L.dim)} x ${fmtDim(W.dim)} x ${fmtDim(H.dim)}`;
   } else {
     const fileEl = document.getElementById("ml-file");
@@ -1035,7 +1077,7 @@ async function submitMold() {
       bodyIndex: Number((document.getElementById("ml-body") || {}).value || 0),
       thicknesses: thkMm, available, boards: rack, supply, densityMin: dLo, densityMax: dHi,
       // A typed box is a block already, so the choice only exists for an STL.
-      opts: { monolithic: val("ml-shape") === "block" },
+      opts: { monolithic: val("ml-shape") === "block", ...noSplitOpts },
     };
     sourceName = MOLD_BUF.name; sourceBytes = MOLD_BUF.size;
   }
@@ -1055,6 +1097,10 @@ async function submitMold() {
       warnings: result.warnings || [], considered: result.considered || 0,
       alternatives: result.alternatives || [], usedRack: !!result.usedRack, cost: result.cost || 0,
       monolithic: !!result.monolithic,
+      /* What this plan was actually sliced under. Every consumer of the split
+         reads the PLAN (drawings, planSetups, exportSectionStl), so the plan
+         has to carry the cap or a re-plan silently changes the wall drawings. */
+      splitWaived: noSplit, maxCutDepthMm: noSplit ? NO_SPLIT_DEPTH_MM : MAX_CUT_DEPTH_MM,
       triangleCount: result.triangleCount || 0,
       by: myEmail(), ts: new Date().toISOString(),
     };
@@ -1103,6 +1149,7 @@ async function submitMold() {
       if (existing) {
         moldId = existing.id;
         plan.moldId = moldId;
+        setNoSplit(existing, noSplit);
         // A re-plan from Fusion refreshes the document link (new version, maybe a new body).
         const fs = typeof fusionStamp === "function" ? fusionStamp() : null;
         if (fs) { existing.fusion = fs; save("molds", existing, "fusion"); }
@@ -1116,6 +1163,7 @@ async function submitMold() {
             layers: (plan.thicknessesMm || []).length ? `${plan.thicknessesMm.length} layers` : "",
             createdBy: myEmail(),
           };
+          if (noSplit) { m.noSplit = true; m.noSplitBy = myEmail(); m.noSplitAt = today(); }
           /* Where the mesh came from, when the Fusion add-in handed it in
              (fusion.js). Absent for a browser upload, on purpose: an empty
              block would render an empty section. */
