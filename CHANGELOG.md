@@ -38,6 +38,41 @@ to learn**, not about API compatibility:
 
 ---
 
+## v5.0.0 — 2026-09-17
+
+- Releases stop waiting on a note nobody sends
+- SESSION-STATE: the whole bundle is live, and the file says what it costs to rediscover
+- Every delete goes to Recently deleted, and only a lead empties it
+- Soft delete, filtered in one place, with nothing wired to it yet
+- SESSION-STATE: techniques are live, and the fallback question shipped
+- Leads can add a layup technique from the app, checklist and gates and all
+
+<details><summary>19 more</summary>
+
+- A run stamps which checklist it came from, and titles stop making blockers
+- config/techniques folds over STD_STEPS, and the two-vocabulary map stops disagreeing
+- SESSION-STATE: the whole mold and cut-list bundle is live
+- The mark-cut confirm is a review pane: every offcut is a row you can correct
+- The 6in section split can be waived per mold, and says so on the drawing
+- Datum cut plans live on the mold, and a PDF opens without leaving the app
+- packBoard partitions its remnants instead of dropping the small ones
+- SESSION-STATE: chunks 0-4 are live
+- The cut list proposes only molds still at Designed, and cutting moves them
+- SESSION-STATE: the storage assertion was bad, not the rules
+- "Tooling cut": the blanks are off the saw but not yet a stack
+- MOLD_TRACK, so the stage bar's denominator survives a new stage
+- The stackplans contentType assertion was testing octet-stream, not PDFs
+- storage.rules had no molds/, items/ or lots/ tree, so Shop-tab photos never uploaded
+- The ADDIN_VERSION comment says where the number comes from
+- One version and one release page for the app and the Fusion add-in
+- Release addin-v1.1.0, and stop git describe shouting on a first release
+- Document the add-in install around the download, not around a git clone
+- FEBPlanStock 1.1.0: a zip anyone can install, instead of a folder to copy
+
+</details>
+
+---
+
 ## v4.8.0 — 2026-09-16
 
 - Select… on every list tab. Molds (molds and unlinked plans together), Boards, Purchases, Documents (uploads only), R&D studies, Schedule weeks, the Season blueprint and People get the same picker Parts, Work Orders and Inventory had: a Select… button where the tab's actions are, then All / None / N selected / Delete N / ✕, a box on every row, the whole row toggles. One shared implementation in core.js, so every tab reads the same way. All picks what is on screen, so a filter, a folded-away past week or the archive are respected. Leaving a tab drops a half-finished pick

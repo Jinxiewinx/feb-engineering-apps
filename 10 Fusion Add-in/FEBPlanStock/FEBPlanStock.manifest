@@ -4,7 +4,7 @@
   "id": "feb-plan-stock",
   "author": "Formula Electric at Berkeley, composites",
   "description": { "": "FEB > Plan stock: export the selected mold body to the composites app's stack planner and draw the tooling-board layers over the mold." },
-  "version": "4.8.0",
+  "version": "5.0.0",
   "runOnStartup": true,
   "supportedOS": "windows|mac",
   "editEnabled": true
