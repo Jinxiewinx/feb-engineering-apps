@@ -448,6 +448,14 @@ Arrow keys or j/k walk the rail, `1` advances the selected mold one named stage
 with the same undo bar as the stepper, `/` searches, esc goes back. On a phone
 it collapses to list-then-detail, exactly like Parts.
 
+A mold runs **Designed, Tooling cut, Board glued, Machined, Sealed, Ready for
+layup**, with Retired off to the side. *Tooling cut* means the blanks are off
+the ShopSabre but not yet glued into a stack, which is where a mold sits for
+most of a weekend; before it existed a half-cut mold was either still Designed,
+which put it back in the cut list, or already Board glued, which it was not.
+Watch the two senses of "cut": tooling cut is the boards coming off the saw,
+Machined is the mold surface coming off the CNC.
+
 The mold's stage is set on a **stepper**: the whole enum laid out as tappable
 steps at the top of the detail card, current filled, the rest outlined — the
 Parts tab's idiom, so the display and the editor are the same thing and can't

@@ -7852,17 +7852,18 @@ await t("keyboard: arrows walk the rail across group boundaries, 1 advances the 
   assert(DB.molds[0].stage === before, "and undo restores it");
 });
 
-await t("Log offcuts is offered at the glue-up, and starts a board off that mold", () => {
-  /* Gluing a stack is the one moment an offcut exists AND is known — the saw
+await t("Log offcuts is offered when the blanks are cut, and starts a board off that mold", () => {
+  /* Cutting the blanks is the moment an offcut exists AND is known — the saw
      is out and the remnant is in someone's hand. Ask later and nobody can say
-     which mold it came off. So the offer rides the undo bar for exactly that
-     stage change, and nowhere else. */
+     which mold it came off. So the offer rides the undo bar for that stage
+     change, and for the glue-up after it because that was the only offer for a
+     season and people reach for it there. Nowhere else. */
   DB.molds = [{ id: "MOLD-SN6-050", name: "clamshell", stage: "Designed" }];
   DB.stock = [];
 
-  // Designed -> Board glued is the glue-up. The offer appears.
+  // Designed -> Tooling cut is the saw. The offer appears.
   quickAdvance("molds", "MOLD-SN6-050");
-  assert(DB.molds[0].stage === "Board glued", "fixture: the advance landed on the glue-up: " + DB.molds[0].stage);
+  assert(DB.molds[0].stage === "Tooling cut", "fixture: the advance landed on the saw: " + DB.molds[0].stage);
   const bar = shopUndoBar();
   assert(bar.includes("Log offcuts"), "the offer rides the undo bar: " + bar.slice(0, 160));
   assert(/logOffcutFromMold\('MOLD-SN6-050'\)/.test(bar), "carrying the mold it came off");
@@ -7878,6 +7879,11 @@ await t("Log offcuts is offered at the glue-up, and starts a board off that mold
   assert(/id="bd-len" value=""/.test(m) && /id="bd-wid" value=""/.test(m) && /id="bd-thk" value=""/.test(m),
     "and the size is left blank for whoever is holding the piece");
   closeModal();
+
+  // The glue-up after it still offers, for the people who learned it there.
+  quickAdvance("molds", "MOLD-SN6-050");
+  assert(DB.molds[0].stage === "Board glued", "fixture: advanced to the glue-up");
+  assert(shopUndoBar().includes("Log offcuts"), "the old moment still offers");
 
   // Every other stage change leaves the bar alone.
   quickAdvance("molds", "MOLD-SN6-050");

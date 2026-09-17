@@ -33,7 +33,17 @@
 
 /* ---------- the schema ---------- */
 
-const MOLD_STAGE = ["Designed", "Board glued", "Machined", "Sealed", "Ready for layup", "Retired"];
+/* "Tooling cut" is the blanks off the ShopSabre and not yet glued into a
+   stack, which is where a mold actually sits for most of a weekend. It was
+   added in September 2026 on Simon's ask; before it, a half-cut mold was
+   either still "Designed", which put it back in the cut list, or already
+   "Board glued", which it was not.
+
+   Note the two senses of "cut" that now live next to each other: TOOLING cut
+   is the boards coming off the saw, MACHINED is the mold surface coming off
+   the CNC. They were not renamed, because the string is the persisted field
+   value on every mold record. */
+const MOLD_STAGE = ["Designed", "Tooling cut", "Board glued", "Machined", "Sealed", "Ready for layup", "Retired"];
 /* The stages ON the track. "Retired" is how a mold leaves the progression, not
    a step along it, so it is last in MOLD_STAGE and absent from here: the
    stepper draws it dashed and off to the side, the stagebreak bar omits it,

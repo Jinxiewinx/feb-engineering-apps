@@ -360,7 +360,7 @@ console.log("\nadvancing a stage");
   // The stage control is the whole enum laid out as tappable steps — the Parts
   // tab's stepper idiom — so any stage is one tap, not Edit → dropdown → pick.
   const steps = await page.evaluate(() => [...document.querySelectorAll(".pstage .pstep")].map(b => b.textContent.trim()));
-  eq(steps.join("|"), "Designed|Board glued|Machined|Sealed|Ready for layup|Retired",
+  eq(steps.join("|"), "Designed|Tooling cut|Board glued|Machined|Sealed|Ready for layup|Retired",
     "every stage is a tappable step, in order");
   eq(await page.evaluate(() => document.querySelector(".pstage .pstep.cur").textContent.trim()),
     "Machined", "the current stage is the filled step");

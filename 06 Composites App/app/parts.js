@@ -1086,7 +1086,7 @@ async function newRunForPart(partId, opts) {
    times. They are deliberately NOT synced — merging them is a bigger decision
    than this change — but a disagreement is worth pointing at. */
 const MOLD_STAGE_AGREE = {
-  "Not Started": ["Designed"],
+  "Not Started": ["Designed", "Tooling cut"],
   "Machining": ["Board glued"],
   "Machine Complete": ["Machined"],
   "Sealed": ["Sealed"],

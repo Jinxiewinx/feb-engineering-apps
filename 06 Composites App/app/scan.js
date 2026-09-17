@@ -397,11 +397,13 @@ function dismissShopUndo() { SHOP_UNDO = null; render(); }
 function shopUndoBar() {
   const u = SHOP_UNDO;
   if (!u) return "";
-  /* Gluing a stack is the one moment offcuts exist and are known — the saw is
-     still out and the remnant is in someone's hand. A dismissible offer on the
-     undo bar, never a gate: a prompt that fires where it makes no sense is the
-     one people learn to dismiss (same reasoning as lot capture). */
-  const offcut = u.coll === "molds" && u.to === "Board glued"
+  /* Cutting the blanks is the moment offcuts exist and are known — the saw is
+     still out and the remnant is in someone's hand. That is "Tooling cut" as
+     of September 2026; "Board glued" is kept alongside it because it was the
+     only offer for a season and people reach for it there. A dismissible offer
+     on the undo bar, never a gate: a prompt that fires where it makes no sense
+     is the one people learn to dismiss (same reasoning as lot capture). */
+  const offcut = u.coll === "molds" && ["Tooling cut", "Board glued"].includes(u.to)
     ? `<button class="sm" onclick="logOffcutFromMold('${esc(u.id)}')">Log offcuts</button>` : "";
   return `<div class="undobar no-print">
     <span class="ub-i">${icon("check", 15)}</span>
