@@ -147,15 +147,25 @@ console.log("inventory deletes are open to any member; the rest of the app is no
    Simon's call for the Select…/mass-delete: shop consumables are shared
    property, and "only whoever logged the jug can delete it" made cleanup
    after the EH&S import a lead-only chore. stock keeps the undo shape
-   (isLead()||mine()); molds and parts stay lead-only. */
+   (isLead()||mine()); molds and parts stay lead-only.
+
+   That was before the app soft-deleted. See just below: the member-facing
+   action is now the tombstone, and DELETE became the purge. */
 await expect(200, "owner", "PATCH", "/lots/FAB-SN6-900", { id: S("FAB-SN6-900"), cls: S("FAB"), createdBy: S("member@feb.test") });
 await expect(200, "owner", "PATCH", "/lots/FAB-SN6-901", { id: S("FAB-SN6-901"), cls: S("FAB"), createdBy: S("lead@feb.test") });
 await expect(200, "owner", "PATCH", "/lots/FAB-SN6-902", { id: S("FAB-SN6-902"), cls: S("FAB") }); // predates createdBy
-await expect(200, "member", "DELETE", "/lots/FAB-SN6-901");   // someone else's: now allowed
-await expect(200, "member", "DELETE", "/lots/FAB-SN6-902");   // no createdBy: also allowed
-await expect(200, "member", "DELETE", "/lots/FAB-SN6-900");   // my own: allowed as ever
+/* SEPTEMBER 2026: a member clears a shelf through the TOMBSTONE, which is an
+   update and which they still have on anybody's record. DELETE now means
+   emptying the bin — the one irreversible step, and the one that takes the
+   Storage objects with it — so it is a lead's on these two as well. Simon's
+   2026-08-28 point still holds: cleanup is not a lead chore, and it is not. */
+await expect(403, "member", "DELETE", "/lots/FAB-SN6-901");   // someone else's
+await expect(403, "member", "DELETE", "/lots/FAB-SN6-902");   // no createdBy
+await expect(403, "member", "DELETE", "/lots/FAB-SN6-900");   // even my own
+await expect(200, "lead", "DELETE", "/lots/FAB-SN6-900");     // the lead empties it
 await expect(200, "owner", "PATCH", "/items/JIG-SN6-900", { id: S("JIG-SN6-900"), cls: S("JIG"), createdBy: S("lead@feb.test") });
-await expect(200, "member", "DELETE", "/items/JIG-SN6-900");  // items too, whoever made it
+await expect(403, "member", "DELETE", "/items/JIG-SN6-900");
+await expect(200, "lead", "DELETE", "/items/JIG-SN6-900");
 /* stock keeps the undo rule: your own mistake, or a lead. undoCuts() deletes
    the offcuts it created, which is exactly the mine() case. */
 await expect(200, "owner", "PATCH", "/stock/BRD-SN6-900", { id: S("BRD-SN6-900"), createdBy: S("member@feb.test") });

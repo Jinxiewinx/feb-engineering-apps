@@ -106,6 +106,11 @@ globalThis.fb = {
   async deleteFile(path) { calls.push(["deleteFile", path]); },
   async deleteFiles(paths) { (paths || []).forEach(p => calls.push(["deleteFile", p])); return { ok: (paths || []).length, failed: [] }; },
   async delMany(items) { (items || []).forEach(it => calls.push(["del", it.coll, it.id])); },
+  /* A tombstone is an UPDATE, and the pub nameplate goes with it. The Storage
+     objects deliberately do NOT — that is what purge is for, and a test that
+     let deleteFile happen here would be testing the wrong feature. */
+  async trashMany(items) { (items || []).forEach(it => calls.push(["trash", it.coll, it.id])); },
+  async untrashMany(items) { (items || []).forEach(it => calls.push(["untrash", it.coll, it.id])); },
   async del(coll, id) { calls.push(["del", coll, id]); },
   /* Mirrors fb.js's ID_PREFIX. Kept as one map used by BOTH allocators, because
      the block version used to derive its prefix from the counter KEY instead —
@@ -9456,6 +9461,77 @@ await t("trainingById folds config over the consts and validates at read time", 
     "archived customs leave the default list but stay reachable");
   window.TRAINING_OVERRIDES = saved;
 });
+console.log("recently deleted:");
+
+await t("onFbData is the ONE place a tombstone is filtered", () => {
+  /* All twelve collections are unfiltered whole-collection listeners and about
+     forty sites read DB[coll]. Splitting here means none of them change and
+     none of them can be missed — the failure mode of a miss would be a deleted
+     mold still counted, still printed, and still resolving from a QR label. */
+  onFbData("molds", [
+    { id: "MOLD-T-1", name: "live one", stage: "Designed" },
+    { id: "MOLD-T-2", name: "binned one", stage: "Designed", deleted: true, deletedAt: new Date().toISOString(), deletedBy: "a@b.c" },
+  ]);
+  assert(DB.molds.length === 1 && DB.molds[0].id === "MOLD-T-1", "the live array never sees it: " + JSON.stringify(DB.molds.map(m => m.id)));
+  assert(trashedIn("molds").length === 1, "and the bin is the only thing that does");
+  assert(isTrashed(trashedIn("molds")[0]) && !isTrashed(DB.molds[0]), "isTrashed agrees");
+
+  // The loud consumers, which is the point of filtering centrally.
+  view = { ...view, tab: "molds", mode: "list", id: null, q: "", fStatus: "", fRetired: false, fNoHome: false };
+  render();
+  assert(!/MOLD-T-2|binned one/.test(main.innerHTML), "gone from the rail: no separate filter needed anywhere");
+  assert(!cutEligiblePlans().some(p => p.moldId === "MOLD-T-2"), "and out of the cut list with it");
+  assert(!recById("molds", "MOLD-T-2"), "recById cannot reach it either — scanning one must say so, not 404");
+});
+
+await t("trashing keeps everything, drops the nameplate, and never touches Storage", async () => {
+  onFbData("molds", [{ id: "MOLD-T-3", name: "keepme", stage: "Sealed", sealedBy: "RJB", uses: 4 }]);
+  calls.length = 0;
+  const batch = await trashRecords([{ coll: "molds", id: "MOLD-T-3", files: ["molds/MOLD-T-3/datum.pdf"] }]);
+  assert(batch, "a trashBatch comes back, so a caller can restore the set: " + batch);
+  assert(!DB.molds.length && trashedIn("molds").length === 1, "it moved, optimistically, at the speed of the tap");
+
+  const rec = trashedIn("molds")[0];
+  assert(rec.sealedBy === "RJB" && rec.uses === 4, "with every field it had — this is a flag, not a redaction");
+  assert(rec.deletedBy && rec.deletedAt && rec.trashBatch === batch, "stamped with who and when: " + JSON.stringify({ b: rec.deletedBy, t: !!rec.deletedAt }));
+  assert(rec.purgeAfter > today(), "and a STORED purge date, so changing the policy later cannot retro-purge: " + rec.purgeAfter);
+  assert(rec.deletedFiles[0] === "molds/MOLD-T-3/datum.pdf",
+    "the Storage paths are frozen on: LISTING is denied by rule, so this is the only record of what to remove");
+
+  assert(calls.some(c => c[0] === "trash" && c[2] === "MOLD-T-3"), "written as an update: " + JSON.stringify(calls));
+  assert(!calls.some(c => c[0] === "del"), "never as a delete");
+  assert(!calls.some(c => c[0] === "deleteFile"),
+    "AND NOT ONE STORAGE OBJECT — deleteObject cannot be undone, which is what made an undo bar a lie before");
+
+  calls.length = 0;
+  const n = await untrashRecords([{ coll: "molds", id: "MOLD-T-3" }]);
+  assert(n === 1 && DB.molds.length === 1 && !trashedIn("molds").length, "and it comes back whole");
+  assert(DB.molds[0].sealedBy === "RJB" && !DB.molds[0].deleted, "with its fields and without its tombstone");
+  assert(calls.some(c => c[0] === "untrash"), "through the restore path, which republishes the nameplate");
+});
+
+await t("a cascade records the links it clears, so restore can put them back", async () => {
+  /* Clearing a back-pointer is right for a real delete and wrong for a trash:
+     without recording it, the pointer is gone even though the record came back.
+     That is the difference between reversible and "the document survived". */
+  onFbData("workOrders", [{ id: "WO-T-1", partName: "X", revision: "A", status: "Draft", steps: [] }]);
+  onFbData("parts", [{ id: "P-T-1", partName: "X", workOrderId: "WO-T-1" }]);
+  const part = DB.parts[0];
+  part.workOrderId = "";                                     // what a cascade does
+  await trashRecords([{ coll: "workOrders", id: "WO-T-1",
+    backrefs: [{ coll: "parts", id: "P-T-1", field: "workOrderId", value: "WO-T-1" }] }]);
+  assert(DB.parts[0].workOrderId === "", "the link is cleared while it is in the bin");
+
+  await untrashRecords([{ coll: "workOrders", id: "WO-T-1" }]);
+  assert(DB.parts[0].workOrderId === "WO-T-1", "and re-applied on restore: " + DB.parts[0].workOrderId);
+
+  // Never onto a record that has since gone: that would mint a dangling id.
+  await trashRecords([{ coll: "workOrders", id: "WO-T-1",
+    backrefs: [{ coll: "parts", id: "P-GONE", field: "workOrderId", value: "WO-T-1" }] }]);
+  await untrashRecords([{ coll: "workOrders", id: "WO-T-1" }]);
+  assert(!recById("parts", "P-GONE"), "the missing target stays missing rather than being invented");
+});
+
 console.log("techniques:");
 
 await t("techniqueById folds config over STD_STEPS, the trainings pattern verbatim", () => {

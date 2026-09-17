@@ -191,7 +191,21 @@ window.onFbData = function (coll, arr) {
        arrived, and the answer was "nothing you can see". */
     if (SPLASH_CORE.every(c => SPLASH_SEEN[c])) splashStep("data", 1);
   }
-  DB[coll] = arr;
+  /* ---------- the one place a tombstone is filtered ----------
+     All twelve collections are unfiltered whole-collection listeners, and
+     roughly forty sites read DB[coll] to list, filter and count. Splitting HERE
+     means none of them change and none of them can be missed. The failure mode
+     of a missed site would be a deleted mold still counted on the dashboard,
+     still printed on a report, and still resolving from a QR label; the failure
+     mode of this split is that the Trash view needs its own source, which is
+     one place and is DB.trash.
+
+     Nothing else in the app should ever test `.deleted`. If you find yourself
+     adding `&& !r.deleted` somewhere, this is why you do not have to. */
+  const live = [], dead = [];
+  for (const r of arr) (r && r.deleted ? dead : live).push(r);
+  DB[coll] = live;
+  (DB.trash = DB.trash || {})[coll] = dead;
   // A mesh from Fusion waits for the rack as well as for the sign-in.
   if (coll === "stock" && typeof fusionStateChanged === "function") fusionStateChanged("stock");
   // Don't yank the DOM out from under someone mid-edit: another member's (or
@@ -646,6 +660,103 @@ function setArchived(coll, ids, on) {
   });
   return recs.length;
 }
+/* ---------- recently deleted ----------
+   `archived` is visibility and `deleted` is deletion; they are separate axes
+   and must not be conflated (DESIGN-NOTES.md says so about archived, and it is
+   still true). An archived record is on the rail behind a chip; a deleted one
+   is gone from every rail, every count and every mirror, and comes back whole.
+
+   The tombstone. `purgeAfter` is STORED rather than computed from deletedAt at
+   read time, so changing the policy later cannot retro-purge things already in
+   the bin. `deletedFiles` is frozen at trash time because Storage LISTING is
+   denied by rule — that list is the only record of what to remove, and losing
+   it strands the blobs forever. `backrefs` is what a cascade CLEARED on other
+   records, so a restore can put the links back; clearing them without recording
+   them is what makes a delete irreversible even when the document survives.
+   `trashBatch` is shared by everything taken in one gesture, so a work order
+   and the issues that went with it come back together. */
+const TRASH_DAYS = 30;
+const TRASH_KEYS = ["deleted", "deletedAt", "deletedBy", "purgeAfter", "trashBatch", "deletedFiles", "backrefs"];
+function isTrashed(rec) { return !!(rec && rec.deleted); }
+function trashedIn(coll) { return (DB.trash && DB.trash[coll]) || []; }
+/* Everything in the bin, newest first, as {coll, rec}. The Trash view's only
+   source, because DB[coll] deliberately cannot see these. */
+function allTrashed() {
+  const out = [];
+  Object.keys(DB.trash || {}).forEach(coll => trashedIn(coll).forEach(rec => out.push({ coll, rec })));
+  return out.sort((a, b) => String(b.rec.deletedAt || "").localeCompare(String(a.rec.deletedAt || "")));
+}
+function daysSince(iso) {
+  const t = Date.parse(iso || "");
+  return Number.isFinite(t) ? Math.floor((Date.now() - t) / 86400000) : 0;
+}
+function plusDays(days) {
+  return new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+}
+function newTrashBatch() { return "T" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+/* Send records to the bin. `items` is [{coll, id, files, backrefs}] — files and
+   backrefs are per record, because a cascade collects different ones for each.
+
+   Any roster member may trash, which is a deliberate widening: update is
+   already open to every member on every collection, and a delete that is
+   reversible for thirty days and names who did it is a smaller thing to hand
+   out than one that is not. PURGE stays lead-only, in the rules and in the UI.
+
+   Returns the trashBatch, so a caller can offer an undo or restore the set. */
+async function trashRecords(items, opts) {
+  if (guestBlocked("Sign in to delete.")) return null;
+  const list = (items || []).filter(x => x && x.coll && x.id);
+  if (!list.length) return null;
+  const batch = (opts && opts.batch) || newTrashBatch();
+  const patchFor = (it) => ({
+    deleted: true, deletedAt: new Date().toISOString(), deletedBy: myEmail(),
+    purgeAfter: plusDays(TRASH_DAYS), trashBatch: batch,
+    deletedFiles: it.files || [], backrefs: it.backrefs || [],
+  });
+  const payload = list.map(it => ({ coll: it.coll, id: it.id, patch: patchFor(it) }));
+  /* Optimistic: move it out of the live array now. The snapshot will do the
+     same thing a moment later through onFbData; doing it here is what makes the
+     rail update at the speed of the tap rather than the speed of the network. */
+  payload.forEach(p => {
+    const rec = (DB[p.coll] || []).find(r => r.id === p.id);
+    if (!rec) return;
+    Object.assign(rec, p.patch);
+    DB[p.coll] = (DB[p.coll] || []).filter(r => r.id !== p.id);
+    ((DB.trash = DB.trash || {})[p.coll] = trashedIn(p.coll).concat([rec]));
+  });
+  try { await fb.trashMany(payload); } catch (e) { toast("Delete failed: " + e.message, "error"); }
+  return batch;
+}
+
+/* Bring them back, and put back whatever the cascade cleared on records that
+   were never deleted themselves. */
+async function untrashRecords(items) {
+  if (guestBlocked("Sign in to restore.")) return 0;
+  const list = (items || []).filter(x => x && x.coll && x.id);
+  if (!list.length) return 0;
+  const clear = { deleted: false, deletedAt: "", deletedBy: "", purgeAfter: "", trashBatch: "", deletedFiles: [], backrefs: [] };
+  const payload = [];
+  for (const it of list) {
+    const rec = trashedIn(it.coll).find(r => r.id === it.id);
+    if (!rec) continue;
+    /* The back-links first, and only where the other record still exists. A
+       pointer restored onto something that has since gone is a dangling id, and
+       this feature exists to stop exactly that class of damage. */
+    for (const b of (rec.backrefs || [])) {
+      const target = (DB[b.coll] || []).find(r => r.id === b.id);
+      if (target && !target[b.field]) { target[b.field] = b.value; save(b.coll, target, b.field); }
+    }
+    Object.assign(rec, clear);
+    DB.trash[it.coll] = trashedIn(it.coll).filter(r => r.id !== it.id);
+    DB[it.coll] = (DB[it.coll] || []).concat([rec]);
+    payload.push({ coll: it.coll, id: it.id, patch: clear, obj: rec });
+  }
+  if (!payload.length) return 0;
+  try { await fb.untrashMany(payload); } catch (e) { toast("Restore failed: " + e.message, "error"); }
+  return payload.length;
+}
+
 function archivedPill(rec, tny) {
   return isArchived(rec) ? ` <span class="pill archived${tny ? " tny" : ""}" title="Archived${rec.archivedAt ? " " + esc(rec.archivedAt) : ""}${rec.archivedBy ? " by " + esc(userName(rec.archivedBy)) : ""}">archived</span>` : "";
 }

@@ -55,6 +55,22 @@ service cloud.firestore {
         && resource.data.createdBy == request.auth.token.email;
     }
 
+    /* ---------- how a delete works here now (September 2026) ----------
+       The app soft-deletes: `deleted`, `deletedAt`, `deletedBy`, `purgeAfter`,
+       `trashBatch`, `deletedFiles` and `backrefs` go onto the record, it leaves
+       every rail and its public nameplate is removed, and a lead empties the
+       bin after thirty days. `delete` below is that emptying, and nothing else.
+
+       SO A MEMBER CAN NOW MAKE A LEAD-GATED RECORD DISAPPEAR, through `update`,
+       which they have always had. Simon's call, knowingly: it is reversible for
+       thirty days and the bin names who did it, which is a smaller thing to
+       hand out than an irreversible delete.
+
+       THERE IS DELIBERATELY NO tombstoneOnly() CLAUSE narrowing that update.
+       It would restrict nothing that is not already open — `update: onRoster()`
+       has always let a member blank every field on a mold — so it would read
+       like a boundary while being decoration. If member updates are ever to be
+       narrowed, that is its own change and it is about updates, not deletes. */
     match /workOrders/{id} { allow read: if reader(); allow create, update: if onRoster(); allow delete: if isLead(); }
     match /parts/{id}      { allow read: if reader(); allow create, update: if onRoster(); allow delete: if isLead(); }
     match /projects/{id}   { allow read: if reader(); allow create, update: if onRoster(); allow delete: if isLead(); }
@@ -80,13 +96,20 @@ service cloud.firestore {
        Both multi-class collections carry a `cls` field; same access shape as
        every other record collection. */
     match /molds/{id}      { allow read: if reader(); allow create, update: if onRoster(); allow delete: if isLead(); }
-    /* items and lots delete is open to ANY roster member, not isLead()||mine()
-       — Simon's call (2026-08-28) for the inventory Select…/mass-delete: shop
-       consumables are shared property, and "only whoever logged the jug can
-       delete it" made cleanup after the EH&S import a lead-only chore. Molds
-       stay lead-only: a mold is months of machining, not a jug. */
-    match /items/{id}      { allow read: if reader(); allow create, update: if onRoster(); allow delete: if onRoster(); }
-    match /lots/{id}       { allow read: if reader(); allow create, update: if onRoster(); allow delete: if onRoster(); }
+    /* items and lots delete was open to ANY roster member — Simon's call
+       (2026-08-28) for the inventory Select…/mass-delete: shop consumables are
+       shared property, and "only whoever logged the jug can delete it" made
+       cleanup after the EH&S import a lead-only chore. Molds stayed lead-only:
+       a mold is months of machining, not a jug.
+
+       LEAD-ONLY AGAIN SINCE SEPTEMBER 2026, and that is not a reversal of it.
+       Deleting from the app is now a TOMBSTONE, which is an update, which every
+       member still has — so cleanup is still not a lead chore and the button
+       still works for everybody. What `delete` means now is EMPTYING THE BIN,
+       the one irreversible step, which takes the Storage objects with it. That
+       one is a lead's. */
+    match /items/{id}      { allow read: if reader(); allow create, update: if onRoster(); allow delete: if isLead(); }
+    match /lots/{id}       { allow read: if reader(); allow create, update: if onRoster(); allow delete: if isLead(); }
 
     /* rnd = the R&D bench (2026-08-28). A third multi-class collection:
        RDS-SN6-### is a STUDY — a named collection of coupons, which may be a

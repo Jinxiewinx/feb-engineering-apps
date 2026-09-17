@@ -340,6 +340,64 @@ const fb = {
     [...new Set(list.map(x => x.coll))].forEach(c => trackerSync(c));
   },
 
+  /* ---------- soft delete ----------
+     A tombstone is an UPDATE, not a delete, so the record keeps every field and
+     can come back. Two things still have to happen at once, and they are the
+     reason this lives here beside delMany rather than being three save() calls
+     in core.js:
+
+     THE PUBLIC NAMEPLATE GOES NOW. pub/<id> is the only thing in this database
+     an unauthenticated person can read. A trashed mold whose QR label still
+     resolves is worse than a missed delete, and nobody trashing something is
+     thinking about the mirror.
+
+     THE STORAGE OBJECTS DO NOT. deleteObject cannot be undone, so an undo bar
+     over a deleted upload would be the lying button firestore.rules warns
+     about. The paths are frozen onto the tombstone instead (Storage LISTING is
+     denied by rule, so that list is the only record of what to remove) and
+     fb.deleteFiles runs at purge and nowhere else. */
+  async trashMany(items) {
+    noWrites();
+    const list = (items || []).filter(x => x && x.coll && x.id);
+    if (!list.length) return;
+    const stamp = { updatedAt: serverTimestamp(), updatedBy: fb.user ? fb.user.email : "?" };
+    for (let i = 0; i < list.length; i += 400) {
+      const batch = writeBatch(db);
+      for (const it of list.slice(i, i + 400)) {
+        batch.update(doc(db, it.coll, it.id), { ...JSON.parse(JSON.stringify(it.patch || {})), ...stamp });
+      }
+      await batch.commit();
+    }
+    // Same shape as delMany: the mirrors go in their OWN batch, whose failure
+    // is swallowed, because a stale nameplate must never fail the delete.
+    for (let i = 0; i < list.length; i += 400) {
+      try {
+        const batch = writeBatch(db);
+        for (const it of list.slice(i, i + 400)) batch.delete(doc(db, "pub", it.id));
+        await batch.commit();
+      } catch (e) { pubWarn(e); }
+    }
+    [...new Set(list.map(x => x.coll))].forEach(c => trackerSync(c));
+  },
+  /* Restore. The nameplate is republished from the record itself rather than
+     from anything stored on the tombstone, so a projection that changed while
+     the record was in the bin comes back current. */
+  async untrashMany(items) {
+    noWrites();
+    const list = (items || []).filter(x => x && x.coll && x.id);
+    if (!list.length) return;
+    const stamp = { updatedAt: serverTimestamp(), updatedBy: fb.user ? fb.user.email : "?" };
+    for (let i = 0; i < list.length; i += 400) {
+      const batch = writeBatch(db);
+      for (const it of list.slice(i, i + 400)) {
+        batch.update(doc(db, it.coll, it.id), { ...JSON.parse(JSON.stringify(it.patch || {})), ...stamp });
+      }
+      await batch.commit();
+    }
+    for (const it of list) if (it.obj) pubSync(it.coll, it.obj);
+    [...new Set(list.map(x => x.coll))].forEach(c => trackerSync(c));
+  },
+
   /* deleteFile swallows every error, because "already gone" is the usual one and
      is the desired state anyway. A bulk delete needs to know the difference, so
      this counts instead of guessing — the caller can then say how many uploads
