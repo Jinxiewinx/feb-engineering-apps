@@ -37,7 +37,9 @@
    boardCost() below for the whole rule; it needs no tuning constants.
 
    Pieces are kept down to about 4 x 10 inches (MIN_REMNANT_MM), so a leftover
-   above that is credited back rather than counted as loss. */
+   above that is credited back rather than counted as loss. Anything under it
+   comes back on `scrap` instead of `leftover`: worth nothing to the packer's
+   arithmetic, worth showing to the person at the saw. */
 
 const KERF_MM = 3.175;          // 1/8in saw blade
 const MIN_REMNANT_MM = 101.6;   // 4in — Simon: "we have had small like 4 x 10 inch pieces"
@@ -179,8 +181,21 @@ function packBoard(board, parts, opts) {
   const sorted = parts.slice().sort((a, b) => (Math.max(b.w, b.h) - Math.max(a.w, a.h)) || (partArea(b) - partArea(a)));
 
   const r = packFill(0, 0, board.w, board.h, 0, sorted, kerf, rotate);
-  const usable = r.leftover.filter(o => o.w >= MIN_REMNANT_MM && o.h >= MIN_REMNANT_MM);
-  return { placed: r.placed, cuts: r.cuts, leftover: usable, unplaced: r.remaining };
+  /* PARTITIONED, not filtered. `leftover` keeps its meaning exactly — the
+     remnants big enough to be worth a ledger entry, which is what betterSplit
+     and boardCost score against and what the commit writes back as stock. What
+     changed is that the discards are handed over too instead of being dropped
+     on the floor here.
+
+     They are needed because a human now reviews the offcuts before they are
+     written, and a pane that silently omits pieces lies about what comes off
+     the board. Whether a 3 x 20in strip is worth keeping is a judgement for
+     the person holding it; MIN_REMNANT_MM stays the PACKER's answer to a
+     different question, which is what to count as recovered value when
+     choosing a split. */
+  const usable = [], scrap = [];
+  for (const o of r.leftover) (o.w >= MIN_REMNANT_MM && o.h >= MIN_REMNANT_MM ? usable : scrap).push(o);
+  return { placed: r.placed, cuts: r.cuts, leftover: usable, scrap, unplaced: r.remaining };
 }
 
 /* ============================================================================
@@ -449,6 +464,10 @@ function packAll(blanks, boards, opts) {
         // boardId on every leftover, so whatever eventually writes offcuts back
         // into inventory knows which board each came off.
         leftover: best.r.leftover.map(o => ({ ...o, boardId: best.bd.src.id })),
+        // Below MIN_REMNANT_MM: never counted as recovered value, never written
+        // back on its own, but shown to whoever is reviewing the cut so they
+        // can promote one by hand.
+        scrap: (best.r.scrap || []).map(o => ({ ...o, boardId: best.bd.src.id })),
         thickness: best.bd.thk, density: best.bd.density, cost: best.cost,
         index: best.bd.index || 0,
         digCost: (opts.digWorthBlank == null ? DIG_WORTH_BLANK : opts.digWorthBlank) * (best.bd.index || 0),

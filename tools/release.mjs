@@ -287,7 +287,14 @@ act("prepend the CHANGELOG.md section", () => writeFileSync(CHANGELOG, log));
 /* ---- 6. the gate -------------------------------------------------------- */
 /* Before the commit, so a red suite leaves nothing behind but edited files you
    can `git checkout --`. */
-const SUITES = ["test_app.mjs", "test_designsystem.mjs", "test_route.mjs", "test_appui.mjs", "test_detailui.mjs"];
+/* test_packer and test_slicer joined the gate in September 2026. They are pure
+   node, they take under a second each, and they guard the two things in this
+   app that quietly ruin material rather than throwing: guillotine feasibility
+   (a nest that packs tightly and cannot be sawn) and the 6in section split. A
+   regression inside either would have shipped, because test_app only reaches
+   them through the commit path. */
+const SUITES = ["test_app.mjs", "test_designsystem.mjs", "test_route.mjs", "test_appui.mjs",
+  "test_detailui.mjs", "test_packer.mjs", "test_slicer.mjs"];
 say("\n  running the suites");
 for (const s of SUITES) {
   const file = join(ROOT, "tools", s);

@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "06 Composites App", "app");
 const src = readFileSync(join(root, "packer.js"), "utf8").replace(/"use strict";\n/, "");
 globalThis.__P = {};
-(0, eval)(src + "\n;Object.assign(globalThis.__P,{packBoard,packAll,cutSequence,utilisation,fitIn,boardCost,blanksFromLayers,moldCost,blankDensityRange,densityRollup,KERF_MM,MIN_REMNANT_MM,SHEET_REF_MM3,DIG_WORTH_BLANK});");
+(0, eval)(src + "\n;Object.assign(globalThis.__P,{packBoard,packAll,cutSequence,utilisation,fitIn,boardCost,blanksFromLayers,moldCost,packFill,blankDensityRange,densityRollup,KERF_MM,MIN_REMNANT_MM,SHEET_REF_MM3,DIG_WORTH_BLANK});");
 const P = globalThis.__P;
 
 const IN = 25.4;
@@ -225,6 +225,27 @@ t("leftovers below the minimum useful remnant are scrap, not ledger entries", ()
     "a 20mm sliver is not an offcut anybody will retrieve");
 });
 
+t("scrap is handed over rather than dropped, and leftover means exactly what it did", () => {
+  /* The review pane lets a human promote a sliver by hand, so the pieces have
+     to survive the packer. They must NOT join `leftover`: that is what
+     betterSplit and boardCost score recovered value against, and moving the
+     line would change which boards get opened for every mold in the batch. */
+  const board = { w: 1000, h: 1000 };
+  const parts = [blank("a", 960, 960)];
+  const r = P.packBoard(board, parts, {});
+  assert(Array.isArray(r.scrap) && r.scrap.length, "the slivers came back: " + JSON.stringify(r.scrap));
+  assert(r.scrap.every(o => o.w < P.MIN_REMNANT_MM || o.h < P.MIN_REMNANT_MM),
+    "and every one of them is genuinely under the bar");
+
+  /* Partition, not two filters: nothing is in both lists and nothing was lost
+     between them. packFill is the unfiltered truth. */
+  const raw = P.packFill(0, 0, board.w, board.h, 0, parts.slice(), P.KERF_MM, true).leftover;
+  const key = o => `${o.x},${o.y},${o.w},${o.h}`;
+  const got = r.leftover.concat(r.scrap).map(key).sort();
+  assert(got.join("|") === raw.map(key).sort().join("|"),
+    "every remnant is in exactly one list: " + got.join("|") + " vs " + raw.map(key).sort().join("|"));
+});
+
 console.log("density ranges:");
 /* A rack holding the same size in three grades. Nothing here varies but density,
    so any difference in what gets opened is the range doing its job. */
@@ -242,6 +263,28 @@ const shape = (r) => JSON.stringify({
     placed: p.placed.map(x => [x.part.id, x.x, x.y, x.w, x.h, x.rotated]),
     cuts: p.cuts, leftover: p.leftover })),
   shortfall: r.shortfall.map(s => s.id), used: r.boardsUsed, degraded: r.degraded,
+});
+
+t("CRITICAL scrap never buys a better nest", () => {
+  /* If scrap reached the scoring, a board that shatters into slivers would
+     start looking as good as one that leaves a usable remnant, and the rack
+     would quietly be spent worst-first. shape() is what decides two plans are
+     the same plan, and it reads `leftover` — so this asserts the packer's
+     answer does not move when the slivers become visible. */
+  const boards = [
+    { id: "clean", len: 700, wid: 400, thk: IN, density: 30, qty: 1 },
+    { id: "shatters", len: 760, wid: 460, thk: IN, density: 30, qty: 1 },
+  ];
+  const parts = [blank("p", 600, 300)];
+  const r = P.packAll(parts, boards, {});
+  assert(r.plans.length === 1, "one board opened: " + r.plans.length);
+  const pl = r.plans[0];
+  assert(pl.leftover.every(o => o.w >= P.MIN_REMNANT_MM && o.h >= P.MIN_REMNANT_MM),
+    "the scored remnants are still only the useful ones");
+  assert((pl.scrap || []).every(o => o.boardId === pl.board.src.id),
+    "and scrap carries its board, same as leftover, so the pane can say where it came from");
+  assert(!JSON.stringify(shape(r)).includes("scrap"),
+    "scrap is not part of what makes two plans the same plan");
 });
 
 t("CRITICAL min == max plans exactly what a bare density planned before ranges existed", () => {
