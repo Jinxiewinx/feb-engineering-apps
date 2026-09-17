@@ -23,11 +23,11 @@ git log -p --follow -- SESSION-STATE.md
 **Mold tracking, a trash can, and lead-addable techniques** (approved
 2026-09-17). Fifteen chunks; the plan, the order and the reasoning behind
 every decision are in `~/.claude/plans/joyful-shimmying-bunny.md`. Do not
-re-derive them. Five bundles. **0-4 ARE LANDED, PUSHED, DEPLOYED AND VERIFIED
+re-derive them. Five bundles. **0-8 ARE LANDED, PUSHED, DEPLOYED AND VERIFIED
 LIVE**: storage.rules trees, `MOLD_TRACK`, the "Tooling cut" stage,
-`cutEligiblePlans()`, and the commit advancing the mold. Next is **5-8**,
-packer scrap partition, mold files and datum plans, split waiver, then the
-editable offcut modal; then **9-11** `config/techniques` in the trainings pattern, template
+`cutEligiblePlans()`, the commit advancing the mold, the packer scrap
+partition, mold files and datum plans, the split waiver, and the editable
+offcut review pane. Next is **9-11** `config/techniques` in the trainings pattern, template
 versioning, then the editor — 10 before 11 without exception; **12-14** soft
 delete and the 30-day trash, last, because its blast radius is every count in
 the app.
