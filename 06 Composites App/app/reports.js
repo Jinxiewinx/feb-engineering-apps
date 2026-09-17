@@ -51,7 +51,7 @@ function renderReports() {
   const openBlockers = [];
   DB.workOrders.forEach(w => {
     if (w.retro) return;
-    (w.steps || []).forEach(s => { if (typeof isBlocker === "function" && isBlocker(s) && !isSigned(s)) openBlockers.push({ wo: w, step: s }); });
+    (w.steps || []).forEach(s => { if (typeof isBlocker === "function" && isBlocker(s, w) && !isSigned(s)) openBlockers.push({ wo: w, step: s }); });
   });
   const upcoming = (typeof deadlineItems === "function" ? deadlineItems() : [])
     .filter(i => !i.done && i.date && daysUntil(i.date) != null && daysUntil(i.date) >= 0 && daysUntil(i.date) <= 14)

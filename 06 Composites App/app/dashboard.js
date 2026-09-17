@@ -180,7 +180,7 @@ function blockedNow() {
     if (next < 0) return;
     steps.forEach((s, i) => {
       if (i > next) return;
-      if (typeof isBlocker !== "function" || !isBlocker(s) || (typeof isSigned === "function" && isSigned(s))) return;
+      if (typeof isBlocker !== "function" || !isBlocker(s, w) || (typeof isSigned === "function" && isSigned(s))) return;
       out.push({ wo: w, step: s, i });
     });
   });
@@ -266,7 +266,7 @@ function signableSteps(email) {
     out.push({
       wo: w, step: s, i: next, tr, blocker, curing, selfReview,
       missing: ev.missing || [],
-      isBlockerStep: typeof isBlocker === "function" && isBlocker(s),
+      isBlockerStep: typeof isBlocker === "function" && isBlocker(s, w),
       mine: typeof isMine === "function" && isMine([w.moldEngineer, w.manufacturingEngineer]),
       // Scarce: almost nobody else can do it, so it is much more yours.
       scarce: !!tr && qualified.length > 0 && qualified.length <= 2,

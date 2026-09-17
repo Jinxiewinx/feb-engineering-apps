@@ -284,6 +284,22 @@ const STD_STEPS = {
   Other: [["Define acceptance criterion: target and method, set before work starts", { kind: "blocker", needs: ["note"] }],
           ["Execute"], ["Verify against criterion"]],
 };
+/* One place that instantiates a technique, so the three creation sites cannot
+   drift on WHICH list they copied or on saying which version it was.
+
+   Steps are copied INTO the work order at creation and stay there: editing a
+   technique never reaches a run that already exists. templateVersion is what
+   lets a run say it is on an older list, and it is also what turns off the
+   BLOCKER_WORDS title matching above. */
+function stepsFromTechnique(id) {
+  const t = techniqueById(id);
+  return {
+    steps: (t.steps || STD_STEPS.Other).map(stepFromTemplate),
+    technique: t.id,
+    templateVersion: t.rev || 0,
+    templateTs: new Date().toISOString(),
+  };
+}
 // One place that turns a template row into a stored step, so newWO() and
 // resetSteps() can't drift apart on what a fresh step looks like.
 function stepFromTemplate(row, i) {
@@ -319,7 +335,7 @@ async function newWO(rnd) {
     createdDate: today(), dueDate: "", partId: "",
     mold: { moldId: "", layers: "", density: "", sealingType: "XCR", location: "" },
     layupStack: [], stackNote: "", bom: [], standardsRefs: [],
-    steps: techniqueSteps("MoldInfusion").map(stepFromTemplate),
+    ...stepsFromTechnique("MoldInfusion"),
     qualityChecks: [{ criterion: "mass", target: "", actual: "", pass: null }],
     /* `rnd` here is ONLY the fallback for a run with no part. woIsRnd() asks
        the part first and every time, so a run that gets linked reads its part's
@@ -339,8 +355,9 @@ function resetSteps(wo) {
   const signed = (wo.steps || []).filter(isSigned).length;
   confirmModal("Replace steps with the standard list for " + wo.processType + "?" +
     (signed ? " This erases " + signed + " recorded buy-off(s) from the team database. There is no undo." : ""), () => {
-    wo.steps = techniqueSteps(wo.processType).map(stepFromTemplate);
-    saveWO(wo, "steps"); render();
+    const t = stepsFromTechnique(wo.processType);
+    wo.steps = t.steps; wo.templateVersion = t.templateVersion; wo.templateTs = t.templateTs;
+    saveWO(wo, "steps"); saveWO(wo, "templateVersion"); saveWO(wo, "templateTs"); render();
   });
 }
 
@@ -499,13 +516,29 @@ function archiveWO(id, on) {
 }
 
 /* Two ways to be a blocker, and both have to keep working. The rule field is
-   how new templates say it. The title match is how every record already saved
+   how a template says it. The title match is how every record already saved
    says it, including all 26 retro work orders — those predate the field, so
    dropping the title path would silently stop enforcing on the entire existing
-   database. */
+   database.
+
+   THE TITLE PATH IS NOW A LEGACY PATH, and that matters the moment a lead can
+   write step titles. Somebody adding "Drop test at 30in" to their own technique
+   was getting a silent hard blocker nobody chose, because "drop test" is in
+   BLOCKER_WORDS. Two ways out, in order:
+
+   - An explicit rule IS the answer, whatever it says. A step carrying
+     { training: "infusion" } has been thought about; it is not a blocker.
+   - A work order born from a VERSIONED template (templateVersion stamped at
+     creation) never title-matches at all. That is exactly the set of records
+     authored after the editor existed, and leaves every older record — retro
+     and otherwise — enforcing precisely as it did.
+
+   `wo` is optional: without it the old behaviour stands, which is what the
+   handful of callers that only hold a step should get. */
 function stepRule(s) { return (s && s.rule) || null; }
-function isBlocker(step) {
-  if (stepRule(step) && step.rule.kind === "blocker") return true;
+function isBlocker(step, wo) {
+  if (stepRule(step)) return step.rule.kind === "blocker";
+  if (wo && wo.templateVersion != null) return false;
   const t = String(step.title || "").toLowerCase();
   return BLOCKER_WORDS.some(g => t.includes(g));
 }
@@ -742,7 +775,7 @@ function blockerOpenBefore(wo, idx) {
   if (wo.retro) return null; // historical records: blockers are documentation, not enforcement
   for (let i = 0; i < idx; i++) {
     const s = wo.steps[i];
-    if (isBlocker(s) && !isSigned(s)) return wo.steps[i];
+    if (isBlocker(s, wo) && !isSigned(s)) return wo.steps[i];
   }
   return null;
 }
@@ -1611,8 +1644,54 @@ function woBomPushBtn(wo, b) {
   return `<button class="sm" title="Update the plan on ${esc(p.id)} to what this run actually used" onclick="pushBomToPlan('${esc(b.lineId)}')">↩ plan</button>`;
 }
 
+/* ---------- a run on an older checklist ----------
+   Editing a technique never reaches a run that already exists — the steps were
+   copied in at creation, which is the whole reason a buy-off means anything.
+   But a run left silently on an old list is a run whose checklist no longer
+   matches the one the shop agreed on, so it says so.
+
+   TWO WAYS OUT, and the second one is the point. resetSteps has always been
+   the only path back to a template, and it is lead-only and destructive: it
+   wipes every recorded buy-off. Nobody uses a button like that, so nobody ever
+   adopts a template edit. woAddNewSteps appends only the steps the new template
+   has and this run does not, by title, and touches nothing that is already
+   there — signed or not. */
+function woTemplateBehind(wo) {
+  if (!wo || wo.retro || wo.templateVersion == null) return null;
+  const t = techniqueById(wo.processType);
+  if (!t || (t.rev || 0) <= wo.templateVersion) return null;
+  const have = new Set((wo.steps || []).map(s => String(s.title || "").trim().toLowerCase()));
+  const missing = (t.steps || []).filter(row => !have.has(String(row[0]).trim().toLowerCase()));
+  return { technique: t, missing };
+}
+function woTemplateBanner(wo) {
+  const b = woTemplateBehind(wo);
+  if (!b) return "";
+  return `<div class="warn no-print">${icon("warning", 14)}
+    <b>The ${esc(b.technique.name)} checklist has changed</b> since this run was created.
+    Its steps are the ones it was started with, and every buy-off on them still stands.
+    ${b.missing.length
+      ? `${b.missing.length} step${b.missing.length === 1 ? " is" : "s are"} new: ${b.missing.map(r => `“${esc(r[0])}”`).join(", ")}.
+         <button class="sm" onclick="woAddNewSteps('${esc(wo.id)}')">Add ${b.missing.length === 1 ? "it" : "them"}</button>`
+      : "Nothing new to add — the change was to steps this run already has."}</div>`;
+}
+function woAddNewSteps(id) {
+  const wo = woById(id);
+  const b = wo && woTemplateBehind(wo);
+  if (!b || !b.missing.length) return;
+  const n = (wo.steps || []).length;
+  const add = b.missing.map((row, i) => stepFromTemplate(row, n + i));
+  wo.steps = (wo.steps || []).concat(add);
+  wo.templateVersion = b.technique.rev || 0;
+  saveField("workOrders", wo, "steps", steps => (steps || []).concat(add));
+  saveWO(wo, "templateVersion");
+  toast(`${add.length} step${add.length === 1 ? "" : "s"} added. Nothing already recorded was touched.`);
+  render();
+}
+
 function woSecSteps(wo, E) {
   return `
+    ${woTemplateBanner(wo)}
     <div class="tny muted no-print">The gold node is the step to act on now. An amber-ringed node is a blocker: no sign-off, no moving on. A slate node waits on the clock.</div>
     ${(() => {
       // The first not-done, not-failed step is the one to act on right now —
@@ -1636,7 +1715,7 @@ function woSecSteps(wo, E) {
         i = j;
       }
       const rows = (wo.steps || []).map((s, i) => {
-      const blocker = isBlocker(s);
+      const blocker = isBlocker(s, wo);
       const state = stepState(s);
       const blocked = blockerOpenBefore(wo, i);
       const hold = holdState(wo, i);

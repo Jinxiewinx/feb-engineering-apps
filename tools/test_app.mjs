@@ -9504,6 +9504,70 @@ await t("techniqueById folds config over STD_STEPS, the trainings pattern verbat
   window.TECHNIQUE_OVERRIDES = saved;
 });
 
+await t("a step title only makes a blocker on records that predate the editor", () => {
+  /* BLOCKER_WORDS title-matching exists because 26 retro SN5 work orders and
+     everything else already in Firestore predate the rule field. The moment a
+     lead can write step titles it becomes a trap: "Drop test at 30in" is a
+     silent hard blocker nobody chose. */
+  const legacy = { id: "WO-LEG", retro: false, processType: "Other", steps: [] };
+  const modern = { id: "WO-MOD", retro: false, processType: "Other", templateVersion: 2, steps: [] };
+  const untagged = { title: "Drop test at 30in" };
+  assert(isBlocker(untagged, legacy), "an old record keeps enforcing exactly as it did");
+  assert(!isBlocker(untagged, modern), "a run born from a versioned template never title-matches");
+  assert(isBlocker(untagged), "and without a work order in hand, the old behaviour stands");
+
+  // An explicit rule IS the answer, whatever it says — that step was thought about.
+  assert(!isBlocker({ title: "Drop test, 1 inHg", rule: { training: "infusion" } }, legacy),
+    "a rule that is not a blocker beats a title that looks like one");
+  assert(isBlocker({ title: "Anything at all", rule: { kind: "blocker" } }, modern), "and a blocker rule always wins");
+
+  /* No built-in step relies on the title path: every one that blocks says so. */
+  for (const id of PROCESSES) {
+    for (const row of STD_STEPS[id]) {
+      const byTitle = BLOCKER_WORDS.some(g => row[0].toLowerCase().includes(g));
+      if (byTitle) assert(row[1] && row[1].kind === "blocker",
+        `${id} step "${row[0]}" blocks by TITLE only — it would stop blocking on a versioned run`);
+    }
+  }
+});
+
+await t("a run says when its checklist has moved on, and adopting it costs no buy-offs", async () => {
+  const saved = window.TECHNIQUE_OVERRIDES;
+  DB.workOrders = [];
+  window.TECHNIQUE_OVERRIDES = null;
+  await newWO();
+  const wo = DB.workOrders[DB.workOrders.length - 1];
+  assert(wo.templateVersion === 0 && wo.technique === "MoldInfusion",
+    "a fresh run stamps which list it came from: " + JSON.stringify({ v: wo.templateVersion, t: wo.technique }));
+  const before = wo.steps.length;
+  wo.steps[0].buyoff = { name: "Nick J", date: today() };
+
+  // The lead edits the technique: one step renamed, one added, rev bumped.
+  window.TECHNIQUE_OVERRIDES = { MoldInfusion: { rev: 1,
+    steps: STD_STEPS.MoldInfusion.concat([["Record the demould force", { needs: ["note"] }]]) } };
+  view = { ...view, tab: "workorders", mode: "detail", id: wo.id, edit: false };
+  const h = woSecSteps(wo, false);
+  assert(/checklist has changed/.test(h), "the run says so: " + h.slice(0, 260));
+  assert(/Record the demould force/.test(h), "and names what is new");
+
+  woAddNewSteps(wo.id);
+  assert(wo.steps.length === before + 1, "exactly the missing step was appended: " + wo.steps.length);
+  assert(wo.steps[0].buyoff.name === "Nick J", "and nothing already recorded was touched");
+  assert(wo.templateVersion === 1, "the run is on the new version now: " + wo.templateVersion);
+  assert(!/checklist has changed/.test(woSecSteps(wo, false)), "so the banner goes");
+
+  /* A rev bump that only renames a step has nothing to append, and says that
+     rather than offering a button that would do nothing. */
+  window.TECHNIQUE_OVERRIDES = { MoldInfusion: { rev: 2, name: "Mold infusion (SN6)",
+    steps: wo.steps.map(s => [s.title, s.rule].filter(x => x !== undefined)) } };
+  const h2 = woSecSteps(wo, false);
+  assert(/Nothing new to add/.test(h2), "no empty offer: " + h2.slice(0, 260));
+
+  // Retro records are history, not a checklist anybody is working.
+  assert(!woTemplateBehind({ ...wo, retro: true, templateVersion: 0 }), "a retro run is never chased");
+  window.TECHNIQUE_OVERRIDES = saved;
+});
+
 await t("every config key the app fetches is a key a guest may read", () => {
   /* firestore.rules:198 is an ALLOWLIST, deliberately, because two config keys
      are live credentials. That makes it exactly the kind of thing that drifts

@@ -1049,7 +1049,7 @@ async function newRunForPart(partId, opts) {
     // frozen copy with no provenance is a number nobody trusts later.
     stackNote: "", bom: JSON.parse(JSON.stringify(p.bom || [])), standardsRefs: [],
     bomFrom: (p.bom || []).length ? p.id : "", bomCopiedOn: (p.bom || []).length ? today() : "",
-    steps: techniqueSteps(proc).map(stepFromTemplate),
+    ...stepsFromTechnique(proc),
     qualityChecks: [{ criterion: "mass", target: p.weightG || "", actual: "", pass: null }],
     weightTargetG: p.weightG || null, weightActualG: null, timeline: [], notes: "", retro: false,
     createdBy: myEmail(),

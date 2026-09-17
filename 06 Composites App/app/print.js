@@ -153,7 +153,7 @@ function woSheetHtml(wo, opts) {
 
   /* ---- steps: the centerpiece ---- */
   const stepRows = steps.map((s, si) => {
-    const isBlk = typeof isBlocker === "function" && isBlocker(s);
+    const isBlk = typeof isBlocker === "function" && isBlocker(s, wo);
     const signed = !blank && typeof isSigned === "function" && isSigned(s);
     const nm = signed ? pv(s.buyoff && s.buyoff.name) : "";
     const dt = signed ? pv(s.buyoff && s.buyoff.date) : "";
