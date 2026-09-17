@@ -83,9 +83,15 @@ function clearMoldsSelection() { view = { ...view, mode: "list", id: null, edit:
    and rendering can never disagree about what is next. Group headers are
    drawn by the body renderer and are not rows. */
 function moldStagePct(m) {
-  const i = MOLD_STAGE.indexOf(m.stage);
+  /* Retired is off the track, so it has no position on the bar. It reads full
+     rather than empty because the mold is done being a mold, and the mark
+     class beside it (st-na) is what says "retired" — this number only says how
+     far along it got. It used to fall out of the arithmetic as 125%, which the
+     bar clipped but the caption printed verbatim. */
+  if (m.stage === "Retired") return 100;
+  const i = MOLD_TRACK.indexOf(m.stage);
   if (i <= 0) return 0;
-  return Math.round((i / (MOLD_STAGE.length - 2)) * 100);   // Retired is off the track
+  return Math.round((i / (MOLD_TRACK.length - 1)) * 100);
 }
 function moldStageMarkClass(m) {
   const cls = shopStageClass(SHOP.molds, m);
@@ -101,16 +107,15 @@ function moldStageMarkClass(m) {
 
    "Retired" renders like the parts stepper's N/A step (dashed, off the track):
    it is how a mold leaves the progression, not a step along it, which is also
-   why moldStagePct measures over MOLD_STAGE.length - 2 above. */
+   why moldStagePct measures over MOLD_TRACK above. */
 function moldStageRow(m) {
   const cur = MOLD_STAGE.includes(m.stage) ? m.stage : MOLD_STAGE[0];
-  const track = MOLD_STAGE.slice(0, -1);              // Retired is off the track
-  const at = track.indexOf(cur);
+  const at = MOLD_TRACK.indexOf(cur);
   const step = v => {
     const isCur = v === cur;
     const retired = v === "Retired";
-    const i = track.indexOf(v);
-    const state = retired ? "st-na" : i === 0 ? "st-0" : i >= track.length - 1 ? "st-done" : "st-mid";
+    const i = MOLD_TRACK.indexOf(v);
+    const state = retired ? "st-na" : i === 0 ? "st-0" : i >= MOLD_TRACK.length - 1 ? "st-done" : "st-mid";
     const past = !isCur && !retired && at >= 0 && i < at;
     const cls = ["pstep", isCur ? "cur " + state : "", past ? "past" : "", retired ? "na" : ""].filter(Boolean).join(" ");
     return `<button type="button" class="${cls}"${isCur ? ' aria-current="step"' : ""}
@@ -134,9 +139,8 @@ function setMoldStage(id, val, ev) {
   const cur = MOLD_STAGE.includes(m.stage) ? m.stage : MOLD_STAGE[0];
   if (cur === val) return null;                       // clicking where you already are does nothing
   const name = m.name || m.id;
-  const track = MOLD_STAGE.slice(0, -1);
-  const from = track.indexOf(cur);                    // -1 when coming back from Retired
-  const to = track.indexOf(val);
+  const from = MOLD_TRACK.indexOf(cur);                    // -1 when coming back from Retired
+  const to = MOLD_TRACK.indexOf(val);
   const apply = () => applyMoldStage(m, val);
   if (val === "Retired") {
     confirmModal(`Retire ${name}? It comes off the rail for everyone (still findable under the Retired filter).`,
@@ -149,7 +153,7 @@ function setMoldStage(id, val, ev) {
     return "confirm-back";
   }
   if (from >= 0 && to - from > 1) {
-    const skipped = track.slice(from + 1, to).map(s => `“${s}”`);
+    const skipped = MOLD_TRACK.slice(from + 1, to).map(s => `“${s}”`);
     confirmModal(`Move ${name} straight to “${val}”? That marks ${skipped.join(" and ")} done without anyone recording ${skipped.length === 1 ? "it" : "them"}.`,
       apply, { ok: "Skip ahead", danger: false });
     return "confirm-jump";
@@ -354,13 +358,13 @@ function renderMoldsRail() {
    panel. Extracted rather than duplicated so the two can never disagree. */
 function moldsStageBar(liveMolds) {
   const live = liveMolds || (DB.molds || []).filter(m => m.stage !== "Retired");
-  const counts = MOLD_STAGE.slice(0, -1).map(s => live.filter(m => m.stage === s).length);
+  const counts = MOLD_TRACK.map(s => live.filter(m => m.stage === s).length);
   const tot = counts.reduce((a, b) => a + b, 0) || 1;
-  const segCls = i => i === 0 ? "st-0" : i >= MOLD_STAGE.length - 2 ? "st-done" : "st-mid";
+  const segCls = i => i === 0 ? "st-0" : i >= MOLD_TRACK.length - 1 ? "st-done" : "st-mid";
   return `<div class="stagebreak">
     <div class="sb-label">Molds</div>
     <div class="sb-bar">${counts.map((n, i) => n ? `<span class="sb-seg ${segCls(i)}" style="width:${(n / tot) * 100}%" title="${n} ${esc(MOLD_STAGE[i])}"></span>` : "").join("")}</div>
-    <div class="sb-nums tny">${counts.map((n, i) => n ? `<span class="${i === 0 ? "muted" : i >= MOLD_STAGE.length - 2 ? "done" : "mid"}">${n} ${esc(MOLD_STAGE[i].toLowerCase())}</span>` : "").filter(Boolean).join(" · ") || '<span class="muted">no live molds</span>'}</div>
+    <div class="sb-nums tny">${counts.map((n, i) => n ? `<span class="${i === 0 ? "muted" : i >= MOLD_TRACK.length - 1 ? "done" : "mid"}">${n} ${esc(MOLD_STAGE[i].toLowerCase())}</span>` : "").filter(Boolean).join(" · ") || '<span class="muted">no live molds</span>'}</div>
   </div>`;
 }
 

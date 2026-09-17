@@ -34,6 +34,16 @@
 /* ---------- the schema ---------- */
 
 const MOLD_STAGE = ["Designed", "Board glued", "Machined", "Sealed", "Ready for layup", "Retired"];
+/* The stages ON the track. "Retired" is how a mold leaves the progression, not
+   a step along it, so it is last in MOLD_STAGE and absent from here: the
+   stepper draws it dashed and off to the side, the stagebreak bar omits it,
+   and moldStagePct measures against MOLD_TRACK.length - 1.
+
+   It exists because that "minus one" used to be spelled `MOLD_STAGE.length - 2`
+   in three places, which is the same number only as long as exactly one stage
+   is off the track. Adding a stage in the middle is now a one-line edit above
+   and nothing else. */
+const MOLD_TRACK = MOLD_STAGE.slice(0, -1);
 const PNL_STAGE = ["Planned", "Laid up", "Cured", "Cut", "Tested"];
 const LOT_STATE = ["Sealed", "Open", "Empty", "Expired"];
 

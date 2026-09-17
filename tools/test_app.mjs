@@ -7681,6 +7681,24 @@ await t("planning a mold creates the mold record, linked, and lands on it", asyn
     "landing on the mold, the record the CS-003 sign-off hangs off");
 });
 
+await t("the stage bar measures against the track, and Retired is not 125% of it", async () => {
+  /* MOLD_TRACK, not MOLD_STAGE.length - 2. The old arithmetic gave a retired
+     mold index 5 over a denominator of 4, which the bar clipped but the caption
+     beside it printed as "125%". The point of the const is that the denominator
+     stays right when a stage is inserted in the middle. */
+  const pct = s => moldStagePct({ stage: s });
+  assert(pct("Designed") === 0, "the first stage is nothing done yet: " + pct("Designed"));
+  assert(pct(MOLD_TRACK[MOLD_TRACK.length - 1]) === 100, "the last on-track stage is done: " + pct(MOLD_TRACK[MOLD_TRACK.length - 1]));
+  assert(pct("Retired") === 100, "retired reads full, never over: " + pct("Retired"));
+  assert(MOLD_TRACK.length === MOLD_STAGE.length - 1 && !MOLD_TRACK.includes("Retired"),
+    "the track is every stage but Retired: " + MOLD_TRACK.join("|"));
+  MOLD_TRACK.forEach((st, i) => {
+    const v = pct(st);
+    assert(v >= 0 && v <= 100, `${st} is ${v}%, off the 0-100 scale`);
+    if (i) assert(v > pct(MOLD_TRACK[i - 1]), `${st} should be further along than ${MOLD_TRACK[i - 1]}`);
+  });
+});
+
 await t("the rail groups molds by stage, and the keyboard walks what is on screen", async () => {
   DB.molds = [
     { id: "MOLD-a", name: "alpha", stage: "Designed" },
