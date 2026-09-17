@@ -192,7 +192,11 @@ export const MOLDS = [
   { id: "MOLD-SN6-002", name: "UNDERTRAY LEFT SIDE POD OUTBOARD SKIN LOWER SECTION TWO",
     stage: "Machined", density: "60", uses: 0, rev: "A" },
   { id: "MOLD-SN6-003", name: "NOSECONE", stage: "Board glued", uses: 0 },
-  { id: "MOLD-SN6-004", stage: "Designed" },
+  /* The only mold the cut list will offer: it is at "Designed" and it owns
+     STK-SN6-001 below. Everything past Designed is deliberately held back, so
+     without this pair the cut list and the mark-cut confirm photograph as
+     empty states. It is otherwise the bare-minimum mold record on purpose. */
+  { id: "MOLD-SN6-004", stage: "Designed", currentPlanId: "STK-SN6-001" },
 ];
 export const ITEMS = [
   { id: "PNL-SN6-001", cls: "PNL", name: "CORE COMPARISON PANEL", stage: "Cured",
@@ -466,9 +470,11 @@ export const APPLY_FIXTURES = `
   ]));
   /* One stack plan and a board that fits it, so the cut list and the
      mark-cut confirm photograph as transactions instead of empty states
-     (no fixture carried a stackplan before). */
+     (no fixture carried a stackplan before). It hangs off MOLD-SN6-004
+     because a plan with no mold is an ORPHAN, and an orphan has no stage to
+     be "Designed" at, so the cut list holds it back. */
   window.onFbData("stackplans", (DB.stackplans || []).concat([
-    { id: "STK-SN6-001", name: "NOSECONE PLUG", density: 30,
+    { id: "STK-SN6-001", name: "NOSECONE PLUG", moldId: "MOLD-SN6-004", density: 30,
       layers: [
         { thickness: 50.8, blanks: [{ x0: 0, x1: 610, y0: 0, y1: 406 }] },
         { thickness: 50.8, blanks: [{ x0: 0, x1: 508, y0: 0, y1: 305 }] },

@@ -120,6 +120,9 @@ const VIEWS = [
     needs: "CAM notes" },
   { id: "dashboard", tab: "dashboard", what: "the dashboard, with populated records behind it",
     needs: "" },
+  /* Both cut states depend on MOLD-SN6-004 owning STK-SN6-001 in the fixture:
+     the cut list only offers molds still at "Designed", and only their current
+     plan, so an orphan plan photographs as an empty state. */
   { id: "cutlist", tab: "molds", what: "the cut list in cuts mode, with its mark-cut toolbar",
     open: `view = { ...view, mode: "cuts", cutSel: "" }; render()`,
     needs: "" },

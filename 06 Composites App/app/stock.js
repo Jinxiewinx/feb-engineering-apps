@@ -1155,6 +1155,64 @@ function delStackPlan(id) { moldsBulkDelete([id]); }
    This is the batch view, and batching is the whole point: caking one mold by
    eye is already decent, the win is packing several molds' blanks into one pool
    of board and spending the offcut pile first. */
+/* ---------- which plans the cut list may propose ----------
+   It used to propose ALL of them. `DB.stackplans` is every plan ever sliced, so
+   the pool held retired molds, last season's work, molds already machined, and
+   both halves of every re-plan. Nesting is a pool problem: one stale plan does
+   not just add a row, it changes which boards get opened for everything else,
+   and then somebody cuts a mold that was cut in March.
+
+   Eligibility is the mold's stage, and it is HARD at "Designed" on Simon's
+   call. The override is walking the mold back a stage, which asks first and
+   says it erases recorded work — a trail, rather than a checkbox nobody
+   remembers ticking.
+
+   Three ways to be held back, and the reason is returned rather than a boolean
+   so the screen can say which. A plan vanishing with no explanation reads as a
+   bug, and orphans in particular are exactly the records nobody is watching. */
+function cutHeldBackReason(p) {
+  if (!p) return "gone";
+  const mold = recById("molds", p.moldId);
+  if (!mold) return "no mold";
+  if (mold.stage !== "Designed") return "at " + String(mold.stage || "an unknown stage").toLowerCase();
+  /* A re-plan leaves BOTH plans on the mold and only one is real. Without this
+     the superseded one's blanks stay in the pool forever, and the mold gets cut
+     to a shape nobody chose. currentPlanFor falls back to newest-by-ts, so SN5
+     plans written before the pointer existed still resolve. */
+  const cur = typeof currentPlanFor === "function" ? currentPlanFor(mold) : null;
+  if (cur && cur.id !== p.id) return "superseded";
+  return "";
+}
+function cutEligiblePlans() { return (DB.stackplans || []).filter(p => !cutHeldBackReason(p)); }
+
+/* The set the screen is actually about. ONE function, because the list, the
+   commit modal and the print each used to write the same `filter` expression
+   out by hand, and a commit that consumes board the list never showed is the
+   expensive kind of drift. A cutSel left pointing at a plan that has since been
+   held back is ignored rather than obeyed, so the picker cannot strand you on
+   an empty screen. */
+function cutScopePlans() {
+  const eligible = cutEligiblePlans();
+  const sel = eligible.some(p => p.id === view.cutSel) ? view.cutSel : "";
+  return { eligible, sel, plans: sel ? eligible.filter(p => p.id === sel) : eligible };
+}
+
+/* What is being held back, and why, with a way out for the orphans. */
+function cutHeldBackCard() {
+  const held = (DB.stackplans || []).map(p => ({ p, why: cutHeldBackReason(p) })).filter(h => h.why);
+  if (!held.length) return "";
+  const orphans = held.filter(h => h.why === "no mold");
+  const byWhy = new Map();
+  held.forEach(h => byWhy.set(h.why, (byWhy.get(h.why) || 0) + 1));
+  const reasons = [...byWhy].sort((a, b) => b[1] - a[1]).map(([why, n]) => `${n} ${why}`).join(", ");
+  return `<div class="card"><div class="muted tny"><b>${held.length} plan${held.length === 1 ? "" : "s"} held back</b> — ${esc(reasons)}.
+    Only a mold still at Designed is cut from here; walk a mold back a stage to re-cut it.</div>
+    ${orphans.length ? `<div class="no-print addrow" style="margin-top:6px">${orphans.slice(0, 6).map(h =>
+      `<button class="sm" onclick="createMoldFromPlan('${esc(h.p.id)}')">Create a mold for ${esc(h.p.name || h.p.id)}</button>`).join(" ")}
+      ${orphans.length > 6 ? `<span class="muted tny">and ${orphans.length - 6} more on the Molds overview.</span>` : ""}</div>` : ""}
+  </div>`;
+}
+
 function blanksFromPlans(plans) {
   const out = [];
   plans.forEach(p => {
@@ -1220,24 +1278,27 @@ function boardIndexById() {
   return out;
 }
 function renderCutList() {
-  const plans = (DB.stackplans || []).filter(p => !view.cutSel || view.cutSel === p.id);
+  const { eligible, sel, plans } = cutScopePlans();
   const blanks = blanksFromPlans(plans);
   const boards = boardsForPacking();
   const res = blanks.length && boards.length ? packAll(blanks, boards, {}) : null;
   const back = (typeof cutsUndoBar === "function" ? cutsUndoBar() : "") +
     `<div class="toolbar no-print"><button class="ib" onclick="view={...view,mode:'list'};render()">${icon("chevronLeft", 16)} All stock</button>
     <select onchange="view.cutSel=this.value;render()">
-      <option value="">Every planned mold (${(DB.stackplans || []).length})</option>
-      ${(DB.stackplans || []).map(p => `<option value="${esc(p.id)}" ${view.cutSel === p.id ? "selected" : ""}>${esc(p.name)}</option>`).join("")}
+      <option value="">Every mold ready to cut (${eligible.length})</option>
+      ${eligible.map(p => `<option value="${esc(p.id)}" ${sel === p.id ? "selected" : ""}>${esc(p.name)}</option>`).join("")}
     </select>
     <button onclick="printCutSet()">${icon("print", 15)} Print cut list</button>
-    ${view.cutSel ? `<button class="ib" onclick="openDrawings('${esc(view.cutSel)}')">${icon("print", 15)} This mold's drawings</button>` : ""}
+    ${sel ? `<button class="ib" onclick="openDrawings('${esc(sel)}')">${icon("print", 15)} This mold's drawings</button>` : ""}
     ${res && res.plans.length ? `<button class="primary" style="margin-left:auto" onclick="openCommitCutsModal()">Mark these boards cut…</button>` : ""}</div>`;
-  if (!blanks.length) return back + `<div class="card">Nothing to cut yet — plan a mold first.</div>`;
+  if (!blanks.length) return back + cutHeldBackCard() +
+    `<div class="card">${(DB.stackplans || []).length
+      ? "Nothing to cut: every plan on file is held back for the reason above. A mold is cut from here only while it is still at Designed."
+      : "Nothing to cut yet — plan a mold first."}</div>`;
   if (!boards.length) return back + `<div class="card">No board stock recorded, so there is nothing to cut from. Add boards first.</div>`;
 
   const util = utilisation(res.plans);
-  return back + `
+  return back + cutHeldBackCard() + `
   <div class="card">
     <h2>Cut list</h2>
     <div class="muted">${blanks.length} blanks from ${plans.length} mold${plans.length > 1 ? "s" : ""} · ${res.boardsUsed} board${res.boardsUsed === 1 ? "" : "s"} opened · ${(util * 100).toFixed(0)}% of opened board used · kerf ${KERF_MM}mm</div>
@@ -1349,7 +1410,7 @@ let CUT_PROPOSAL = null;
 let CUTS_UNDO = null;
 
 function openCommitCutsModal() {
-  const plans = (DB.stackplans || []).filter(p => !view.cutSel || view.cutSel === p.id);
+  const plans = cutScopePlans().plans;
   const res = packAll(blanksFromPlans(plans), boardsForPacking(), {});
   if (!res.plans.length) { toast("Nothing to cut.", "info"); return; }
   CUT_PROPOSAL = res.plans.map(pl => ({
@@ -1445,6 +1506,7 @@ async function submitCommitCuts() {
     e.byLayer.get(r.layer).add(p.density);
   }
   undo.densityCut = [];
+  undo.moved = [];               // molds this commit walked forward, for the toast
   for (const [pid, e] of cutDens) {
     const plan = planById(pid);
     if (!plan) continue;
@@ -1456,15 +1518,37 @@ async function submitCommitCuts() {
     for (const [L, set] of e.byLayer) byLayer[L] = Math.max(...set);
     const mold = plan.moldId ? moldRecById(plan.moldId) : null;
     undo.densityCut.push({ planId: pid, prevPlan: plan.densityCut ?? null,
-      moldId: mold ? mold.id : null, prevMold: mold ? (mold.densityCutMax ?? null) : null });
+      moldId: mold ? mold.id : null, prevMold: mold ? (mold.densityCutMax ?? null) : null,
+      prevStage: mold ? (mold.stage ?? null) : null });
     plan.densityCut = { used, max, byLayer, ts: new Date().toISOString(), by: myEmail() };
     save("stackplans", plan, "densityCut");
-    if (mold) { mold.densityCutMax = String(max); save("molds", mold, "densityCutMax"); }
+    if (mold) {
+      mold.densityCutMax = String(max); save("molds", mold, "densityCutMax");
+      /* THE BOARDS ARE CUT, SO THE MOLD IS AT "Tooling cut". Without this the
+         cut list is an annoyance rather than a filter: only molds at Designed
+         are offered, so every commit would have to be followed by somebody
+         remembering to walk the mold forward by hand, and within a month
+         people would simply leave molds at Designed so the list kept working.
+
+         Only from Designed, and only forward. This is not the stepper, which
+         asks before skipping or reversing — it is a side effect of an action
+         the person already confirmed, so it moves exactly one step and the
+         undo bar puts it back. */
+      if (mold.stage === "Designed") {
+        mold.stage = "Tooling cut";
+        save("molds", mold, "stage");
+        undo.moved.push(mold.name || mold.id);
+      }
+    }
   }
 
   CUTS_UNDO = undo; CUT_PROPOSAL = null;
   closeModal();
-  toast(`${undo.nBoards} board${undo.nBoards === 1 ? "" : "s"} marked cut${undo.nOff ? ` — ${undo.nOff} offcut${undo.nOff === 1 ? "" : "s"} added` : ""}.`);
+  /* A batch cuts several molds at once, so the toast has to name the stage
+     move — it is a write on somebody else's record and it happened silently. */
+  const moved = undo.moved.length === 1 ? `${undo.moved[0]} moved to Tooling cut`
+    : undo.moved.length ? `${undo.moved.length} molds moved to Tooling cut` : "";
+  toast(`${undo.nBoards} board${undo.nBoards === 1 ? "" : "s"} marked cut${undo.nOff ? ` — ${undo.nOff} offcut${undo.nOff === 1 ? "" : "s"} added` : ""}${moved ? " — " + moved : ""}.`);
   view = { ...view, mode: "list" };
   render();
 }
@@ -1488,6 +1572,9 @@ function undoCuts() {
     if (mold) {
       if (d.prevMold == null) delete mold.densityCutMax; else mold.densityCutMax = d.prevMold;
       save("molds", mold, "densityCutMax");
+      /* And back to the stage it was at. A no-op unless the commit moved it,
+         because prevStage is stamped whether or not it did. */
+      if (d.prevStage != null && mold.stage !== d.prevStage) { mold.stage = d.prevStage; save("molds", mold, "stage"); }
     }
   });
   u.created.forEach(id => { del("stock", id); DB.stock = (DB.stock || []).filter(x => x.id !== id); });
@@ -1554,10 +1641,10 @@ function cutPack(mineId, plans) {
    with the list above it. The cover sheet states the scope, so a page found in
    a drawer next week still says what it was a plan for. */
 function printCutSet() {
-  const plans = (DB.stackplans || []).filter(p => !view.cutSel || view.cutSel === p.id);
+  const { sel, plans } = cutScopePlans();
   const cut = cutPack(null, plans);
   if (!cut) { toast("Nothing to cut yet — plan a mold, and record some board stock, first.", "info"); return; }
-  const one = view.cutSel ? (DB.stackplans || []).find(p => p.id === view.cutSel) : null;
+  const one = sel ? plans.find(p => p.id === sel) : null;
   const html = cutSetHtml(cut, {
     by: typeof myEmail === "function" ? myEmail() : "",
     printed: today(),

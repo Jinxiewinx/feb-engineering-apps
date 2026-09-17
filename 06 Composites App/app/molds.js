@@ -391,7 +391,10 @@ function moldsOverview() {
      summarised to one sentence — the full per-board diagrams stay behind the
      Cut list button. */
   let shortLine = "";
-  const blanks = (typeof blanksFromPlans === "function" && (DB.stackplans || []).length) ? blanksFromPlans(DB.stackplans) : [];
+  /* The same set the cut list packs, or the sentence promises board for molds
+     the cut list will not offer. */
+  const cutPlans = typeof cutEligiblePlans === "function" ? cutEligiblePlans() : (DB.stackplans || []);
+  const blanks = (typeof blanksFromPlans === "function" && cutPlans.length) ? blanksFromPlans(cutPlans) : [];
   if (blanks.length) {
     const res = packAll(blanks, boardsForPacking(), {});
     shortLine = res.shortfall.length

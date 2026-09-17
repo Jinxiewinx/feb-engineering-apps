@@ -581,6 +581,24 @@ document when it was tried; the Fusion Team page has Autodesk's own Open in
 Fusion button. The page side is `fusion.js`, which does nothing unless
 Fusion's bridge object is present.
 
+**The cut list only offers molds still at "Designed".** It used to pack every
+stack plan on file, forever — retired molds, last season's, molds already
+machined, and both halves of every re-plan. That is worse than a long list:
+nesting is a pool problem, so one stale plan changes which boards get opened
+for everything else, and then somebody cuts a mold that was cut in March. The
+screen says how many plans it held back and why, and offers any plan with no
+mold a mold, which is how an orphan gets back in.
+
+There is no "show everything" checkbox. To cut a mold again, walk its stage
+back, which asks first and says it erases recorded work. That leaves a trail
+where a checkbox would leave nothing.
+
+**Marking boards cut moves the mold to "Tooling cut"**, and the toast says so.
+Otherwise the filter would just be an irritation: every commit would need
+somebody to remember to advance the mold by hand, and within a month people
+would leave molds at Designed so the cut list kept working. The undo bar puts
+the stage back along with the board.
+
 ### The cut list, on paper
 
 Two documents, one renderer. The batch set is the whole thing; a mold's cut

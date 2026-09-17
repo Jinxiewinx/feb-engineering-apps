@@ -4659,7 +4659,10 @@ await t("a leftover is just a smaller board, and says where it came from", async
   assert(toMm(b.len) > 0 && toMm(b.wid) > 0, "it is measured like any other board");
 });
 await t("mark cut: stock decremented, offcuts written back in mm with provenance, undo restores the rack", async () => {
-  DB.stackplans = [{ id: "STK-CUT-1", name: "CUTTEST", density: 30, layers: [
+  /* The plan needs a mold at Designed or the cut list holds it back: an orphan
+     plan has no stage to be Designed at. cutEligiblePlans is what decides. */
+  DB.molds = [{ id: "MOLD-CUT-1", name: "CUTTEST", stage: "Designed", currentPlanId: "STK-CUT-1" }];
+  DB.stackplans = [{ id: "STK-CUT-1", name: "CUTTEST", moldId: "MOLD-CUT-1", density: 30, layers: [
     { thickness: 25.4, blanks: [{ x0: 0, x1: 762, y0: 0, y1: 508 }] }] }];
   DB.stock = [{ id: "BRD-CUT-1", label: "BIG", len: { value: 1220, unit: "mm" }, wid: { value: 610, unit: "mm" },
     thk: { value: 25.4, unit: "mm" }, qty: 1, density: 30, location: "BIN-X" }];
@@ -4677,9 +4680,18 @@ await t("mark cut: stock decremented, offcuts written back in mm with provenance
   assert(offs.every(o => /^cut \d{4}-\d{2}-\d{2} from BRD-CUT-1$/.test(o.origin)), "origin carries provenance: " + offs[0].origin);
   assert(offs.every(o => o.location === "BIN-X"), "an offcut inherits its parent's home");
   assert(view.mode === "list", "lands back on the rack, where the change is visible");
+
+  /* THE BOARDS ARE CUT, SO THE MOLD IS. Without this the Designed-only filter
+     is an annoyance: every commit would need somebody to remember to walk the
+     mold forward, and people would stop marking molds cut so the list kept
+     working. Named in the toast, because it is a write on another record. */
+  assert(moldRecById("MOLD-CUT-1").stage === "Tooling cut", "cutting the boards moves the mold: " + moldRecById("MOLD-CUT-1").stage);
+  assert(/moved to Tooling cut/.test(lastToast), "and the toast says so: " + lastToast);
+
   undoCuts();
   assert(boardById("BRD-CUT-1") && boardById("BRD-CUT-1").qty === 1, "undo re-creates the deleted board exactly");
   assert(!DB.stock.some(b => /offcut of/.test(b.label || "")), "and withdraws the offcuts it wrote");
+  assert(moldRecById("MOLD-CUT-1").stage === "Designed", "and puts the mold back where it was: " + moldRecById("MOLD-CUT-1").stage);
 });
 await t("a mold can be planned across a range of grades, and one grade still means one grade", async () => {
   /* Simon: pick a range you are happy with (say 20–40) and let the packer use
@@ -4715,6 +4727,69 @@ await t("a mold can be planned across a range of grades, and one grade still mea
   fillMold({ src: "box", box: [400, 300, 50.8], density: "45", densityMax: "30" });
   await submitMold();
   assert(/at least the minimum/.test(lastToast), "a backwards range is refused, not silently sorted: " + lastToast);
+});
+
+await t("the cut list cuts molds at Designed and nothing else, and says what it held back", () => {
+  /* It used to pack every plan in DB.stackplans, forever: retired molds, last
+     season's, molds already machined, and BOTH halves of every re-plan.
+     Nesting is a pool problem, so a stale plan does not just add a row — it
+     changes which boards get opened for everything else. */
+  const board = { id: "BRD-EL", len: { value: 2440, unit: "mm" }, wid: { value: 1220, unit: "mm" },
+    thk: { value: 25.4, unit: "mm" }, qty: 9, density: 30 };
+  const plan = (id, moldId) => ({ id, name: id, moldId, density: 30,
+    layers: [{ thickness: 25.4, blanks: [{ x0: 0, x1: 500, y0: 0, y1: 400 }] }] });
+  DB.stock = [board];
+  DB.molds = [
+    { id: "MOLD-EL-GO", name: "go", stage: "Designed", currentPlanId: "STK-EL-GO" },
+    { id: "MOLD-EL-RET", name: "retired", stage: "Retired", currentPlanId: "STK-EL-RET" },
+    { id: "MOLD-EL-MAC", name: "machined", stage: "Machined", currentPlanId: "STK-EL-MAC" },
+    { id: "MOLD-EL-CUT", name: "sawn", stage: "Tooling cut", currentPlanId: "STK-EL-CUT" },
+    { id: "MOLD-EL-RE", name: "replanned", stage: "Designed", currentPlanId: "STK-EL-NEW" },
+  ];
+  DB.stackplans = [
+    plan("STK-EL-GO", "MOLD-EL-GO"),
+    plan("STK-EL-RET", "MOLD-EL-RET"),
+    plan("STK-EL-MAC", "MOLD-EL-MAC"),
+    plan("STK-EL-CUT", "MOLD-EL-CUT"),
+    plan("STK-EL-NEW", "MOLD-EL-RE"),
+    plan("STK-EL-OLD", "MOLD-EL-RE"),      // superseded by the pointer
+    plan("STK-EL-ORPH", ""),               // no mold at all
+    plan("STK-EL-DANG", "MOLD-EL-GONE"),   // pointer at a mold that is gone
+  ];
+
+  const ids = cutEligiblePlans().map(p => p.id).sort();
+  assert(ids.join(",") === "STK-EL-GO,STK-EL-NEW",
+    "only the two molds still at Designed, and only their current plans: " + ids.join(","));
+
+  /* The reason is returned, not a boolean, because a plan that vanishes with no
+     explanation reads as a bug — and orphans are the records nobody watches. */
+  assert(cutHeldBackReason(planById("STK-EL-RET")) === "at retired", cutHeldBackReason(planById("STK-EL-RET")));
+  assert(cutHeldBackReason(planById("STK-EL-CUT")) === "at tooling cut", cutHeldBackReason(planById("STK-EL-CUT")));
+  assert(cutHeldBackReason(planById("STK-EL-OLD")) === "superseded", cutHeldBackReason(planById("STK-EL-OLD")));
+  assert(cutHeldBackReason(planById("STK-EL-ORPH")) === "no mold", cutHeldBackReason(planById("STK-EL-ORPH")));
+  assert(cutHeldBackReason(planById("STK-EL-DANG")) === "no mold",
+    "a pointer at a deleted mold is an orphan too, same as planIsOrphan says");
+
+  view = { ...view, tab: "molds", mode: "cuts", cutSel: "", id: null };
+  const h = renderCutList();
+  assert(/6 plans held back/.test(h), "the screen counts them: " + (h.match(/[^>]*held back[^<]*/) || ["(absent)"])[0]);
+  assert(/createMoldFromPlan\('STK-EL-ORPH'\)/.test(h), "and offers the orphans a mold, which is their way out");
+  assert(!/STK-EL-RET|STK-EL-OLD/.test(h), "a held-back plan is not packed: " + h.slice(0, 200));
+
+  // The picker offers only what can be cut, and a stale selection is ignored
+  // rather than obeyed — otherwise it strands you on an empty screen.
+  assert(/Every mold ready to cut \(2\)/.test(h), "the picker counts the eligible ones");
+  view = { ...view, cutSel: "STK-EL-RET" };
+  assert(cutScopePlans().sel === "", "a cutSel pointing at a held-back plan falls back to all");
+  assert(cutScopePlans().plans.length === 2, "and shows both eligible molds rather than nothing");
+
+  /* The list and the commit each used to write the filter out by hand. A
+     commit that consumes board the list never showed is the expensive drift. */
+  view = { ...view, cutSel: "" };
+  openCommitCutsModal();
+  const m = document.getElementById("modal").innerHTML;
+  assert(!/STK-EL-RET|STK-EL-OLD/.test(m), "the commit modal packs the same set the list did");
+  CUT_PROPOSAL = null; closeModal();
 });
 
 await t("the cut list says what feed rate to machine at, and the commit writes it down", async () => {
@@ -4798,7 +4873,8 @@ await t("the drawings carry the board grade on every sheet, and the title block 
 });
 
 await t("mark cut: an unticked unit stays, and a rack changed under the plan aborts whole", async () => {
-  DB.stackplans = [{ id: "STK-CUT-2", name: "TWO", density: 30, layers: [
+  DB.molds = [{ id: "MOLD-CUT-2", name: "TWO", stage: "Designed", currentPlanId: "STK-CUT-2" }];
+  DB.stackplans = [{ id: "STK-CUT-2", name: "TWO", moldId: "MOLD-CUT-2", density: 30, layers: [
     { thickness: 25.4, blanks: [{ x0: 0, x1: 762, y0: 0, y1: 508 }, { x0: 0, x1: 762, y0: 0, y1: 508 }] }] }];
   DB.stock = [{ id: "BRD-CUT-2", label: "PAIR", len: { value: 813, unit: "mm" }, wid: { value: 610, unit: "mm" },
     thk: { value: 25.4, unit: "mm" }, qty: 2, density: 30 }];
@@ -4810,6 +4886,14 @@ await t("mark cut: an unticked unit stays, and a rack changed under the plan abo
   await submitCommitCuts();
   const b = boardById("BRD-CUT-2");
   assert(b && b.qty === 1, "one unit cut, one still on the rack: " + JSON.stringify(b));
+
+  /* The commit walked the mold out of Designed, so its plan is now held back
+     and there is a second cut to set up. Walking it back is exactly what a
+     person short of blanks would do, and it is the only override there is. */
+  assert(moldRecById("MOLD-CUT-2").stage === "Tooling cut", "the commit moved the mold: " + moldRecById("MOLD-CUT-2").stage);
+  assert(!cutEligiblePlans().length, "and its plan left the cut list with it");
+  moldRecById("MOLD-CUT-2").stage = "Designed";
+
   // Stale snapshot: the rack thins between the modal opening and Mark cut.
   openCommitCutsModal();
   document.getElementById("cc-0").checked = true;
@@ -10478,8 +10562,8 @@ await t("the batch printable goes through the house print system, and says what 
   assert(typeof printCutSet === "function" && typeof cutPack === "function", "and replaced");
   assert(/mountSheet/.test(printCutSet.toString()),
     "through mountSheet, so it gets the preview, the grayscale proof and Save");
-  assert(/view\.cutSel/.test(printCutSet.toString()),
-    "honouring the on-screen filter, so the button cannot disagree with the list above it");
+  assert(/cutScopePlans/.test(printCutSet.toString()),
+    "through the one set the list and the commit also use, so the button cannot disagree with the screen");
 });
 
 /* ---------- the boot splash ----------
