@@ -38,6 +38,13 @@ to learn**, not about API compatibility:
 
 ---
 
+## v5.1.0 — 2026-09-17
+
+- What's New for v5.1.0: the Reports tab
+- Reports reads like a page somebody wants, and its board prints like a sheet
+
+---
+
 ## v5.0.0 — 2026-09-17
 
 - Releases stop waiting on a note nobody sends
