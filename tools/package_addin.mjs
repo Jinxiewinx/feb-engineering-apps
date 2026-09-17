@@ -145,7 +145,9 @@ if (sh("git", ["status", "--porcelain"])) die("Working tree is dirty. Commit fir
 if (sh("git", ["tag", "-l", tag])) die(`Tag ${tag} already exists. Bump the version in the manifest and the .py.`);
 
 let prev = "";
-try { prev = sh("git", ["describe", "--tags", "--abbrev=0", "--match", "addin-v*"]); } catch { /* first one */ }
+try {
+  prev = sh("git", ["describe", "--tags", "--abbrev=0", "--match", "addin-v*"], { stdio: ["pipe", "pipe", "ignore"] });
+} catch { /* no earlier addin-v tag: this is the first release */ }
 const range = prev ? `${prev}..HEAD` : "HEAD";
 const subjects = sh("git", ["log", "--format=- %s", range, "--", "10 Fusion Add-in"]) || "- First packaged release.";
 

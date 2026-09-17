@@ -32,9 +32,19 @@ member signs in as themselves and their own name stamps the mold. The
 manifest version and `ADDIN_VERSION` in the .py must match or the packager
 refuses to build.
 
-**OPEN: nobody has run the Windows installer**, or the add-in itself beyond
-one member's 2026-09-07 install. Needs a Windows member. `INSTALL.txt` says
-so in as many words until then.
+Released as
+[addin-v1.1.0](https://github.com/Jinxiewinx/feb-engineering-apps/releases/tag/addin-v1.1.0).
+Verified by installing from the downloaded zip, over an existing install and
+onto a clean one, with the quarantine flag applied by hand: 13 quarantined
+files in, 0 left in AddIns.
+
+**OPEN, two things nobody has done.** (1) The Windows installer has never
+been run, nor the add-in itself beyond one member's 2026-09-07 install; needs
+a Windows member. (2) Nobody has DOUBLE-CLICKED the Mac installer from a
+browser download. Launching it from a shell bypasses Gatekeeper entirely, so
+the "Open Anyway" walkthrough in `INSTALL.txt` is written from Apple's
+behaviour and not from watching it happen. Both are labelled untested in
+`INSTALL.txt`.
 
 **v4.8.0 (2026-09-16): Select… on every list.** Shared picker in core.js
 (`view.pick = {key, ids}`, `pickBar/pickBox/pickClick/bulkDeleteRecords`,
