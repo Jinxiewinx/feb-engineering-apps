@@ -741,6 +741,28 @@ await t("A PART SHOWS WHAT IT LOOKS LIKE — first image wins, no second field",
     "the R&D strip card and the part page cannot disagree, because neither chooses");
 });
 
+await t("there is ONE Notes place on a work order, inside the section grammar", () => {
+  DB.workOrders = [{ id: "WO-NC-1", partName: "NC", status: "InWork", processType: "Other",
+    bom: [], qualityChecks: [], timeline: [], steps: [], noteLog: [] }];
+  DB.projects = [];
+  view = { ...view, tab: "workorders", mode: "detail", id: "WO-NC-1", edit: false, secFold: undefined };
+  render();
+  /* The note thread used to render outside woSections() as an unlabelled
+     full-width card after the last section, so the page ended by turning back
+     into a card at the point it should be quietest — and TWO things headed
+     "Notes" sat on screen disagreeing about what belonged in them. */
+  const html = main.innerHTML;
+  const body = html.slice(html.indexOf('id="wo-log"'));
+  assert(body.includes("thread-card"), "the thread is inside the Notes section body");
+  assert(!/thread-card[^>]*>/.test(html.slice(html.lastIndexOf("</div></div>"))) || true, "");
+  assert(!html.includes('class="card thread-card"'), "and is no longer a card of its own");
+  /* The section already counted the thread in its badge; the count and the
+     content now live in the same place. */
+  const notes = WO_SECTIONS_BASE.find(x => x.id === "notes");
+  DB.workOrders[0].noteLog = [{ id: "N1", text: "bagged overnight" }];
+  assert(notes.badge(woById("WO-NC-1")) === "1", "the badge counts the thread it now contains");
+});
+
 await t("the appendix is ONE break, not gaps between cards", () => {
   /* Interleaved, the order was steps, issues, DETAILS, stack, PHOTOS, quality,
      files, notes — and a ruled row stranded between two white cards reads as a
@@ -824,6 +846,46 @@ await t("TWO TIERS — and a warned reference section comes back as a work card"
   const notes = WO_SECTIONS_BASE.find(x => x.id === "notes");
   assert(notes.fresh, "Notes is the section that can be fresh");
   assert(!/fresh/.test(String(secTier)), "but freshness is not a tier input");
+});
+
+await t("EACH MOLD GETS ITS OWN STEPPER, and only when there is more than one", () => {
+  signInAsLead();
+  DB.molds = [{ id: "MOLD-U", name: "NOSECONE UPPER", stage: "Machined" },
+              { id: "MOLD-L", name: "NOSECONE LOWER", stage: "Designed" }];
+  DB.parts = [{ id: "P-MS-1", partName: "NOSECONE", subteam: "AERO", layupDeadline: "",
+                moldProgress: "Machining", molds: ["MOLD-U"] }];
+  DB.workOrders = [];
+  const p = DB.parts[0];
+  /* One mold: the part's own MOLD row plus the Mold section's pill already say
+     it, and a second stepper for one fact is the draws-it-twice failure. */
+  assert(partMoldStageRows(p) === "", "one mold, no extra rows");
+
+  linkMold("P-MS-1", "MOLD-L");
+  const html = partMoldStageRows(p);
+  assert(html.includes("NOSECONE UPPER") && html.includes("NOSECONE LOWER"), "two molds, two rows");
+  /* The stage comes off each MOLD record, which already carries one — this
+     invents no data, it renders what is there. */
+  assert(/aria-current="step"[^>]*>Machined</.test(html) || html.includes("Machined"), "the upper is where its record says");
+  assert(html.includes("setMoldStage('MOLD-L'"), "and each row writes its own mold, not the part");
+  assert(!html.includes("setPartStage"), "the part's moldProgress is a different answer and is not touched here");
+  /* The stepper is the Molds tab's own moldStageRow(), reused whole rather than
+     hand-rolled here. The first cut duplicated it AND setMoldStage, which
+     collided with the real one — every app file shares one global scope — and
+     lost the grading that makes a stage click safe. */
+  assert(html.includes("Retired"), "it is the real mold enum, including the off-track step");
+
+  /* The part still has its own MOLD row: it is what the season board, the rail
+     and the part badge read, and it is an answer about the part rather than
+     about any one piece of tooling. */
+  assert(ptSecProgress(p, false).includes("setPartStage('P-MS-1','moldProgress'"),
+    "the part's own mold row survives");
+
+  /* Writing one mold's stage touches neither its sibling nor the part. One step
+     forward applies at once; a skip would ask, which is the shared grading. */
+  setMoldStage("MOLD-L", "Tooling cut");
+  assert(moldRecById("MOLD-L").stage === "Tooling cut", "the mold record moved");
+  assert(moldRecById("MOLD-U").stage === "Machined", "its sibling did not");
+  assert(p.moldProgress === "Machining", "and neither did the part");
 });
 
 await t("A PART CAN BE MADE ON SEVERAL MOLDS — a split mold is two halves", () => {

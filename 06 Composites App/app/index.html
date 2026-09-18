@@ -833,7 +833,9 @@
      distinguished only by --line, which is ~1.3:1 against a card in BOTH
      themes — so in dark mode consecutive comments had no visible boundary at
      all. That was survivable at one line each and is not at document length. */
-  .thread-card { margin-top: 14px; }
+  /* Inside the Notes section now, not a card after the last one. The rule
+     separates it from the free-text note above it rather than from a card. */
+  .thread-card { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
   .comment {
     display: block; background: var(--surface-2);
     border: 1px solid var(--line); border-radius: var(--r-md);
@@ -2006,6 +2008,22 @@
   .pstage .ps-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
   .pstage .ps-steps { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
   .pstage .ps-cap { grid-column: 2; margin-top: -2px; }
+  /* ---- a stepper per mold ----
+     Set apart from the part's own three rows, because these write a different
+     RECORD: the part says where the part is, each of these says where one piece
+     of tooling is. The stepper itself is moldStageRow() from the Molds tab,
+     reused whole. Only rendered when a part has two or more molds. */
+  .ps-split { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-2); }
+  .ps-split-lab { font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--faint); margin-bottom: 4px; }
+  .pstage-wrap + .pstage-wrap { margin-top: 10px; }
+  /* A mold name is long — "UNDERTRAY LEFT SIDE POD OUTBOARD SKIN LOWER SECTION
+     TWO" is real — so it gets its own line above the stepper rather than a
+     narrow label column that would ellipsise it to nothing. */
+  .ps-moldname { font-size: 12.5px; font-weight: 700; margin-bottom: 2px; }
+  .ps-moldname .link { font: inherit; text-align: left; }
+  .ps-split .pstage { margin-top: 0 !important; }
+  .ps-moldwarn { margin-top: 3px; }
   .pstep { font: inherit; font-size: 12.5px; font-weight: 600; line-height: 1.1; min-height: 30px; padding: 6px 13px;
     display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
     /* Wraps rather than overflows: in a narrow split pane "Mold CAD/CAM Done"

@@ -1559,7 +1559,6 @@ function renderWODetail() {
         five plies, or that a quality check failed, without going there. */""}
   ${secNav("wosec", woSections(E), wo, "woJump", "Jump to a section of this work order")}
   ${woSections(E).map(s => woSectionCard(s, wo, E)).join("")}
-  ${woThreadCard(wo)}
   </section>`;
 }
 
@@ -2457,6 +2456,16 @@ function woSecNotes(wo, E) {
       empty: "Anything about this job that isn't a step.",
       upload: name => `projects/${wo.id}/${Date.now()}-${name}`,
     })}
+    ${/* The signed note thread and its composer. These used to render OUTSIDE
+          woSections() as an unlabelled full-width card after the last section —
+          no header, no fold, no jump-bar entry and no tier — so every work order
+          ended by turning back into a card at exactly the point the page should
+          be quietest, and the screen carried two things headed "Notes" saying
+          different things about what belongs in them.
+
+          This section already counted the thread in its badge, so the count and
+          the content finally live in the same place. */""}
+    ${woThreadCard(wo)}
     `;
 }
 
@@ -2465,8 +2474,11 @@ function woSecNotes(wo, E) {
    paragraph in a form; framed like the ticket itself it reads as the
    document it is meant to be. Order unchanged (oldest first, composer
    after), only the frame moved. */
+/* Rendered INSIDE the Notes section (woSecNotes), not as a card of its own.
+   The name is kept because print.css and the tests know `.thread-card`, but it
+   is a block now — the section around it supplies the card. */
 function woThreadCard(wo) {
-  return `<div class="card thread-card">
+  return `<div class="thread-card">
     ${threadHtml("workOrders", wo.id, (wo.noteLog || []), { noun: "Note", empty: "No notes yet. Anything worth telling the next person goes here." })}
     ${(() => {
       rteSetUpload(name => `projects/${wo.id}/${Date.now()}-${name}`);

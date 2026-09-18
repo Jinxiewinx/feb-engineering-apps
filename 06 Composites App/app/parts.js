@@ -16,7 +16,12 @@
    so openRecord("parts", id) from a chip, ⌘K search, the Dashboard, People or
    the Timeline lands here correctly with no special case. */
 
-const SUBTEAMS = ["AERO", "BERGO", "AUTO-MECH"];
+/* The three build subteams, plus the two answers that are not a build subteam:
+   TESTING for a coupon or a rig that belongs to nobody's assembly, and N/A for
+   a record where the question does not apply. Both sort last, after the real
+   ones, because they are the exceptions. One list — Parts, the Season
+   blueprint, the tickets modal and both rail filters all read it. */
+const SUBTEAMS = ["AERO", "BERGO", "AUTO-MECH", "TESTING", "N/A"];
 /* The part-level vocabulary: frozen SCREAMING CASE from the SN5 spreadsheet,
    living on real part records and mirrored into the tracker's column whitelist.
    NOT renamed when techniques became lead-editable — that would be a data
@@ -1206,7 +1211,45 @@ function postPartComment(id) {
    come for; the reference sections fold. */
 
 function ptSecProgress(p, E) {
-  return `<div class="pstages">${PART_STAGES.map(st => partStageRow(p, st)).join("")}</div>`;
+  return `<div class="pstages">${PART_STAGES.map(st => partStageRow(p, st)).join("")}${partMoldStageRows(p)}</div>`;
+}
+
+/* ---------- a stepper per mold ----------
+   One MOLD row cannot say where a split mold is. Four halves, and the part's
+   single `moldProgress` is at best the least-advanced of them — so "Machining"
+   tells you nothing about which piece is still on the Shopbot.
+
+   Each mold already carries its own `stage` (SHOP.molds, the MOLD_STAGE enum),
+   so this invents no data: it renders the stage that is already on the record,
+   as the same stepper the part's own rows use, and writes it back.
+
+   ONLY when there are two or more. With one mold the part row plus the Mold
+   section's pill already say it, and a second stepper for one fact is the
+   "draws every fact twice" failure. The part's own MOLD row stays either way —
+   it is what the season board, the rail and the part badge read, and it is the
+   answer for the part rather than for any one piece of tooling. */
+function partMoldStageRows(p) {
+  const molds = partMolds(p);
+  if (molds.length < 2) return "";
+  const partStage = p.moldProgress || STAGE_MOLD[0];
+  return `<div class="ps-split">
+    <div class="ps-split-lab">Each mold, on its own record</div>
+    ${molds.map(m => {
+      const agrees = moldStagesAgree(partStage, MOLD_STAGE.includes(m.stage) ? m.stage : MOLD_STAGE[0]);
+      /* moldStageRow() IS the Molds tab's stepper, reused whole. The first cut
+         hand-rolled a second one here and a second setMoldStage() with it —
+         which silently collided with the real one (every app file shares one
+         global scope) and lost the grading that makes a stage click safe:
+         forward by one applies, skipping ahead asks and names the steps it
+         would mark done, going back asks because it erases recorded work, and
+         Retired asks because it takes the mold off the rail. */
+      return `<div class="pstage-wrap">
+        <div class="ps-moldname"><button class="link" onclick="openRecord('molds','${esc(m.id)}')">${esc(m.name || m.id)}</button></div>
+        ${moldStageRow(m)}
+        ${agrees ? "" : `<div class="tny warn ps-moldwarn">This part says “${esc(partStage)}”, which does not line up with “${esc(m.stage || MOLD_STAGE[0])}”.</div>`}
+      </div>`;
+    }).join("")}
+  </div>`;
 }
 
 function ptSecDetails(p, E) {
