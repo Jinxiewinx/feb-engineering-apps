@@ -1577,7 +1577,7 @@ function renderPartDetail() {
   return `
   <section class="mddetail" aria-label="Part detail" data-lbgroup="parts:${esc(p.id)}">
     <div class="toolbar no-print">
-      <button class="ib" onclick="clearPartSelection()">${icon("chevronLeft", 16)} All parts</button>
+      <button class="ib" onclick="${view.tab === "rnd" ? "rdShowStrip()" : "clearPartSelection()"}">${icon("chevronLeft", 16)} ${view.tab === "rnd" ? "Back to the bench" : "All parts"}</button>
       <button class="primary ib" onclick="view.edit=!view.edit;render()">${icon(E ? "check" : "edit", 15)} ${E ? "Done" : "Edit"}</button>
       ${labelBtn("parts", p.id)}
       ${E ? `<button onclick="archivePart('${esc(p.id)}',${isArchived(p) ? "false" : "true"})">${isArchived(p) ? "Restore" : "Archive"}</button>` : ""}
@@ -1636,9 +1636,20 @@ function movePartSelection(dir) {
   if (id) selectPart(id);
 }
 // Returns the action name it took (or null), so a test can drive it directly.
+/* The Parts keymap serves two screens now: this tab, and the R&D bench, which
+   renders this file's real part detail below its strip. Everything that needs
+   the PARTS RAIL is refused over there, because there is no rail — a horizontal
+   snap strip is not a list you walk with j/k. Everything about the OPEN RECORD
+   (e, 1/2/3) and the page's own search box works in both. */
+function partsKeyScope() {
+  if (view.tab === "parts") return "parts";
+  if (view.tab === "rnd" && view.rdPane === "part" && view.mode === "detail") return "rnd";
+  return null;
+}
+
 function partsKeydown(e) {
   if (!e || e.metaKey || e.ctrlKey || e.altKey) return null;
-  if (typeof view === "undefined" || view.tab !== "parts" || view.mode === "roster") return null;
+  if (typeof view === "undefined" || !partsKeyScope() || view.mode === "roster") return null;
   const modal = document.getElementById("modal");
   if (modal && typeof modal.className === "string" && modal.className.includes("open")) return null;
   const t = e.target || {};
@@ -1651,10 +1662,11 @@ function partsKeydown(e) {
     if (k === "Escape" && t.blur) { t.blur(); return "blur"; }
     return null;
   }
-  if (k === "ArrowDown" || k === "j") { if (e.preventDefault) e.preventDefault(); movePartSelection(1); return "next"; }
-  if (k === "ArrowUp" || k === "k") { if (e.preventDefault) e.preventDefault(); movePartSelection(-1); return "prev"; }
-  if (k === "Enter" && view.mode !== "detail") { const id = partNeighborId(1); if (id) { selectPart(id); return "open"; } return null; }
-  if (k === "Escape" && view.mode === "detail") { clearPartSelection(); return "clear"; }
+  const rail = partsKeyScope() === "parts";
+  if (k === "ArrowDown" || k === "j") { if (!rail) return null; if (e.preventDefault) e.preventDefault(); movePartSelection(1); return "next"; }
+  if (k === "ArrowUp" || k === "k") { if (!rail) return null; if (e.preventDefault) e.preventDefault(); movePartSelection(-1); return "prev"; }
+  if (k === "Enter" && view.mode !== "detail") { if (!rail) return null; const id = partNeighborId(1); if (id) { selectPart(id); return "open"; } return null; }
+  if (k === "Escape" && view.mode === "detail") { if (rail) clearPartSelection(); else rdShowStrip(); return "clear"; }
   if (k === "/") {
     if (e.preventDefault) e.preventDefault();
     const s = document.getElementById("searchbox");

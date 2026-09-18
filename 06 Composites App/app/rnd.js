@@ -816,6 +816,16 @@ function rdPartsHtml() {
    chosen, so a toggle would close a study and reopen it in the same frame —
    and "close this study" is not a thing anybody needs, because the way out of
    a study is another study. */
+/* The way out of a part or a run in the bench: back to the study you were
+   working, which is where the strip already has you. Bound to Escape by both
+   keymaps and to the "Back to the bench" press in the two detail toolbars. */
+function rdShowStrip() {
+  const s = rdStudy(view.rdStudy) || rdDefaultStudy();
+  view = { ...view, rdPane: "study", rdStudy: s ? s.id : null,
+           id: s ? s.id : null, mode: s ? "detail" : "list", edit: false };
+  render(); syncUrl();
+}
+
 function rdOpen(id) {
   if (!rdStudy(id)) return;
   view = { ...view, rdStudy: id, rdPane: "study", mode: "detail", id, edit: false };

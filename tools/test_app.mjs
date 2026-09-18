@@ -3823,6 +3823,41 @@ await t("setTab keeps the bench's study and still does not reset onlyRnd", () =>
     "and coming back to the bench returns you to the study you were working");
 });
 
+await t("THE THREE view.tab GATES admit the bench and refuse its rail keys", () => {
+  rdFixture();
+  DB.workOrders = [{ id: "WO-SN6-900", partId: "P-SN6-960", partName: "VG TRIAL",
+                     status: "In work", steps: [], rev: "A" }];
+  /* A part open in the bench. The OPEN RECORD's keys work — that is the whole
+     point of rendering the real detail rather than a summary card. The RAIL's
+     keys do not, because there is no rail over here to walk. */
+  view = { ...view, tab: "rnd", mode: "detail", id: "P-SN6-960", rdPane: "part", edit: false };
+  assert(partsKeyScope() === "rnd", "the bench is in scope for the Parts keymap");
+  assert(partsKeydown({ key: "e", target: {} }) === "edit", "e toggles Edit on the open part");
+  assert(partsKeydown({ key: "j", target: {} }) === null, "j walks a rail that is not there");
+  assert(partsKeydown({ key: "k", target: {} }) === null, "nor k");
+
+  // A run open in the bench, same deal, plus the traveler's section jumps.
+  view = { ...view, mode: "detail", id: "WO-SN6-900", rdPane: "run", edit: false };
+  assert(woKeyScope() === "rnd", "and for the Work Orders keymap");
+  assert(woKeydown({ key: "e", target: {} }) === "edit", "e toggles Edit on the open run");
+  assert(woKeydown({ key: "j", target: {} }) === null, "j is refused here too");
+
+  /* And neither keymap may answer for a STUDY — the sheet is not a part and not
+     a run, and its cells own every keystroke they get. */
+  view = { ...view, mode: "detail", id: "RDS-SN6-001", rdPane: "study" };
+  assert(partsKeyScope() === null && woKeyScope() === null,
+    "an open study belongs to neither keymap");
+  assert(partsKeydown({ key: "e", target: {} }) === null, "so e does nothing to the sheet");
+});
+
+await t("⌘P on a run in the bench mounts the traveler, not a screenshot", () => {
+  const src = readFileSync(join(root, "print.js"), "utf8");
+  assert(/view\.tab === "rnd" && view\.rdPane === "run"/.test(src),
+    "autoMountForPrint admits the bench's run pane");
+  assert(/if \(typeof view === "undefined"\) return;/.test(src),
+    "and still guards an undefined view BEFORE reading off it");
+});
+
 await t("inheritance resolves at read time, and clearing a cell restores it", () => {
   rdFixture();
   const own = DB.rnd.find(o => o.id === "CPN-SN6-002");

@@ -504,7 +504,11 @@ function printBlankWO(process) {
    mount it for them; anything else prints the screen view as it always did. */
 function autoMountForPrint() {
   if (document.body.classList.contains("sheet")) return;
-  if (typeof view === "undefined" || view.tab !== "workorders" || view.mode !== "detail" || !view.id) return;
+  if (typeof view === "undefined") return;
+  /* The R&D bench renders the real traveler, so ⌘P has to mount it there too.
+     A traveler you cannot print is a screenshot. */
+  const onRun = view.tab === "workorders" || (view.tab === "rnd" && view.rdPane === "run");
+  if (!onRun || view.mode !== "detail" || !view.id) return;
   const wo = typeof woById === "function" ? woById(view.id) : null;
   if (wo) mountSheet(fitSheetHtml(wo, {}), false);
 }

@@ -1474,7 +1474,7 @@ function renderWODetail() {
   return `
   <section class="mddetail" aria-label="Work order detail" data-lbgroup="workOrders:${esc(wo.id)}">
   <div class="toolbar no-print">
-    <button class="ib" onclick="clearWOSelection()">${icon("chevronLeft", 16)} All work orders</button>
+    <button class="ib" onclick="${view.tab === "rnd" ? "rdShowStrip()" : "clearWOSelection()"}">${icon("chevronLeft", 16)} ${view.tab === "rnd" ? "Back to the bench" : "All work orders"}</button>
     <button class="primary" onclick="view.edit=!view.edit;render()">${E ? "Done editing" : "Edit"}</button>
     <button onclick="openPrintPreview('${wo.id}')">Print</button>
     ${labelBtn("workOrders", wo.id)}
@@ -3348,9 +3348,18 @@ function woNeighborId(dir) {
 }
 function moveWOSelection(dir) { const id = woNeighborId(dir); if (id) selectWO(id); }
 
+/* Same two-screen story as partsKeyScope(): this tab, plus the R&D bench, which
+   renders this file's real traveler. The rail keys are refused over there
+   because the bench has no rail; the open record's keys (e, 1-8) are not. */
+function woKeyScope() {
+  if (view.tab === "workorders") return "workorders";
+  if (view.tab === "rnd" && view.rdPane === "run" && view.mode === "detail") return "rnd";
+  return null;
+}
+
 function woKeydown(e) {
   if (!e || e.metaKey || e.ctrlKey || e.altKey) return null;
-  if (typeof view === "undefined" || view.tab !== "workorders") return null;
+  if (typeof view === "undefined" || !woKeyScope()) return null;
   const modal = document.getElementById("modal");
   if (modal && typeof modal.className === "string" && modal.className.includes("open")) return null;
   const t = e.target || {};
@@ -3363,10 +3372,11 @@ function woKeydown(e) {
     if (k === "Escape" && t.blur) { t.blur(); return "blur"; }
     return null;
   }
-  if (k === "ArrowDown" || k === "j") { if (e.preventDefault) e.preventDefault(); moveWOSelection(1); return "next"; }
-  if (k === "ArrowUp" || k === "k") { if (e.preventDefault) e.preventDefault(); moveWOSelection(-1); return "prev"; }
-  if (k === "Enter" && view.mode !== "detail") { const id = woNeighborId(1); if (id) { selectWO(id); return "open"; } return null; }
-  if (k === "Escape" && view.mode === "detail") { clearWOSelection(); return "clear"; }
+  const rail = woKeyScope() === "workorders";
+  if (k === "ArrowDown" || k === "j") { if (!rail) return null; if (e.preventDefault) e.preventDefault(); moveWOSelection(1); return "next"; }
+  if (k === "ArrowUp" || k === "k") { if (!rail) return null; if (e.preventDefault) e.preventDefault(); moveWOSelection(-1); return "prev"; }
+  if (k === "Enter" && view.mode !== "detail") { if (!rail) return null; const id = woNeighborId(1); if (id) { selectWO(id); return "open"; } return null; }
+  if (k === "Escape" && view.mode === "detail") { if (rail) clearWOSelection(); else rdShowStrip(); return "clear"; }
   if (k === "/") {
     if (e.preventDefault) e.preventDefault();
     const s = document.getElementById("searchbox");
