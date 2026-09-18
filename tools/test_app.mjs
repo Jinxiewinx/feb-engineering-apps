@@ -3902,6 +3902,74 @@ await t("Escape and Back-to-the-bench return you to the study you were working",
   fb.roster = { name: "Simon", role: "lead" };   // put back what the later suites assume
 });
 
+await t("the masthead's create doors leave you on the bench, in edit mode", async () => {
+  rdFixture();
+  fb.roster = { name: "Nico", role: "member" };
+  DB.workOrders = [];
+  view = { ...view, tab: "rnd", mode: "list", id: null, rdStudy: null, q: "", rdFilter: "" };
+  render();
+  assert(main.innerHTML.includes("newPart(true)") && main.innerHTML.includes("newWO(true)"),
+    "an R&D part and an R&D run can both be started from the programme masthead");
+  /* Mirrored, not moved — the Parts and Work Orders toolbars keep their own
+     R&D doors, because a part started from the Parts rail is the same part. */
+  view = { ...view, tab: "parts", mode: "list", id: null, onlyRnd: true, q: "" };
+  render();
+  assert(main.innerHTML.includes("newPart(true)"), "Parts keeps its own R&D door");
+
+  /* newPart(rnd) sets mode/id/edit and calls render() without touching
+     view.tab, which is what makes the mirroring free. */
+  view = { ...view, tab: "rnd", mode: "list", id: null, rdStudy: null, rdFilter: "", q: "" };
+  const before = (DB.parts || []).length;
+  await newPart(true);
+  assert((DB.parts || []).length === before + 1, "a part is made");
+  assert(view.tab === "rnd", "and you are still on the bench, not thrown to Parts");
+  assert(view.rdPane === "part" && isRnd(partById(view.id)),
+    "with the new R&D part open in the bench");
+  assert(view.edit === true, "in edit mode, because a blank part needs a name");
+  fb.roster = { name: "Simon", role: "lead" };
+});
+
+await t("the masthead searches both kinds, and its counts count what EXISTS", () => {
+  rdFixture();
+  fb.roster = { name: "Nico", role: "member" };
+  DB.workOrders = [{ id: "WO-SN6-900", partId: "P-SN6-960", partName: "VG TRIAL", steps: [] }];
+  DB.rnd.push({ id: "RDS-SN6-010", cls: "RDS", name: "Bond shear", status: "Active",
+                parent: "", labelPrefix: "B", labelNext: 1, cols: [], defaults: {}, createdBy: "a@b.c" });
+  view = { ...view, tab: "rnd", mode: "detail", id: "RDS-SN6-001", rdStudy: "RDS-SN6-001", q: "", rdFilter: "" };
+  render();
+  /* Counts of what exists, not of what survived the filter — the law the Parts
+     rail chips already follow. A chip that counts itself tells you nothing. */
+  assert(main.innerHTML.includes("1 R&amp;D part"), "one R&D part exists and the masthead says so");
+  assert(main.innerHTML.includes("1 run"), "and one run");
+
+  view.q = "VG"; render();
+  assert(main.innerHTML.includes("rdc-P-SN6-960"), "searching finds the part");
+  assert(!main.innerHTML.includes("rdc-RDS-SN6-010"), "and drops the study that does not match");
+  /* The OPEN study is always re-added, filter or no filter: the strip may not
+     stop describing the thing the bench below it is showing. */
+  assert(main.innerHTML.includes("rdc-RDS-SN6-001"),
+    "but never the open one, or the strip stops describing the bench under it");
+  assert(main.innerHTML.includes("1 R&amp;D part"),
+    "while the counts stay counts of what exists, not of what is left on screen");
+
+  view.q = "Cure"; render();
+  assert(main.innerHTML.includes("rdc-RDS-SN6-001"), "searching finds the study by name");
+
+  /* A study whose BATCH matches must stay, or searching for a batch hides the
+     card that holds it and the batch becomes unreachable. */
+  view.q = "Batch A"; render();
+  assert(main.innerHTML.includes("rdc-RDS-SN6-001"),
+    "a study whose batch matches stays, so the batch is still reachable");
+
+  /* The status chips are STUDY statuses. A part has stages, not Active/Done/
+     Parked, so a status filter must not silently empty the parts half of the
+     strip and look like the parts had gone. */
+  view.q = ""; view.rdFilter = "Done"; render();
+  assert(main.innerHTML.includes("1 R&amp;D part"), "the count is unmoved");
+  view.rdFilter = ""; render();
+  fb.roster = { name: "Simon", role: "lead" };
+});
+
 await t("THE THREE view.tab GATES admit the bench and refuse its rail keys", () => {
   rdFixture();
   DB.workOrders = [{ id: "WO-SN6-900", partId: "P-SN6-960", partName: "VG TRIAL",

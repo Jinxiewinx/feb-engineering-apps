@@ -731,7 +731,16 @@ function rdMastheadHtml() {
       ${chip("Done", "Done", rdRoots().filter(r => !isArchived(r) && r.status === "Done").length)}
       ${chip("Parked", "Parked", rdRoots().filter(r => !isArchived(r) && r.status === "Parked").length)}
       ${arch ? chip("Archived", "arch", arch) : ""}
+      ${/* The three doors into the programme, MIRRORED here rather than moved:
+            Parts and Work Orders keep their own R&D buttons, because a part
+            started from the Parts rail is the same part. newPart(true) and
+            newWO(true) both end by setting view.mode/id/edit and calling
+            render() WITHOUT touching view.tab — so pressed from here they leave
+            you on this tab with the new record open in the bench, in edit mode,
+            and neither function needed a line changed. */""}
       <button class="primary ib"${gx("Sign in to add a study.")} onclick="rdNewStudyModal()">${icon("plus", 15)} Study</button>
+      <button class="ib"${gx("Sign in to add a part.")} onclick="newPart(true)">${icon("plus", 15)} Part</button>
+      <button class="ib"${gx("Sign in to add a run.")} onclick="newWO(true)">${icon("plus", 15)} Run</button>
     </div>
     <input id="searchbox" class="rdmast-q" type="search" placeholder="Search studies and parts…"
       aria-label="Search the programme" value="${esc(view.q || "")}"
