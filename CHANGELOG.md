@@ -38,6 +38,12 @@ to learn**, not about API compatibility:
 
 ---
 
+## v5.2.1 — 2026-09-18
+
+- The whole card is the press, runs get their own foot, and the cards carry facts
+
+---
+
 ## v5.2.0 — 2026-09-18
 
 - Finish the programme strip: coverage, the Season jump, and the docs

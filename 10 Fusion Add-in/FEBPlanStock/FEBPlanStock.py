@@ -56,7 +56,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import febframe
 
-ADDIN_VERSION = "5.2.0"   # the APP version; tools/release.mjs writes this, never edit it by hand
+ADDIN_VERSION = "5.2.1"   # the APP version; tools/release.mjs writes this, never edit it by hand
 APP_URL = "https://feb-composites.web.app/?fusion=1#/molds"
 PALETTE_ID = "feb_plan_stock_palette"
 CMD_ID = "FEB_PlanStock"
