@@ -3759,6 +3759,70 @@ await t("rnd.js never tests `retro` — the alarm for the whole feature", () => 
   assert(!/\bretro\b/.test(code), "no retro test survives in rnd.js outside its comments");
 });
 
+/* ---------- the router (view.id is the bench's selection) ----------
+   renderRnd() used to CONSUME view.id. It routes it now, because the bench
+   renders the REAL part and run detail and those read view.id from inline
+   handlers at click time. These four tests are the fence around that. */
+
+await t("a coupon deep link still opens the sheet it sits in", () => {
+  rdFixture();
+  view = { ...view, tab: "rnd", mode: "detail", id: "CPN-SN6-002", rdStudy: null };
+  render();
+  assert(view.rdStudy === "RDS-SN6-001", "a coupon resolves to its study");
+  assert(view.id === "RDS-SN6-001", "and the id becomes the study's, so the URL names the sheet");
+  assert(view.rdPane === "study", "the pane is the sheet");
+});
+
+await t("a study deep link survives the render instead of being consumed", () => {
+  rdFixture();
+  view = { ...view, tab: "rnd", mode: "detail", id: "RDS-SN6-002", rdStudy: null };
+  render();
+  assert(view.id === "RDS-SN6-002",
+    "the id stays put — consuming it is what made a part unrenderable on this tab");
+  assert(view.rdStudy === "RDS-SN6-002" && view.rdPane === "study", "and it is the open study");
+  /* Keeping the id is what lets syncUrl() put #/RDS-SN6-002 in the bar; the
+     hash itself is asserted in test_route.mjs, which has a real browser. */
+  assert(tabForId("RDS-SN6-002") === "rnd", "and a study's id routes back to this tab");
+});
+
+await t("an R&D part's deep link belongs to PARTS, and that is the decision", () => {
+  rdFixture();
+  /* The bench renders an R&D part, but it does not own it. An id is printed on
+     a label, pasted into Slack and handed to q.html, so it must mean one thing,
+     and P- means the Parts tab. Reloading #/P-SN6-960 therefore lands on Parts
+     with the part open — one sidebar press from the bench. Written down as a
+     test so the next person reads a decision instead of finding a bug. */
+  assert(tabForId("P-SN6-960") === "parts", "an R&D part's id still routes to Parts");
+  assert(tabForId("WO-SN6-001") === "workorders", "and a run's to Work Orders");
+});
+
+await t("with nothing selected the bench still lands in a study", () => {
+  rdFixture();
+  view = { ...view, tab: "rnd", mode: "list", id: null, rdStudy: null };
+  render();
+  assert(view.rdPane === "study" && !!rdStudy(view.rdStudy),
+    "opening the tab cold lands in the most recent live Active study");
+  assert(view.id === view.rdStudy, "and view.id is that study, not a leftover");
+});
+
+await t("setTab keeps the bench's study and still does not reset onlyRnd", () => {
+  rdFixture();
+  view = { ...view, tab: "rnd", mode: "detail", id: "RDS-SN6-002", rdStudy: "RDS-SN6-002" };
+  render();
+  setTab("parts");
+  /* season.js jumps to the Parts R&D list by setting onlyRnd and THEN calling
+     setTab — which works only because setTab resets woOnlyRnd and not onlyRnd.
+     That asymmetry looks like an oversight and is the hand-off. Pinned here so
+     tidying the reset list fails loudly instead of silently. */
+  view.onlyRnd = true;
+  setTab("parts");
+  assert(view.onlyRnd === true, "setTab must NOT reset onlyRnd — season.js:458 hands off through it");
+  setTab("rnd");
+  render();
+  assert(view.rdStudy === "RDS-SN6-002",
+    "and coming back to the bench returns you to the study you were working");
+});
+
 await t("inheritance resolves at read time, and clearing a cell restores it", () => {
   rdFixture();
   const own = DB.rnd.find(o => o.id === "CPN-SN6-002");

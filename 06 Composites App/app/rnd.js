@@ -241,8 +241,8 @@ async function rdCreateStudy(parentId) {
   (DB.rnd = DB.rnd || []).push(s);
   save("rnd", s);
   closeModal();
-  view.rdStudy = id;
-  render();
+  view = { ...view, rdStudy: id, rdPane: "study", mode: "detail", id, edit: false };
+  render(); syncUrl();
   if (n0 > 0) await rdAddRows(n0);
 }
 
@@ -338,7 +338,7 @@ async function rdDelStudy(id) {
     const gone = [s, ...rows];
     RD_UNDO = { kind: "delete", recs: JSON.parse(JSON.stringify(gone)), n: rows.length, name: s.name || s.id };
     DB.rnd = rdAll().filter(o => o.id !== id && o.study !== id);
-    if (view.rdStudy === id) view.rdStudy = null;
+    if (view.rdStudy === id) { view.rdStudy = null; if (view.id === id) view.id = null; }
     render();
     try {
       /* delMany over one-at-a-time: a study and ten coupons is eleven round
@@ -598,28 +598,65 @@ function rdPhotoStrip(rec, E) {
 
 /* ---------- the tab ---------- */
 
-function renderRnd() {
-  /* Arriving by deep link, ⌘K hit or scanned label. tabForId routes both
-     prefixes here and leaves the id in view.id; a coupon opens the study that
-     holds it, because a coupon on its own is a row with no context and the
-     thing you actually wanted to see is the sheet it sits in.
+/* THE ROUTER, and the one function in this file that has to be read carefully.
 
-     Consumed rather than merely read: leaving view.id set would re-select the
-     study every render and make the index unclickable. */
-  if (view.id) {
-    const rec = rdAll().find(o => o.id === view.id);
-    if (rec) { view.rdStudy = rec.cls === "CPN" ? rec.study : rec.id; view.id = null; }
+   renderRnd() used to CONSUME view.id — map a deep link to view.rdStudy and
+   null the field, because leaving it set re-selected the study every render.
+   It cannot any more. view.id IS the bench's selection now, and the real part
+   and run detail renderers read it: not once, here, but from dozens of inline
+   on* handlers at CLICK time, minutes after this function returned. There is
+   no window in which to set it and put it back.
+
+   So this normalises instead of consuming. It decides which pane the id
+   belongs to, and only ever rewrites view.id when what is in it is a coupon
+   (a row, with no pane of its own) or is gone.
+
+   view.rdPane is DERIVED here on every render and is never the source of
+   truth. That is also what makes navBack() work for nothing: navHere() records
+   {tab, mode, id}, and restoring that triple rebuilds the pane from the id. */
+function rdNormalize() {
+  const id = String(view.id || "");
+  const pfx = (id.match(/^([A-Z]+)-/) || [])[1];
+
+  /* A coupon opens the sheet it sits in — a coupon on its own is a row with no
+     context, and the thing you actually wanted was the study. This is the one
+     piece of the old consumption worth keeping. */
+  if (pfx === "CPN") {
+    const c = rdAll().find(o => o.id === id && o.cls === "CPN");
+    const s = c && rdStudy(c.study);
+    if (s) { view.rdStudy = s.id; view.id = s.id; view.rdPane = "study"; view.mode = "detail"; return; }
   }
+  if (pfx === "RDS" && rdStudy(id)) {
+    view.rdStudy = id; view.rdPane = "study"; view.mode = "detail"; return;
+  }
+  /* mode is tested for a part and a run and NOT for a study, and that asymmetry
+     is load-bearing: clearPartSelection() sets mode:"list" and leaves view.id
+     alone, so the bench's "All parts" press has to read as "back to the strip".
+     It does, for free, by falling through these two lines to the tail. */
+  if (view.mode === "detail" && pfx === "P" && typeof partById === "function" && partById(id)) { view.rdPane = "part"; return; }
+  if (view.mode === "detail" && pfx === "WO" && typeof woById === "function" && woById(id)) { view.rdPane = "run"; return; }
+
   /* Land in something. Opening the tab with an index and no sheet is a screen
      asking you to pick before it shows you anything, and the most recently
-     worked-on study is nearly always the one you came for. The index stays a
-     press away, and pressing the open study closes it. */
-  let sel = rdStudy(view.rdStudy);
-  if (!sel) {
-    const live = rdStudies().filter(s => !isArchived(s));
-    const first = live.filter(s => s.status === "Active")[0] || live[0] || rdStudies()[0];
-    if (first) { view.rdStudy = first.id; sel = first; }
-  }
+     worked-on study is nearly always the one you came for. */
+  const s = rdStudy(view.rdStudy) || rdDefaultStudy();
+  view.rdPane = "study";
+  view.rdStudy = s ? s.id : null;
+  view.id = s ? s.id : null;
+  view.mode = s ? "detail" : "list";
+}
+
+/* Extracted from renderRnd so the router and the strip agree on "where do I
+   land": the most recently worked-on live Active study, then any live one,
+   then anything at all. */
+function rdDefaultStudy() {
+  const live = rdStudies().filter(s => !isArchived(s));
+  return live.filter(s => s.status === "Active")[0] || live[0] || rdStudies()[0] || null;
+}
+
+function renderRnd() {
+  rdNormalize();
+  const sel = rdStudy(view.rdStudy);
   /* The empty state is for an EMPTY BENCH, not for "nothing selected" — it says
      "no studies yet", which would be a lie the moment one existed. */
   return `${rdToolbar(sel)}${rdUndoBar()}${rdIndexHtml(sel)}${sel ? rdSheetHtml(sel) : rdEmptyHtml()}`;
@@ -721,6 +758,7 @@ function rdBulkDeleteStudies(ids) {
       const ids = new Set(gone.map(o => o.id));
       DB.rnd = rdAll().filter(o => !ids.has(o.id));
       if (ids.has(view.rdStudy)) view.rdStudy = null;
+      if (ids.has(view.id)) view.id = null;
     },
   });
 }
@@ -780,8 +818,8 @@ function rdPartsHtml() {
    a study is another study. */
 function rdOpen(id) {
   if (!rdStudy(id)) return;
-  view.rdStudy = id;
-  render();
+  view = { ...view, rdStudy: id, rdPane: "study", mode: "detail", id, edit: false };
+  render(); syncUrl();
 }
 
 /* ---------- the sheet ---------- */
