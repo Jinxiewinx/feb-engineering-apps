@@ -38,6 +38,23 @@ to learn**, not about API compatibility:
 
 ---
 
+## v5.2.0 — 2026-09-18
+
+- Finish the programme strip: coverage, the Season jump, and the docs
+- The programme's three create doors, and the tests for search and counts
+- R&D parts and their runs join the strip, and the bench renders the real detail
+- The masthead and the programme strip replace the R&D index
+- CSS for the programme strip and the bench, not yet referenced
+- The three view.tab gates admit the R&D bench
+
+<details><summary>1 more</summary>
+
+- R&D router: view.id becomes the bench's selection instead of being consumed
+
+</details>
+
+---
+
 ## v5.1.0 — 2026-09-17
 
 - What's New for v5.1.0: the Reports tab
