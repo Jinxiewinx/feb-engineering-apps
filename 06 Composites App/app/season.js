@@ -455,7 +455,7 @@ function renderSeason() {
           it and offers the way to it reads as a decision. */""}
     <span class="muted tny" style="margin-left:auto">${rows.length} of ${all.length} parts${
       named < all.length ? ` · ${all.length - named} unnamed` : ""}${
-      rnd ? ` · <button class="link sm" title="R&D parts are real work, kept off the blueprint. Show them on Parts." onclick="view={...view,onlyRnd:true};setTab('parts')">${rnd} R&amp;D</button>` : ""}</span>
+      rnd ? ` · <button class="link sm" title="R&D parts are real work, kept off the blueprint. Show them on the R&D programme." onclick="setTab('rnd')">${rnd} R&amp;D</button>` : ""}</span>
   </div>
   <div class="filters no-print">
     <input id="searchbox" placeholder="search name / id…" value="${esc(view.seasonQ || "")}" oninput="view.seasonQ=this.value;render()">

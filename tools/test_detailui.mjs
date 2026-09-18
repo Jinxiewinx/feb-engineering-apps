@@ -114,6 +114,16 @@ const VIEWS = [
     open: `openRecord("lots", (DB.lots[0] || {}).id)` },
   { id: "lot-detail-edit", tab: "lots", what: "the same lot in edit mode",
     open: `openRecord("lots", (DB.lots[0] || {}).id); view.edit = true; render()` },
+  /* The R&D bench. This tab had no coverage here at all, and it is now the one
+     screen in the app with TWO sticky bands (the strip, and the jump bar of the
+     detail it renders underneath) plus a horizontal scroller. 320 is where that
+     stack either works or overlaps. */
+  { id: "rnd-strip", tab: "rnd", what: "the programme strip: studies, R&D parts and their runs",
+    open: `setTab("rnd")`, needs: "VG TRIAL PANEL" },
+  { id: "rnd-part", tab: "rnd", what: "an R&D part open in the bench, full detail under the strip",
+    open: `setTab("rnd"); rdOpenPart((DB.parts.filter(isRnd)[0] || {}).id)`, needs: "VG TRIAL PANEL" },
+  { id: "rnd-run", tab: "rnd", what: "an R&D run open in the bench, traveler and all",
+    open: `setTab("rnd"); rdOpenRun((DB.workOrders.filter(woIsRnd)[0] || {}).id)` },
   { id: "weekplan", tab: "weekplan", what: "the weekly plan with documents linked",
     needs: "CAM notes" },
   { id: "documents", tab: "documents", what: "the documents shelf, with pinned links",

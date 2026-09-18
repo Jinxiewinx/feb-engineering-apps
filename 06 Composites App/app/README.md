@@ -188,8 +188,8 @@ What changes:
 
 - **It is not on the Season tab.** That tab is the list of things that have to be
   on the car. The count in its toolbar says how many are being held back — `12
-  of 20 parts · 8 R&D` — and the R&D number takes you to them, so nothing ever
-  just disappears.
+  of 20 parts · 8 R&D` — and the R&D number takes you to [the R&D
+  bench](#the-rd-bench), where that work lives, so nothing ever just disappears.
 - **It is not in the Google Sheet mirror**, for the same reason.
 - **Your Parts and Work Orders lists are the season list or the R&D list, never
   both.** The **R&D** chip above each one swaps between them: off, you see the
@@ -198,6 +198,10 @@ What changes:
   says how many it is holding back rather than just holding them back. Open a
   record from the dashboard or from search and it stays on the rail while you
   are looking at it, whichever list is showing.
+- **All of it is also on the R&D tab**, next to the coupon studies, which is
+  where you go to see the programme rather than to filter one list. Same
+  records: the chips above are for filtering while you are already on Parts or
+  Work Orders.
 - **The dashboard, the deadline lists and Reports never hide it.** That is
   deliberate and it is what makes the rails safe to filter: a trial that is late
   or blocked still finds you on the landing page.
@@ -1374,9 +1378,38 @@ lots print on the traveler too, unflattering source and all.
 
 ## The R&D bench
 
-**Archive a study** from the toolbar when it is open (batches under it follow).
-It leaves the index and the "N archived studies" checkbox at the foot of the
-index brings it back, with Restore in the same place.
+**Everything R&D is on this one tab.** Across the top is the **programme
+strip**: a card for every study, and a card for every R&D part with its runs as
+chips inside it. Underneath is the **bench**, showing whichever card you pressed
+— a study's coupon grid, or a part's full page, or a run's whole traveler. The
+strip stays stuck to the top while you work, so the rest of the programme is one
+glance up and the next thing is one press away.
+
+It is the same records, not copies. An R&D part still lives on the Parts tab and
+still has its **R&D** chip there; a run still lives on Work Orders. This tab
+renders them so that "what is R&D working on" is one screen instead of three.
+Open one here and you get the real thing — every blocker, every cure hold, every
+buy-off, and a wider page than the Parts tab gives it. **Back to the bench**
+returns you to the study you were in, which the strip never lost.
+
+**The masthead counts what exists** — studies, coupons, R&D parts, runs — and
+those numbers do not change when you search or filter, because a count of what
+is left on screen tells you nothing you cannot already see. **+ Study**,
+**+ Part** and **+ Run** all start something without leaving the tab. The
+**Active / Done / Parked** chips are study statuses; a part has stages instead,
+so the chips leave the part cards alone rather than appearing to delete them.
+
+**Search covers both kinds**, by name or id. A study whose *batch* matches stays
+on the strip, so searching for a batch never hides the card holding it.
+
+**Archive a study** from its sheet when it is open (batches under it follow).
+It leaves the strip, and the **Archived** chip in the masthead brings it back,
+with Restore in the same place.
+
+**A part that moves into the season** says so. Press **Move to season** on a
+part open in the bench and its card leaves the strip — the bench then tells you
+where it went and gives you the door, rather than going blank, which would look
+like you had lost it.
 
 **For coupons, not for parts.** Ten flat panels at two cure temperatures, six
 infusion trials, a box of offcuts you want to keep track of. There is no work

@@ -364,7 +364,8 @@ Since 2026-08-28 there are two, and the shared word is all they have in common.
 | | `parts.rnd === true` | the `rnd` collection |
 |---|---|---|
 | what it is | a real part | a coupon |
-| lives on | the Parts tab | the R&D tab |
+| owned by | the Parts tab | the R&D tab |
+| also rendered on | the R&D tab's strip and bench | — |
 | ids | `P-SN6-###` | `RDS-SN6-###`, `CPN-SN6-###` |
 | has a traveler | **yes** — blockers, cure holds, evidence gates, buy-offs | **no** |
 | read by `inSeason()` | yes | **never** |
@@ -378,20 +379,54 @@ signature, no cure hold, and a grid you type into like a spreadsheet.
 **Somebody will try to unify them.** It looks like duplication and it is not.
 Three lines hold it:
 
-- `rnd.js` never tests `retro`, and never gains an `isRnd()` call. A test reads
-  the source and asserts the first of those.
+- `rnd.js` never tests `retro`. A test reads the source and asserts it.
 - Nothing in the `rnd` collection is ever read by `inSeason()`, `seasonRows()`,
   `trackerRow()`, `partIndexRows()` or `woIndexRows()`.
 - A coupon never gets an `rnd` boolean. It is not a part that is flagged; it is
   a different record.
 
-The R&D tab lists the R&D **parts** underneath its studies, read-only, every row
-leaving for the Parts tab. That is deliberate — the tab is meant to be the one
-place you look — and it is also the most likely place for the two to get fused,
-so the section carries a sentence saying which is which.
+**`rnd.js` does call `isRnd()` now, and that is not the fusion.** Until
+2026-09-18 it did not, and this list said so. The programme strip changed that:
+the tab renders the R&D parts and their runs beside the studies, so it has to
+ask which parts those are. Reading the flag is not the danger — the danger is a
+`retro` gate growing an `rnd` test, or a coupon growing an `rnd` boolean, and
+both of those are still asserted above. The two record kinds stay apart in the
+data; they simply share a screen.
 
-**The `onlyRnd` chip on the Parts rail is unchanged and stays.** It is how you
-filter while you are already over there, and none of the five hide sites moved.
+### The R&D tab is a lens, not a home (2026-09-18)
+
+The tab shows all three kinds at once — a card per study, a card per R&D part
+with its runs as chips inside it — over a full-width bench that renders the
+**real** `renderPartDetail()` / `renderWODetail()`, not a summary of them. A
+traveler without its blockers and buy-offs would be a screenshot of the work.
+
+But it does not own those records:
+
+- **A part's id still routes to Parts.** `ID_TO_COLL` is keyed on prefix, an id
+  is printed on a label and pasted into Slack, and it must mean one thing.
+  Reloading `#/P-SN6-101` lands on the Parts tab, one sidebar press from the
+  bench. There is a test saying so, because it looks like a bug and is not.
+- **`view.rdPane` is derived from `view.id` on every render and never
+  persisted.** That is what makes `navBack()` work for nothing: `navHere()`
+  records `{tab, mode, id}` and restoring the triple rebuilds the pane.
+- **`renderRnd()` routes `view.id` rather than consuming it.** It used to null
+  the field every render. It cannot: the detail renderers read `view.id` from
+  dozens of inline handlers at *click* time, so a consumed id means a page that
+  paints once and then answers every press about the wrong record.
+
+**The `onlyRnd` / `woOnlyRnd` chips on the Parts and Work Orders rails are
+unchanged and stay.** They are how you filter while you are already over there,
+and none of the five hide sites moved. Consolidation meant the R&D tab became
+the one place you *look*, not the only place the records *exist* — removing them
+would have cost the lineage bar, the scan landing, ⌘K, the dashboard, Season's
+jump and the run-start header, and bought nothing.
+
+**Two sticky bands.** The bench is the only screen in the app with two: the
+strip, and the `.secnav` of the detail it renders. `.rdbench .secnav` and
+`.rdbench .undobar` stack under the strip, and `--rd-strip-h` is declared on
+`#main` rather than on `.rdstrip` — the bench is the strip's *sibling*, so a
+property set on the strip never reaches it and every rule that subtracts the
+strip's height would silently use its fallback.
 
 ### One cliff, written down before it is hit
 
@@ -404,6 +439,12 @@ not.
 tab a per-study query.** Nothing else in the app reads the collection, so it is
 a contained change — but only while that stays true, which is the real reason it
 is written here rather than discovered later.
+
+The programme strip is the obvious thing to break that. It does not: every
+reader of `DB.rnd` it added is inside `rnd.js` and inside the tab's own render.
+Keep it that way. A dashboard line or a ⌘K entry over the collection would be a
+whole-collection scan, and the day the per-study query is wanted it could no
+longer be had without unpicking them first.
 
 ## The public surfaces
 

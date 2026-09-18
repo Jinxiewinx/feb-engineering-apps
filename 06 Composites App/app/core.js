@@ -32,10 +32,11 @@ var APP_VERSION = "5.1.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "The Reports tab reads top to bottom now: this week's board, then what has been deleted, then the layup techniques. The CSV exports and the one-off repairs moved to the bottom, under their own heading.",
-  "Recently deleted is open on the page instead of behind a button. You come to that tab because something is missing.",
-  "Layup techniques moved off the Work Orders toolbar onto Reports, where anyone can read the checklists and see which steps need which training. Leads still edit them.",
-  "Print status board is a proper printed sheet, like the travelers and the mold drawings: masthead, ruled sections, tables that carry their headers onto a second page, and six ruled lines at the bottom to write the meeting's decisions on.",
+  "The R&D tab is the whole programme now. Studies, R&D parts and their runs are all on one strip across the top — you can see everything without opening anything.",
+  "Press a card and it opens underneath, full width. A part or a run gives you the real page: every step, every blocker, every cure hold, on a wider screen than the Parts tab gives it.",
+  "The strip stays put while you work, so the next thing is one press away and you never lose your place. Escape, or Back to the bench, returns you to the study you were in.",
+  "Start a study, an R&D part or a run from the top of the tab. Search finds studies and parts together; the counts always say what actually exists.",
+  "On a phone the strip is a swipe: one card at a time, and the coupon grid underneath is unchanged.",
 ];
 
 

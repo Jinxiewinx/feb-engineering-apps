@@ -321,7 +321,6 @@
      one visibly comes back to life. */
   .pill.archived { background: var(--fill); border-color: var(--line); color: var(--muted); border-style: dashed; }
   .pitem.isarch { opacity: .62; }
-  .rdindex .rdarch { display: block; padding: 6px 4px 2px; }
   /* "This purchase is on somebody else's line." Purple, the app's existing
      colour for a record that is real but sits outside the normal flow — the
      pill carries the budget's name, so it reads as a label rather than as a
@@ -2267,7 +2266,10 @@
   .rdcard-loose { border-top-style: dashed; }
   .rdcard-loose p { margin: 0; }
   .rdcard-hd { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
-  .rdkind { font-family: var(--font-display); font-size: 10.5px; font-weight: 700;
+  /* 11px, not the 10.5 the other uppercase micro-labels use: this one is a
+     word on a card rather than a count inside a chip, so test_appui measures it
+     as body text and holds it to the floor. */
+  .rdkind { font-family: var(--font-display); font-size: 11px; font-weight: 700;
     letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
     white-space: nowrap; }
   .rdcard-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis;
@@ -2333,7 +2335,6 @@
     .rdchip { min-height: 40px; }
     .rdcard .rd-open { min-height: 40px; }
   }
-  .rdindex { padding: 6px 8px; }
   .rdsheet { margin-top: 10px; }
   .rdempty { max-width: 62ch; }
   .rdempty p { color: var(--muted); font-size: 13.5px; }
@@ -2354,18 +2355,19 @@
   /* `all: unset` throws away the tap-target floor, the same trap .lc-open and
      .sl-open carry a note about. */
   @media (pointer: coarse) { .rd-open { min-height: 40px; } .rdrow { min-height: 44px; } }
-  /* A fold built from a class and a real button, NOT <details> — a closed
-     <details> skips painting and vanishes from print, which is why the house
-     rule forbids it and why .wosec.folded looks the way it does. */
-  .rdparts { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; }
+  /* The shared fold header for Materials, Columns and Compare on a study's
+     sheet. Named .rdparts-hd because the R&D-parts fold is where it started;
+     that fold is gone (the parts are cards on the strip now) and the three
+     sheet folds still use it, so the name outlived its origin. Built from a
+     class and a real button, NOT <details> — a closed <details> skips painting
+     and vanishes from print, which is why the house rule forbids it and why
+     .wosec.folded looks the way it does. */
   .rdparts-hd { all: unset; cursor: pointer; display: flex; align-items: center; gap: 6px;
     padding: 4px 8px; font-size: 12px; letter-spacing: .04em;
     text-transform: uppercase; color: var(--muted); }
   .rdparts-hd:hover { color: var(--ink); }
   .rdparts-hd:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
   @media (pointer: coarse) { .rdparts-hd { min-height: 40px; } }
-  .rdparts.folded .rdparts-body { display: none; }
-  .rdparts p { margin: 2px 8px 6px; }
   .rdhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
   .rdhead h2 { margin: 0; }
   .rdq { margin: 4px 0 10px; font-size: 13.5px; color: var(--muted); }

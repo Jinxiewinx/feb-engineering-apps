@@ -144,10 +144,19 @@ production yet.
 - **A project's sheet rolls its batches up** (`rdSheetRows`).
 - **Do not fuse the two meanings of "R&D".** `parts.rnd` is a real part with
   a traveler; the `rnd` collection is coupons with none. A test fails if
-  `rnd.js` ever tests `retro`.
+  `rnd.js` ever tests `retro`. `rnd.js` DOES call `isRnd()` since the strip
+  (2026-09-18) and that is not the fusion — see DESIGN-NOTES.
 - Not shipped and declined for now, so do not build speculatively: UI to set
   a study's `defaults`, std-dev/CV in Compare, computed stress, linking a
-  study to a part or mold.
+  study to a part or mold (re-examined 2026-09-18 when the strip put them on
+  one screen, and declined again: adjacency is what the link was for).
+
+**The programme strip (2026-09-18).** The mechanics are in DESIGN-NOTES under
+"The R&D tab is a lens, not a home". The two decisions that would otherwise get
+reversed by someone who thinks they found a bug: **an R&D part's id still routes
+to the Parts tab** on reload, and **the `onlyRnd`/`woOnlyRnd` rail chips stay**.
+Also: keep every new reader of `DB.rnd` inside `rnd.js`, or the per-study-query
+escape hatch for the ~2000 cliff above stops being available.
 - **If `DB.rnd` passes ~2,000, take `rnd` out of `COLLECTIONS`** and give the
   tab a per-study query; it is the twelfth whole-collection listener.
 

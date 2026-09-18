@@ -3447,21 +3447,27 @@ await t("the Season tab's R&D count is a working way to GET to them", () => {
      once already: the button carried the old flag name after a rename, so it
      landed on Parts showing the season list — the exact list it had just told
      you did not contain them. Assert the wiring, not just that a button
-     exists. */
+     exists.
+
+     Its destination changed on 2026-09-18. It used to set onlyRnd and then go
+     to Parts; it now goes to the R&D tab, because that is where the whole
+     programme lives and a filtered rail was only ever half of it. */
   rndSeed();
   view = { ...view, tab: "season", mode: "list", id: null, seasonSub: "", seasonQ: "", onlyRnd: false };
   render();
-  const m = main.innerHTML.match(/onclick="([^"]*onlyRnd[^"]*)"/);
-  assert(m, "the count is a button that sets onlyRnd — got: " +
+  const m = main.innerHTML.match(/onclick="([^"]*setTab\('rnd'\)[^"]*)"/);
+  assert(m, "the count is a button that goes to the programme — got: " +
     (main.innerHTML.match(/\d+ R&amp;D/) || ["no R&D count at all"])[0]);
-  assert(/setTab\('parts'\)/.test(m[1]), "and it goes to Parts");
+  assert(!/onlyRnd/.test(m[1]),
+    "and it no longer flips a rail chip on the way, which was the pre-programme route");
   // Run it the way the browser would, then check where it actually landed.
   eval(m[1].replace(/&quot;/g, '"'));
-  assert(view.tab === "parts", "we are on Parts");
-  assert(view.onlyRnd === true, "showing the R&D list");
+  assert(view.tab === "rnd", "we are on the R&D bench");
   render();
-  assert(main.innerHTML.includes("VG TRIAL"), "and the trials the Season tab was holding back are on screen");
-  assert(!main.innerHTML.includes("NOSECONE"), "and only those");
+  assert(main.innerHTML.includes("VG TRIAL"),
+    "and the trials the Season tab was holding back are on the strip");
+  assert(!main.innerHTML.includes("rdc-P-SN6-001"),
+    "while the season part that is not R&D is not");
 });
 
 await t("the Parts rail is the season list OR the R&D list, and the chip swaps between them", () => {
@@ -3810,13 +3816,16 @@ await t("setTab keeps the bench's study and still does not reset onlyRnd", () =>
   view = { ...view, tab: "rnd", mode: "detail", id: "RDS-SN6-002", rdStudy: "RDS-SN6-002" };
   render();
   setTab("parts");
-  /* season.js jumps to the Parts R&D list by setting onlyRnd and THEN calling
-     setTab — which works only because setTab resets woOnlyRnd and not onlyRnd.
-     That asymmetry looks like an oversight and is the hand-off. Pinned here so
-     tidying the reset list fails loudly instead of silently. */
+  /* setTab resets woOnlyRnd and NOT onlyRnd. That asymmetry looks like an
+     oversight; it is the mechanism any "set the flag, then change tab" hand-off
+     rides on, and Season's R&D jump used exactly it until this tab became the
+     programme home and the jump started going straight to the bench. Still
+     pinned: the Parts chip is a per-visit switch on one rail and a per-visit
+     switch on the other, and making them symmetric is a behaviour change that
+     should fail loudly rather than quietly. */
   view.onlyRnd = true;
   setTab("parts");
-  assert(view.onlyRnd === true, "setTab must NOT reset onlyRnd — season.js:458 hands off through it");
+  assert(view.onlyRnd === true, "setTab must NOT reset onlyRnd");
   setTab("rnd");
   render();
   assert(view.rdStudy === "RDS-SN6-002",
