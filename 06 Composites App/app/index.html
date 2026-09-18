@@ -2210,6 +2210,102 @@
      eight, so it fails harder here. App-only classes, tokens only — nothing in
      this family is lifted into 05 Design System, which is still an open
      decision and must not be resolved by accident. */
+  /* ---- the programme strip and the bench ----
+     The tab's two storeys. A masthead and a sticky, horizontally snap-scrolling
+     strip of programme cards (one per study, one per R&D part, with that part's
+     runs as chips inside it), over a full-width BENCH that renders whatever is
+     selected: the coupon sheet, or the real part detail, or the real traveler.
+
+     A horizontal strip rather than a rail, on purpose. The note above says why
+     the sheet cannot live in a pane, and the same measurement kills a rail for
+     the part detail too — the bench gives it MORE width than the Parts tab
+     does. It also gives the tab a silhouette nobody mistakes for Parts or Work
+     Orders, which is the point.
+
+     Hueless, like the .tpill.rnd capsule it takes its cue from: --ink on
+     --card, the display face, a heavy top rule and a word. Gold is "now",
+     purple is retro, slate is hold, amber is in-work; there is no spare hue and
+     the house rule says hue is never the only carrier anyway. */
+  .rdmast { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin: 0 0 10px; }
+  .rdmast-t { font-family: var(--font-display); font-size: 22px; font-weight: 600;
+    letter-spacing: .01em; color: var(--ink); margin: 0; }
+  .rdmast-n { color: var(--muted); font-size: 12px; margin: 0; }
+  .rdmast-q { flex: 1 1 200px; min-width: 150px; max-width: 320px; }
+  .rdmast-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+  /* Only the strip is sticky. Two sticky bands is most of a 393px screen.
+     Same recipe as .wosec-hd: top is --topbar-h, which core.js MEASURES. */
+  .rdstrip { position: sticky; top: var(--topbar-h); z-index: 4;
+    --rd-strip-h: 178px;
+    background: var(--canvas); border-bottom: 1px solid var(--line);
+    padding: 8px 0 10px; margin: 0 0 12px; max-width: 100%;
+    display: grid; grid-auto-flow: column; grid-auto-columns: 340px; gap: 10px;
+    overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity; scroll-padding-inline: 2px;
+    height: var(--rd-strip-h); }
+  /* A fixed card height does three jobs at once: a long study name cannot
+     reflow the strip, the snap points stay regular, and the anchor rule below
+     has a number to subtract. */
+  .rdcard { scroll-snap-align: start; min-width: 0; overflow: hidden;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--r-md); border-top: 3px solid var(--ink);
+    box-shadow: var(--shadow); padding: 9px 11px 10px;
+    display: flex; flex-direction: column; gap: 6px;
+    transition: box-shadow var(--t-fast) var(--ease); }
+  .rdcard:hover { box-shadow: var(--shadow-md); }
+  /* An INSET ring, not a thicker border: a border-width change resizes the card
+     and shifts every snap point in the strip the moment you select one. */
+  .rdcard.on { box-shadow: inset 0 0 0 2px var(--ink); }
+  .rdcard.late { border-top-color: var(--bad); }
+  .rdcard-hd { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+  .rdkind { font-family: var(--font-display); font-size: 10.5px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+    white-space: nowrap; }
+  .rdcard-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; }
+  .rdtally { display: flex; gap: 8px; flex-wrap: wrap; font-size: 11.5px;
+    color: var(--muted); }
+  .rdtally b { font-family: var(--font-display); color: var(--ink);
+    font-variant-numeric: tabular-nums; }
+  .rdtally .zero { opacity: .45; }
+  .rddue { font-size: 11.5px; color: var(--muted); }
+  .rddue.late { color: var(--bad); font-weight: 600; }
+  .rdthumb { width: 56px; height: 42px; object-fit: cover; border-radius: var(--radius);
+    border: 1px solid var(--line); flex: none; }
+  .rdruns { display: flex; gap: 5px; flex-wrap: wrap; margin-top: auto; }
+  .rdchip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+    border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+    font-size: 11.5px; color: var(--muted); cursor: pointer; }
+  .rdchip b { font-family: var(--font-display); color: var(--ink);
+    font-variant-numeric: tabular-nums; }
+  .rdchip:hover { border-color: var(--border-2); color: var(--ink); }
+  .rdchip.on { box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
+  .rdchip.ghost { border-style: dashed; background: none; }
+  .rdchip-flag { color: var(--bad); }
+  .rdchip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .rdbench { min-width: 0; }
+  .rdmoved { max-width: 60ch; }
+  .rdmoved p { color: var(--muted); font-size: 13.5px; }
+  /* The bench's section anchors clear the topbar AND the stuck strip. Without
+     this they land underneath it and ptJump()/woJump() look broken. */
+  #main .rdbench [id^="pt-"], #main .rdbench [id^="wo-"] {
+    scroll-margin-top: calc(var(--topbar-h) + var(--rd-strip-h, 178px) + 12px); }
+  @media (max-width: 1200px) { .rdstrip { --rd-strip-h: 170px; grid-auto-columns: 300px; } }
+  @media (max-width: 900px) {
+    .rdstrip { --rd-strip-h: 166px; grid-auto-columns: 78vw; scroll-snap-type: x mandatory; }
+    .rdmast-acts { margin-left: 0; }
+  }
+  @media (max-width: 430px) {
+    .rdstrip { --rd-strip-h: 186px; grid-auto-columns: calc(100vw - 32px);
+      scroll-padding-inline: 16px; }
+    .rdmast-q { max-width: none; }
+  }
+  /* .rd-open carries `all: unset`, which throws the tap-target floor away —
+     the trap already noted below. The chips and cards need it restated. */
+  @media (pointer: coarse) {
+    .rdchip { min-height: 40px; }
+    .rdcard .rd-open { min-height: 40px; }
+  }
   .rdindex { padding: 6px 8px; }
   .rdsheet { margin-top: 10px; }
   .rdempty { max-width: 62ch; }
