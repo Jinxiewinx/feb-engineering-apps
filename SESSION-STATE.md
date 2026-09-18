@@ -151,6 +151,15 @@ production yet.
   study to a part or mold (re-examined 2026-09-18 when the strip put them on
   one screen, and declined again: adjacency is what the link was for).
 
+**Five fixes from Simon's v5.2.1 review (2026-09-18).** Mechanics are in
+DESIGN-NOTES under the three new dated sections. The decisions somebody would
+otherwise reverse thinking they found a bug: **a part's molds are `p.molds[]`
+and `p.mold` is read-only legacy** (no mirror — two fields for one fact is the
+shape `woIsRnd` derives to avoid); **a part's hero photo is first-image-wins**
+with no field, so the R&D strip card and the part page cannot disagree;
+**`undisposedIssuesForWO` requires a disposition note**, not just a method; and
+**a study groups parts through `part.study`, never `wo.study`**.
+
 **The programme strip (2026-09-18).** The mechanics are in DESIGN-NOTES under
 "The R&D tab is a lens, not a home". The two decisions that would otherwise get
 reversed by someone who thinks they found a bug: **an R&D part's id still routes

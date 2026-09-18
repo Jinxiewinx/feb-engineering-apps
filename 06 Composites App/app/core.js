@@ -32,11 +32,11 @@ var APP_VERSION = "5.2.1";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "The R&D tab is the whole programme now. Studies, R&D parts and their runs are all on one strip across the top — you can see everything without opening anything.",
-  "A card tells you what the thing is before you open it: the stack, the subteam, where the mold lives, how far the stages have got, and how long you have. Press anywhere on it to open.",
-  "A part's work orders sit in their own strip along the bottom of its card, so a run is never mistaken for part of the part.",
-  "Press a card and it opens underneath, full width. A part or a run gives you the real page: every step, every blocker, every cure hold, on a wider screen than the Parts tab gives it.",
-  "The strip stays put while you work, so the next thing is one press away. Escape, or Back to the bench, returns you to the study you were in.",
+  "Disposing an issue now asks what was DONE about it, as well as what happened — and both stay readable on the work order afterwards, which they were not before.",
+  "A work order reads as sections again: the ones you work in are panels, the ones you look things up in are a quieter list underneath. A run that is curing goes amber; only a real problem goes red.",
+  "A part can be made on several molds. A split mold is two halves, and both belong on the part.",
+  "A part shows a photo of itself at the top. Add one from Links & files, or from the button that appears while you are editing.",
+  "An R&D study is a folder now: file parts and their runs under it and they group together on the strip.",
 ];
 
 

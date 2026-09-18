@@ -428,6 +428,80 @@ strip, and the `.secnav` of the detail it renders. `.rdbench .secnav` and
 property set on the strip never reaches it and every rule that subtracts the
 strip's height would silently use its fallback.
 
+### A study is a folder as well as a grid (2026-09-18)
+
+A study groups **parts and runs**, not only coupons. The field is `study` on the
+part, matching the coupon's own field name — not `studyId`, which would be a
+third spelling of one relationship beside `study` and `parent`. The child names
+the parent, like every other edge here.
+
+**There is no `wo.study`.** A run's study is its part's, through `partOf()`.
+Storing a copy would make moving a part a fan-out over every run it has, which
+is the argument `woIsRnd()` is built on two sections above.
+
+This was declined twice before, on the grounds that "adjacency is what the link
+was for" — the strip already puts a study and a part on one screen. What changed
+is that adjacency cannot give the group a **name**, cannot answer "which of
+these eleven parts belonged to the split-mold effort" six months later, and
+cannot be filtered on.
+
+Four things that would each have shipped as a bug, so do not undo them:
+
+- **`rdIsParent` still means "has batches".** `rdChildren` is studies-only, so
+  parts cannot enter it — but if they ever could, a study holding one part would
+  start refusing coupons.
+- **The study card counts parts and runs**, or a study with four parts and no
+  coupons renders as empty.
+- **`rdPartCard` asks `isRnd(p)`** before printing "R&D part" and the capsule. A
+  study can group a season part, and hardcoding those was a lie in the exact
+  place the badge exists to prevent one.
+- **Both delete paths ungroup the parts.** The folder goes; the parts are real
+  records with real travelers and stay, rather than pointing at an id that no
+  longer resolves. Archive deliberately does **not** cascade: parking a study
+  must not take a season deliverable off the board.
+
+The assignment picker lives on the **study** and writes to the **part**. That is
+not symmetry for its own sake — it is what keeps every reader of `DB.rnd` inside
+`rnd.js`, which the cliff below depends on.
+
+### Sections come in two tiers (2026-09-18)
+
+`sectionCard()` emits `data-tier="work"|"ref"` and, when warned,
+`data-warn="bad"|"hold"`. Work panels stay cards; reference sections (the ones
+that already defaulted folded) are ruled rows. `secOrder()` puts all the work
+sections first so the tier boundary is **one break** — interleaved, a ruled row
+between two cards reads as a gap in a card stack rather than a second kind of
+thing.
+
+- **A warned section always promotes to a work card.** State beats kind, the
+  same rule `secFolded` already applies to folds. `fresh` deliberately does not
+  promote: it lives on one section, and a page that rearranges itself when
+  somebody comments is worse than a flat one.
+- **`bad` is red, `hold` is amber.** A run curing on schedule is a clock, not a
+  fault; painting it the same red as an undisposed nonconformance both lies
+  about the run and costs the tint its meaning, which is that the one card
+  wearing it is the one that needs you.
+- **No left spine on the work tier.** The header already carries a 3px skewed
+  gold bar 11px from the card edge, and a second vertical accent beside it reads
+  as a fault. Card-versus-flat needs no third mark — and it sidesteps the print
+  block's `.card` shorthand, which resets any `border-left`.
+- **The data- attributes go before the class list.** `test_app.mjs` pins this
+  markup with regexes expecting `class` last, flush against the bracket.
+
+### The disposition of an issue is two answers (2026-09-18)
+
+`whatHappened` is the root cause, asked at raise. `dispositionNote` is what was
+done, asked at disposal, required on **every** method with wording that varies
+by method (`DISPO_WORDS`).
+
+**`undisposedIssuesForWO` means disposed AND explained.** Requiring the note only
+in `statusGate` was toothless: an issue counted as disposed the moment it had a
+method, so picking Scrap dropped it out of the closeout modal and the work order
+completed with nobody having written why the part could not be saved.
+
+`reopenIssue` clears `dispositionNote` and keeps `whatHappened`. The root cause
+is still true after a reopen; the account of the fix is not.
+
 ### One cliff, written down before it is hit
 
 `rnd` is the twelfth whole-collection `onSnapshot` at boot, and coupons will be

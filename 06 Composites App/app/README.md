@@ -707,11 +707,29 @@ straight after Steps.
 
 The section lists every issue on the run, flat, open ones first. Each row names
 it, says what state it is in, links back to the step it was filed from if it had
-one, and — for an open one — carries the disposition select and the root-cause
-field right there, with one Resolve button. A resolved row reads "resolved:
-&lt;method&gt;" with a quiet Reopen. The section header counts disposed/total and
-wears a warning dot while anything is undisposed; that dot overrides the fold,
-so an open issue can never be tucked out of sight.
+one, and — for an open one — carries the disposition select and two questions,
+with one Resolve button.
+
+**Two questions, because they have different answers.** *What happened* is the
+root cause. *What was done* is the disposition: why it is fine as it is, what
+the rework was, why it could not be saved. The second one is worded for the
+method you picked, and both are required — a run cannot complete over an issue
+that has a disposition but no account of it. Disposing without explaining used
+to be enough, which meant picking "Scrap" quietly closed the subject.
+
+**Both stay readable afterwards.** A resolved row shows the method and then both
+answers, as prose. Before, everything you were made to type disappeared the
+moment you disposed the issue, and the row's own link took you to the page you
+were already on. It now points at the row itself.
+
+Reopening clears the disposition and the account of what was done — reopening
+means the fix did not work — and keeps the root cause, which is still true.
+
+The section header counts disposed/total and wears a warning dot while anything
+is undisposed; that dot overrides the fold, so an open issue can never be tucked
+out of sight, and the card itself goes red. It is the only red card on the page:
+a run that is merely curing goes amber, because waiting on a clock is not the
+same as waiting on a person.
 
 ![Issues: on the run they hold up](../design/wo-issues-mockup-20260825.png)
 
@@ -1483,11 +1501,20 @@ everything back *with its measurements* — an undo that restored the rows but n
 the numbers would look like it worked. A project won't delete while it still
 holds batches; that's three rounds of work, not one press.
 
-**R&D parts are a different thing, and they are listed at the bottom.** A part
-flagged R&D is a real part with a real traveler that just isn't a season
-deliverable — a mold shakedown keeps every blocker and every cure hold. Those
-live on the Parts tab; the R&D tab lists them so there is one place to look, and
-every row opens over there.
+**R&D parts are a different thing.** A part flagged R&D is a real part with a
+real traveler that just isn't a season deliverable — a mold shakedown keeps
+every blocker and every cure hold. Those live on the Parts tab; the R&D tab
+shows them so there is one place to look.
+
+**A study is also a folder.** It can hold the parts and runs it produced, not
+only coupons — "split mold tests" with the parts that came out of it. Open a
+study and file a part under it from the band on its sheet; the part then says
+which study it is in, and shows on the strip under it. A season part can be
+filed too, and is never labelled R&D for it.
+
+Deleting a study does not delete the parts. They are real parts with real
+travelers; the folder goes and they are ungrouped. Archiving a study leaves them
+alone entirely — parking a study should not take a deliverable off the board.
 
 ## Opening the app
 
