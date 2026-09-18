@@ -2443,6 +2443,17 @@
      sheet rather than in the masthead, which speaks for the whole programme.
      A thinner rule than .rdacts above it: this is the second row, not a peer. */
   .rdadd { margin-top: -4px; padding-top: 6px; border-top: 1px solid var(--line); }
+  /* What a study GROUPS: the parts filed under it, and the one place to file
+     one. A study is a folder as well as a grid of coupons. */
+  .rdgroup { margin: 10px 0 2px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .rdgroup-hd { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+  .rdgroup-body { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-bottom: 6px; min-width: 0; }
+  .rdgroup .moldchip { max-width: 100%; min-width: 0; }
+  .rdgroup .moldchip .rd-open { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  /* min(340px, 100%), not 340px: a 320px phone is narrower than the cap, and a
+     bare max-width made the document 373px wide inside a 320px viewport. */
+  .rdgroup .moldadd { width: 100%; max-width: min(340px, 100%); }
+  .rdin { color: var(--muted); }
   .rdbench { min-width: 0; }
   .rdmoved { max-width: 60ch; }
   .rdmoved p { color: var(--muted); font-size: 13.5px; }

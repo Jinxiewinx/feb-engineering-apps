@@ -88,6 +88,60 @@ function rdCoupons(studyId) {
 function rdChildren(studyId) {
   return rdStudies().filter(s => s.parent === studyId).sort((a, b) => cmpId(a.id, b.id));
 }
+/* ---------- a study as a FOLDER ----------
+   A study groups parts and their runs as well as coupons: "split mold tests"
+   holds the parts it produced and the studies that measured them. Simon asked
+   for this on 2026-09-18, and it was declined twice before on the grounds that
+   "adjacency is what the link was for" — the programme strip already puts a
+   study and a part on one screen. What changed is that adjacency cannot give
+   the group a NAME. It cannot answer "which of these eleven parts belonged to
+   the split-mold effort" six months later, and it cannot be filtered on.
+
+   The field is `study` on the part, matching the coupon's own field name. Not
+   `studyId`: that would be a third spelling of one relationship beside `study`
+   and `parent`. The child names the parent, like every other edge in this app
+   (wo.partId, coupon.study, plan.moldId), because that is the direction that
+   cannot go ambiguous and it keeps a move to one field write on one document.
+
+   THERE IS NO wo.study. A run's study is its part's, resolved through partOf().
+   Storing a copy would make "move this part to another study" a fan-out over
+   every run it has, which is the same argument woIsRnd() is built on. */
+function rdPartsOf(studyId) {
+  if (!studyId) return [];
+  return (DB.parts || []).filter(p => p.study === studyId).sort((a, b) => cmpId(a.id, b.id));
+}
+/* Including the batches', so a project's count is not smaller than the sum of
+   the rows below it — the same rule rdCouponsDeep exists for. */
+function rdPartsDeep(studyId) {
+  const ids = [studyId].concat(rdChildren(studyId).map(c => c.id));
+  return (DB.parts || []).filter(p => p.study && ids.includes(p.study)).sort((a, b) => cmpId(a.id, b.id));
+}
+function rdRunsDeep(studyId) {
+  const set = new Set(rdPartsDeep(studyId).map(p => p.id));
+  return (DB.workOrders || []).filter(w => {
+    const r = partOf(w);
+    return r && r.part && set.has(r.part.id);
+  });
+}
+/* Assignment is a press on the STUDY and a write to the PART. That is not
+   symmetry for its own sake: it keeps every reader of DB.rnd inside this file,
+   which is what the ~2000-record escape hatch in DESIGN-NOTES depends on. */
+function rdAddPart(studyId, partId) {
+  const p = partById(partId), st = rdStudy(studyId);
+  if (!p || !st || guestBlocked("group a part")) return;
+  if (p.study === studyId) return;
+  p.study = studyId;
+  save("parts", p, "study");
+  render();
+}
+function rdRemovePart(partId) {
+  const p = partById(partId);
+  if (!p || !p.study || guestBlocked("ungroup a part")) return;
+  p.study = "";
+  save("parts", p, "study");
+  render();
+}
+
 function rdRoots() {
   return rdStudies().filter(s => !s.parent || !rdStudy(s.parent)).sort((a, b) => cmpId(a.id, b.id));
 }
@@ -327,17 +381,26 @@ async function rdDelStudy(id) {
     return;
   }
   const rows = rdCoupons(id);
+  /* A study holding parts used to delete silently and leave them pointing at an
+     id that no longer resolves — a study chip that goes nowhere, and nothing in
+     the app testing for it. The parts are NOT deleted: they are real parts with
+     real travelers and the study was only a folder over them. */
+  const held = rdPartsOf(id);
   /* PLAIN TEXT, not markup: confirmModal runs its message through esc(), so a
      <b> here prints as a literal tag in front of somebody about to delete ten
      coupons. Quotes do the emphasis instead. */
   const name = s.name || s.id;
-  const what = rows.length
+  const heldLine = held.length
+    ? ` ${held.length} part${held.length === 1 ? "" : "s"} filed under it stay, and are ungrouped.`
+    : "";
+  const what = (rows.length
     ? `Delete "${name}" and its ${rows.length} coupon${rows.length === 1 ? "" : "s"}? Their measurements go with them.`
-    : `Delete "${name}"?`;
+    : `Delete "${name}"?`) + heldLine;
   confirmModal(what, async () => {
     const gone = [s, ...rows];
     RD_UNDO = { kind: "delete", recs: JSON.parse(JSON.stringify(gone)), n: rows.length, name: s.name || s.id };
     DB.rnd = rdAll().filter(o => o.id !== id && o.study !== id);
+    held.forEach(p => { p.study = ""; save("parts", p, "study"); });
     if (view.rdStudy === id) { view.rdStudy = null; if (view.id === id) view.id = null; }
     render();
     try {
@@ -798,8 +861,14 @@ function rdStudyCard(s) {
   const cols = rdCols(s);
   const ins = cols.filter(c => c.role === "input").length;
   const res = cols.filter(c => c.role === "result").length;
-  const meta = [`${cpn.length} coupon${cpn.length === 1 ? "" : "s"}`,
-                ins || res ? `${ins} in · ${res} result` : ""].filter(Boolean).join(" · ");
+  const parts = rdPartsDeep(s.id), runs = rdRunsDeep(s.id);
+  /* A study holding four parts and no coupons used to render as empty, because
+     every count here was coupon-only. */
+  const meta = [cpn.length ? `${cpn.length} coupon${cpn.length === 1 ? "" : "s"}` : "",
+                parts.length ? `${parts.length} part${parts.length === 1 ? "" : "s"}` : "",
+                runs.length ? `${runs.length} run${runs.length === 1 ? "" : "s"}` : "",
+                ins || res ? `${ins} in · ${res} result` : ""].filter(Boolean).join(" · ")
+                || "empty";
   return `<article class="rdcard rdcard-study${on ? " on" : ""}" id="rdc-${esc(s.id)}" role="listitem">
     <div class="rdcard-hd">
       <span class="rdkind">Study</span>
@@ -856,12 +925,18 @@ function rdStripParts() {
      Parked, so filtering by one would silently empty the parts half of the
      strip and look like the parts had gone. They narrow only on search. */
   if (f === "arch") return [];
-  let rows = railLive(DB.parts || []).filter(isRnd);
+  /* A grouped part belongs on the strip whether or not it is flagged R&D: the
+     tab is a lens, and a lens that cannot show the season part somebody filed
+     under "split mold tests" is not doing its job. None of the three lines the
+     two-meanings doctrine rests on is touched — isRnd and inSeason are
+     unchanged, rnd.js still never tests the archive flag, and no coupon gains
+     an rnd boolean. */
+  let rows = railLive(DB.parts || []).filter(p => isRnd(p) || p.study);
   if (q) rows = rows.filter(p => rdHit(p, q));
   rows = rows.sort((a, b) => cmpId(a.id, b.id));
   if ((view.rdPane === "part" || view.rdPane === "run") && view.id) {
     const p = view.rdPane === "part" ? partById(view.id) : (partOf(woById(view.id)) || {}).part;
-    if (p && isRnd(p) && !rows.some(r => r.id === p.id)) rows = rows.concat([p]);
+    if (p && (isRnd(p) || p.study) && !rows.some(r => r.id === p.id)) rows = rows.concat([p]);
   }
   return rows;
 }
@@ -883,12 +958,15 @@ function rdPartCard(p) {
     .filter(Boolean).map(esc).join(" · ");
   return `<article class="rdcard rdcard-part${on || kin ? " on" : ""}${late ? " late" : ""}" id="rdc-${esc(p.id)}" role="listitem">
     <div class="rdcard-hd">
-      <span class="rdkind">R&amp;D part</span>
-      ${/* Redundant on a tab that is entirely R&D, and kept anyway: rndBadge's
-            own note is that an all-R&D surface with no badges is pixel-identical
-            to a screenshot of the season, which is the one thing the flag
-            exists to prevent. One capsule is cheap insurance. */""}
-      ${rndBadge(true)}${archivedPill(p, true)}
+      ${/* CONDITIONAL, since a study can group a season part and the strip now
+            shows it. Hardcoding "R&D part" and the capsule here would print a
+            lie about that part, in the exact place the badge was added to
+            prevent one — rndBadge's own note is that an all-R&D surface with no
+            badges is pixel-identical to a screenshot of the season. On an
+            actual R&D part the capsule is still redundant and still kept, for
+            that reason. */""}
+      <span class="rdkind">${isRnd(p) ? "R&amp;D part" : "Part"}</span>
+      ${rndBadge(isRnd(p))}${archivedPill(p, true)}
       <span style="flex:1"></span>
       ${who ? avatar(who, 22) : ""}
     </div>
@@ -898,7 +976,10 @@ function rdPartCard(p) {
           on the z axis. Lifted verbatim from .loccard on the storage map. */""}
     <button class="rd-open rdcard-nm" onclick="rdOpenPart('${esc(p.id)}')">${esc(p.partName || p.id)}</button>
     <div class="rdcard-meta">
-      <span class="rdcard-id">${esc(p.id)}</span>${meta ? ` · ${meta}` : ""}
+      <span class="rdcard-id">${esc(p.id)}</span>${meta ? ` · ${meta}` : ""}${(() => {
+        const st = p.study ? rdStudy(p.study) : null;
+        return st ? ` · <span class="rdin">in ${esc(st.name || st.id)}</span>` : "";
+      })()}
     </div>
     <div class="rdcard-facts">
       ${stageRail(p)}
@@ -1041,6 +1122,10 @@ function rdBulkDeleteStudies(ids) {
       RD_UNDO = { kind: "delete", recs: JSON.parse(JSON.stringify(gone)), n: coupons.length, name: studies.length === 1 ? (studies[0].name || studies[0].id) : plural(studies.length, "study", "studies") };
       const ids = new Set(gone.map(o => o.id));
       DB.rnd = rdAll().filter(o => !ids.has(o.id));
+      /* Same rule as the single delete: the folder goes, the parts stay and are
+         ungrouped. A part left pointing at a deleted study is a chip that goes
+         nowhere, and nothing anywhere tests for one. */
+      (DB.parts || []).forEach(p => { if (p.study && ids.has(p.study)) { p.study = ""; save("parts", p, "study"); } });
       if (ids.has(view.rdStudy)) view.rdStudy = null;
       if (ids.has(view.id)) view.id = null;
     },
@@ -1050,6 +1135,11 @@ function deletePickedStudies() { rdBulkDeleteStudies(pickedIds("rnd")); }
 
 /* A study is archived as a whole: the batches under it follow the root, so a
    parked project does not leave stray batches in the index. */
+/* Archiving carries the study's batches and NOT its parts. A part is a real
+   record with its own archived flag and its own deadline; parking the study
+   that groups it must not take a season deliverable off the board. The study
+   card and the parts can therefore disagree about whether the work is active,
+   and that is the right way round. */
 function rdArchiveStudy(id, on) {
   const s = rdStudy(id);
   if (!s) return;
@@ -1141,6 +1231,7 @@ function rdSheetHtml(s) {
       <span style="flex:1"></span>
       ${canEdit() ? pickBar("rnd", { all: rdRoots().map(r => r.id).concat(rdRoots().flatMap(r => rdChildren(r.id).map(c => c.id))), onDelete: "deletePickedStudies()", hint: "Select several studies to delete them, coupons included" }) : ""}
     </div>
+    ${rdGroupBar(s)}
     ${rdPhotoStrip(s, canEdit())}
     ${rdMatBar(s)}
     ${rdColBar(s, cols)}
@@ -1178,6 +1269,34 @@ function rdStudyUpd(id, key, val) {
    and `defaults` with no way to set them, so labels printed a blank resin and
    the export resolved an inheritance nobody could establish. A model with no
    way in is not a feature. */
+/* What this study GROUPS, and the one place a part is filed into it. The
+   picker lives here rather than on the part page on purpose: it reads DB.rnd,
+   and every reader of that collection stays inside this file or the per-study
+   query escape hatch for the ~2000-record cliff stops being available. */
+function rdGroupBar(s) {
+  const parts = rdPartsDeep(s.id), runs = rdRunsDeep(s.id);
+  const E = canEdit();
+  const free = (DB.parts || []).filter(p => !p.study && !isArchived(p))
+    .sort((a, b) => cmpId(a.id, b.id));
+  if (!parts.length && !E) return "";
+  return `<div class="rdgroup">
+    <div class="rdgroup-hd"><span class="rdruns-lab">Parts in this study</span>
+      <span class="tny muted">${parts.length ? `${parts.length} part${parts.length === 1 ? "" : "s"}${runs.length ? ` · ${runs.length} run${runs.length === 1 ? "" : "s"}` : ""}` : "none yet"}</span></div>
+    <div class="rdgroup-body">
+      ${parts.map(p => `<span class="chip moldchip">
+        <button class="rd-open" onclick="rdOpenPart('${esc(p.id)}')">${esc(p.partName || p.id)}</button>
+        ${rndBadge(isRnd(p))}
+        ${E ? `<button type="button" class="x" title="Remove from this study" aria-label="Remove ${esc(p.partName || p.id)} from this study" onclick="rdRemovePart('${esc(p.id)}')">×</button>` : ""}
+      </span>`).join("")}
+      ${parts.length ? "" : `<span class="tny muted">A study can hold the parts and runs it produced, not only coupons. File one here and it shows on the strip under this study.</span>`}
+    </div>
+    ${E && free.length ? `<select class="moldadd" aria-label="Add a part to this study" onchange="rdAddPart('${esc(s.id)}', this.value); this.value='';">
+      <option value="" selected>+ Add a part to this study…</option>
+      ${free.map(p => `<option value="${esc(p.id)}">${esc(p.partName || p.id)} — ${esc(p.id)}${isRnd(p) ? " · R&D" : ""}</option>`).join("")}
+    </select>` : ""}
+  </div>`;
+}
+
 function rdMatBar(s) {
   const open = view.rdMatOpen === s.id;
   const E = canEdit();

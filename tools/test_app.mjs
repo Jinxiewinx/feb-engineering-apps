@@ -4249,6 +4249,75 @@ await t("⌘P on a run in the bench mounts the traveler, not a screenshot", () =
     "and still guards an undefined view BEFORE reading off it");
 });
 
+await t("A STUDY IS A FOLDER TOO — it groups parts and runs, not only coupons", () => {
+  rdFixture();
+  fb.roster = { name: "Nico", role: "member" };
+  DB.workOrders = [{ id: "WO-ST-9", partId: "P-SN6-960", partName: "VG TRIAL", steps: [] }];
+  rdAddPart("RDS-SN6-001", "P-SN6-960");
+  assert(DB.parts[0].study === "RDS-SN6-001", "the CHILD names the parent, like every other edge here");
+  assert(rdPartsOf("RDS-SN6-001").length === 1, "and the study can list what it holds");
+  assert(rdRunsDeep("RDS-SN6-001").length === 1, "its runs come along, derived through the part");
+  /* No wo.study. A run's study is its part's; storing a copy would make moving
+     a part a fan-out over every run it has — the argument woIsRnd is built on. */
+  assert(!("study" in DB.workOrders[0]), "and nothing is stored on the run itself");
+
+  /* THE TRAP. rdIsParent must keep meaning "has batches", or a study holding
+     one part would refuse coupons. rdChildren is studies-only, so the door
+     does not open — pinned here because it would be silent if it did. */
+  assert(rdChildren("RDS-SN6-001").every(c => c.cls === "RDS"), "rdChildren returns studies, never parts");
+  assert(rdSheetRows(rdStudy("RDS-SN6-002")).every(o => o.cls === "CPN"), "the sheet still holds coupons only");
+
+  /* A study with parts and no coupons used to render as empty, because every
+     count on the card was coupon-only. */
+  view = { ...view, tab: "rnd", mode: "detail", id: "RDS-SN6-001", rdStudy: "RDS-SN6-001", q: "", rdFilter: "" };
+  render();
+  assert(/1 part/.test(main.innerHTML), "the card counts the parts it holds");
+  assert(main.innerHTML.includes("rdRemovePart"), "and the study is where a part is filed and unfiled");
+
+  rdRemovePart("P-SN6-960");
+  assert(!DB.parts[0].study, "ungrouping clears the field");
+  fb.roster = { name: "Simon", role: "lead" };
+});
+
+await t("deleting a study never leaves a part pointing at nothing", async () => {
+  rdFixture();
+  fb.roster = { name: "Simon", role: "lead" };
+  DB.workOrders = [];
+  rdAddPart("RDS-SN6-002", "P-SN6-960");
+  assert(DB.parts[0].study === "RDS-SN6-002", "filed");
+  await rdDelStudy("RDS-SN6-002");
+  confirmProceed();
+  assert(!rdStudy("RDS-SN6-002"), "the folder is gone");
+  /* The parts are NOT deleted — they are real parts with real travelers and the
+     study was only a folder over them. But they must not keep pointing at an id
+     that no longer resolves, which renders as a chip that goes nowhere. */
+  assert(DB.parts[0].id === "P-SN6-960", "the part survives its folder");
+  assert(!DB.parts[0].study, "and is ungrouped rather than left dangling");
+});
+
+await t("the strip shows a grouped SEASON part, and never calls it R&D", () => {
+  rdFixture();
+  fb.roster = { name: "Nico", role: "member" };
+  DB.workOrders = [];
+  const season = DB.parts[1];                       // P-SN6-961, no rnd flag
+  assert(!isRnd(season), "this one is a season part");
+  rdAddPart("RDS-SN6-001", season.id);
+  view = { ...view, tab: "rnd", mode: "detail", id: "RDS-SN6-001", rdStudy: "RDS-SN6-001", q: "", rdFilter: "" };
+  render();
+  assert(main.innerHTML.includes("rdc-" + season.id),
+    "a lens that cannot show the season part somebody filed under a study is not doing its job");
+  /* rdPartCard used to hardcode "R&D part" and the capsule. On a season part
+     that is a lie, in the exact place the badge exists to prevent one. */
+  const card = rdPartCard(season);
+  assert(!card.includes("R&amp;D part"), "its card does not claim it is R&D");
+  assert(!/tpill rnd/.test(card), "and wears no R&D capsule");
+  assert(rdPartCard(DB.parts[0]).includes("R&amp;D part"), "while an actual R&D part still says so");
+  /* The doctrine is untouched: isRnd and inSeason are unchanged either way. */
+  assert(isRnd(season) === false && inSeason(season) === true,
+    "grouping a part changes neither what it is nor whether it is on the season board");
+  fb.roster = { name: "Simon", role: "lead" };
+});
+
 await t("inheritance resolves at read time, and clearing a cell restores it", () => {
   rdFixture();
   const own = DB.rnd.find(o => o.id === "CPN-SN6-002");
