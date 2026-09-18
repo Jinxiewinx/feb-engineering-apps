@@ -1363,7 +1363,7 @@ const WO_SECTIONS_BASE = [
     body: (w, E) => woSecIssues(w, E) },
   // Pure reference: the facts band above carries status, due, mass and the
   // engineers, so the field grid folds by default (secFolded opens it in E).
-  { id: "overview", label: "Details", anchor: "wo-overview", badge: () => "",
+  { id: "overview", tier: "ref", label: "Details", anchor: "wo-overview", badge: () => "",
     foldWhen: () => true,
     body: (w, E) => woSecOverview(w, E) },
   { id: "stack", label: "Stack & BOM", anchor: "wo-stack",
@@ -1371,7 +1371,7 @@ const WO_SECTIONS_BASE = [
     subAnchors: ["wo-bom"],
     body: (w, E) => woSecStack(w, E) },
   // An aggregation of the step evidence — the steps show their own strips.
-  { id: "photos", label: "Photos", anchor: "wo-photos",
+  { id: "photos", tier: "ref", label: "Photos", anchor: "wo-photos",
     badge: w => String(woAllPhotos(w).length || ""),
     foldWhen: () => true,
     body: (w, E) => woSecPhotos(w, E) },
@@ -1383,12 +1383,12 @@ const WO_SECTIONS_BASE = [
     // keeps it open (secFolded) so "+ check" is on screen.
     foldWhen: w => !(w.qualityChecks || []).length,
     body: (w, E) => woSecQuality(w, E) },
-  { id: "files", label: "Files & docs", anchor: "wo-docs",
+  { id: "files", tier: "ref", label: "Files & docs", anchor: "wo-docs",
     badge: w => String(((w.docs || []).length + (w.files || []).length) || ""),
     subAnchors: ["wo-files"],
     foldWhen: () => true,
     body: (w, E) => woSecFiles(w, E) },
-  { id: "notes", label: "Notes & log", anchor: "wo-log",
+  { id: "notes", tier: "ref", label: "Notes & log", anchor: "wo-log",
     badge: w => String((w.noteLog || []).length || ""),
     subAnchors: ["wo-eventlog"],
     // Folded unless somebody wrote a note since you last looked — then it

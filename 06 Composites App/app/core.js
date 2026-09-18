@@ -1170,13 +1170,37 @@ function toggleSecFold(recId, secId, fold) {
   view = { ...view, secFold: { id: recId, m: cur } };
   render();
 }
+/* TWO TIERS, because the eight sections are not peers and the table already
+   knew it: the ones marked tier:"ref" are the ones that default folded. Work
+   panels stay cards; reference sections drop the card for a ruled row. That
+   makes the difference MEAN something rather than decorating all eight the
+   same way, which was Simon's complaint ("all of the sections blend together").
+
+   State beats kind, the same rule secFolded already applies to folds: a warned
+   section is always a work panel, so an undisposed issue can never be a quiet
+   appendix row. `fresh` deliberately does NOT promote — it lives on exactly one
+   section (Notes) and a page that rearranges itself when somebody comments is
+   worse than a page that is flat.
+
+   The data- attributes go BEFORE the class attribute on purpose. test_app.mjs
+   pins this markup with regexes that expect the class list to be the LAST
+   attribute, flush against the closing angle bracket. Anything placed before it
+   is free; reordering the attributes, or adding a ninth class name, is not.
+   (Written without an example: test_designsystem's phantom-class scanner reads
+   any literal class attribute it finds in a .js file, comments included.) */
+function secTier(s, rec, E) {
+  if (E) return "work";                          // editing: everything is a panel you type into
+  if (s.warn && s.warn(rec)) return "work";
+  return s.tier === "ref" ? "ref" : "work";
+}
 function sectionCard(s, rec, E) {
   const n = s.badge ? s.badge(rec) : "";
   const warn = !!(s.warn && s.warn(rec));
   const word = warn ? (s.warnWord ? s.warnWord(rec) : "attention") : "";
   const fresh = !warn && !!(s.fresh && s.fresh(rec));
   const folded = secFolded(s, rec, E);
-  return `<div class="card wosec${folded ? " folded" : ""}">
+  const tier = secTier(s, rec, E);
+  return `<div data-sec="${esc(s.id)}" data-tier="${tier}"${warn ? " data-warn" : ""} class="card wosec${folded ? " folded" : ""}">
     <button type="button" class="wosec-hd${warn ? " warn" : ""}" id="${esc(s.anchor)}"
       aria-expanded="${folded ? "false" : "true"}"
       onclick="toggleSecFold('${esc(rec.id)}','${esc(s.id)}',${folded ? 0 : 1})">

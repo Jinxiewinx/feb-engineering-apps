@@ -713,6 +713,42 @@ await t("the facts band names where the mold is, and never a retro placeholder",
   assert(!main.innerHTML.includes("Mold at"), "and an empty one shows no slot at all");
 });
 
+await t("TWO TIERS — and a warned reference section comes back as a work card", () => {
+  const woId = DB.workOrders[0].id;
+  const w = woById(woId);
+  const tierOf = id => secTier(WO_SECTIONS_BASE.find(x => x.id === id), w, false);
+  assert(tierOf("steps") === "work" && tierOf("stack") === "work", "the sections you work in are panels");
+  assert(tierOf("overview") === "ref" && tierOf("files") === "ref" && tierOf("notes") === "ref",
+    "the ones you consult are the appendix — the same ones the table already defaults to folded");
+
+  /* State beats kind, the rule secFolded already applies to folds. Without
+     this an undisposed issue could sit in a quiet appendix row, and the whole
+     point of the change is that it cannot. The string assertions elsewhere
+     would happily pass that screen. */
+  DB.projects.push({ id: "TKT-TIER", title: "Undisposed", kind: "issue", status: "To Do",
+    workOrderId: woId, resolutionMethod: "", assignees: [], watchers: [] });
+  assert(tierOf("issues") === "work", "an undisposed issue is never an appendix row");
+  const html = sectionCard(WO_SECTIONS_BASE.find(x => x.id === "issues"), w, false);
+  assert(html.includes('data-tier="work"') && html.includes("data-warn"), "and the card says so");
+
+  /* The markup contract the pinned regexes depend on: the class list stays the
+     LAST attribute, flush against the closing bracket. */
+  assert(/data-sec="issues"[^>]*class="card wosec[^"]*">/.test(html),
+    "data- attributes go before class, or every pinned section regex breaks");
+  DB.projects = DB.projects.filter(x => x.id !== "TKT-TIER");
+
+  // Editing is when every section is a panel you are typing into.
+  assert(secTier(WO_SECTIONS_BASE.find(x => x.id === "overview"), w, true) === "work",
+    "in edit mode nothing is an appendix");
+
+  /* `fresh` deliberately does NOT promote. It lives on exactly one section
+     (Notes), so promoting would make the page rearrange itself whenever
+     somebody left a comment. */
+  const notes = WO_SECTIONS_BASE.find(x => x.id === "notes");
+  assert(notes.fresh, "Notes is the section that can be fresh");
+  assert(!/fresh/.test(String(secTier)), "but freshness is not a tier input");
+});
+
 await t("Details leads when a work order is being created or edited, Steps when it is being read", () => {
   assert(woSections(false)[0].id === "steps", "reading a run, Steps leads — that is the bench action");
   assert(woSections(true)[0].id === "overview", "editing one, Details leads — that is what you are filling in");

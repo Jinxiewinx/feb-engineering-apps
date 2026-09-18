@@ -1803,6 +1803,28 @@
   .secnav-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); }
   .secnav-btn.warn .secnav-dot { background: var(--bad); }
   .wosec { min-width: 0; margin-bottom: 12px; }
+  /* ---- two tiers ----
+     A work panel is a card. A reference section is a ruled row: no fill, no
+     border, no shadow, no radius. Eight identical cards at a 12px pitch, with a
+     --card/--canvas delta of a few percent and a --line hairline, is the wall
+     Simon described; this makes four of them stop being cards at all, and the
+     page reads as panels and then an appendix — which is what it is.
+
+     Deliberately NO left spine on the work tier. The header already carries a
+     3px skewed gold bar 11px from the card edge, and a second vertical accent
+     beside it reads as a rendering fault. Card-versus-flat needs no third mark. */
+  .wosec[data-tier="ref"] { background: none; border: 0; border-radius: 0; box-shadow: none;
+    border-top: 1px solid var(--line); padding: 10px 4px 12px; margin-bottom: 0; }
+  .wosec[data-tier="ref"] + .wosec[data-tier="ref"] { margin-top: 0; }
+  /* The appendix label steps back down to grey — work headings are the ink ones. */
+  .wosec[data-tier="ref"] > .wosec-hd > span:first-child { color: var(--muted); }
+  .wosec[data-tier="ref"] > .wosec-hd::after { background: none; border-color: transparent; }
+  /* A section in trouble is the only tinted thing on the page, and it is a card
+     whatever its kind. Four carriers, all of them already paired with the word
+     the header renders: the tint, the gold slash turning --bad, the label
+     turning --bad, and the dot. */
+  .wosec[data-warn] { background: var(--bad-bg); border-color: var(--bad-border); }
+  .wosec[data-warn] > .wosec-hd > span:first-child { color: var(--bad); }
   /* ---- section header (WO + Parts, core.js sectionCard) ----
      The .bmod-hd recipe applied per section card: gold speed-slash + Saira
      uppercase label, the SAME badge()/warn() answers the jump bar shows (one
@@ -3608,6 +3630,12 @@
     .pstep:not(.cur) { display: none !important; }
     .pstep.cur { box-shadow: none; border-color: var(--line); }
     .card { border: 1px solid var(--line); border-radius: 0; box-shadow: none; break-inside: auto; margin-bottom: 8px; padding: 10px 14px; }
+    /* The print .card above is a SHORTHAND, so it resets anything the tier
+       rules set on the border. Restate both tiers after it or the appendix
+       comes back as eight identical boxes on paper, and the warned tint (which
+       does not print anyway) leaves nothing behind. */
+    .wosec[data-tier="ref"] { border: 0; border-top: 1px solid var(--line); padding: 8px 2px; }
+    .wosec[data-warn] { border: 1.5pt solid #000; }
     .card h2, .card h3 { break-after: avoid; }
     .grid, .stackviz { break-inside: avoid; }
     table.sub thead { display: table-header-group; } table.sub tr { break-inside: avoid; }

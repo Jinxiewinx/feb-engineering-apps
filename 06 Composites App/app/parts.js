@@ -1379,7 +1379,7 @@ const PART_SECTIONS_BASE = [
     warn: p => partRuns(p).some(r => woFlags(r.wo).blocked || isWoLate(r.wo)),
     warnWord: p => partRuns(p).some(r => woFlags(r.wo).blocked) ? "blocked" : "late",
     body: (p, E) => ptSecRuns(p, E) },
-  { id: "details", label: "Details", anchor: "pt-details",
+  { id: "details", tier: "ref", label: "Details", anchor: "pt-details",
     badge: () => "",
     warn: p => {
       const t = parseFloat(p.weightG), a = parseFloat(p.weightActualG);
@@ -1397,11 +1397,11 @@ const PART_SECTIONS_BASE = [
     warnWord: () => "stale stage",
     foldWhen: () => true,
     body: (p, E) => ptSecMold(p, E) },
-  { id: "links", label: "Links & files", anchor: "pt-links",
+  { id: "links", tier: "ref", label: "Links & files", anchor: "pt-links",
     badge: p => String((partTickets(p).length + partScheduleWeeks(p).length + (p.docs || []).length + (p.files || []).length) || ""),
     foldWhen: () => true,
     body: (p, E) => ptSecLinks(p, E) },
-  { id: "notes", label: "Notes", anchor: "pt-notes",
+  { id: "notes", tier: "ref", label: "Notes", anchor: "pt-notes",
     badge: p => String((p.commentLog || []).length || ""),
     foldWhen: () => true,
     body: (p, E) => ptSecNotes(p, E) },
