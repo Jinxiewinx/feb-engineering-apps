@@ -959,13 +959,13 @@ function woIndexRows() {
     .filter(w => (!view.woLate || isWoLate(w)))
     .filter(w => (!view.woMine || isMine([w.moldEngineer, w.manufacturingEngineer])))
     .filter(w => (!view.woIssues || openIssuesForWO(w.id).length))
-    /* Season runs or R&D runs, never both — the same switch the Parts rail
-       has, and the note on its filter carries the reasoning. Off by default.
-       A run is swapped out HERE only: the dashboard, the deadline lists,
-       Reports and the printed traveler never filter R&D, so a blocked or late
-       trial still surfaces where lateness is looked for. The open run is
-       re-added below, so a deep link or a ⌘K hit still opens. */
-    .filter(w => (view.woOnlyRnd ? woIsRnd(w) : !woIsRnd(w)))
+    /* ABSOLUTE, matching the Parts rail: this is the season runs, and an R&D
+       run is viewable and editable from the R&D tab alone. The dashboard, the
+       deadline lists, Reports and the printed traveler still never filter R&D,
+       so a blocked or late trial surfaces where lateness is looked for; and
+       openRecord() routes an R&D run to the bench, so no arrival strands one
+       on a rail that will not list it. */
+    .filter(w => !woIsRnd(w))
     // This season by default and archived swapped out, exactly as on Parts.
     .filter(w => view.allSeasons || thisSeason(w))
     .filter(w => (view.showArch ? isArchived(w) : !isArchived(w)))
@@ -974,7 +974,8 @@ function woIndexRows() {
   // you are reading keeps it in place instead. This is the whole point of a
   // persistent rail, and without it typing in the search box blanks the pane.
   const sel = selectedWO();
-  if (sel && !rows.includes(sel)) rows = rows.concat([sel]);
+  // ...but never an R&D run, for the reason written on the Parts rail's copy.
+  if (sel && !woIsRnd(sel) && !rows.includes(sel)) rows = rows.concat([sel]);
   return sortedWORows(rows);
 }
 
@@ -990,7 +991,7 @@ function woSummary() {
     curing, blocked, issues,
   };
 }
-function resetWOFilters() { view = { ...view, woOpen: false, woLate: false, woMine: false, woDone: false, woIssues: false, woOnlyRnd: false, fStatus: "", fSub: "", q: "" }; render(); }
+function resetWOFilters() { view = { ...view, woOpen: false, woLate: false, woMine: false, woDone: false, woIssues: false, fStatus: "", fSub: "", q: "" }; render(); }
 
 /* ---------- selection ----------
    view.mode === "detail" stays the switch, exactly as it was when this tab was
@@ -1096,7 +1097,10 @@ function woPartsNoRun() {
   return (DB.parts || []).filter(p => !partRuns(p).length)
     .filter(p => view.allSeasons || thisSeason(p))
     .filter(p => (view.showArch ? isArchived(p) : !isArchived(p)))
-    .filter(p => (view.woOnlyRnd ? isRnd(p) : !isRnd(p)));
+    /* The sixth hide site, and the one the doctrine's "five places" never
+       named. These rows carry the button that STARTS a run, so leaving R&D in
+       would put an R&D part's run-start press on the Work Orders tab. */
+    .filter(p => !isRnd(p));
 }
 function woIndexBody(rows) {
   const key = woSortKey();
@@ -1177,7 +1181,6 @@ function renderWOIndex() {
             ${isLead() ? `<button class="danger sm" ${n ? "" : "disabled"} onclick="deletePickedWOs()">Delete ${n || ""}</button>` : ""}
             <button class="sm ib" onclick="cancelWOPick()">${icon("x", 14)}</button>`;
         })() : `<button class="primary ib"${gx("Sign in to start a run.")} onclick="newWO()">${icon("plus", 15)} New WO</button>
-        <button class="ib" onclick="newWO(true)">${icon("plus", 15)} R&amp;D run</button>
         <button class="sm" onclick="openBlankTraveler()">Blank traveler</button>
         ${/* Any roster member can pick, because Archive is a plain update. The
               Delete button inside pick mode is what stays lead-only: the rules
@@ -1195,10 +1198,10 @@ function renderWOIndex() {
         ${summaryChip("done", s.done, !!view.woDone, "view.woDone=!view.woDone;view.woOpen=false;render()")}
         ${summaryChip("issues", s.issues, !!view.woIssues, "view.woIssues=!view.woIssues;view.woDone=false;render()", s.issues ? "bad" : "")}
         ${/* Same shape and same reasoning as the Parts rail's: only when there
-              are R&D runs, counting what exists rather than what is on screen,
-              because while it is off that is the number being held back. */""}
+              are R&D runs, counting what EXISTS, which is exactly what this rail
+              is not showing — and pressing it goes to where that work lives. */""}
         ${(() => { const n = (DB.workOrders || []).filter(woIsRnd).length;
-          return n ? summaryChip("R&D", n, !!view.woOnlyRnd, "view.woOnlyRnd=!view.woOnlyRnd;render()") : ""; })()}
+          return n ? summaryChip("R&D", n, false, "setTab('rnd')") : ""; })()}
         ${(() => { const h = railHeldBack(DB.workOrders);
           return (h.other ? summaryChip(h.otherLabel, h.other, !!view.allSeasons, "view.allSeasons=!view.allSeasons;render()") : "")
             + (h.arch ? summaryChip("archived", h.arch, !!view.showArch, "view.showArch=!view.showArch;render()") : ""); })()}
@@ -1500,7 +1503,9 @@ function renderWODetail() {
     ${E ? `<button onclick="archiveWO('${wo.id}',${isArchived(wo) ? "false" : "true"})">${isArchived(wo) ? "Restore" : "Archive"}</button>` : ""}
     ${E && isLead() ? `<button onclick="resetSteps(woById('${wo.id}'))">Reset steps to standard</button>
     <button class="danger" onclick="delWO('${wo.id}')">Delete</button>` : ""}
-    <span class="mdnav no-print">
+    ${/* The arrows walk the WORK ORDERS rail, which no longer lists R&D runs.
+          From the bench they would teleport you to an unrelated season run. */""}
+    <span class="mdnav no-print"${view.tab === "rnd" ? " hidden" : ""}>
       <button class="sm" title="Previous work order (↑)" onclick="moveWOSelection(-1)">${icon("chevronLeft", 14)}</button>
       <button class="sm" title="Next work order (↓)" onclick="moveWOSelection(1)">${icon("chevronRight", 14)}</button>
     </span>

@@ -191,17 +191,18 @@ What changes:
   of 20 parts · 8 R&D` — and the R&D number takes you to [the R&D
   bench](#the-rd-bench), where that work lives, so nothing ever just disappears.
 - **It is not in the Google Sheet mirror**, for the same reason.
-- **Your Parts and Work Orders lists are the season list or the R&D list, never
-  both.** The **R&D** chip above each one swaps between them: off, you see the
-  parts going on the car, which is what those tabs are for on an ordinary day;
-  on, you see only the trials. The chip carries the count, so the list always
-  says how many it is holding back rather than just holding them back. Open a
-  record from the dashboard or from search and it stays on the rail while you
-  are looking at it, whichever list is showing.
-- **All of it is also on the R&D tab**, next to the coupon studies, which is
-  where you go to see the programme rather than to filter one list. Same
-  records: the chips above are for filtering while you are already on Parts or
-  Work Orders.
+- **It lives on the R&D tab, and only there.** The Parts and Work Orders lists
+  are the season list, full stop — a trial is not on them in any state. Open one
+  from the dashboard, from search, from a chip, from a mold's "used by" list or
+  by scanning its label, and you land on the R&D tab with it open. You edit it
+  there, with the same page and the same buttons as any other part or run.
+- **Both lists still say how much they are not showing.** The **R&D** count
+  above each one is still there; pressing it takes you to the R&D tab rather
+  than swapping the list you are looking at. A list that hides work without
+  saying so is the thing this was built to avoid.
+- **New trials start from the R&D tab.** The "R&D part" and "R&D run" buttons
+  moved there with everything else — one made from the Parts toolbar would have
+  been invisible on the rail that made it.
 - **The dashboard, the deadline lists and Reports never hide it.** That is
   deliberate and it is what makes the rails safe to filter: a trial that is late
   or blocked still finds you on the landing page.

@@ -3721,7 +3721,7 @@ const rndSeed = () => {
     { id: "P-SN6-951", partName: "COUPON SET", subteam: "BERGO", rnd: true, cadProgress: "Not Started", moldProgress: "Not Started", layupProgress: "Not Started" },
   ];
   DB.workOrders = [];
-  view = { ...view, tab: "season", mode: "list", id: null, seasonSub: "", seasonQ: "", seasonSort: null, seasonDir: null, onlyRnd: false };
+  view = { ...view, tab: "season", mode: "list", id: null, seasonSub: "", seasonQ: "", seasonSort: null, seasonDir: null };
 };
 
 await t("retro and R&D are two filters, not one — the both-flags record fails an && by design", () => {
@@ -3773,7 +3773,7 @@ await t("the Season tab's R&D count is a working way to GET to them", () => {
      to Parts; it now goes to the R&D tab, because that is where the whole
      programme lives and a filtered rail was only ever half of it. */
   rndSeed();
-  view = { ...view, tab: "season", mode: "list", id: null, seasonSub: "", seasonQ: "", onlyRnd: false };
+  view = { ...view, tab: "season", mode: "list", id: null, seasonSub: "", seasonQ: "" };
   render();
   const m = main.innerHTML.match(/onclick="([^"]*setTab\('rnd'\)[^"]*)"/);
   assert(m, "the count is a button that goes to the programme — got: " +
@@ -3790,47 +3790,67 @@ await t("the Season tab's R&D count is a working way to GET to them", () => {
     "while the season part that is not R&D is not");
 });
 
-await t("the Parts rail is the season list OR the R&D list, and the chip swaps between them", () => {
+await t("THE PARTS RAIL IS THE SEASON LIST, and R&D is not on it in any state", () => {
   rndSeed();
-  view = { ...view, tab: "parts", mode: "list", id: null, q: "", fSub: "", fLate: false, fMine: false, fDone: false, onlyRnd: false };
+  view = { ...view, tab: "parts", mode: "list", id: null, q: "", fSub: "", fLate: false, fMine: false, fDone: false };
   render();
-  let html = main.innerHTML;
-  assert(html.includes("NOSECONE"), "off is the season list, which is what this tab is for on an ordinary day");
-  assert(!html.includes("VG TRIAL"), "and R&D is not in it");
-  assert(/<b>2<\/b> R&amp;D/.test(html),
-    "the chip says how many are being held back. A rail that hides work without saying so is the failure this whole feature exists to avoid");
-  view.onlyRnd = true; render(); html = main.innerHTML;
-  assert(html.includes("VG TRIAL"), "on is the R&D list");
-  assert(!html.includes("NOSECONE"),
-    "and ONLY the R&D list — the chip SWAPS the rail rather than adding to it, so there is exactly one question on screen at a time");
-  assert(/tpill rnd/.test(html), "the rows are still badged, because these records also exist in a list that has none of them");
-  assert(/<b>2<\/b> R&amp;D/.test(html), "and the chip is still there, lit, to swap back");
+  const html = main.innerHTML;
+  assert(html.includes("NOSECONE"), "the season list is what this tab is for");
+  assert(!html.includes("VG TRIAL"), "and an R&D part is not in it");
+  /* There is no longer a switch. An R&D part is viewable and editable from the
+     R&D tab alone (Simon, 2026-09-18), so the rail has one answer, not two. */
+  assert(!/onlyRnd/.test(html), "no chip swaps this rail for the other list");
+  assert(!partIndexRows().some(isRnd), "and nothing puts one in the row set");
+  /* The chip STAYS, because a rail that hides work without saying so is the
+     failure this whole feature exists to avoid — but it is a door now, not a
+     switch, and it counts what exists rather than what is on screen. */
+  assert(/<b>2<\/b> R&amp;D/.test(html), "the rail still says how many it is not showing");
+  assert(/setTab\('rnd'\)/.test(html), "and the count is a way to GET to them");
 });
 
-await t("an R&D part you navigated to stays put even while the rail is hiding its kind", () => {
+await t("an R&D record ARRIVING from anywhere is sent to the bench, not stranded", () => {
   rndSeed();
-  view = { ...view, tab: "parts", mode: "detail", id: "P-SN6-950", edit: false, q: "", fSub: "", fLate: false, fMine: false, fDone: false, onlyRnd: false };
-  render();
-  assert(main.innerHTML.includes("VG TRIAL"),
-    "arriving from a dashboard row or a Cmd-K hit must not open onto a rail that refuses to show the record you opened");
-  assert(partIndexRows().some(p => p.id === "P-SN6-950"), "and it is really in the row set, not just the pane");
+  /* Twenty-odd routes can hand an R&D record to a tab that will not list it: a
+     chip, the lineage bar, the dashboard, Cmd-K, Reports, a mold's Used-by, a
+     ticket's related parts. They all pass through openRecord(), so the redirect
+     lives there rather than in twenty callers. */
+  DB.workOrders = [{ id: "WO-SN6-950", partId: "P-SN6-950", partName: "VG TRIAL", status: "InWork", steps: [] }];
+  view = { ...view, tab: "dashboard", mode: "list", id: null, q: "" };
+  openRecord("parts", "P-SN6-950");
+  assert(view.tab === "rnd", "an R&D part opens on the bench");
+  assert(view.id === "P-SN6-950" && view.rdPane === "part", "with the part in the bench pane");
+  openRecord("workorders", "WO-SN6-950");
+  assert(view.tab === "rnd" && view.rdPane === "run", "and an R&D run likewise");
+  openRecord("parts", "P-SN6-900");
+  assert(view.tab === "parts", "a season part still opens on Parts");
+
+  /* tabForId() stays PURE and prefix-only. It takes no record, `P-` cannot tell
+     a trial from a deliverable, and test_route.mjs holds it in step with fb.js's
+     ID_PREFIX. The question is asked where the record is in hand. */
+  assert(tabForId("P-SN6-950") === "parts", "tabForId is unchanged and still answers from the prefix");
+  assert(!/isRnd/.test(String(tabForId)), "and never grew a record lookup");
 });
 
 await t("the R&D chip only exists when there is R&D work to point at", () => {
   DB.parts = [{ id: "P-SN6-900", partName: "NOSECONE", subteam: "AERO", cadProgress: "Not Started", moldProgress: "Not Started", layupProgress: "Not Started" }];
-  view = { ...view, tab: "parts", mode: "list", id: null, q: "", fSub: "", fLate: false, fMine: false, fDone: false, onlyRnd: false };
+  view = { ...view, tab: "parts", mode: "list", id: null, q: "", fSub: "", fLate: false, fMine: false, fDone: false };
   render();
   // Match the CHIP specifically. The "R&D part" create button is always there
   // and carries the same word, which is exactly the false pass this guards.
   assert(!/<b>\d+<\/b> R&amp;D/.test(main.innerHTML), "a chip reading 0 R&D is a control that teaches nothing");
-  assert(/R&amp;D part<\/button>|R&amp;D part/.test(main.innerHTML), "but the create door is still offered — you can always start a trial");
+  /* The create door moved to the R&D masthead with everything else — a part
+     made here would be invisible the moment it was flagged. */
+  assert(!/newPart\(true\)/.test(main.innerHTML), "and the R&D create door is not on this toolbar any more");
 });
 
-await t("resetPartFilters puts R&D back out of sight", () => {
-  view = { ...view, onlyRnd: true };
+await t("view.onlyRnd is gone, not merely unused", () => {
+  /* It was the flag that swapped the Parts rail for the R&D list. With the rail
+     absolute there is no state for it to hold, and a dead key on `view` is the
+     kind of thing somebody wires back up. */
   DB.parts = [];
   resetPartFilters();
-  assert(view.onlyRnd === false, "the clear-filters button returns the rail to its default, which is R&D hidden");
+  assert(!/onlyRnd/.test(String(resetPartFilters)), "nothing resets one");
+  assert(!/onlyRnd/.test(String(partIndexRows)), "and the rail does not read one");
 });
 
 await t("a run inherits its part's programme — nobody marks it and nobody can forget to", () => {
@@ -3923,33 +3943,42 @@ await t("the Work Orders rail is the season runs OR the R&D runs, and the chip s
     { id: "WO-SN6-950", partId: "P-SN6-950", partName: "VG TRIAL", status: "InWork", dueDate: "2026-11-02", steps: [] },
     { id: "WO-SN6-900", partName: "NOSECONE", status: "InWork", dueDate: "2026-11-01", steps: [] },
   ];
-  view = { ...view, tab: "workorders", mode: "list", id: null, q: "", fStatus: "", fSub: "", woOpen: false, woLate: false, woMine: false, woDone: false, woIssues: false, woOnlyRnd: false, sortKey: null, sortDir: null };
+  view = { ...view, tab: "workorders", mode: "list", id: null, q: "", fStatus: "", fSub: "", woOpen: false, woLate: false, woMine: false, woDone: false, woIssues: false, sortKey: null, sortDir: null };
   render();
-  let html = main.innerHTML;
-  assert(html.includes("NOSECONE"), "off is the season runs");
-  assert(!html.includes("VG TRIAL"), "and R&D runs are not");
-  assert(/<b>1<\/b> R&amp;D/.test(html), "with the chip saying how many are held back");
-  view.woOnlyRnd = true; render(); html = main.innerHTML;
-  assert(html.includes("VG TRIAL"), "on is the R&D runs");
-  assert(!html.includes("NOSECONE"), "and only those — the same swap the Parts rail does, not a widening");
-  assert(/tpill rnd/.test(html), "still badged");
+  const html = main.innerHTML;
+  assert(html.includes("NOSECONE"), "this rail is the season runs");
+  assert(!html.includes("VG TRIAL"), "and an R&D run is not on it in any state");
+  assert(!woIndexRows().some(woIsRnd), "nothing puts one in the row set");
+  assert(!/woOnlyRnd/.test(html), "there is no chip to swap it for the other list");
+  /* The chip stays as a DOOR, counting what exists — a rail that hides work
+     without saying so is the failure this feature exists to avoid. */
+  assert(/<b>1<\/b> R&amp;D/.test(html), "it still says how many it is not showing");
+  assert(/setTab\('rnd'\)/.test(html), "and that count goes to the bench");
 });
 
-await t("the open run stays on the rail even while the chip is hiding its kind", () => {
-  DB.parts = [{ id: "P-SN6-950", partName: "VG TRIAL", subteam: "AERO", rnd: true }];
+await t("the rail's re-add no longer resurrects an R&D run onto a rail that refuses it", () => {
+  DB.parts = [{ id: "P-SN6-950", partName: "VG TRIAL", subteam: "AERO", rnd: true },
+              { id: "P-SN6-900", partName: "NOSECONE", subteam: "AERO" }];
   DB.workOrders = [
     { id: "WO-SN6-950", partId: "P-SN6-950", partName: "VG TRIAL", status: "InWork", steps: [] },
-    { id: "WO-SN6-900", partName: "NOSECONE", status: "InWork", steps: [] },
+    { id: "WO-SN6-900", partId: "P-SN6-900", partName: "NOSECONE", status: "InWork", steps: [] },
   ];
-  view = { ...view, tab: "workorders", mode: "detail", id: "WO-SN6-950", q: "", fStatus: "", fSub: "", woOpen: false, woLate: false, woMine: false, woDone: false, woIssues: false, woOnlyRnd: false, sortKey: null, sortDir: null };
-  assert(woIndexRows().some(w => w.id === "WO-SN6-950"),
-    "a deep link or a dashboard click must not open onto a rail that refuses to list the run you opened");
+  /* The re-add exists so an arrival cannot land on a rail that refuses to list
+     what it opened. R&D arrivals are answered a different way now — rdHome()
+     sends them to the bench — so re-adding one here would be the last remaining
+     way to view a trial from this tab. */
+  view = { ...view, tab: "workorders", mode: "detail", id: "WO-SN6-950", q: "", fStatus: "", fSub: "", woOpen: false, woLate: false, woMine: false, woDone: false, woIssues: false, sortKey: null, sortDir: null };
+  assert(!woIndexRows().some(w => w.id === "WO-SN6-950"), "an R&D run is not put back on the rail");
+  // The rule itself still holds for the records this rail DOES own.
+  view = { ...view, id: "WO-SN6-900", q: "zzz-nothing-matches" };
+  assert(woIndexRows().some(w => w.id === "WO-SN6-900"),
+    "a season run you are reading still never falls out from under you");
 });
 
 await t("the R&D chip is not offered when every run is a season run", () => {
   DB.parts = [];
   DB.workOrders = [{ id: "WO-SN6-900", partName: "NOSECONE", status: "InWork", steps: [] }];
-  view = { ...view, tab: "workorders", mode: "list", id: null, q: "", fStatus: "", fSub: "", woOpen: false, woLate: false, woMine: false, woDone: false, woIssues: false, woOnlyRnd: false, sortKey: null, sortDir: null };
+  view = { ...view, tab: "workorders", mode: "list", id: null, q: "", fStatus: "", fSub: "", woOpen: false, woLate: false, woMine: false, woDone: false, woIssues: false, sortKey: null, sortDir: null };
   render();
   assert(!/<b>\d+<\/b> R&amp;D/.test(main.innerHTML), "a chip that can only ever reveal nothing is noise");
 });
@@ -4010,7 +4039,7 @@ await t("a record written before R&D existed is a season record", () => {
   assert(!seed.some(isRnd), "undefined reads as false, everywhere");
   DB.parts = seed;
   DB.workOrders = woSeed.slice();
-  view = { ...view, tab: "parts", mode: "list", id: null, q: "", fSub: "", fLate: false, fMine: false, fDone: false, onlyRnd: false };
+  view = { ...view, tab: "parts", mode: "list", id: null, q: "", fSub: "", fLate: false, fMine: false, fDone: false };
   render();
   assert(!/tpill rnd/.test(main.innerHTML), "and nothing in the archive is badged");
   assert(pubProjection("parts", seed[0]).note === "", "the mirror writes an empty string, never undefined — a Firestore write of undefined throws");
@@ -4131,21 +4160,16 @@ await t("with nothing selected the bench still lands in a study", () => {
   assert(view.id === view.rdStudy, "and view.id is that study, not a leftover");
 });
 
-await t("setTab keeps the bench's study and still does not reset onlyRnd", () => {
+await t("setTab keeps the bench's study, and neither R&D rail flag exists any more", () => {
   rdFixture();
   view = { ...view, tab: "rnd", mode: "detail", id: "RDS-SN6-002", rdStudy: "RDS-SN6-002" };
   render();
   setTab("parts");
-  /* setTab resets woOnlyRnd and NOT onlyRnd. That asymmetry looks like an
-     oversight; it is the mechanism any "set the flag, then change tab" hand-off
-     rides on, and Season's R&D jump used exactly it until this tab became the
-     programme home and the jump started going straight to the bench. Still
-     pinned: the Parts chip is a per-visit switch on one rail and a per-visit
-     switch on the other, and making them symmetric is a behaviour change that
-     should fail loudly rather than quietly. */
-  view.onlyRnd = true;
-  setTab("parts");
-  assert(view.onlyRnd === true, "setTab must NOT reset onlyRnd");
+  /* Both onlyRnd and woOnlyRnd are retired. They held "show me the OTHER list"
+     on rails that now have one list each, and setTab's asymmetric handling of
+     them (it reset one and not the other) was load-bearing for Season's R&D
+     jump until that jump started going straight to the bench. */
+  assert(!/onlyRnd/.test(String(setTab)), "setTab resets neither, because neither is left");
   setTab("rnd");
   render();
   assert(view.rdStudy === "RDS-SN6-002",
@@ -4239,11 +4263,12 @@ await t("the masthead's create doors leave you on the bench, in edit mode", asyn
   render();
   assert(main.innerHTML.includes("newPart(true)") && main.innerHTML.includes("newWO(true)"),
     "an R&D part and an R&D run can both be started from the programme masthead");
-  /* Mirrored, not moved — the Parts and Work Orders toolbars keep their own
-     R&D doors, because a part started from the Parts rail is the same part. */
-  view = { ...view, tab: "parts", mode: "list", id: null, onlyRnd: true, q: "" };
+  /* The programme masthead is the only place a trial is started now. */
+  /* MOVED, not mirrored, as of 2026-09-18: an R&D part made from the Parts
+     toolbar would be invisible on the rail that made it. */
+  view = { ...view, tab: "parts", mode: "list", id: null, q: "" };
   render();
-  assert(main.innerHTML.includes("newPart(true)"), "Parts keeps its own R&D door");
+  assert(!main.innerHTML.includes("newPart(true)"), "and Parts no longer has an R&D door of its own");
 
   /* newPart(rnd) sets mode/id/edit and calls render() without touching
      view.tab, which is what makes the mirroring free. */
@@ -7216,7 +7241,7 @@ await t("Parts has the same Select… picker as Work orders, lead-only, one dele
   assert(/only a lead/i.test(lastToast), "and is told why: " + lastToast);
   assert(DB.parts.length === 2, "and the local copy is untouched");
 
-  view = { ...view, tab: "parts", mode: "list", id: null, partPick: null, q: "", fSub: "", fLate: false, fMine: false, fDone: false, onlyRnd: false, fEng: "" };
+  view = { ...view, tab: "parts", mode: "list", id: null, partPick: null, q: "", fSub: "", fLate: false, fMine: false, fDone: false, fEng: "" };
   render();
   assert(main.innerHTML.includes("startPartPick()"), "a member is offered the picker, for archiving");
   startPartPick(); togglePartPick("P-SN6-001");
@@ -7275,7 +7300,7 @@ await t("the rails show this season by default, hide archived, and the chips swa
     { id: "WO-SN5-003", partName: "Old wing", status: "Complete", retro: true },
   ];
   fb.roster = { name: "Simon", role: "lead" };
-  view = { ...view, tab: "parts", mode: "list", id: null, partPick: null, q: "", fSub: "", fLate: false, fMine: false, fDone: false, onlyRnd: false, fEng: "", allSeasons: false, showArch: false };
+  view = { ...view, tab: "parts", mode: "list", id: null, partPick: null, q: "", fSub: "", fLate: false, fMine: false, fDone: false, fEng: "", allSeasons: false, showArch: false };
   let ids = partIndexRows().map(p => p.id);
   assert(ids.join() === "P-SN6-001", "only the live SN6 part: " + ids.join());
   render();
@@ -7289,7 +7314,7 @@ await t("the rails show this season by default, hide archived, and the chips swa
   assert(ids.join() === "P-SN6-002", "the archived chip REPLACES the list: " + ids.join());
   view.showArch = false;
 
-  view = { ...view, tab: "workorders", woOpen: false, woDone: false, woLate: false, woMine: false, woIssues: false, woOnlyRnd: false, fStatus: "" };
+  view = { ...view, tab: "workorders", woOpen: false, woDone: false, woLate: false, woMine: false, woIssues: false, fStatus: "" };
   ids = woIndexRows().map(w => w.id);
   assert(ids.join() === "WO-SN6-001", "same on the work-order rail: " + ids.join());
   view.allSeasons = true;
@@ -7314,16 +7339,19 @@ await t("the 'no run yet' headers on the Work Orders rail follow the season and 
     { id: "P-SN6-003", partName: "Coupon", rnd: true },
   ];
   DB.workOrders = [];
-  view = { ...view, tab: "workorders", mode: "list", id: null, allSeasons: false, showArch: false, woOnlyRnd: false, sortKey: null, q: "" };
+  view = { ...view, tab: "workorders", mode: "list", id: null, allSeasons: false, showArch: false, sortKey: null, q: "" };
   let ids = woPartsNoRun().map(p => p.id);
   assert(ids.join() === "P-SN6-001", "this season, live, deliverable only: " + ids.join());
   view.allSeasons = true;
   assert(woPartsNoRun().length === 2, "the SN5 chip brings the SN5 clamshell back");
   view.allSeasons = false; view.showArch = true;
   assert(woPartsNoRun().map(p => p.id).join() === "P-SN6-002", "the archived chip swaps to the archived part");
-  view.showArch = false; view.woOnlyRnd = true;
-  assert(woPartsNoRun().map(p => p.id).join() === "P-SN6-003", "and R&D swaps to the coupon");
-  view.woOnlyRnd = false;
+  /* R&D never appears here in any state. These rows carry the button that
+     STARTS a run, so an R&D part among them would put its run-start press on
+     the Work Orders tab — the sixth hide site, and the one the old "five
+     places" doctrine never named. */
+  view.showArch = false;
+  assert(!woPartsNoRun().some(isRnd), "an R&D part is never offered a run from this rail");
   render();
   assert((main.innerHTML.match(/no run yet/g) || []).length === 1, "one header on the rail, not four");
 });

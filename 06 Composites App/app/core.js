@@ -32,11 +32,11 @@ var APP_VERSION = "6.0.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Disposing an issue now asks what was DONE about it, as well as what happened — and both stay readable on the work order afterwards, which they were not before.",
-  "A work order reads as sections again: the ones you work in are panels, the ones you look things up in are a quieter list underneath. A run that is curing goes amber; only a real problem goes red.",
-  "A part can be made on several molds. A split mold is two halves, and both belong on the part.",
-  "A part shows a photo of itself at the top. Add one from Links & files, or from the button that appears while you are editing.",
-  "An R&D study is a folder now: file parts and their runs under it and they group together on the strip.",
+  "R&D lives on the R&D tab now, and only there. Parts and Work Orders are the season lists; open a trial from anywhere — a search, the dashboard, a scanned label — and you land on the R&D tab with it open.",
+  "Start a trial from the R&D tab. The R&D part and R&D run buttons moved there with everything else.",
+  "A part made on several molds shows a progress bar for each one, so you can see which half is still on the Shopbot.",
+  "Notes on a work order are all in one place again, inside the Notes section, instead of a stray box at the bottom.",
+  "Subteam now offers Testing and N/A.",
 ];
 
 
@@ -1325,11 +1325,40 @@ function navBack(fallback) {
   view = { ...view, ...to, edit: false };
   render(); syncUrl();
 }
+/* ---------- R&D records live on the R&D tab, and only there ----------
+   Simon, 2026-09-18: an R&D part or run is viewable and editable from the R&D
+   tab alone. The Parts and Work Orders rails no longer list them at all.
+
+   That leaves ~20 arrival routes — a chip, the lineage bar, the dashboard, ⌘K,
+   Reports, a mold's Used-by list, a ticket's related-parts — every one of which
+   could hand an R&D record to a tab that will not show it. Rather than teach
+   twenty callers, this sits at the one choke point they all pass through.
+
+   It deliberately does NOT live in tabForId(). That function is pure, takes only
+   an id, and answers from the prefix — `P-` cannot tell a trial from a season
+   deliverable, and test_route.mjs holds it in step with fb.js's ID_PREFIX. Every
+   place that needs this answer has the RECORD in hand; that is where the
+   question gets asked. */
+function rdHome(tab, id) {
+  if (tab === "parts" && typeof isRnd === "function") {
+    const p = recById("parts", id);
+    if (p && isRnd(p)) return "rnd";
+  }
+  if (tab === "workorders" && typeof woIsRnd === "function") {
+    const w = recById("workOrders", id);
+    if (w && woIsRnd(w)) return "rnd";
+  }
+  return tab;
+}
+
 function openRecord(tab, id) {
   // Opening the same record you are already on is not a move, so it must not
   // put a step on the stack that Back would then spend doing nothing.
+  tab = rdHome(tab, id);
   const here = navHere();
   if (!(here.tab === tab && here.mode === "detail" && here.id === id)) navPush(here);
+  /* rdPane is derived from view.id by rdNormalize on the next render, so this
+     does not have to say which pane — only which tab. */
   view = { ...view, tab, mode: "detail", id, edit: false };
   closeDrawer(); render(); syncUrl();
 }
@@ -1584,7 +1613,9 @@ function consumePendingLink() {
   if (rec) {
     clearPendingLink();
     navClear();               // an arrival is not a step in a trail
-    view = { ...view, tab, mode: "detail", id, edit: false };
+    /* The whole point of the grace window above is that the record has arrived
+       by now, so this can ask what it is rather than guess from the prefix. */
+    view = { ...view, tab: rdHome(tab, id), mode: "detail", id, edit: false };
     return true;
   }
 
@@ -2898,7 +2929,7 @@ function setTab(id) {
   // and friends are NOT reset here, and a "late only" toggle left on in Parts
   // would otherwise silently filter a different tab's rail.
   view = { ...view, tab: id, mode: "list", id: null, edit: false, q: "", fStatus: "", fSub: "", fReimb: "", fBudget: "", sortKey: null, sortDir: null, tlArchive: false, tlPast: false,
-    woOpen: false, woLate: false, woMine: false, woDone: false, woOnlyRnd: false,
+    woOpen: false, woLate: false, woMine: false, woDone: false,
     // A half-finished Select… on one rail must not be waiting when you come back.
     // showArch is per-visit too; allSeasons is NOT reset, so a lead reading the
     // SN5 archive can walk Parts → Work Orders without re-toggling.

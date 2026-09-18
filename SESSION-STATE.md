@@ -151,6 +151,13 @@ production yet.
   study to a part or mold (re-examined 2026-09-18 when the strip put them on
   one screen, and declined again: adjacency is what the link was for).
 
+**R&D is only on the R&D tab (2026-09-18).** Both rails filter absolutely and
+`view.onlyRnd`/`woOnlyRnd` are gone. The mechanism is `rdHome(tab, id)` in
+core.js, called from `openRecord()` and `consumePendingLink()` — twenty-odd
+arrival routes pass through those two. **`tabForId()` stays pure and prefix-only
+on purpose**; do not push a record lookup into it. Full reasoning in
+DESIGN-NOTES, "The R&D tab IS the home".
+
 **Five fixes from Simon's v5.2.1 review (2026-09-18).** Mechanics are in
 DESIGN-NOTES under the three new dated sections. The decisions somebody would
 otherwise reverse thinking they found a bug: **a part's molds are `p.molds[]`

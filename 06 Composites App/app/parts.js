@@ -501,28 +501,22 @@ function partIndexRows() {
     .filter(p => (!view.fLate || partLate(p)))
     .filter(p => (!view.fMine || isMine([p.moldEngineer, p.manufacturingEngineer])))
     .filter(p => (!view.fEng || partHasEngineer(p, view.fEng)))
-    /* THE RAIL IS EITHER THE SEASON LIST OR THE R&D LIST, never both. The chip
-       swaps between them rather than adding R&D to what is already there, so
-       there is exactly one question on screen at a time: "what are we building
-       for the car" or "what are we trying out".
+    /* THIS RAIL IS THE SEASON LIST. Full stop — there is no longer a chip that
+       swaps it for the R&D list, because an R&D part is viewable and editable
+       from the R&D tab alone (Simon, 2026-09-18).
 
-       Off is the default and shows season parts only, which is what this tab is
-       for on an ordinary day. `onlyRnd` rather than `fRnd`: fLate, fMine and
-       fDone all narrow the same list, and this one REPLACES it.
-
-       The worry with a default that hides work carrying a real deadline is that
-       a deadline nobody sees is a deadline nobody meets. Three things answer it,
-       and all three have to stay true:
-         - the chip is always there when R&D exists, carrying its count, so the
-           rail says how many it is holding back rather than just holding them;
-         - the dashboard, the deadline lists and Reports never filter R&D, so a
-           late trial still surfaces on the landing page, which is where
-           lateness is supposed to be found;
-         - the selected part is re-added below, so arriving from a dashboard row
-           or a ⌘K hit opens the record even while the rail is showing the other
-           list. That is the one time both kinds appear at once, and it is the
-           existing "never falls out from under you" rule doing its job. */
-    .filter(p => (view.onlyRnd ? isRnd(p) : !isRnd(p)))
+       The old worry stands and is still answered: a default that hides work
+       carrying a real deadline risks a deadline nobody sees. What answers it now:
+         - the R&D chip is still here, still counting what EXISTS, but it is a
+           door to the R&D tab rather than a switch on this list — the rail says
+           how much it is not showing and where that work lives;
+         - the dashboard, the deadline lists and Reports still never filter R&D,
+           so a late trial surfaces on the landing page, which is where lateness
+           is supposed to be found;
+         - and the re-add below is no longer load-bearing for R&D: openRecord()
+           routes an R&D record to the bench through rdHome(), so no arrival can
+           strand one on a rail that refuses to list it. */
+    .filter(p => !isRnd(p))
     /* This season by default, last season's one chip away; and the archived
        list REPLACES the live one, the same swap the R&D chip does. Two more
        flags on the same rail, same reasoning as the note above. */
@@ -533,7 +527,11 @@ function partIndexRows() {
   // what you are reading keeps it in place instead (this is the whole point of
   // a persistent index).
   const sel = selectedPart();
-  if (sel && !rows.includes(sel)) rows = rows.concat([sel]);
+  /* ...but never an R&D part. The re-add exists so an arrival cannot land on a
+     rail that refuses to list what it opened; R&D arrivals are answered by
+     rdHome() sending them to the bench instead, so re-adding one here would be
+     the single remaining way to view a trial from this tab. */
+  if (sel && !isRnd(sel) && !rows.includes(sel)) rows = rows.concat([sel]);
   return view.sortKey ? sortedPartRows(rows)
     : rows.slice().sort((a, b) => (a.layupDeadline || "9999").localeCompare(b.layupDeadline || "9999") || cmpId(a.id, b.id));
 }
@@ -668,23 +666,22 @@ function renderPartIndex() {
             ${isLead() ? `<button class="danger sm" ${n ? "" : "disabled"} onclick="deletePickedParts()">Delete ${n || ""}</button>` : ""}
             <button class="sm ib" onclick="cancelPartPick()">${icon("x", 14)}</button>`;
         })() : `<button class="primary ib"${gx("Sign in to add a part.")} onclick="newPart()">${icon("plus", 15)} New Part</button>
-        <button class="ib" onclick="newPart(true)">${icon("plus", 15)} R&amp;D part</button>
         ${canEdit() ? `<button class="sm" onclick="startPartPick()">Select…</button>` : ""}
         <span class="muted tny" style="margin-left:auto">${rows.length} of ${D.length} parts</span>`}
       </div>
       <div class="psum">
-        ${summaryChip("open", s.open, !view.fLate && !view.fMine && !view.fDone && !view.onlyRnd, "resetPartFilters()")}
+        ${summaryChip("open", s.open, !view.fLate && !view.fMine && !view.fDone, "resetPartFilters()")}
         ${summaryChip("late", s.late, !!view.fLate, "view.fLate=!view.fLate;view.fMine=false;render()", s.late ? "bad" : "")}
         ${summaryChip("mine", s.mine, !!view.fMine, "view.fMine=!view.fMine;view.fLate=false;render()")}
         ${summaryChip("done", s.done, !!view.fDone, "view.fDone=!view.fDone;render()")}
         ${/* Only when there ARE any, the shape molds.js uses for retired and
               no-home. A chip reading "0 R&D" on a season with no trials in it is
               a control that teaches nothing and costs a row of space.
-              Its count is of R&D parts that EXIST, not of rows on screen, because
-              while it is off that number is exactly what the rail is not
-              showing you — which is the thing worth saying. */""}
+              Its count is of R&D parts that EXIST, which is exactly what this
+              rail is not showing you — and pressing it goes to the tab where
+              that work lives rather than swapping this list for it. */""}
         ${(() => { const n = (DB.parts || []).filter(isRnd).length;
-          return n ? summaryChip("R&D", n, !!view.onlyRnd, "view.onlyRnd=!view.onlyRnd;render()") : ""; })()}
+          return n ? summaryChip("R&D", n, false, "setTab('rnd')") : ""; })()}
         ${(() => { const h = railHeldBack(DB.parts);
           return (h.other ? summaryChip(h.otherLabel, h.other, !!view.allSeasons, "view.allSeasons=!view.allSeasons;render()") : "")
             + (h.arch ? summaryChip("archived", h.arch, !!view.showArch, "view.showArch=!view.showArch;render()") : ""); })()}
@@ -894,6 +891,9 @@ function rndControl(p, E) {
   return "";
 }
 
+/* Turning the flag ON moves the record: it is about to leave this rail, and a
+   part that vanishes out from under you while you are reading it is worse than
+   a tab change you can see. openRecord routes it through rdHome. */
 function setPartRnd(id, on) {
   const p = partById(id);
   if (!p || p.retro) return;
@@ -905,6 +905,11 @@ function setPartRnd(id, on) {
   }
   p.rnd = !!on;
   savePart(p, "rnd");
+  /* Flagged ON, the part leaves this rail for the bench. Following it is kinder
+     than letting it vanish out from under the person who just flagged it, and
+     openRecord routes it through rdHome. Flagged off, promoteToSeason has its
+     own path and this branch is not reached (there is no demote button). */
+  if (on) { openRecord("parts", id); return; }
   render();
 }
 
@@ -1743,7 +1748,11 @@ function renderPartDetail() {
       ${E ? `<button onclick="archivePart('${esc(p.id)}',${isArchived(p) ? "false" : "true"})">${isArchived(p) ? "Restore" : "Archive"}</button>` : ""}
       ${E && isLead() ? `<button class="danger" onclick="delPart('${esc(p.id)}')">Delete</button>` : ""}
       ${rndControl(p, E)}
-      <span class="mdnav no-print">
+      ${/* The arrows walk the PARTS rail, which no longer lists R&D. From the
+            bench they would teleport you to an unrelated season part, so they
+            are not offered there — the strip above the bench is how you move
+            between trials. */""}
+      <span class="mdnav no-print"${view.tab === "rnd" ? " hidden" : ""}>
         <button class="sm" title="Previous part (↑)" onclick="movePartSelection(-1)">${icon("chevronLeft", 14)}</button>
         <button class="sm" title="Next part (↓)" onclick="movePartSelection(1)">${icon("chevronRight", 14)}</button>
       </span>
@@ -1848,7 +1857,7 @@ function partsKeydown(e) {
 }
 document.addEventListener("keydown", partsKeydown);
 
-function resetPartFilters() { view = { ...view, fLate: false, fMine: false, fDone: false, onlyRnd: false, fEng: "", fSub: "", q: "" }; render(); }
+function resetPartFilters() { view = { ...view, fLate: false, fMine: false, fDone: false, fEng: "", fSub: "", q: "" }; render(); }
 
 /* Every write is single-field, and the whole tab re-renders afterwards: the old
    version only re-rendered for four keys, so renaming a part left a stale <h2>

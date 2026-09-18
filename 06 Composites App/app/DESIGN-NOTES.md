@@ -393,7 +393,53 @@ ask which parts those are. Reading the flag is not the danger — the danger is 
 both of those are still asserted above. The two record kinds stay apart in the
 data; they simply share a screen.
 
-### The R&D tab is a lens, not a home (2026-09-18)
+### The R&D tab IS the home (2026-09-18, revised)
+
+**This section said the opposite for about a day.** It said the tab was a lens
+over records the Parts and Work Orders rails still owned, and that removing them
+from those rails "would have cost the lineage bar, the scan landing, ⌘K, the
+dashboard, Season's jump and the run-start header, and bought nothing". Simon
+asked for the removal anyway, and the costs turned out to be one function.
+
+**An R&D part or run is viewable and editable from the R&D tab alone.** Both
+rails filter absolutely — `!isRnd(p)` and `!woIsRnd(w)`, no chip, no switch —
+and `woPartsNoRun()` filters too (the sixth hide site, which the old "five
+places" list never named: those rows carry the button that STARTS a run).
+
+**`rdHome(tab, id)` in core.js is the whole mechanism.** Around twenty routes
+can hand an R&D record to a tab that will not list it — a chip, the lineage bar,
+the dashboard, ⌘K, Reports, a mold's Used-by row, a ticket's related parts. All
+of them pass through `openRecord()`, so the redirect sits there instead of in
+twenty callers. `consumePendingLink()` calls it too, which is safe precisely
+because that function already waits for the record to arrive (that is what
+`PENDING_GRACE_MS` is for), so it has the record in hand when it decides.
+
+**`tabForId()` stays pure and prefix-only, and this is deliberate.** It takes an
+id and nothing else; `P-` cannot tell a trial from a deliverable, and
+`test_route.mjs` holds it in step with `fb.js`'s `ID_PREFIX`. Every caller that
+needs the R&D answer has the record; that is where the question is asked. Do not
+push a record lookup down into it.
+
+Three consequences that are easy to miss:
+
+- **The rails' "selected record is re-added" rule skips R&D.** That rule exists
+  so an arrival cannot strand you on a rail that refuses to list what it opened.
+  R&D arrivals are answered by the redirect instead, so re-adding one would be
+  the last remaining way to view a trial from those tabs.
+- **The R&D chips stay on both rails, as doors.** They still count what EXISTS,
+  because a rail that hides work without saying so is the failure this whole
+  feature exists to avoid. Pressing one now goes to the bench.
+- **The prev/next arrows are hidden in the bench.** They walk the Parts and Work
+  Orders rails, which no longer contain R&D, so from the bench they would
+  teleport you to an unrelated season record. The strip is how you move there.
+
+`newPart(true)` and `newWO(true)` are **moved, not mirrored** — a trial started
+from the Parts toolbar would be invisible on the rail that made it. And
+`setPartRnd(id, true)` follows the record to the bench, because a part that
+vanishes out from under the person who just flagged it is worse than a tab
+change they can see.
+
+### What the lens section used to say
 
 The tab shows all three kinds at once — a card per study, a card per R&D part
 with its runs as chips inside it — over a full-width bench that renders the
@@ -414,12 +460,9 @@ But it does not own those records:
   dozens of inline handlers at *click* time, so a consumed id means a page that
   paints once and then answers every press about the wrong record.
 
-**The `onlyRnd` / `woOnlyRnd` chips on the Parts and Work Orders rails are
-unchanged and stay.** They are how you filter while you are already over there,
-and none of the five hide sites moved. Consolidation meant the R&D tab became
-the one place you *look*, not the only place the records *exist* — removing them
-would have cost the lineage bar, the scan landing, ⌘K, the dashboard, Season's
-jump and the run-start header, and bought nothing.
+**Superseded.** `onlyRnd` and `woOnlyRnd` are gone — not unused, gone, with a
+test saying so, because a dead key on `view` is the kind of thing somebody wires
+back up. See the section above for what replaced them.
 
 **Two sticky bands.** The bench is the only screen in the app with two: the
 strip, and the `.secnav` of the detail it renders. `.rdbench .secnav` and
