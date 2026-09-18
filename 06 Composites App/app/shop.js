@@ -789,7 +789,11 @@ function shopNextStage(spec, o) {
    cannot go stale: it is every work order and part pointing here. */
 function moldUses(m) {
   const wos = (DB.workOrders || []).filter(w => w.moldRef === m.id || (w.mold && w.mold.moldId === m.id));
-  const parts = (DB.parts || []).filter(p => p.mold === m.id);
+  /* Any position in the list, not just the first: a split mold's second half
+     is used by the part exactly as much as its first, and this join going
+     single-valued is how "Used by" would quietly start lying the day a part
+     grew a second mold. */
+  const parts = (DB.parts || []).filter(p => (p.molds || []).includes(m.id) || p.mold === m.id);
   if (!wos.length && !parts.length) return "";
   return `<h3>Used by</h3>
     <div class="stagerow">${[

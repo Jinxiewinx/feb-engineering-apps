@@ -777,6 +777,53 @@ await t("TWO TIERS — and a warned reference section comes back as a work card"
   assert(!/fresh/.test(String(secTier)), "but freshness is not a tier input");
 });
 
+await t("A PART CAN BE MADE ON SEVERAL MOLDS — a split mold is two halves", () => {
+  DB.molds = [{ id: "MOLD-A", name: "NOSECONE UPPER", stage: "Sealed" },
+              { id: "MOLD-B", name: "NOSECONE LOWER", stage: "Machining" }];
+  DB.parts = [{ id: "P-MM-1", partName: "NOSECONE", subteam: "AERO", layupDeadline: "" }];
+  DB.workOrders = [];
+  const p = DB.parts[0];
+  assert(partMolds(p).length === 0, "no molds to start");
+
+  linkMold("P-MM-1", "MOLD-A");
+  linkMold("P-MM-1", "MOLD-B");
+  assert(partMolds(p).map(m => m.id).join() === "MOLD-A,MOLD-B", "both halves are linked, in order");
+  linkMold("P-MM-1", "MOLD-A");
+  assert(partMolds(p).length === 2, "and linking one twice does not double it");
+
+  /* The places that can only draw one — the lineage bar's linear chain, the QR
+     label's single line, the drawings sheet — get the first, and the list
+     keeps its order so that answer is stable. */
+  assert(partMold(p).mold.id === "MOLD-A" && partMold(p).more === 1,
+    "partMold still answers with ONE, and says how many more there are");
+
+  /* The reverse join has to find a part by ANY of its molds, or 'Used by' on
+     the second half is silently empty the day this ships. */
+  assert(moldUses(DB.molds[1]).includes("P-MM-1"), "the mold's Used-by finds it through the second half too");
+
+  unlinkMold("P-MM-1", "MOLD-A");
+  assert(partMolds(p).map(m => m.id).join() === "MOLD-B", "unlinking leaves the other");
+});
+
+await t("a pre-list part keeps working, and there is no mirrored second field", () => {
+  DB.molds = [{ id: "MOLD-A", name: "OLD MOLD", stage: "Sealed" }];
+  DB.parts = [{ id: "P-MM-2", partName: "LEGACY", subteam: "AERO", mold: "MOLD-A", layupDeadline: "" }];
+  DB.workOrders = [];
+  const p = DB.parts[0];
+  /* Records written before the list read through p.mold. Nothing writes that
+     field any more — keeping the same fact in two fields, with the invariant
+     held by convention across separate writers, is exactly the shape
+     woIsRnd() derives to avoid. */
+  assert(partMolds(p).map(m => m.id).join() === "MOLD-A", "an old single-mold record still resolves");
+  assert(moldUses(DB.molds[0]).includes("P-MM-2"), "and is still found by the reverse join");
+  linkMold("P-MM-2", "MOLD-A");
+  assert(partMolds(p).length === 1, "linking the one it already has is a no-op, not a duplicate");
+  unlinkMold("P-MM-2", "MOLD-A");
+  assert(partMolds(p).length === 0,
+    "unlinking clears the legacy field too, or the chip comes straight back on the next render");
+  assert(!p.mold, "so p.mold is emptied rather than left to shadow the list");
+});
+
 await t("Details leads when a work order is being created or edited, Steps when it is being read", () => {
   assert(woSections(false)[0].id === "steps", "reading a run, Steps leads — that is the bench action");
   assert(woSections(true)[0].id === "overview", "editing one, Details leads — that is what you are filling in");

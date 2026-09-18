@@ -789,12 +789,7 @@ function pfld(p, label, key, opts, type) {
      p.mold since they were written; nothing ever wrote it, so the reverse join
      on the mold ("used by") and the mold line on the QR label were dead. This
      picker is the whole fix. */
-  if (type === "mold") return `<div class="f"><label>${label}</label><select onchange="updPart('${key}',this.value)">
-    <option value="" ${v ? "" : "selected"}>— no mold —</option>
-    ${(DB.molds || []).slice().sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id))).map(m =>
-      `<option value="${esc(m.id)}" ${m.id === v ? "selected" : ""}>${esc(m.name || m.id)}${m.stage ? " — " + esc(m.stage) : ""}</option>`).join("")}
-    ${v && !recById("molds", v) ? `<option value="${esc(v)}" selected>${esc(v)} (not found)</option>` : ""}
-  </select></div>`;
+  if (type === "mold") return moldPicker(p, label);
   return `<div class="f"><label>${label}</label><input ${type ? `type="${type}"` : ""} value="${esc(v)}" onchange="updPart('${key}',this.value)"></div>`;
 }
 
@@ -956,12 +951,69 @@ async function promoteToSeason(id) {
   render();
 }
 
+/* ---------- the mold list ----------
+   A part can be made on several molds — a split mold is two halves. Chips with
+   a remove press, plus one select that adds.
+
+   Deliberately NOT the token picker (pickerInit/pickerField). That one stages
+   its selection in PICKERS[id] and is read at a batch-save moment, and a part
+   has none: this page says "every change saves as you make it" and updPart
+   writes per field. It also has no editPart() to initialise from — the Edit
+   button is an inline expression, so every render() would reset unsaved
+   toggles. Each press here writes on its own.
+
+   Both writes go through saveField reducers, the p.bom pattern: two people
+   adding a half each must end up with both, not with whichever wrote last. */
+function moldPicker(p, label) {
+  const molds = partMolds(p);
+  const have = new Set(molds.map(m => m.id));
+  const missing = (p.molds || []).filter(id => id && !recById("molds", id));
+  const options = (DB.molds || []).slice()
+    .filter(m => !have.has(m.id))
+    .sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
+  return `<div class="f moldf"><label>${label}</label>
+    <div class="moldchips">
+      ${molds.map(m => `<span class="chip moldchip">${esc(m.name || m.id)}${m.stage ? ` <span class="tny muted">${esc(m.stage)}</span>` : ""}
+        <button type="button" class="x" title="Unlink ${esc(m.name || m.id)}" aria-label="Unlink ${esc(m.name || m.id)}" onclick="unlinkMold('${esc(p.id)}','${esc(m.id)}')">×</button></span>`).join("")}
+      ${missing.map(id => `<span class="chip moldchip bad">${esc(id)} (not found)
+        <button type="button" class="x" title="Remove ${esc(id)}" aria-label="Remove ${esc(id)}" onclick="unlinkMold('${esc(p.id)}','${esc(id)}')">×</button></span>`).join("")}
+      ${molds.length || missing.length ? "" : `<span class="muted tny">No mold linked.</span>`}
+    </div>
+    ${options.length ? `<select class="moldadd" aria-label="Link another mold" onchange="linkMold('${esc(p.id)}', this.value); this.value='';">
+      <option value="" selected>${molds.length ? "+ Link another mold…" : "+ Link a mold…"}</option>
+      ${options.map(m => `<option value="${esc(m.id)}">${esc(m.name || m.id)}${m.stage ? " — " + esc(m.stage) : ""}</option>`).join("")}
+    </select>` : `<span class="tny muted">Every mold is already linked.</span>`}
+  </div>`;
+}
+
+function linkMold(partId, moldId) {
+  const p = partById(partId);
+  if (!p || !moldId || !recById("molds", moldId)) return;
+  if ((p.molds || []).includes(moldId)) return;
+  p.molds = (p.molds || []).concat([moldId]);           // optimistic
+  saveField("parts", p, "molds", arr => (arr || []).includes(moldId) ? arr : (arr || []).concat([moldId]));
+  render();
+}
+
+function unlinkMold(partId, moldId) {
+  const p = partById(partId);
+  if (!p) return;
+  /* A pre-list record keeps its mold in p.mold. Unlinking has to clear that
+     too, or partMolds falls back to it and the chip comes straight back. */
+  p.molds = (p.molds || partMolds(p).map(m => m.id)).filter(id => id !== moldId);
+  saveField("parts", p, "molds", arr => (arr || []).filter(id => id !== moldId));
+  if (p.mold === moldId) { p.mold = ""; savePart(p, "mold"); }
+  render();
+}
+
 function confirmMoldLink(partId, moldId) {
   const p = partById(partId);
   if (!p || !recById("molds", moldId)) return;
-  p.mold = moldId; savePart(p, "mold");
+  /* APPENDS. This press confirms a mold the app worked out from the part's
+     runs; on a split mold it will be pressed once per half, and an overwrite
+     would make the second confirmation throw the first away. */
+  linkMold(partId, moldId);
   toast("Mold linked to this part.");
-  render();
 }
 /* A remake is a second run, not a rewritten first one. Prefilled with the
    part's identity and its layup plan, so the new traveler starts where the
@@ -1042,7 +1094,11 @@ async function newRunForPart(partId, opts) {
     processType: proc, moldEngineer: p.moldEngineer || "", manufacturingEngineer: p.manufacturingEngineer || "",
     moldEngineerEmail: p.moldEngineerEmail || "", manufacturingEngineerEmail: p.manufacturingEngineerEmail || "",
     createdDate: today(), dueDate: p.layupDeadline || "", partId: p.id,
-    mold: { moldId: p.mold || "", layers: "", density: "", sealingType: "XCR", location: p.moldLocation || "" },
+    /* One mold per run, and the first is the answer. wo.mold is a single
+       embedded object carrying per-mold-per-run facts — layers, density,
+       sealing type, where it is right now — none of which generalise to a
+       list. A run on the other half of a split mold is a second run. */
+    mold: { moldId: (partMolds(p)[0] || {}).id || "", layers: "", density: "", sealingType: "XCR", location: p.moldLocation || "" },
     layupStack: JSON.parse(JSON.stringify(p.layupStack || [])), stackSource: "spec",
     // A fresh run starts from the part's plan, and that includes its BOM —
     // the copy is the as-built record from here on; editing it never touches
@@ -1169,7 +1225,7 @@ function ptSecDetails(p, E) {
         ${/* The mold this part is pulled off. Derived through the runs until
               somebody commits it, so an SN5 record shows the right answer
               before anyone has touched it. */""}
-        ${!E && !p.mold && partMold(p)
+        ${!E && !partMolds(p).length && partMold(p)
           ? (() => { const pm = partMold(p); return `<div class="f"><label>Mold</label><div class="ro">
               <span class="chip" onclick="openRecord('molds','${esc(pm.mold.id)}')">${esc(pm.mold.name || pm.mold.id)}</span>
               <span class="muted tny">via ${esc(pm.through ? pm.through.id : "a run")}</span></div></div>`; })()
@@ -1255,12 +1311,21 @@ function ptSecMold(p, E) {
   if (!pm) return `<span class="muted tny">No mold linked${E ? " — set one under Details." : "."}</span>`;
   const m = pm.mold, plan = partPlan(p);
   const stageMismatch = m.stage && p.moldProgress && !moldStagesAgree(p.moldProgress, m.stage);
+  /* Every linked mold gets a row. A split mold is two halves and showing one of
+     them is how somebody walks to the rack for the piece that is not there. */
+  const all = partMolds(p);
+  const rest = all.slice(1);
   return `<div class="linkrow">
       <span class="chip" onclick="openRecord('molds','${esc(m.id)}')">${esc(m.name || m.id)}</span>
       ${m.stage ? `<span class="pill">${esc(m.stage)}</span>` : ""}
       ${pm.via === "wo" ? `<span class="muted tny">matched via ${esc(pm.through ? pm.through.id : "a run")}</span>
         <button class="sm no-print" onclick="confirmMoldLink('${esc(p.id)}','${esc(m.id)}')">Confirm</button>` : ""}
     </div>
+    ${rest.map(o => `<div class="linkrow">
+      <span class="chip" onclick="openRecord('molds','${esc(o.id)}')">${esc(o.name || o.id)}</span>
+      ${o.stage ? `<span class="pill">${esc(o.stage)}</span>` : ""}
+    </div>`).join("")}
+    ${all.length > 1 ? `<div class="tny muted" style="margin-top:4px">${all.length} molds make this part. The plan and drawings below follow the first.</div>` : ""}
     ${stageMismatch ? `<div class="tny warn" style="margin-top:4px">This part says “${esc(p.moldProgress)}” but the mold record says “${esc(m.stage)}”. One of them is out of date.</div>` : ""}
     ${plan ? `<div class="toolbar no-print" style="margin-top:6px">
       <button class="ib sm" onclick="openRecord('molds','${esc(plan.id)}')">${icon("parts", 14)} Open plan &amp; 3D view</button>

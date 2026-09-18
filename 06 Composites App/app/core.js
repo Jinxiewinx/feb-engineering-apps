@@ -1985,9 +1985,28 @@ function linkedCounterpart(coll, o) {
    will resolve until somebody confirms it. moldUses() (shop.js) and the QR
    label (labels.js) have always READ p.mold — nothing ever wrote it, so both
    start working the moment the picker lands. */
+/* EVERY mold a part is made on, in order. A split mold is two tool halves
+   making one part, so the edge is a list — `p.molds`. `p.mold` is the old
+   single field and is read here for records written before the list existed;
+   nothing writes it any more, so the two cannot drift apart. There is no mirror
+   and no primary copy: keeping the same fact in two fields, with the invariant
+   maintained by convention across separate writers, is the shape woIsRnd()
+   derives specifically to avoid. */
+function partMolds(p) {
+  if (!p) return [];
+  const ids = (p.molds || []).slice();
+  if (!ids.length && p.mold) ids.push(p.mold);          // pre-list records
+  const seen = new Set();
+  return ids.filter(id => id && !seen.has(id) && seen.add(id))
+    .map(id => recById("molds", id)).filter(Boolean);
+}
+/* THE mold, for the places that can only draw one: the lineage bar's linear
+   chain, the QR label's one 7pt line, the stage-agreement warn, the drawings
+   sheet. The first is the answer, which is why the list keeps its order. */
 function partMold(p) {
   if (!p) return null;
-  if (p.mold) { const m = recById("molds", p.mold); if (m) return { mold: m, via: "id" }; }
+  const own = partMolds(p);
+  if (own.length) return { mold: own[0], via: "id", more: own.length - 1 };
   const runs = partRuns(p);
   for (const r of runs) {
     const id = r.wo.moldRef || (r.wo.mold && r.wo.mold.moldId);
