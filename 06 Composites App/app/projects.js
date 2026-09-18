@@ -69,8 +69,33 @@ function statusGate(p, newStatus) {
   if (newStatus !== "Done" || !isIssue(p)) return null;
   if (!p.resolutionMethod) return "Select a resolution method before closing this issue.";
   if (!(p.whatHappened || "").trim()) return "Document what happened before closing this issue.";
+  /* THE THIRD CLAUSE (Simon, 2026-09-18). Two questions, two answers: what
+     happened is why it went wrong, and this is what was done about it. Asked on
+     EVERY method, not only the two where something was physically done — a
+     "use as is" with no reason recorded is the disposition you will most want a
+     reason for when somebody asks in March why this part flew. The prompt
+     changes wording per method so it never reads as the same question twice. */
+  if (!(p.dispositionNote || "").trim()) return dispoRefusal(p.resolutionMethod);
   return null;
 }
+
+/* One table, three surfaces. The work-order row, the closeout modal and the
+   ticket page all ask with these words, so they cannot drift into asking three
+   different questions about one field. */
+const DISPO_WORDS = {
+  "UAI (Use As Is)":    { ask: "Why is it acceptable as it is?",            no: "why it is acceptable as it is" },
+  "Corrective Action":  { ask: "What was changed so it cannot recur?",      no: "what was changed" },
+  "Rework":             { ask: "What was done to fix it?",                  no: "what was done to fix it" },
+  "Scrap":              { ask: "Why could it not be saved?",                no: "why it could not be saved" },
+  "Other":              { ask: "What was done?",                            no: "what was done" },
+};
+const DISPO_FALLBACK = { ask: "What was done?", no: "what was done" };
+function dispoWords(method) { return DISPO_WORDS[method] || DISPO_FALLBACK; }
+function dispoPrompt(method) { return dispoWords(method).ask; }
+/* The refusal is its own phrasing, not the question with the punctuation filed
+   off: "Record why could it not be saved" is what that shortcut produces, and a
+   gate that refuses in broken English reads as a bug in the gate. */
+function dispoRefusal(method) { return `Record ${dispoWords(method).no} before closing this issue.`; }
 
 /* ---- Slack (app → Slack only, one-directional; no backend exists in this
    repo, so this app never accepts inbound Slack traffic) ----
@@ -656,7 +681,7 @@ function setIssueDisposition(id, val) {
    with the plain truth (the notes/notesHtml rule from workorders.js).
    Returns the gate's string on refusal — callers render it verbatim — or
    null on success, with the single Slack announce fired via the choke point. */
-function resolveIssue(id, method, narrative) {
+function resolveIssue(id, method, narrative, dispo) {
   const p = projById(id);
   if (!p || !isIssue(p)) return "Not an issue.";
   if (method !== undefined && (method || "") !== (p.resolutionMethod || "")) {
@@ -672,6 +697,13 @@ function resolveIssue(id, method, narrative) {
       saveProj(p, "whatHappenedHtml");
     }
   }
+  if (dispo !== undefined) {
+    const text = String(dispo).trim();
+    if (text && text !== (p.dispositionNote || "")) {
+      p.dispositionNote = text;
+      saveProj(p, "dispositionNote");
+    }
+  }
   const blocked = statusGate(p, "Done");
   if (blocked) { render(); return blocked; }
   const prevStatus = projStatus(p);
@@ -685,12 +717,29 @@ function resolveIssue(id, method, narrative) {
    keys on resolutionMethod, and a reopened issue that kept one would let a WO
    complete over a problem somebody just said is not fixed. The old method
    survives as a comment, so history is a read not a memory. */
+/* The ticket page's own writer for the second narrative. Saves on change like
+   every other field there; the gate reads the record, not the box. */
+function setDispositionNote(id, val) {
+  const p = projById(id);
+  if (!p || !isIssue(p)) return;
+  const text = String(val || "").trim();
+  if (text === (p.dispositionNote || "")) return;
+  p.dispositionNote = text;
+  saveProj(p, "dispositionNote");
+  render();
+}
+
 function reopenIssue(id) {
   const p = projById(id);
   if (!p || !isIssue(p) || projStatus(p) !== "Done") return;
   const old = p.resolutionMethod;
   p.status = "In Progress"; saveProj(p, "status");
   p.resolutionMethod = ""; saveProj(p, "resolutionMethod");
+  /* The disposition note goes with the disposition. whatHappened SURVIVES a
+     reopen — the root cause is still true — but "what was done" is not true any
+     more: reopening is somebody saying the fix did not work. Leaving it would
+     prefill the next closeout with a stale account of a repair that failed. */
+  if (p.dispositionNote) { p.dispositionNote = ""; saveProj(p, "dispositionNote"); }
   const note = `Reopened by ${signerName()}${old ? ` — the “${old}” disposition is withdrawn` : ""}.`;
   const c = { id: "C" + Date.now(), author: signerName(), email: myEmail(), ts: new Date().toISOString(), text: note, html: esc(note) };
   p.comments = (p.comments || []).concat([c]);           // optimistic
@@ -894,7 +943,12 @@ function renderProjDetail() {
         <button class="link no-print" onclick="reopenIssue('${p.id}')">Reopen</button></div>`;
       if (st === "Cancelled") return `<h3>Resolution method</h3>
         <div class="muted tny">Cancelled — turned out not to be a real issue, so it needs no disposition.</div>`;
-      return `<h3>Resolve</h3>
+      return `<h3>${esc(dispoPrompt(p.resolutionMethod))}</h3>
+      <div class="field no-print">
+        <textarea id="tk-dispo-${p.id}" placeholder="Required before this can close."
+          onchange="setDispositionNote('${p.id}', this.value)">${esc(p.dispositionNote || "")}</textarea>
+      </div>
+      <h3>Resolve</h3>
       <div class="resolveband no-print">
         <select aria-label="Resolution method" onchange="setIssueDisposition('${p.id}',this.value)">
           <option value="" ${p.resolutionMethod ? "" : "selected"}>— not yet disposed —</option>

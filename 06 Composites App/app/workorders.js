@@ -794,8 +794,22 @@ function blockerOpenBefore(wo, idx) {
 // script load order doesn't matter here since these only run at call time,
 // well after every classic script has finished loading.
 function issuesForWO(woId) { return (DB.projects || []).filter(p => isIssue(p) && p.workOrderId === woId); }
-// Cancelled issues need no disposition — they turned out not to be real.
-function undisposedIssuesForWO(woId) { return issuesForWO(woId).filter(p => projStatus(p) !== "Cancelled" && !p.resolutionMethod); }
+/* Cancelled issues need no disposition — they turned out not to be real.
+
+   DISPOSED MEANS DISPOSED AND EXPLAINED (Simon, 2026-09-18). A method alone
+   used to be enough, and that made the second narrative toothless in the one
+   place it matters most: picking "Scrap" dropped the row out of the closeout
+   modal, the work order completed, and nobody ever wrote down why the part
+   could not be saved. Requiring both here is what makes "always ask when
+   disposing" true rather than merely rendered.
+
+   Records disposed before this shipped keep their method and gain a blank
+   note, so a long-closed work order can re-open this gate. That is the honest
+   outcome: the question was never asked of them, and it is worth asking. */
+function undisposedIssuesForWO(woId) {
+  return issuesForWO(woId).filter(p => projStatus(p) !== "Cancelled"
+    && (!p.resolutionMethod || !(p.dispositionNote || "").trim()));
+}
 /* Issues filed from a step carry stepRef {seq, index, title} — seq is the
    match key (it survives step-array edits better than the index, and the
    title snapshot survives everything). NOT parentId: a sub-ticket can never
@@ -2161,6 +2175,7 @@ function woSecIssues(wo, E) {
     const d = WI_DRAFTS[p.id] || {};
     const method = d.method !== undefined ? d.method : (p.resolutionMethod || "");
     const what = d.what !== undefined ? d.what : (p.whatHappened || "");
+    const dispo = d.dispo !== undefined ? d.dispo : (p.dispositionNote || "");
     const camera = `<button class="ib sm no-print" title="Add photos to this issue" aria-label="Add photos to ${esc(p.id)}" onclick="addIssuePhotos('${esc(p.id)}')">${icon("image", 14)}</button>`;
     return `<div class="corow" id="wi-row-${esc(p.id)}">
       <div>${chip("projects", p.id, p.id)} <b>${esc(p.title || "")}</b> ${meta}</div>
@@ -2175,6 +2190,11 @@ function woSecIssues(wo, E) {
         </select></div>
       <div class="field"><label for="wi-w-${esc(p.id)}">What happened</label>
         <textarea id="wi-w-${esc(p.id)}" oninput="wiDraft('${esc(p.id)}','what',this.value)" placeholder="Root cause — required before this work order can close">${esc(what)}</textarea></div>
+      ${/* The second answer. Its prompt comes from dispoPrompt() rather than a
+            literal, so this row, the closeout modal and the ticket page cannot
+            drift into asking three different questions about one field. */""}
+      <div class="field"><label for="wi-d-${esc(p.id)}">What was done</label>
+        <textarea id="wi-d-${esc(p.id)}" oninput="wiDraft('${esc(p.id)}','dispo',this.value)" placeholder="${esc(dispoPrompt(method))} Required before this work order can close.">${esc(dispo)}</textarea></div>
       <div class="no-print"><button onclick="woResolveIssue('${esc(p.id)}')">Resolve</button>${camera}</div>`}
     </div>`;
   }).join("");
@@ -2193,7 +2213,8 @@ function woSecIssues(wo, E) {
 function woResolveIssue(pid) {
   const m = document.getElementById("wi-m-" + pid);
   const w = document.getElementById("wi-w-" + pid);
-  const r = resolveIssue(pid, m ? m.value : undefined, w ? w.value : undefined);
+  const d = document.getElementById("wi-d-" + pid);
+  const r = resolveIssue(pid, m ? m.value : undefined, w ? w.value : undefined, d ? d.value : undefined);
   if (r) { toast(r, "error"); return; }
   // Saved, so the draft has done its job. Leaving it would shadow the record.
   wiClearDraft(pid);
@@ -2470,7 +2491,9 @@ function coDrafts() {
   for (const id of (CLOSEOUT && CLOSEOUT.openIds) || []) {
     const m = document.getElementById("co-m-" + id);
     const t = document.getElementById("co-w-" + id);
-    if (m || t) drafts[id] = { method: m ? m.value : undefined, what: t ? t.value : undefined };
+    const dp = document.getElementById("co-d-" + id);
+    if (m || t || dp) drafts[id] = { method: m ? m.value : undefined, what: t ? t.value : undefined,
+                                     dispo: dp ? dp.value : undefined };
   }
   return drafts;
 }
@@ -2488,6 +2511,7 @@ function openWOCloseoutModal(woId, drafts, gates) {
     const d = drafts[p.id] || {};
     const method = d.method !== undefined ? d.method : (p.resolutionMethod || "");
     const what = d.what !== undefined ? d.what : (p.whatHappened || "");
+    const dispo = d.dispo !== undefined ? d.dispo : (p.dispositionNote || "");
     const stepLine = p.stepRef ? ` · on step ${esc(String(p.stepRef.seq))} · ${esc(p.stepRef.title || "")}` : "";
     const nFiles = (p.files || []).length;
     return `<div class="corow">
@@ -2500,6 +2524,8 @@ function openWOCloseoutModal(woId, drafts, gates) {
         </select></div>
       <div class="field"><label>What happened</label>
         <textarea id="co-w-${esc(p.id)}" placeholder="Root cause — required before this can close">${esc(what)}</textarea></div>
+      <div class="field"><label>What was done</label>
+        <textarea id="co-d-${esc(p.id)}" placeholder="${esc(dispoPrompt(method))} Required before this can close.">${esc(dispo)}</textarea></div>
       ${gates[p.id] ? `<div class="gate"><span class="gi">⚠</span><div>${esc(gates[p.id])}</div></div>` : ""}
       <div><button onclick="coResolve('${esc(woId)}','${esc(p.id)}')">Resolve</button>
         <button class="link" onclick="coCancelTicket('${esc(woId)}','${esc(p.id)}')">Cancel ticket (false alarm)</button></div>
@@ -2507,7 +2533,7 @@ function openWOCloseoutModal(woId, drafts, gates) {
   }).join("");
   openModal(`
     <h2>Close out ${esc(woId)} — ${open.length} open issue${open.length > 1 ? "s" : ""} need${open.length > 1 ? "" : "s"} a disposition</h2>
-    <p class="muted tny">Each issue needs a resolution method and a documented "what happened" before this work order can complete. Every Resolve saves immediately.</p>
+    <p class="muted tny">Each issue needs a resolution method, what happened, and what was done before this work order can complete. Every Resolve saves immediately.</p>
     ${doneRows}${rows}
     <div class="foot">
       <button onclick="CLOSEOUT=null;closeModal();render()">Not now</button>
@@ -2518,7 +2544,7 @@ function openWOCloseoutModal(woId, drafts, gates) {
 function coResolve(woId, pid) {
   const drafts = coDrafts();
   const d = drafts[pid] || {};
-  const r = resolveIssue(pid, d.method || "", d.what);
+  const r = resolveIssue(pid, d.method || "", d.what, d.dispo);
   if (r) { openWOCloseoutModal(woId, drafts, { [pid]: r }); return; }
   CLOSEOUT = CLOSEOUT || { woId, resolved: [] };
   CLOSEOUT.resolved.push(pid);
@@ -2532,7 +2558,7 @@ function coResolveAll(woId) {
   const drafts = coDrafts();
   for (const pid of ((CLOSEOUT && CLOSEOUT.openIds) || []).slice()) {
     const d = drafts[pid] || {};
-    const r = resolveIssue(pid, d.method || "", d.what);
+    const r = resolveIssue(pid, d.method || "", d.what, d.dispo);
     if (r) { openWOCloseoutModal(woId, drafts, { [pid]: r }); return; }
     CLOSEOUT.resolved.push(pid);
     delete drafts[pid];

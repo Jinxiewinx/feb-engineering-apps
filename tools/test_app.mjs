@@ -553,10 +553,35 @@ await t("an undisposed linked issue blocks WO completion; disposing it unblocks"
   updWO("status", "Complete");
   assert(lastToast.includes("linked issue"), "blocked: " + lastToast);
   assert(woById(woId).status !== "Complete", "not completed while undisposed");
-  issue.resolutionMethod = "Corrective Action"; // doesn't have to be resolved right away, but must carry a method before the WO can close
+  /* A METHOD ALONE IS NOT A DISPOSITION any more (2026-09-18). It used to be,
+     and that made "what was done" toothless exactly where it mattered: pick
+     Scrap, the row leaves the closeout modal, the work order completes, and
+     nobody ever wrote down why the part could not be saved. */
+  issue.resolutionMethod = "Corrective Action";
   updWO("status", "Complete");
-  assert(woById(woId).status === "Complete", "completes once disposed");
+  assert(woById(woId).status !== "Complete", "a method with no account of what was done still blocks");
+  issue.dispositionNote = "Re-cut from the correct datum and re-zeroed the fixture.";
+  updWO("status", "Complete");
+  assert(woById(woId).status === "Complete", "completes once disposed AND explained");
 });
+await t("DISPOSED MEANS DISPOSED AND EXPLAINED — a method alone is not enough", () => {
+  DB.workOrders = [{ id: "WO-DX-1", partName: "DX", status: "InWork", processType: "Other", bom: [], qualityChecks: [], timeline: [], steps: [] }];
+  DB.projects = [{ id: "TKT-DX", title: "void", kind: "issue", status: "To Do", workOrderId: "WO-DX-1",
+    resolutionMethod: "", whatHappened: "", dispositionNote: "", assignees: [], watchers: [] }];
+  const un = () => undisposedIssuesForWO("WO-DX-1").length;
+  assert(un() === 1, "nothing recorded: it gates");
+  DB.projects[0].resolutionMethod = "Scrap";
+  assert(un() === 1, "a method on its own still gates — this is the whole point of the change");
+  DB.projects[0].dispositionNote = "   ";
+  assert(un() === 1, "whitespace is not an explanation");
+  DB.projects[0].dispositionNote = "Delaminated through the flange, unrecoverable.";
+  assert(un() === 0, "method plus explanation clears it");
+  /* Cancelled is still exempt: it is the "not a real issue" escape hatch, not
+     a disposition, and nothing needs explaining about a false alarm. */
+  DB.projects[0].status = "Cancelled"; DB.projects[0].resolutionMethod = ""; DB.projects[0].dispositionNote = "";
+  assert(un() === 0, "a cancelled false alarm needs neither");
+});
+
 await t("a Cancelled issue needs no disposition and doesn't block completion", async () => {
   await newWO();
   const woId = view.id;
@@ -1517,6 +1542,8 @@ await t("an issue can't be dragged/dropped to Done without a disposition", () =>
 await t("issue closes once disposed + documented", () => {
   const p = projById(testIssueId);
   p.resolutionMethod = "Corrective Action"; p.whatHappened = "Blank faced from the wrong datum.";
+  // Three clauses now: the method, the root cause, and what was done about it.
+  p.dispositionNote = "Re-faced from the datum face and re-zeroed the fixture.";
   const blocked = statusGate(p, "Done");
   assert(blocked === null, "gate clears once disposed+documented: " + blocked);
   setTicketStatus(p.id, "Done");
@@ -1842,7 +1869,7 @@ await t("resolving an issue completes cleanly through the (fire-and-forget) Slac
   // the file (slackWebhookUrl() caches after its first call, so a repeat
   // getConfig call here is neither expected nor required — only that the
   // ticket actually reaches Done).
-  const p = { id: "TKT-SLK-2", title: "resolve trigger", kind: "issue", status: "In Progress", workOrderId: "WO-T-900", assignees: [], resolutionMethod: "UAI (Use As Is)", whatHappened: "documented" };
+  const p = { id: "TKT-SLK-2", title: "resolve trigger", kind: "issue", status: "In Progress", workOrderId: "WO-T-900", assignees: [], resolutionMethod: "UAI (Use As Is)", whatHappened: "documented", dispositionNote: "within tolerance for a trial panel" };
   DB.projects.push(p);
   setTicketStatus(p.id, "Done");
   assert(projStatus(p) === "Done", "status write completes regardless of the Slack push outcome");
@@ -9652,7 +9679,7 @@ await t("opening an empty description and changing nothing closes without a conf
 });
 await t("an issue's root cause still gates closing it, now that it is a rich field", () => {
   DB.projects = [{ id: "TKT-G", kind: "issue", title: "Delam", status: "In Progress", workOrderId: "WO-RF",
-    resolutionMethod: "Rework", whatHappened: "", comments: [], files: [] }];
+    resolutionMethod: "Rework", whatHappened: "", dispositionNote: "re-bagged and re-infused", comments: [], files: [] }];
   view = { ...view, tab: "projects", mode: "detail", id: "TKT-G", edit: false };
   render();
   assert(statusGate(projById("TKT-G"), "Done"), "empty root cause still blocks");
@@ -10602,6 +10629,7 @@ await t("a half-typed root cause survives the re-render a photo upload causes", 
   // Resolving spends the draft — leaving it would shadow the saved record.
   document.getElementById("wi-m-TKT-IPA").value = "Rework";
   document.getElementById("wi-w-TKT-IPA").value = "bag lifted at the corner";
+  document.getElementById("wi-d-TKT-IPA").value = "re-bagged and re-pulled overnight";
   woResolveIssue("TKT-IPA");
   assert(!WI_DRAFTS["TKT-IPA"], "the draft is cleared once it is saved");
   assert(projStatus(projById("TKT-IPA")) === "Done", "and it went through the one gate");
@@ -10780,18 +10808,27 @@ await t("resolveIssue is the one write path: gate words back on refusal, reopen 
   assert(r && /what happened/i.test(r), "no narrative: still refused — but the method stayed staged");
   const p = projById("TKT-RS-1");
   assert(p.resolutionMethod === "Rework" && projStatus(p) !== "Done", "disposed-but-open is a real state");
-  assert(undisposedIssuesForWO("WO-QI-1").filter(x => x.id === "TKT-RS-1").length === 0, "and it already stops gating the WO");
-  r = resolveIssue("TKT-RS-1", "Rework", "re-cut the chamfer and re-bonded");
-  assert(r === null && projStatus(p) === "Done", "closes once both halves exist");
-  assert(p.whatHappened === "re-cut the chamfer and re-bonded" && p.whatHappenedHtml === "",
+  assert(undisposedIssuesForWO("WO-QI-1").some(x => x.id === "TKT-RS-1"),
+    "but a method with no account of what was done does NOT yet stop gating the WO");
+  r = resolveIssue("TKT-RS-1", "Rework", "bond line was starved at the chamfer");
+  assert(r && /what was done/i.test(r), "root cause alone is still refused — the third clause bites");
+  r = resolveIssue("TKT-RS-1", "Rework", "bond line was starved at the chamfer", "re-cut the chamfer and re-bonded");
+  assert(r === null && projStatus(p) === "Done", "closes once all three exist");
+  assert(p.whatHappened === "bond line was starved at the chamfer" && p.whatHappenedHtml === "",
     "a plain narrative write clears the rich sibling so the two can never disagree");
   reopenIssue("TKT-RS-1");
   assert(projStatus(p) === "In Progress" && p.resolutionMethod === "", "reopen CLEARS the disposition");
+  /* And the account of what was done goes with it. The root cause is still
+     true after a reopen; "what was done" is not — reopening is somebody saying
+     the fix did not work, so leaving it would prefill the next closeout with a
+     stale account of a repair that failed. */
+  assert(!p.dispositionNote, "reopen clears what-was-done too");
+  assert(p.whatHappened, "but the root cause survives, because it is still true");
   assert(undisposedIssuesForWO("WO-QI-1").some(x => x.id === "TKT-RS-1"), "so the issue gates its WO again");
   assert((p.comments || []).some(c => /Reopened/.test(c.text || "") && /Rework/.test(c.text || "")), "the withdrawn method survives as a comment");
 });
 await t("the resolve band closes an issue from the read view — no Edit round-trips", () => {
-  DB.projects = [{ id: "TKT-RB-1", title: "band", kind: "issue", status: "In Progress", workOrderId: "WO-QI-1", assignees: [], resolutionMethod: "", whatHappened: "documented root cause", files: [], comments: [] }];
+  DB.projects = [{ id: "TKT-RB-1", title: "band", kind: "issue", status: "In Progress", workOrderId: "WO-QI-1", assignees: [], resolutionMethod: "", whatHappened: "documented root cause", dispositionNote: "sanded and re-coated", files: [], comments: [] }];
   view = { ...view, tab: "projects", mode: "detail", id: "TKT-RB-1", edit: false };
   render();
   assert(main.innerHTML.includes("setIssueDisposition('TKT-RB-1'"), "the disposition select saves in place, no edit mode");
@@ -10813,7 +10850,8 @@ await t("the WO closeout modal disposes the tickets right there; drafts survive;
   ];
   view = { ...view, tab: "workorders", mode: "detail", id: "WO-CO-1", edit: false, secFold: undefined };
   CLOSEOUT = null; lastToast = "";
-  ["co-m-TKT-CO-1", "co-w-TKT-CO-1", "co-m-TKT-CO-2", "co-w-TKT-CO-2"].forEach(id => { document.getElementById(id).value = ""; });
+  ["co-m-TKT-CO-1", "co-w-TKT-CO-1", "co-d-TKT-CO-1",
+   "co-m-TKT-CO-2", "co-w-TKT-CO-2", "co-d-TKT-CO-2"].forEach(id => { document.getElementById(id).value = ""; });
   render();
   updWO("status", "Complete");
   assert(lastToast.includes("linked issue"), "the refusal toast still fires, and FIRST");
@@ -10822,7 +10860,8 @@ await t("the WO closeout modal disposes the tickets right there; drafts survive;
   assert(m.includes("on step 1") && m.includes("— not yet disposed —"), "step context from stepRef, and the empty disposition option");
   assert(DB.workOrders[0].status !== "Complete", "the WO did not complete");
   document.getElementById("co-m-TKT-CO-1").value = "Rework";
-  document.getElementById("co-w-TKT-CO-1").value = "trimmed and re-bonded";
+  document.getElementById("co-w-TKT-CO-1").value = "the bond line was starved";
+  document.getElementById("co-d-TKT-CO-1").value = "trimmed and re-bonded";
   document.getElementById("co-w-TKT-CO-2").value = "half-typed narrative";
   coResolve("WO-CO-1", "TKT-CO-1");
   assert(projStatus(projById("TKT-CO-1")) === "Done", "row one resolved through resolveIssue");
@@ -10835,7 +10874,13 @@ await t("the WO closeout modal disposes the tickets right there; drafts survive;
   assert(DB.workOrders[0].status !== "Complete", "and the WO still hasn't completed");
   document.getElementById("co-m-TKT-CO-2").value = "Scrap";
   coResolveAll("WO-CO-1");
-  assert(projStatus(projById("TKT-CO-2")) === "Done", "filled in, the second pass closes it");
+  assert(projStatus(projById("TKT-CO-2")) !== "Done",
+    "a method and a root cause are still not enough — every disposal says what was done");
+  assert(document.getElementById("modal").innerHTML.toLowerCase().includes("could not be saved"),
+    "and the refusal is worded for Scrap, not a generic 'what was done'");
+  document.getElementById("co-d-TKT-CO-2").value = "delaminated through the flange, unrecoverable";
+  coResolveAll("WO-CO-1");
+  assert(projStatus(projById("TKT-CO-2")) === "Done", "filled in, the next pass closes it");
   assert(DB.workOrders[0].status === "Complete", "and the WO completes — through the same undisposedIssuesForWO gate");
   assert(document.getElementById("modal").innerHTML.includes("complete"), "confirmation pane names what was resolved");
   closeModal();
