@@ -1344,6 +1344,10 @@ const WO_SECTIONS_BASE = [
   { id: "steps", label: "Steps", anchor: "wo-steps",
     badge: w => { const p = woProgress(w); return p.total ? `${p.done}/${p.total}` : ""; },
     warn: w => { const f = woFlags(w); return !!(f.blocked || f.curing); },
+    /* Curing on its own is a clock, not a fault: the section still promotes to a
+       work card and still refuses to fold, but it wears the amber hold colour
+       rather than the red one an undisposed issue gets. */
+    hold: w => { const f = woFlags(w); return !f.blocked && !!f.curing; },
     warnWord: w => (woFlags(w).blocked ? "blocked" : "curing"),
     // Someone can stow even Steps behind the sticky fold; the folded header
     // then still says how far along the run is and that a NOW exists.
@@ -1410,7 +1414,7 @@ const WO_SECTIONS_BASE = [
    keys — goes through this ONE call. That is the whole reason the sections are
    a table: the bar and the body cannot disagree about what order they are in. */
 function woSections(E) {
-  if (!E) return WO_SECTIONS_BASE;
+  if (!E) return secOrder(WO_SECTIONS_BASE, E);
   const i = WO_SECTIONS_BASE.findIndex(s => s.id === "overview");
   if (i < 0) return WO_SECTIONS_BASE;
   const out = WO_SECTIONS_BASE.slice();
@@ -1569,12 +1573,26 @@ function woSecOverview(wo, E) {
   // hero. View mode shows the remainder the hero does not carry, in labeled
   // clusters instead of one sixteen-cell wall; mass repeats here because
   // duplication is fine and dropping is not.
+  /* GROUPED IN EDIT MODE TOO. This used to be one flat eleven-cell grid, which
+     is the mode where the page is longest and the one where Details LEADS —
+     so the repaired group heading was doing nothing exactly where it was most
+     needed. Same headings as the read branch below, same fld() calls. */
   if (E) return `
+    <div class="fgroup-label">Identity</div>
     <div class="grid">
-      ${fld(wo, "Part name", "partName")}${fld(wo, "Subteam", "subteam")}${fld(wo, "Status", "status", "select-status")}
-      ${fld(wo, "Process", "processType", "select-process")}${engFld("workOrders", wo, "Mold Engineer", "moldEngineer")}
-      ${engFld("workOrders", wo, "Manufacturing Engineer", "manufacturingEngineer")}${fld(wo, "Created", "createdDate")}${fld(wo, "Due", "dueDate")}
-      ${fld(wo, "Revision", "revision")}${fld(wo, "Mass target (g)", "weightTargetG")}${fld(wo, "Mass actual (g)", "weightActualG")}
+      ${fld(wo, "Part name", "partName")}${fld(wo, "Subteam", "subteam")}${fld(wo, "Revision", "revision")}${fld(wo, "Created", "createdDate")}
+    </div>
+    <div class="fgroup-label">Status and schedule</div>
+    <div class="grid">
+      ${fld(wo, "Status", "status", "select-status")}${fld(wo, "Process", "processType", "select-process")}${fld(wo, "Due", "dueDate")}
+    </div>
+    <div class="fgroup-label">People</div>
+    <div class="grid">
+      ${engFld("workOrders", wo, "Mold Engineer", "moldEngineer")}${engFld("workOrders", wo, "Manufacturing Engineer", "manufacturingEngineer")}
+    </div>
+    <div class="fgroup-label">Mass</div>
+    <div class="grid">
+      ${fld(wo, "Mass target (g)", "weightTargetG")}${fld(wo, "Mass actual (g)", "weightActualG")}
     </div>
     ${moldRows}`;
   return `

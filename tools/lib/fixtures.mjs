@@ -84,7 +84,10 @@ export const PROJECTS = [
     description: "Resolved itself when the basement shelf opened up. Closing.",
     assignees: [], watchers: ["starbuck@berkeley.edu"],
     relatedParts: [], relatedTickets: [], relatedWorkOrders: [],
-    workOrderId: "WO-SN6-002", resolutionMethod: "",
+    workOrderId: "WO-SN6-002", resolutionMethod: "UAI (Use As Is)",
+    whatHappened: "The locker booking clashed with the basement move, so the panels sat out overnight.",
+    dispositionNote: "Bagged and moved to RFS rack 4 the next morning; no moisture pickup measured.",
+    status: "Done",
     files: [], comments: [], retro: false,
   },
   /* Sub-tickets, both under TKT-0031 (which is DB.projects[0], the record the

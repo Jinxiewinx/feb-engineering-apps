@@ -1500,7 +1500,12 @@ const PART_SECTIONS_BASE = [
     warnWord: () => "over mass",
     foldWhen: () => true,
     body: (p, E) => ptSecDetails(p, E) },
-  { id: "mold", label: "Mold", anchor: "pt-mold",
+  /* Reference, like details/links/notes around it. Left untiered it rendered as
+     a lone work CARD between two ruled appendix rows, which reads as a
+     rendering fault — "this one is different, look here" over a folded section
+     whose body often says "no mold linked". The tier boundary is one break
+     down the page, not an alternation. */
+  { id: "mold", tier: "ref", label: "Mold", anchor: "pt-mold",
     badge: p => { const plan = partPlan(p); return plan ? String((plan.layers || []).length || "") : ""; },
     warn: p => {
       const pm = partMold(p);
@@ -1534,7 +1539,7 @@ const PART_SECTIONS_BASE = [
    cannot disagree about what order they are in. That is the whole reason the
    sections are a table. */
 function partSections(E) {
-  if (!E) return PART_SECTIONS_BASE;
+  if (!E) return secOrder(PART_SECTIONS_BASE, E);
   const i = PART_SECTIONS_BASE.findIndex(s => s.id === "details");
   if (i < 0) return PART_SECTIONS_BASE;
   const out = PART_SECTIONS_BASE.slice();

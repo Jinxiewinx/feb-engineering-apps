@@ -1823,8 +1823,12 @@
      whatever its kind. Four carriers, all of them already paired with the word
      the header renders: the tint, the gold slash turning --bad, the label
      turning --bad, and the dot. */
-  .wosec[data-warn] { background: var(--bad-bg); border-color: var(--bad-border); }
-  .wosec[data-warn] > .wosec-hd > span:first-child { color: var(--bad); }
+  .wosec[data-warn="bad"] { background: var(--bad-bg); border-color: var(--bad-border); }
+  .wosec[data-warn="bad"] > .wosec-hd > span:first-child { color: var(--bad); }
+  /* Waiting on a clock, not on a person. Amber, and the label stays ink: a run
+     curing on schedule must not read as the thing that needs you. */
+  .wosec[data-warn="hold"] { background: var(--warn-bg); border-color: var(--warn-border); }
+  .wosec[data-warn="hold"] > .wosec-hd > span:first-child::before { background: var(--amber); }
   /* ---- section header (WO + Parts, core.js sectionCard) ----
      The .bmod-hd recipe applied per section card: gold speed-slash + Saira
      uppercase label, the SAME badge()/warn() answers the jump bar shows (one

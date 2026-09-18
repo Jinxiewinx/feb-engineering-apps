@@ -741,6 +741,55 @@ await t("A PART SHOWS WHAT IT LOOKS LIKE — first image wins, no second field",
     "the R&D strip card and the part page cannot disagree, because neither chooses");
 });
 
+await t("the appendix is ONE break, not gaps between cards", () => {
+  /* Interleaved, the order was steps, issues, DETAILS, stack, PHOTOS, quality,
+     files, notes — and a ruled row stranded between two white cards reads as a
+     gap in a card stack rather than the start of a second kind of thing. */
+  const ids = woSections(false).map(s => s.id);
+  const firstRef = ids.findIndex(id => (WO_SECTIONS_BASE.find(x => x.id === id) || {}).tier === "ref");
+  assert(ids.slice(firstRef).every(id => (WO_SECTIONS_BASE.find(x => x.id === id) || {}).tier === "ref"),
+    "once the appendix starts it does not go back to cards: " + ids.join(","));
+  assert(ids[0] === "steps", "and the work half still leads with Steps");
+  assert(ids.length === WO_SECTIONS_BASE.length, "reordering never drops a section");
+  assert(woSections(true)[0].id === "overview", "editing still leads with Details, where nothing is an appendix");
+
+  const pids = partSections(false).map(s => s.id);
+  const pRef = pids.findIndex(id => (PART_SECTIONS_BASE.find(x => x.id === id) || {}).tier === "ref");
+  assert(pids.slice(pRef).every(id => (PART_SECTIONS_BASE.find(x => x.id === id) || {}).tier === "ref"),
+    "same on a part: " + pids.join(","));
+
+  /* The jump bar and the body must not disagree about order, which is why both
+     go through the one call. */
+  assert(String(renderWODetail).includes("woSections(E)"), "one list feeds both");
+});
+
+await t("A CLOCK IS NOT A FAULT — curing wears amber, an undisposed issue wears red", () => {
+  DB.workOrders = [{ id: "WO-HOLD-1", partName: "HOLD", status: "InWork", processType: "Other",
+    bom: [], qualityChecks: [], timeline: [], steps: [
+      { seq: 1, title: "Infuse", status: "done", buyoff: { name: "N", email: "n@b.edu", date: "2026-09-01" },
+        hold: { hours: 12, startedAt: new Date(Date.now() + 36e5).toISOString() } },
+      { seq: 2, title: "Demould" }] }];
+  DB.projects = [];
+  const w = woById("WO-HOLD-1");
+  const steps = WO_SECTIONS_BASE.find(x => x.id === "steps");
+  /* Steps still warns and still refuses to fold while a run is curing — that
+     part is right. What was wrong is the COLOUR: a run sitting in the autoclave
+     on schedule was painted the same red as an undisposed nonconformance, which
+     both lies about the run and costs the tint its whole meaning. */
+  if (steps.warn(w)) {
+    assert(steps.hold(w), "a curing run is a hold, not a fault");
+    const html = sectionCard(steps, w, false);
+    assert(html.includes('data-warn="hold"'), "so its card says hold");
+    assert(!html.includes('data-warn="bad"'), "and never bad");
+  }
+  // An undisposed issue is the real thing, and it is the red one.
+  DB.projects = [{ id: "TKT-HOLD", title: "void", kind: "issue", status: "To Do",
+    workOrderId: "WO-HOLD-1", resolutionMethod: "", assignees: [], watchers: [] }];
+  const iss = WO_SECTIONS_BASE.find(x => x.id === "issues");
+  assert(sectionCard(iss, w, false).includes('data-warn="bad"'), "an undisposed issue is red");
+  assert(!iss.hold, "and Issues has no hold state at all — nothing about it is merely waiting");
+});
+
 await t("TWO TIERS — and a warned reference section comes back as a work card", () => {
   const woId = DB.workOrders[0].id;
   const w = woById(woId);

@@ -1188,6 +1188,22 @@ function toggleSecFold(recId, secId, fold) {
    is free; reordering the attributes, or adding a ninth class name, is not.
    (Written without an example: test_designsystem's phantom-class scanner reads
    any literal class attribute it finds in a .js file, comments included.) */
+/* Work sections first, reference sections after, each keeping its own relative
+   order. Without this the two tiers INTERLEAVE — on a work order the order is
+   steps, issues, DETAILS, stack, PHOTOS, quality, files, notes — and a ruled row
+   stranded between two white cards reads as a gap in a card stack rather than
+   the start of a second kind of thing. The page never gets its moment of
+   changing character, which is the whole idea.
+
+   A stable sort, and the SAME list feeds the jump bar and the body, so the two
+   cannot disagree about order — an invariant the sections table already
+   documents. In edit mode nothing is ref, so this is a no-op and the section
+   the editor leads with stays where it was put. */
+function secOrder(list, E) {
+  if (E) return list;
+  return list.filter(s => s.tier !== "ref").concat(list.filter(s => s.tier === "ref"));
+}
+
 function secTier(s, rec, E) {
   if (E) return "work";                          // editing: everything is a panel you type into
   if (s.warn && s.warn(rec)) return "work";
@@ -1200,7 +1216,13 @@ function sectionCard(s, rec, E) {
   const fresh = !warn && !!(s.fresh && s.fresh(rec));
   const folded = secFolded(s, rec, E);
   const tier = secTier(s, rec, E);
-  return `<div data-sec="${esc(s.id)}" data-tier="${tier}"${warn ? " data-warn" : ""} class="card wosec${folded ? " folded" : ""}">
+  /* A warn is not always a fault. A run sitting in the autoclave on schedule is
+     a CLOCK, and painting its card the same red as an undisposed nonconformance
+     both lies about the run and costs the tint its meaning — the point of the
+     tint is that the one card wearing it is the one that needs you. `hold` says
+     which kind, and only sections that can be merely waiting define it. */
+  const hold = warn && !!(s.hold && s.hold(rec));
+  return `<div data-sec="${esc(s.id)}" data-tier="${tier}"${warn ? ` data-warn="${hold ? "hold" : "bad"}"` : ""} class="card wosec${folded ? " folded" : ""}">
     <button type="button" class="wosec-hd${warn ? " warn" : ""}" id="${esc(s.anchor)}"
       aria-expanded="${folded ? "false" : "true"}"
       onclick="toggleSecFold('${esc(rec.id)}','${esc(s.id)}',${folded ? 0 : 1})">
