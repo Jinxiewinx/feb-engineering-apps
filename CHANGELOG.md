@@ -38,6 +38,13 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.1.0 — 2026-09-18
+
+- R&D records are on the R&D tab, and only there
+- One Notes place, a stepper per mold, and two more subteams
+
+---
+
 ## v6.0.0 — 2026-09-18
 
 - Document the five changes, and what not to undo
