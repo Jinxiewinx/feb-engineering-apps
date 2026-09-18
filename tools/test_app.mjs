@@ -713,6 +713,34 @@ await t("the facts band names where the mold is, and never a retro placeholder",
   assert(!main.innerHTML.includes("Mold at"), "and an empty one shows no slot at all");
 });
 
+await t("A PART SHOWS WHAT IT LOOKS LIKE — first image wins, no second field", () => {
+  DB.parts = [{ id: "P-HERO-1", partName: "NOSECONE", subteam: "AERO", layupDeadline: "", files: [] }];
+  const p = DB.parts[0];
+  assert(partHero(p) === null, "no files, no hero");
+  assert(partHeroHtml(p, false) === "",
+    "and nothing is drawn — a placeholder on every unphotographed part is furniture");
+  assert(partHeroHtml(p, true).includes("addRecordFiles"),
+    "but editing offers the way in, which is where you land the moment a part is created");
+
+  /* A PDF mold drawing attached first must not become the part's face. */
+  p.files = [{ id: "F0", name: "mold.pdf", url: "/u/mold.pdf", type: "application/pdf" },
+             { id: "F1", name: "layup.jpg", url: "/u/layup.jpg", type: "image/jpeg" },
+             { id: "F2", name: "later.jpg", url: "/u/later.jpg", type: "image/jpeg" }];
+  assert(partHero(p).id === "F1", "the first IMAGE wins, not the first file");
+
+  const html = partHeroHtml(p, false);
+  assert(html.includes("/u/layup.jpg") && html.includes('data-lb-src'),
+    "it joins the lightbox roll the part section already declares");
+  assert(!/loading="lazy"/.test(html),
+    "and it is NOT lazy — a hero is above the fold, so deferring it defers the point of the page");
+
+  /* One rule, one answer. rdThumb on the R&D strip is first-image-wins over the
+     same p.files, so an explicit heroImage field would let the card and the
+     page disagree about a part's face. */
+  assert(rdThumb(p).includes("/u/layup.jpg"),
+    "the R&D strip card and the part page cannot disagree, because neither chooses");
+});
+
 await t("TWO TIERS — and a warned reference section comes back as a work card", () => {
   const woId = DB.workOrders[0].id;
   const w = woById(woId);

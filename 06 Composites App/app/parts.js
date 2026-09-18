@@ -1308,6 +1308,53 @@ function ptSecLinks(p, E) {
       </div>`;
 }
 
+/* ---------- the hero ----------
+   What the thing looks like, at the top of its own page. Simon: "there should
+   be option to upload a picture of what it looks like … it should be clearly
+   visible when opening the part."
+
+   FIRST IMAGE WINS — no heroImage field. rdThumb() on the R&D strip is already
+   first-image-wins over the same p.files, so an explicit pick would let the
+   card and the page disagree about a part's face for any part where somebody
+   chose a non-first image. One rule, one answer, and nothing to keep in sync.
+   If somebody wants to choose, the fix is a "make this the hero" press later,
+   and by then we will know whether anyone cares.
+
+   Storage needs nothing: parts/{partId}/{file} already allows image/*, and
+   addRecordFiles writes there today from the Links & files section. */
+function partHero(p) {
+  return ((p && p.files) || []).find(f => f && f.url && /^image\//.test(String(f.type || ""))) || null;
+}
+
+function partHeroHtml(p, E) {
+  const img = partHero(p);
+  /* Nothing to show and not editing: render nothing at all. A placeholder on
+     every part that never got photographed is furniture, and there are more of
+     those than not. The way in is the button that appears in edit mode, plus
+     the Links & files section, which is where the files live either way. */
+  if (!img) {
+    return E ? `<div class="card pt-hero pt-hero-empty no-print">
+      <div>
+        <b>No photo yet</b>
+        <p class="tny muted">A picture of the part, the mold or the last layup. The first image on this record is the one shown here.</p>
+      </div>
+      <button class="sm" onclick="addRecordFiles('parts','${esc(p.id)}','parts','image/*')">${icon("image", 14)} Add a photo</button>
+    </div>` : "";
+  }
+  const name = img.name || "photo";
+  /* data-lb-src joins the lightbox roll this section already declares with
+     data-lbgroup="parts:<ID>" — installLightbox delegates on the document, so
+     nothing needs registering. */
+  /* NOT loading="lazy". A hero is above the fold by definition, so deferring it
+     delays the one image the page is about — and every other photo in the app
+     is lazy precisely because it is not this one. */
+  return `<figure class="pt-hero">
+    <img src="${esc(img.url)}" alt="${esc(name)}" decoding="async"
+      data-lb-src="${esc(img.url)}" data-lb-name="${esc(name)}">
+    ${E ? `<button class="sm no-print pt-hero-swap" onclick="addRecordFiles('parts','${esc(p.id)}','parts','image/*')">${icon("image", 14)} Add a photo</button>` : ""}
+  </figure>`;
+}
+
 function ptSecNotes(p, E) {
   const comments = (p.commentLog || []).slice().sort((a, b) => String(a.ts).localeCompare(String(b.ts)));
   return `
@@ -1602,6 +1649,7 @@ function renderPartDetail() {
         <span class="muted">${dd != null ? (dd < 0 ? Math.abs(dd) + " days late" : dd === 0 ? "today" : dd + " days out") : ""}</span></div>` : ""}
       ${E ? `<div class="editnote no-print">${icon("edit", 14)} Editing — every change saves as you make it.</div>` : ""}
     </div>
+    ${partHeroHtml(p, E)}
     ${secNav("ptsec", partSections(E), p, "ptJump", "Jump to a section of this part")}
     ${partSections(E).map(s => sectionCard(s, p, E)).join("")}
   </section>`;

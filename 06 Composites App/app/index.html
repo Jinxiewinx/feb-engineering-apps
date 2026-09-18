@@ -1949,6 +1949,27 @@
   .wohead .gate { margin-top: 10px; }
 
   /* Part detail */
+  /* ---- the hero ----
+     What the part looks like, above the jump bar. Sized small on purpose: above
+     it already sit the topbar, a toolbar that wraps to two rows on a phone, the
+     lineage bar, the season stat strip and the .wohead card with its deadline
+     banner. A tall band here pushes the first section off a 393px screen, which
+     is the device this is read on. 22vh capped at 160px measured clear. */
+  .pt-hero { margin: 0 0 12px; position: relative; }
+  /* A FIXED height, not a max: with only a max the box is the image's intrinsic
+     ratio, so it is 0px until the file arrives and the whole page below it
+     jumps down when it does. A stable box costs nothing and the crop is what
+     object-fit is for. */
+  .pt-hero img { display: block; width: 100%; height: min(22vh, 160px);
+    object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--line);
+    background: var(--fill); cursor: zoom-in; }
+  .pt-hero-swap { position: absolute; right: 8px; bottom: 8px; }
+  /* Only ever seen in edit mode, which is where you land the moment a part is
+     created — so the offer is in front of you exactly when you have the photo. */
+  .pt-hero-empty { display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    border-style: dashed; box-shadow: none; background: var(--surface-2); }
+  .pt-hero-empty p { margin: 2px 0 0; max-width: 52ch; }
+  .pt-hero-empty button { margin-left: auto; }
   .mdnav { margin-left: auto; display: inline-flex; gap: 4px; }
   .pdue { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 11px; font-size: 13px;
     border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
@@ -3635,6 +3656,10 @@
        comes back as eight identical boxes on paper, and the warned tint (which
        does not print anyway) leaves nothing behind. */
     .wosec[data-tier="ref"] { border: 0; border-top: 1px solid var(--line); padding: 8px 2px; }
+    /* The hero is a screen affordance. On paper a traveler wants its content,
+       not a photo band on every page, and min(22vh,…) resolves vh against the
+       page box rather than the viewport. The image is still in Links & files. */
+    .pt-hero { display: none !important; }
     .wosec[data-warn] { border: 1.5pt solid #000; }
     .card h2, .card h3 { break-after: avoid; }
     .grid, .stackviz { break-inside: avoid; }
