@@ -660,13 +660,46 @@ function renderRnd() {
 }
 
 /* The bench: one full-width storey under the strip, showing whatever is
-   selected. A study is the sheet, unchanged. The part and run panes arrive in
-   the next chunk; until then the router cannot produce those values. */
+   selected. A study is the sheet, unchanged. A part and a run are the REAL
+   detail renderers from parts.js and workorders.js — not a summary of them.
+   The traveler is the blockers, the cure holds and the buy-offs; a card that
+   listed them without carrying them would be a screenshot of the work. Full
+   width here also gives the detail MORE room than the Parts tab's pane does. */
 function rdBenchHtml() {
+  if (view.rdPane === "part") return rdPartBench();
+  if (view.rdPane === "run") return rdRunBench();
   const s = rdStudy(view.rdStudy);
   /* The empty state is for an EMPTY BENCH, not for "nothing selected" — it says
      "no studies yet", which would be a lie the moment one existed. */
   return s ? rdSheetHtml(s) : rdEmptyHtml();
+}
+
+function rdPartBench() {
+  const p = partById(view.id);
+  if (!p) return rdEmptyHtml();
+  if (!isRnd(p)) return rdMovedOnHtml("parts", p.id, p.partName || p.id);
+  return `<div class="rdbench">${renderPartDetail()}</div>`;
+}
+
+function rdRunBench() {
+  const w = woById(view.id);
+  if (!w) return rdEmptyHtml();
+  if (!woIsRnd(w)) return rdMovedOnHtml("workOrders", w.id, w.partName || w.id);
+  return `<div class="rdbench">${renderWODetail()}</div>`;
+}
+
+/* A part can leave the programme while you are looking at it — "Move to season"
+   is in the detail toolbar below, which is exactly where that decision gets
+   made. Its card then leaves the strip. Blanking the bench at that moment reads
+   as data loss, so say where it went and offer the door. */
+function rdMovedOnHtml(coll, id, label) {
+  return `<div class="card rdmoved">
+    <h3>Moved into the season</h3>
+    <p>${esc(label)} is a season deliverable now, so it has left the R&amp;D
+    programme. Nothing was lost — it kept its id, its traveler and its history,
+    and it lives on the ${coll === "parts" ? "Parts" : "Work Orders"} tab.</p>
+    <p>${chip(coll, id, id)}</p>
+  </div>`;
 }
 
 /* Counts of what EXISTS, not of what survived the filter — the same law the
@@ -711,7 +744,9 @@ function rdMastheadHtml() {
    rail: a rail is a list you walk top to bottom beside a pane, and the note in
    the stylesheet explains why a pane cannot hold the sheet. */
 function rdStripHtml() {
-  const cards = rdStripStudies().map(rdStudyCard).join("");
+  const cards = rdStripStudies().map(rdStudyCard).join("")
+    + rdStripParts().map(rdPartCard).join("")
+    + rdLooseRunsCard();
   if (!cards) return "";
   return `<div class="rdstrip no-print" role="list" aria-label="R&D programme"
     onscroll="RD_SCROLL=this.scrollLeft">${cards}</div>`;
@@ -782,6 +817,117 @@ function rdBatchRow(c) {
 function rdThumb(rec) {
   const ph = (rdPhotos(rec) || []).filter(f => /^image\//.test(String(f.type || "")) || /\.(png|jpe?g|webp|gif)$/i.test(String(f.name || "")));
   return ph[0] && ph[0].url ? `<img class="rdthumb" src="${esc(ph[0].url)}" alt="">` : "";
+}
+
+/* R&D PARTS on the strip. Real parts with real travelers that are simply not
+   season deliverables — a mold shakedown keeps every blocker and every cure
+   hold. They live on the Parts tab and are rendered here; the bench does not
+   own them, which is why their id still routes to Parts.
+
+   railLive() is thisSeason() && !isArchived() and says nothing about the
+   archive flag this file must never test. A part that is both archived-season
+   work AND R&D therefore appears here, correctly: it is R&D work this season,
+   and the detail below renders its own pill saying the rest. */
+function rdStripParts() {
+  const q = String(view.q || "").trim().toLowerCase();
+  const f = view.rdFilter || "";
+  /* The status chips are STUDY statuses. A part has stages, not Active/Done/
+     Parked, so filtering by one would silently empty the parts half of the
+     strip and look like the parts had gone. They narrow only on search. */
+  if (f === "arch") return [];
+  let rows = railLive(DB.parts || []).filter(isRnd);
+  if (q) rows = rows.filter(p => rdHit(p, q));
+  rows = rows.sort((a, b) => cmpId(a.id, b.id));
+  if ((view.rdPane === "part" || view.rdPane === "run") && view.id) {
+    const p = view.rdPane === "part" ? partById(view.id) : (partOf(woById(view.id)) || {}).part;
+    if (p && isRnd(p) && !rows.some(r => r.id === p.id)) rows = rows.concat([p]);
+  }
+  return rows;
+}
+
+function rdPartCard(p) {
+  const runs = partRuns(p);
+  const on = view.rdPane === "part" && view.id === p.id;
+  const kin = view.rdPane === "run" && runs.some(r => r.wo.id === view.id);
+  const late = partLate(p);
+  const d = daysUntil(p.layupDeadline);
+  const due = d == null ? ""
+    : late ? `${Math.abs(d)} day${Math.abs(d) === 1 ? "" : "s"} late`
+    : d === 0 ? "due today" : `${d} day${d === 1 ? "" : "s"} out`;
+  const who = p.moldEngineer || p.manufacturingEngineer || "";
+  return `<article class="rdcard rdcard-part${on || kin ? " on" : ""}${late ? " late" : ""}" id="rdc-${esc(p.id)}" role="listitem">
+    <div class="rdcard-hd">
+      <span class="rdkind">R&amp;D part</span>
+      ${/* Redundant on a tab that is entirely R&D, and kept anyway: rndBadge's
+            own note is that an all-R&D surface with no badges is pixel-identical
+            to a screenshot of the season, which is the one thing the flag
+            exists to prevent. One capsule is cheap insurance. */""}
+      ${rndBadge(true)}${archivedPill(p, true)}
+      <span style="flex:1"></span>
+      ${who ? avatar(who, 22) : ""}
+    </div>
+    <div class="rdcard-hd">
+      <button class="rd-open rdcard-nm" onclick="rdOpenPart('${esc(p.id)}')">${esc(p.partName || p.id)}</button>
+      ${rdThumb(p)}
+    </div>
+    <div class="rdtally">${stageRail(p)}${due ? `<span class="rddue${late ? " late" : ""}">${esc(due)}</span>` : ""}</div>
+    <div class="rdruns">${runs.length
+      ? runs.map(r => rdRunChip(r.wo, view.rdPane === "run" && view.id === r.wo.id)).join("")
+      : `<button class="rdchip ghost"${gx("Sign in to start a run.")} onclick="startRunForPart('${esc(p.id)}')">${icon("plus", 13)} Start run</button>`}</div>
+  </article>`;
+}
+
+function rdRunChip(w, on) {
+  const pr = woProgress(w);
+  const fl = woFlags(w) || {};
+  const flag = fl.blocked ? `<span class="rdchip-flag">blocked</span>`
+    : fl.curing ? `<span class="rdchip-flag">curing</span>` : "";
+  return `<button class="rdchip${on ? " on" : ""}" onclick="rdOpenRun('${esc(w.id)}')"
+    title="${esc(w.id)}${w.rev ? " rev " + esc(w.rev) : ""}"><b>${pr.done}/${pr.total}</b>${flag}</button>`;
+}
+
+/* A standalone R&D run has no part to sit under, because newWO(true) is allowed
+   to make one before anybody knows what it is a run OF. Without this card those
+   runs are on the tab's counts and nowhere on its strip, which is the worst of
+   both. They move into a part's card the moment one is linked. */
+function rdLooseRunsCard() {
+  if ((view.rdFilter || "") === "arch") return "";
+  const q = String(view.q || "").trim().toLowerCase();
+  let loose = (DB.workOrders || []).filter(w => woIsRnd(w) && !partOf(w) && !isArchived(w));
+  if (q) loose = loose.filter(w => rdHit({ name: w.partName, id: w.id }, q));
+  if (!loose.length) return "";
+  return `<article class="rdcard rdcard-loose" role="listitem">
+    <div class="rdcard-hd"><span class="rdkind">Runs with no part</span></div>
+    <p class="tny muted">Started on their own. Point one at a part and it moves
+    onto that part's card.</p>
+    <div class="rdcard-more">${loose.map(w => `<div class="rdrow${view.rdPane === "run" && view.id === w.id ? " on" : ""}">
+      <button class="rd-open" onclick="rdOpenRun('${esc(w.id)}')">${esc(w.partName || w.id)}</button>
+      <span class="tny muted">${esc(w.id)}</span>
+    </div>`).join("")}</div>
+  </article>`;
+}
+
+/* Open a part or a run IN THE BENCH. view.id carries the record's real id, so
+   the detail renderers and their inline handlers find it — see rdNormalize.
+   view.rdStudy is deliberately left alone: it is where Escape and "Back to the
+   bench" return you, and a detour through a part should not lose your study. */
+function rdOpenPart(id) {
+  const p = partById(id);
+  if (!p) return;
+  if (typeof navPush === "function" && typeof navHere === "function") navPush(navHere());
+  view = { ...view, rdPane: "part", mode: "detail", id, edit: false };
+  RD_FOCUS = id;
+  render(); syncUrl();
+}
+
+function rdOpenRun(id) {
+  const w = woById(id);
+  if (!w) return;
+  if (typeof navPush === "function" && typeof navHere === "function") navPush(navHere());
+  const r = partOf(w);
+  view = { ...view, rdPane: "run", mode: "detail", id, edit: false };
+  RD_FOCUS = r && r.part ? r.part.id : id;
+  render(); syncUrl();
 }
 
 /* ---------- strip scroll, across a repaint ----------
@@ -882,31 +1028,6 @@ function rdArchiveStudy(id, on) {
 
    The Parts rail keeps its own R&D chip. That is how you filter while you are
    already over there, and it is unchanged by any of this. */
-function rdPartsHtml() {
-  const parts = (DB.parts || []).filter(isRnd).sort((a, b) => cmpId(a.id, b.id));
-  if (!parts.length) return "";
-  /* A CLASS-DRIVEN FOLD, never <details>. conventions.md is explicit: a closed
-     <details> skips painting and vanishes from print, and the one exception in
-     the app is .wo-subfold. Same shape as .wosec.folded — a real <button>
-     toggling a class on the container. */
-  const open = !!view.rdPartsOpen;
-  return `<div class="rdparts${open ? "" : " folded"}">
-    <button class="rdparts-hd" aria-expanded="${open}"
-      onclick="view.rdPartsOpen=!view.rdPartsOpen;render()">
-      ${icon(open ? "chevronDown" : "chevronRight", 14)} R&amp;D parts (${parts.length})</button>
-    <div class="rdparts-body">
-      <p class="tny muted">Real parts with real travelers that are not season
-      deliverables — a mold shakedown keeps every blocker and every cure hold.
-      They live on the Parts tab and are only listed here.</p>
-      ${parts.map(p => `<div class="rdrow">
-        <button class="rd-open" onclick="openRecord('parts','${esc(p.id)}')">${esc(p.partName || p.id)} ${icon("externalLink", 12)}</button>
-        <span class="tny muted">${esc(p.id)}</span>
-        <span class="tny muted">${esc(p.subteam || "")}</span>
-      </div>`).join("")}
-    </div>
-  </div>`;
-}
-
 /* Selects; it does not toggle. renderRnd re-selects the moment nothing is
    chosen, so a toggle would close a study and reopen it in the same frame —
    and "close this study" is not a thing anybody needs, because the way out of

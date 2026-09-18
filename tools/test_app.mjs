@@ -3823,6 +3823,85 @@ await t("setTab keeps the bench's study and still does not reset onlyRnd", () =>
     "and coming back to the bench returns you to the study you were working");
 });
 
+await t("THE BENCH RENDERS THE REAL PART DETAIL, and view.id survives the render", () => {
+  rdFixture();
+  fb.roster = { name: "Nico", role: "member" };
+  /* The regression this whole design exists to prevent. renderRnd() used to
+     null view.id on every render; the part detail and its several dozen inline
+     handlers read view.id at CLICK time, so a consumed id means a page that
+     renders once and then answers every press about the wrong record. */
+  view = { ...view, tab: "rnd", mode: "detail", id: "P-SN6-960", rdPane: "part",
+           edit: false, q: "", rdFilter: "" };
+  render();
+  assert(view.id === "P-SN6-960", "the id is still there after the paint");
+  assert(view.rdPane === "part", "and the router kept it in the part pane");
+  assert(main.innerHTML.includes('aria-label="Part detail"'),
+    "the bench renders parts.js's REAL detail, not a summary of it");
+  assert(main.innerHTML.includes("VG TRIAL"), "for the part that is actually open");
+  assert(main.innerHTML.includes("rdc-P-SN6-960"), "and its card is on the strip");
+  assert(main.innerHTML.includes("Back to the bench"),
+    "whose way out is the bench, not a parts list this tab does not have");
+});
+
+await t("the bench renders the real traveler for a run, chips and all", () => {
+  rdFixture();
+  DB.workOrders = [{ id: "WO-SN6-900", partId: "P-SN6-960", partName: "VG TRIAL",
+                     status: "In work", rev: "A",
+                     steps: [{ title: "Cut", status: "Done" }, { title: "Layup" }] }];
+  fb.roster = { name: "Nico", role: "member" };
+  view = { ...view, tab: "rnd", mode: "detail", id: "P-SN6-960", rdPane: "part", q: "", rdFilter: "" };
+  render();
+  assert(/<b>1\/2<\/b>/.test(main.innerHTML), "the part's card carries its run as a chip with progress");
+  assert(main.innerHTML.includes("rdOpenRun('WO-SN6-900')"), "and the chip opens the run");
+
+  view = { ...view, mode: "detail", id: "WO-SN6-900", rdPane: "run" };
+  render();
+  assert(view.id === "WO-SN6-900", "a run id survives the paint too");
+  assert(main.innerHTML.includes("WO-SN6-900"), "the traveler is the open run's");
+  assert(main.innerHTML.includes("rdc-P-SN6-960"),
+    "and its PART's card stays on the strip, co-marked, because a run belongs to one");
+});
+
+await t("a part with no run offers to start one, rather than saying nothing", () => {
+  rdFixture();
+  fb.roster = { name: "Nico", role: "member" };
+  DB.workOrders = [];
+  view = { ...view, tab: "rnd", mode: "list", id: null, rdStudy: null, q: "", rdFilter: "" };
+  render();
+  assert(main.innerHTML.includes("startRunForPart('P-SN6-960')"),
+    "the gap where a run would be is the button that makes one");
+});
+
+await t("PROMOTING THE OPEN PART says where it went instead of blanking the bench", () => {
+  rdFixture();
+  fb.roster = { name: "Simon", role: "lead" };
+  view = { ...view, tab: "rnd", mode: "detail", id: "P-SN6-960", rdPane: "part", q: "", rdFilter: "" };
+  render();
+  assert(main.innerHTML.includes("VG TRIAL"), "the part is open in the bench");
+  /* "Move to season" lives in the detail toolbar, which is rendered right
+     there — so the record can leave the programme while you are looking at it. */
+  DB.parts[0].rnd = false;
+  render();
+  assert(!main.innerHTML.includes("rdc-P-SN6-960"), "its card leaves the strip, correctly");
+  assert(main.innerHTML.includes("Moved into the season"),
+    "and the bench says so rather than going blank, which would read as data loss");
+  assert(main.innerHTML.includes("P-SN6-960"), "with the door to where it lives now");
+});
+
+await t("Escape and Back-to-the-bench return you to the study you were working", () => {
+  rdFixture();
+  fb.roster = { name: "Nico", role: "member" };
+  view = { ...view, tab: "rnd", mode: "detail", id: "RDS-SN6-001", rdStudy: "RDS-SN6-001", q: "", rdFilter: "" };
+  render();
+  rdOpenPart("P-SN6-960");
+  assert(view.rdPane === "part" && view.rdStudy === "RDS-SN6-001",
+    "opening a part does NOT lose your study — the detour is not a move");
+  rdShowStrip();
+  assert(view.rdPane === "study" && view.id === "RDS-SN6-001",
+    "and coming back lands on it, not on whichever study sorts first");
+  fb.roster = { name: "Simon", role: "lead" };   // put back what the later suites assume
+});
+
 await t("THE THREE view.tab GATES admit the bench and refuse its rail keys", () => {
   rdFixture();
   DB.workOrders = [{ id: "WO-SN6-900", partId: "P-SN6-960", partName: "VG TRIAL",

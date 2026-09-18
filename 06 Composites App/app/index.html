@@ -2235,8 +2235,12 @@
   .rdmast-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
   /* Only the strip is sticky. Two sticky bands is most of a 393px screen.
      Same recipe as .wosec-hd: top is --topbar-h, which core.js MEASURES. */
-  .rdstrip { position: sticky; top: var(--topbar-h); z-index: 4;
-    --rd-strip-h: 178px;
+  /* --rd-strip-h is declared on #main, NOT on .rdstrip: the bench is the
+     strip's SIBLING, so a custom property set on the strip never reaches it and
+     the two rules below that subtract the strip's height would silently fall
+     back to their default and be wrong at every breakpoint but one. */
+  #main { --rd-strip-h: 178px; }
+  .rdstrip { position: sticky; top: var(--topbar-h); z-index: 5;
     background: var(--canvas); border-bottom: 1px solid var(--line);
     padding: 8px 0 10px; margin: 0 0 12px; max-width: 100%;
     display: grid; grid-auto-flow: column; grid-auto-columns: 340px; gap: 10px;
@@ -2257,6 +2261,11 @@
      and shifts every snap point in the strip the moment you select one. */
   .rdcard.on { box-shadow: inset 0 0 0 2px var(--ink); }
   .rdcard.late { border-top-color: var(--bad); }
+  /* Runs started before anybody knew what they were a run OF. A dashed top rule
+     rather than the solid one, because the card is a holding pen and not a
+     programme unit in its own right. */
+  .rdcard-loose { border-top-style: dashed; }
+  .rdcard-loose p { margin: 0; }
   .rdcard-hd { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
   .rdkind { font-family: var(--font-display); font-size: 10.5px; font-weight: 700;
     letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
@@ -2299,15 +2308,23 @@
   /* The bench's section anchors clear the topbar AND the stuck strip. Without
      this they land underneath it and ptJump()/woJump() look broken. */
   #main .rdbench [id^="pt-"], #main .rdbench [id^="wo-"] {
-    scroll-margin-top: calc(var(--topbar-h) + var(--rd-strip-h, 178px) + 12px); }
-  @media (max-width: 1200px) { .rdstrip { --rd-strip-h: 170px; grid-auto-columns: 300px; } }
+    scroll-margin-top: calc(var(--topbar-h) + var(--rd-strip-h) + 58px); }
+  /* The part and run detail bring their own sticky furniture, written for a tab
+     whose only sticky band is the topbar. In the bench there are two, so the
+     jump bar and the undo bar stack UNDER the strip rather than landing on top
+     of it. The strip outranks both on z, because it is the thing you navigate
+     with and it must never be the thing that gets covered. */
+  .rdbench .secnav { top: calc(var(--topbar-h) + var(--rd-strip-h)); z-index: 3; }
+  .rdbench .undobar { top: calc(var(--topbar-h) + var(--rd-strip-h) + 8px); z-index: 3; }
+  @media (max-width: 1200px) { #main { --rd-strip-h: 170px; } .rdstrip { grid-auto-columns: 300px; } }
   @media (max-width: 900px) {
-    .rdstrip { --rd-strip-h: 166px; grid-auto-columns: 78vw; scroll-snap-type: x mandatory; }
+    #main { --rd-strip-h: 166px; }
+    .rdstrip { grid-auto-columns: 78vw; scroll-snap-type: x mandatory; }
     .rdmast-acts { margin-left: 0; }
   }
   @media (max-width: 430px) {
-    .rdstrip { --rd-strip-h: 186px; grid-auto-columns: calc(100vw - 32px);
-      scroll-padding-inline: 16px; }
+    #main { --rd-strip-h: 186px; }
+    .rdstrip { grid-auto-columns: calc(100vw - 32px); scroll-padding-inline: 16px; }
     .rdmast-q { max-width: none; }
   }
   /* .rd-open carries `all: unset`, which throws the tap-target floor away —
