@@ -437,6 +437,21 @@
   .corow { border-top: 1px solid var(--line); padding: 10px 0; }
   .corow:first-of-type { border-top: 0; }
   .corow.codone { color: var(--muted); font-size: 13px; }
+  /* The disposition record: what happened, and what was done. Prose on the row,
+     never a fold — DESIGN-NOTES forbids folding with <details> and nothing
+     force-opens one on print, and this is the most print-worthy string here.
+     Clamped to four lines so a long root cause cannot own the section; the
+     clamp is lifted for paper in the print block. */
+  .conarr { margin: 5px 0 2px; display: grid; gap: 3px; }
+  .conarr-row { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+  .conarr-lab { flex: none; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--faint); min-width: 92px; }
+  .conarr-t { min-width: 0; color: var(--ink); font-size: 13px; white-space: pre-wrap;
+    display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  /* Landing on an issue from its own chip. A ring, not a fill: the row may
+     already be tinted by its state and a second background would fight it. */
+  .corow.cohit { animation: cohit 1.4s var(--ease); border-radius: var(--radius); }
+  @keyframes cohit { 0%, 60% { box-shadow: inset 0 0 0 2px var(--accent); } 100% { box-shadow: none; } }
   .corow textarea { min-height: 56px; }
 
   /* ---- tickets: kind badge, colored status, gates, sub-tickets ---- */
@@ -3559,6 +3574,9 @@
     /* Folds are screen furniture. Paper gets the whole record — without this,
        a section somebody left folded silently vanishes from the printout. */
     .wosec-body { display: block !important; }
+    /* The disposition record prints in full. A four-line clamp is a screen
+       affordance; a truncated root cause on a printed nonconformance is not. */
+    .conarr-t { -webkit-line-clamp: none; display: block; overflow: visible; }
     /* Paper never truncates: the attachment cap is a screen affordance. */
     .tkmeta .tkband-attach.capped { max-height: none; overflow: visible; }
     .tkmeta .tkband-attach.capped::after { display: none; }

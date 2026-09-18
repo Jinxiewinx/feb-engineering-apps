@@ -617,6 +617,57 @@ await t("the Issues section owns issues now, and Quality is back to failed check
   DB.projects = DB.projects.filter(x => x.id !== "TKT-SEC-1");
 });
 
+await t("A DISPOSED ISSUE STILL TELLS ITS STORY — the row keeps the narrative", () => {
+  /* The defect this fixes: the section refused to close an issue without a
+     written root cause, then never showed it again. The one affordance on the
+     disposed row was a chip that navigated to the work order you were already
+     on and scrolled to the section you were already in. */
+  const woId = DB.workOrders[0].id;
+  const w = woById(woId);
+  DB.projects.push({ id: "TKT-NARR", title: "Chatter on the rib", kind: "issue", status: "Done",
+    workOrderId: woId, resolutionMethod: "Rework", whatHappened: "Tool deflected on the last pass.",
+    dispositionNote: "Re-cut the rib 0.4mm deeper and re-inspected.", assignees: [], watchers: [] });
+  const html = woSecIssues(w, false);
+  assert(html.includes("Tool deflected"), "the root cause is readable after disposal");
+  assert(html.includes("Re-cut the rib"), "and so is what was done about it");
+  assert(html.includes('id="wi-row-TKT-NARR"'), "the row is addressable, so its own chip can point at it");
+  /* Never a <details>: DESIGN-NOTES forbids folding with one and nothing
+     force-opens a <details> on print, so this would vanish from paper — on the
+     one string a printed nonconformance most needs to carry. */
+  assert(!/<details[^>]*>[\s\S]*Tool deflected/.test(html),
+    "the narrative is prose, not a fold");
+  DB.projects = DB.projects.filter(x => x.id !== "TKT-NARR");
+});
+
+await t("an issue with no narrative renders no empty headings", () => {
+  const woId = DB.workOrders[0].id;
+  DB.projects.push({ id: "TKT-BARE", title: "Cancelled one", kind: "issue", status: "Cancelled",
+    workOrderId: woId, resolutionMethod: "", assignees: [], watchers: [] });
+  const html = woSecIssues(woById(woId), false);
+  assert(html.includes("TKT-BARE"), "it is still listed");
+  assert(!html.includes("What happened"), "but a false alarm grows no empty 'What happened' label");
+  DB.projects = DB.projects.filter(x => x.id !== "TKT-BARE");
+});
+
+await t("the issue chip points at the row when you are already on that run", () => {
+  const woId = DB.workOrders[0].id;
+  DB.projects.push({ id: "TKT-HERE", title: "On this run", kind: "issue", status: "To Do",
+    workOrderId: woId, resolutionMethod: "", assignees: [], watchers: [] });
+  view = { ...view, tab: "workorders", mode: "detail", id: woId };
+  let jumped = false;
+  const realJump = typeof woJump === "function" ? woJump : null;
+  /* openIssue must NOT re-navigate here. It must also not send anyone to the
+     retired Tickets tab — Simon asked for that to stop (core.js, the chip
+     comment), so the fix is to point at the row, not to reopen the tab. */
+  openIssue("TKT-HERE");
+  assert(view.tab === "workorders" && view.id === woId, "you stay exactly where you were");
+  assert(view.tab !== "projects", "and never land on the retired Tickets tab");
+  const src = String(openIssue);
+  assert(/flashIssueRow/.test(src), "it points at the row instead of navigating");
+  assert(!/openRecord\(\s*["']projects["']/.test(src), "and never opens the shelved tab");
+  DB.projects = DB.projects.filter(x => x.id !== "TKT-HERE");
+});
+
 await t("Details leads when a work order is being created or edited, Steps when it is being read", () => {
   assert(woSections(false)[0].id === "steps", "reading a run, Steps leads — that is the bench action");
   assert(woSections(true)[0].id === "overview", "editing one, Details leads — that is what you are filling in");

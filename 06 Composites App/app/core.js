@@ -1046,12 +1046,31 @@ function openIssue(id) {
   const p = recById("projects", id);
   const woId = p && p.workOrderId;
   if (woId && recById("workOrders", woId)) {
+    /* Already on that run, looking at its Issues section? Then "open the issue"
+       used to navigate to the page you were on and scroll to the section you
+       were in — a press that did nothing at all. Point at the row instead. The
+       chip still never lands on the retired Tickets tab. */
+    if (view.tab === "workorders" && view.mode === "detail" && view.id === woId) { flashIssueRow(id); return; }
     openRecord("workorders", woId);
     if (typeof woJump === "function") woJump("wo-issues");
     return;
   }
   toast(p ? `${id} is a ticket from the retired tracker and has no work order to open.` : `${id} is not here.`, "info");
 }
+/* Bring an issue's own row into view and mark it for a moment. The row carries
+   everything about the issue now, so there is nowhere else to go. */
+function flashIssueRow(id) {
+  const el = document.getElementById("wi-row-" + id);
+  if (!el) { toast(`${id} is not on this run.`, "info"); return; }
+  if (el.scrollIntoView) el.scrollIntoView({ block: "center", behavior: "smooth" });
+  if (el.classList) {
+    el.classList.remove("cohit");
+    void el.offsetWidth;                       // restart the animation on a repeat press
+    el.classList.add("cohit");
+    setTimeout(() => { if (el.classList) el.classList.remove("cohit"); }, 1400);
+  }
+}
+
 /* ---------- lineage: where a record sits in the chain ----------
    Part > Run > Mold > Plan > Drawings, drawn identically on every record that
    sits somewhere in it. Before this, a work order named its part in a muted

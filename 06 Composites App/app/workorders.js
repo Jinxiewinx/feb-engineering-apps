@@ -2106,6 +2106,20 @@ function wiClearDraft(pid) { delete WI_DRAFTS[pid]; }
 
    Rows reuse .corow from the closeout modal — same shape, same problem, and
    two stylings of one row is how they drift apart. */
+/* What happened and what was done, as prose. Two questions with two answers:
+   the root cause is why it went wrong, the disposition note is what was done
+   about it — and after a reopen only the first is still true. Either one absent
+   renders nothing rather than an empty heading. */
+function issueNarrative(p) {
+  const rows = [
+    ["What happened", p.whatHappened],
+    ["What was done", p.dispositionNote],
+  ].filter(r => String(r[1] || "").trim());
+  if (!rows.length) return "";
+  return `<div class="conarr">${rows.map(r =>
+    `<div class="conarr-row"><span class="conarr-lab">${r[0]}</span><span class="conarr-t">${esc(String(r[1]).trim())}</span></div>`).join("")}</div>`;
+}
+
 function woSecIssues(wo, E) {
   const all = issuesForWO(wo.id).slice().sort((a, b) => {
     const ad = projStatus(a) === "Done" || projStatus(a) === "Cancelled";
@@ -2128,9 +2142,19 @@ function woSecIssues(wo, E) {
       ? `<div class="muted tny">part of ${chip("projects", parent.id, parent.title || parent.id)}</div>` : "";
 
     if (done) {
-      return `<div class="corow codone"><div><span class="ok">✓</span> ${chip("projects", p.id, p.id)} <b>${esc(p.title || "")}</b>
+      /* THE NARRATIVE STAYS ON THE ROW. This used to render the id, the title
+         and the method and stop — so the root cause the app REFUSED to close
+         without was never readable again, and the row's only other affordance
+         was a chip that navigated to the work order you were already on.
+
+         Plain prose, deliberately not a <details>: DESIGN-NOTES forbids folding
+         with one, and nothing force-opens a <details> on print. This is the
+         disposition record of a nonconformance and it is the single most
+         print-worthy string on the row. Clamped by CSS, not hidden. */
+      return `<div class="corow codone" id="wi-row-${esc(p.id)}"><div><span class="ok">✓</span> ${chip("projects", p.id, p.id)} <b>${esc(p.title || "")}</b>
         <span class="muted tny">— ${st === "Cancelled" ? "cancelled (false alarm)" : "resolved: " + esc(p.resolutionMethod || "?")}</span></div>
         ${pLine}
+        ${issueNarrative(p)}
         ${issueThumbs(p)}
         ${st === "Done" && !E ? `<div><button class="link no-print" onclick="reopenIssue('${esc(p.id)}')">Reopen</button></div>` : ""}</div>`;
     }
@@ -2138,7 +2162,7 @@ function woSecIssues(wo, E) {
     const method = d.method !== undefined ? d.method : (p.resolutionMethod || "");
     const what = d.what !== undefined ? d.what : (p.whatHappened || "");
     const camera = `<button class="ib sm no-print" title="Add photos to this issue" aria-label="Add photos to ${esc(p.id)}" onclick="addIssuePhotos('${esc(p.id)}')">${icon("image", 14)}</button>`;
-    return `<div class="corow">
+    return `<div class="corow" id="wi-row-${esc(p.id)}">
       <div>${chip("projects", p.id, p.id)} <b>${esc(p.title || "")}</b> ${meta}</div>
       ${pLine}
       ${issueThumbs(p)}
