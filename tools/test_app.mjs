@@ -693,6 +693,26 @@ await t("the issue chip points at the row when you are already on that run", () 
   DB.projects = DB.projects.filter(x => x.id !== "TKT-HERE");
 });
 
+await t("the facts band names where the mold is, and never a retro placeholder", () => {
+  DB.workOrders = [{ id: "WO-LOC-1", partName: "LOC", status: "InWork", processType: "Other",
+    bom: [], qualityChecks: [], timeline: [], steps: [], mold: { moldId: "M1", location: "Etch locker shelf 2" } }];
+  view = { ...view, tab: "workorders", mode: "detail", id: "WO-LOC-1", edit: false };
+  render();
+  /* Mold location was the last cell of the last group of a section that
+     defaults folded — which is the same as not being on the page. It is an
+     instruction ("update on every move") and it is what somebody standing at
+     RFS opens the run to find. */
+  assert(main.innerHTML.includes("Etch locker shelf 2"), "the location is on the facts band");
+  assert(/wf-lab">Mold at</.test(main.innerHTML), "under its own label");
+  DB.workOrders[0].mold.location = "not recorded (retro)";
+  render();
+  assert(!main.innerHTML.includes("Mold at"),
+    "a retro placeholder is not a location — print.js strips the same string for the same reason");
+  DB.workOrders[0].mold.location = "";
+  render();
+  assert(!main.innerHTML.includes("Mold at"), "and an empty one shows no slot at all");
+});
+
 await t("Details leads when a work order is being created or edited, Steps when it is being read", () => {
   assert(woSections(false)[0].id === "steps", "reading a run, Steps leads — that is the bench action");
   assert(woSections(true)[0].id === "overview", "editing one, Details leads — that is what you are filling in");

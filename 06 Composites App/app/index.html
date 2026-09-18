@@ -1814,8 +1814,16 @@
   .wosec-hd { display: flex; align-items: center; gap: 8px; margin: 0; list-style: none; }
   button.wosec-hd { appearance: none; -webkit-appearance: none; width: 100%; background: none; border: 0;
     padding: 0; font: inherit; text-align: left; cursor: pointer; min-height: 40px; color: inherit; }
+  /* THE ONE HEADING ON THE PAGE THAT IS INK. Before this there were seven
+     uppercase micro-label registers within 2.5px of each other — section label,
+     inner h3, sub-fold summary, field-group heading, field label, facts label,
+     photo group — all "small grey capitals". The eye cannot build a tree out of
+     that, which is what "all of the text looks similar" was describing. Three
+     levels now, and they differ by CASE and COLOUR rather than by a pixel:
+     section = ink Saira caps, subsection = grey caps, group = sentence-case ink
+     with a rule under it. */
   .wosec-hd > span:first-child { position: relative; padding-left: 11px; font-family: var(--font-display);
-    font-size: 13.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+    font-size: 13.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--ink); }
   .wosec-hd > span:first-child::before { content: ""; position: absolute; left: 1px; top: 1px; bottom: 1px; width: 3px;
     border-radius: 0 2px 2px 0; background: var(--gold); transform: skewX(-12deg); }
   .wosec-hd.warn > span:first-child::before { background: var(--bad); }
@@ -1842,6 +1850,14 @@
   .mddetail .wosec-body { font-size: 15px; }
   .mddetail .wosec-body table.sub { font-size: 14px; }
   .mddetail .grid .f .ro { font-size: 15px; }
+  /* Field labels in a detail pane go sentence case, so the only capitals left
+     in a section body are the two that name things. Scoped to .mddetail
+     .wosec-body on purpose: index.html:724 is ONE rule serving both `.grid .f
+     label` and `.field label`, and `.field` is every modal in the app. The
+     cost is deliberate and worth naming — the same register now reads 12px
+     sentence case in a section and 11px caps in a modal. */
+  .mddetail .wosec-body .grid .f label { font-size: 12px; font-weight: 500;
+    text-transform: none; letter-spacing: 0; }
   /* Row that holds a trailing add-button under a list. */
   .addrow { margin-top: 8px; }
   /* Sub-fold inside a section card (BOM, event log): reference data that
@@ -1856,8 +1872,12 @@
   .w110 { width: 110px; }
   /* Second-tier group label inside a section card (Identity / People / Mass /
      Mold on the Details card): below h3, above a field grid. */
-  .fgroup-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-    color: var(--faint); margin: 12px 0 4px; }
+  /* A group heading that reads as a heading. It used to be 11px uppercase
+     --faint beside 11px uppercase --muted field labels: the same register,
+     differing only by weight and .01em of tracking, so "Identity" looked like
+     one more field name rather than the thing naming the four below it. */
+  .fgroup-label { font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: 0;
+    color: var(--ink); margin: 14px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
   .fgroup-label:first-child { margin-top: 0; }
   /* ---- WO photos ----
      Real <img loading="lazy"> tiles (not CSS backgrounds) so the lightbox
@@ -1898,6 +1918,9 @@
   .wf-lab { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
   .wf-num { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--ink); }
   .wf-num.late { color: var(--bad); }
+  /* A place name, not a number: the display face's tabular figures and 16px
+     are tuned for "412" and make "Etch locker shelf 2" shout. */
+  .wf-num.wf-where { font-family: var(--font); font-size: 14px; font-weight: 600; }
   .wf-eng { display: inline-flex; }
   .wf-eng + .wf-eng { margin-left: -6px; }
   .wohead h2 { margin-top: 0; }

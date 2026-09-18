@@ -1520,6 +1520,19 @@ function renderWODetail() {
       ${(() => { const p = woProgress(wo); return p.total ? woProgBar(p) : ""; })()}
       ${wo.dueDate ? `<span class="wo-fact"><span class="wf-lab">Due</span><b class="wf-num ${isWoLate(wo) ? "late" : ""}">${esc(wo.dueDate)}</b>${isWoLate(wo) ? '<span class="warn tny">late</span>' : ""}</span>` : ""}
       ${wo.weightTargetG || wo.weightActualG ? `<span class="wo-fact"><span class="wf-lab">Mass</span><b class="wf-num ${wo.weightActualG && wo.weightTargetG && +wo.weightActualG > +wo.weightTargetG ? "late" : ""}">${esc(wo.weightActualG || "—")}</b><span class="tny muted">/ ${esc(wo.weightTargetG || "—")} g</span></span>` : ""}
+      ${/* Mold location earns a slot because it is an INSTRUCTION ("update on
+            every move") and because it is what somebody standing at RFS opens
+            the run to find. It was the last cell of the last group of a section
+            that defaults folded, which is the same as not being here. */""}
+      ${(() => {
+        /* Retro records carry the literal "not recorded (retro)" in most
+           fields — print.js:46 documents it and strips it the same way. A
+           placeholder promoted to the facts band is worse than an empty slot:
+           it reads as a location until you look twice. */
+        const loc = String((wo.mold && wo.mold.location) || "").trim();
+        if (!loc || /not recorded/i.test(loc)) return "";
+        return `<span class="wo-fact"><span class="wf-lab">Mold at</span><b class="wf-num wf-where">${esc(loc)}</b></span>`;
+      })()}
       ${(() => {
         const engs = [["moldEngineer", "Mold engineer"], ["manufacturingEngineer", "Manufacturing engineer"]]
           .map(([k, role]) => {
