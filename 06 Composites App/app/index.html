@@ -2238,7 +2238,7 @@
      strip's SIBLING, so a custom property set on the strip never reaches it and
      the two rules below that subtract the strip's height would silently fall
      back to their default and be wrong at every breakpoint but one. */
-  #main { --rd-strip-h: 178px; }
+  #main { --rd-strip-h: 212px; }
   .rdstrip { position: sticky; top: var(--topbar-h); z-index: 5;
     background: var(--canvas); border-bottom: 1px solid var(--line);
     padding: 8px 0 10px; margin: 0 0 12px; max-width: 100%;
@@ -2249,7 +2249,7 @@
   /* A fixed card height does three jobs at once: a long study name cannot
      reflow the strip, the snap points stay regular, and the anchor rule below
      has a number to subtract. */
-  .rdcard { scroll-snap-align: start; min-width: 0; overflow: hidden;
+  .rdcard { position: relative; scroll-snap-align: start; min-width: 0; overflow: hidden;
     background: var(--card); border: 1px solid var(--line);
     border-radius: var(--r-md); border-top: 3px solid var(--ink);
     box-shadow: var(--shadow); padding: 9px 11px 10px;
@@ -2265,7 +2265,47 @@
      programme unit in its own right. */
   .rdcard-loose { border-top-style: dashed; }
   .rdcard-loose p { margin: 0; }
-  .rdcard-hd { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+  /* The card is a fixed-height flex column, so every row that is not the runs
+     foot has to be flex:none. Without it the browser SHRANK them to make room —
+     .rdcard-meta came out 0px tall with 18px of text inside it, which reads as
+     a missing line rather than as a squeeze. */
+  .rdcard > * { flex: none; }
+  .rdcard-hd { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  /* THE STRETCHED LINK. The name is a real button; its ::after covers the whole
+     card, so pressing anywhere opens the record. Everything that is its own
+     target — run chips, batch rows, the checkbox — is a sibling lifted above it
+     on the z axis below. Same recipe as .loccard on the storage map, including
+     the reason: a <button> wrapping the card's divs had nowhere to put a second
+     control. */
+  .rdcard-nm { font-size: 15.5px; font-weight: 700; line-height: 1.25;
+    display: block; width: 100%; white-space: normal; text-overflow: clip;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; }
+  .rdcard-nm::after { content: ""; position: absolute; inset: 0; border-radius: var(--r-md); }
+  .rdcard-nm:focus-visible::after { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .rdcard-meta { font-size: 12px; color: var(--muted); min-width: 0;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .rdcard-id { font-variant-numeric: tabular-nums; }
+  .rdcard-facts { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; min-width: 0; }
+  /* The stage rail is a 16px strip in a rail row, where it sits beside a name
+     on one line. On a card it is one of two things you read from across a
+     bench, so it gets the size the space was going spare on anyway. */
+  .rdcard .prog3 .sg { width: 34px; height: 21px; font-size: 11.5px; border-radius: 5px; }
+  /* Work orders get their own ruled foot, labelled. A run is a different kind
+     of record from the part that holds it, and a chip floating in the card's
+     whitespace read as neither — it looked like a stray button. Studies use the
+     same foot for their batches, so the two card kinds rhyme. */
+  .rdruns { margin-top: auto; padding-top: 7px; border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 0;
+    position: relative; z-index: 1; }
+  .rdruns-lab { font-family: var(--font-display); font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--faint);
+    white-space: nowrap; flex: none; }
+  .rdruns-chips { display: flex; gap: 5px; flex-wrap: wrap; min-width: 0; }
+  .rdchip-id { font-variant-numeric: tabular-nums; }
+  /* Everything with a target of its own rides above the stretched link. */
+  .rdcard .rdcard-more, .rdcard-hd input[type="checkbox"], .rdcard .rdthumb {
+    position: relative; z-index: 1; }
   /* 11px, not the 10.5 the other uppercase micro-labels use: this one is a
      word on a card rather than a count inside a chip, so test_appui measures it
      as body text and holds it to the floor. */
@@ -2280,8 +2320,11 @@
      that can grow without limit — the batch list, or a part's runs — scrolls
      inside the card instead of being silently clipped by the overflow above.
      A half-visible batch row reads as a rendering fault, not as "there is more". */
+  /* A study with six batches must not push the card past its fixed height, so
+     the list scrolls inside the foot rather than growing it. */
   .rdcard-more { overflow-y: auto; margin: 0 -3px; padding: 0 3px;
-    display: flex; flex-direction: column; gap: 2px; min-height: 0; }
+    display: flex; flex-direction: column; gap: 2px; min-height: 0;
+    max-height: 62px; flex: 1 1 auto; }
   .rdtally b { font-family: var(--font-display); color: var(--ink);
     font-variant-numeric: tabular-nums; }
   .rdtally .zero { opacity: .45; }
@@ -2318,14 +2361,18 @@
      with and it must never be the thing that gets covered. */
   .rdbench .secnav { top: calc(var(--topbar-h) + var(--rd-strip-h)); z-index: 3; }
   .rdbench .undobar { top: calc(var(--topbar-h) + var(--rd-strip-h) + 8px); z-index: 3; }
-  @media (max-width: 1200px) { #main { --rd-strip-h: 170px; } .rdstrip { grid-auto-columns: 300px; } }
+  @media (max-width: 1200px) { #main { --rd-strip-h: 204px; } .rdstrip { grid-auto-columns: 300px; } }
   @media (max-width: 900px) {
-    #main { --rd-strip-h: 166px; }
+    #main { --rd-strip-h: 214px; }
+    /* One line of detail on a phone, not two: the strip is stuck and every row
+       it keeps is a row of the record underneath that you cannot see. */
+    .rdcard-meta { -webkit-line-clamp: 1; }
+    .rdcard-more { max-height: 46px; }
     .rdstrip { grid-auto-columns: 78vw; scroll-snap-type: x mandatory; }
     .rdmast-acts { margin-left: 0; }
   }
   @media (max-width: 430px) {
-    #main { --rd-strip-h: 186px; }
+    #main { --rd-strip-h: 220px; }
     .rdstrip { grid-auto-columns: calc(100vw - 32px); scroll-padding-inline: 16px; }
     .rdmast-q { max-width: none; }
   }

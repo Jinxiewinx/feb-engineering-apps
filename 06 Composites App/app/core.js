@@ -33,10 +33,10 @@ var APP_VERSION = "5.2.0";
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
   "The R&D tab is the whole programme now. Studies, R&D parts and their runs are all on one strip across the top — you can see everything without opening anything.",
+  "A card tells you what the thing is before you open it: the stack, the subteam, where the mold lives, how far the stages have got, and how long you have. Press anywhere on it to open.",
+  "A part's work orders sit in their own strip along the bottom of its card, so a run is never mistaken for part of the part.",
   "Press a card and it opens underneath, full width. A part or a run gives you the real page: every step, every blocker, every cure hold, on a wider screen than the Parts tab gives it.",
-  "The strip stays put while you work, so the next thing is one press away and you never lose your place. Escape, or Back to the bench, returns you to the study you were in.",
-  "Start a study, an R&D part or a run from the top of the tab. Search finds studies and parts together; the counts always say what actually exists.",
-  "On a phone the strip is a swipe: one card at a time, and the coupon grid underneath is unchanged.",
+  "The strip stays put while you work, so the next thing is one press away. Escape, or Back to the bench, returns you to the study you were in.",
 ];
 
 

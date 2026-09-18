@@ -795,20 +795,32 @@ function rdStudyCard(s) {
     const n = by(st);
     return `<span class="${n ? "" : "zero"}"><b>${n}</b> ${esc(st.toLowerCase())}</span>`;
   }).join("");
-  const thumb = rdThumb(s);
+  const cols = rdCols(s);
+  const ins = cols.filter(c => c.role === "input").length;
+  const res = cols.filter(c => c.role === "result").length;
+  const meta = [`${cpn.length} coupon${cpn.length === 1 ? "" : "s"}`,
+                ins || res ? `${ins} in · ${res} result` : ""].filter(Boolean).join(" · ");
   return `<article class="rdcard rdcard-study${on ? " on" : ""}" id="rdc-${esc(s.id)}" role="listitem">
     <div class="rdcard-hd">
       <span class="rdkind">Study</span>
       <span class="stage ${s.status === "Done" ? "st-done" : s.status === "Parked" ? "st-na" : "st-mid"}">${esc(s.status || "Active")}</span>
       ${archivedPill(s, true)}
-    </div>
-    <div class="rdcard-hd">
+      <span style="flex:1"></span>
       ${pickBox("rnd", s.id)}
-      <button class="rd-open rdcard-nm" onclick="${pickClick("rnd", s.id, `rdOpen('${esc(s.id)}')`)}">${esc(s.name || s.id)}</button>
-      ${thumb}
     </div>
-    <div class="rdtally">${tally}</div>
-    ${kids.length ? `<div class="rdcard-more">${kids.map(rdBatchRow).join("")}</div>` : ""}
+    <button class="rd-open rdcard-nm" onclick="${pickClick("rnd", s.id, `rdOpen('${esc(s.id)}')`)}">${esc(s.name || s.id)}</button>
+    <div class="rdcard-meta">
+      <span class="rdcard-id">${esc(s.id)}</span> · ${esc(meta)}
+    </div>
+    <div class="rdcard-facts">
+      <span class="rdtally">${tally}</span>
+      ${rdThumb(s)}
+    </div>
+    ${kids.length ? `<div class="rdruns">
+      <span class="rdruns-lab">${kids.length} batch${kids.length === 1 ? "" : "es"}</span>
+      <span class="rdcard-more">${kids.map(rdBatchRow).join("")}</span>
+    </div>` : `<div class="rdruns"><span class="rdruns-lab">${s.parent ? "A batch" : "No batches"}</span>
+      <span class="rdruns-chips">${s.parent ? "" : `<button class="rdchip ghost"${gx("Sign in to add a batch.")} onclick="rdNewStudyModal('${esc(s.id)}')">${icon("plus", 13)} New batch</button>`}</span></div>`}
   </article>`;
 }
 
@@ -864,6 +876,11 @@ function rdPartCard(p) {
     : late ? `${Math.abs(d)} day${Math.abs(d) === 1 ? "" : "s"} late`
     : d === 0 ? "due today" : `${d} day${d === 1 ? "" : "s"} out`;
   const who = p.moldEngineer || p.manufacturingEngineer || "";
+  /* The quiet second line. Only the facts that tell you which trial this is —
+     the stack and where its mold lives are what somebody walking to the rack
+     actually wants, and an empty one is dropped rather than printed blank. */
+  const meta = [p.subteam, p.layupType, p.layupSchedule, p.moldLocation]
+    .filter(Boolean).map(esc).join(" · ");
   return `<article class="rdcard rdcard-part${on || kin ? " on" : ""}${late ? " late" : ""}" id="rdc-${esc(p.id)}" role="listitem">
     <div class="rdcard-hd">
       <span class="rdkind">R&amp;D part</span>
@@ -875,14 +892,28 @@ function rdPartCard(p) {
       <span style="flex:1"></span>
       ${who ? avatar(who, 22) : ""}
     </div>
-    <div class="rdcard-hd">
-      <button class="rd-open rdcard-nm" onclick="rdOpenPart('${esc(p.id)}')">${esc(p.partName || p.id)}</button>
+    ${/* The stretched link: a real button on the name whose ::after covers the
+          whole card, so pressing anywhere opens the part. Everything that is
+          its own target — the run chips, the checkbox — is a sibling ABOVE it
+          on the z axis. Lifted verbatim from .loccard on the storage map. */""}
+    <button class="rd-open rdcard-nm" onclick="rdOpenPart('${esc(p.id)}')">${esc(p.partName || p.id)}</button>
+    <div class="rdcard-meta">
+      <span class="rdcard-id">${esc(p.id)}</span>${meta ? ` · ${meta}` : ""}
+    </div>
+    <div class="rdcard-facts">
+      ${stageRail(p)}
+      ${due ? `<span class="rddue${late ? " late" : ""}">${esc(due)}</span>` : `<span class="rddue">no deadline</span>`}
       ${rdThumb(p)}
     </div>
-    <div class="rdtally">${stageRail(p)}${due ? `<span class="rddue${late ? " late" : ""}">${esc(due)}</span>` : ""}</div>
-    <div class="rdruns">${runs.length
-      ? runs.map(r => rdRunChip(r.wo, view.rdPane === "run" && view.id === r.wo.id)).join("")
-      : `<button class="rdchip ghost"${gx("Sign in to start a run.")} onclick="startRunForPart('${esc(p.id)}')">${icon("plus", 13)} Start run</button>`}</div>
+    ${/* The runs live in their own ruled foot, labelled, because a work order is
+          a different kind of record from the part that holds it and a chip
+          floating in the card's whitespace read as neither. */""}
+    <div class="rdruns">
+      <span class="rdruns-lab">${runs.length ? `${runs.length} run${runs.length === 1 ? "" : "s"}` : "No run yet"}</span>
+      <span class="rdruns-chips">${runs.length
+        ? runs.map(r => rdRunChip(r.wo, view.rdPane === "run" && view.id === r.wo.id)).join("")
+        : `<button class="rdchip ghost"${gx("Sign in to start a run.")} onclick="startRunForPart('${esc(p.id)}')">${icon("plus", 13)} Start run</button>`}</span>
+    </div>
   </article>`;
 }
 
@@ -891,8 +922,11 @@ function rdRunChip(w, on) {
   const fl = woFlags(w) || {};
   const flag = fl.blocked ? `<span class="rdchip-flag">blocked</span>`
     : fl.curing ? `<span class="rdchip-flag">curing</span>` : "";
+  /* The run's own number, not just its progress: a part with two runs shows two
+     chips, and "4/9" twice says nothing about which is which. */
+  const n = String(w.id || "").split("-").pop();
   return `<button class="rdchip${on ? " on" : ""}" onclick="rdOpenRun('${esc(w.id)}')"
-    title="${esc(w.id)}${w.rev ? " rev " + esc(w.rev) : ""}"><b>${pr.done}/${pr.total}</b>${flag}</button>`;
+    title="${esc(w.id)}${w.rev ? " rev " + esc(w.rev) : ""}${w.status ? " · " + esc(w.status) : ""}"><span class="rdchip-id">${esc(n)}</span><b>${pr.done}/${pr.total}</b>${flag}</button>`;
 }
 
 /* A standalone R&D run has no part to sit under, because newWO(true) is allowed

@@ -3979,6 +3979,32 @@ await t("the masthead searches both kinds, and its counts count what EXISTS", ()
   fb.roster = { name: "Simon", role: "lead" };
 });
 
+await t("a whole card is the press, and the run chips still win inside it", () => {
+  rdFixture();
+  fb.roster = { name: "Nico", role: "member" };
+  DB.workOrders = [{ id: "WO-SN6-900", partId: "P-SN6-960", partName: "VG TRIAL",
+                     status: "In work", steps: [{ title: "Cut", status: "Done" }, { title: "Layup" }] }];
+  view = { ...view, tab: "rnd", mode: "list", id: null, rdStudy: null, q: "", rdFilter: "" };
+  render();
+  const css = readFileSync(join(root, "index.html"), "utf8");
+  /* The stretched link: the name's ::after covers the card, so pressing dead
+     space opens the record. It only works while the card is a containing
+     block, and while everything with a target of its own sits above it. Three
+     rules, none of which is obviously load-bearing on its own — hence a test. */
+  assert(/\.rdcard \{ position: relative;/.test(css),
+    "the card is the containing block the ::after stretches to");
+  assert(/\.rdcard-nm::after \{ content: ""; position: absolute; inset: 0;/.test(css),
+    "and the name's ::after covers it");
+  assert(/\.rdruns \{[^}]*z-index: 1;/s.test(css),
+    "the runs foot rides ABOVE it, or a run chip becomes unpressable");
+  assert(/\.rdcard > \* \{ flex: none; \}/.test(css),
+    "and no row may be shrunk to nothing by the fixed card height");
+  /* Both presses must survive on the same card. */
+  assert(main.innerHTML.includes("rdOpenPart('P-SN6-960')"), "the card opens the part");
+  assert(main.innerHTML.includes("rdOpenRun('WO-SN6-900')"), "the chip inside it opens the run");
+  fb.roster = { name: "Simon", role: "lead" };
+});
+
 await t("THE THREE view.tab GATES admit the bench and refuse its rail keys", () => {
   rdFixture();
   DB.workOrders = [{ id: "WO-SN6-900", partId: "P-SN6-960", partName: "VG TRIAL",
