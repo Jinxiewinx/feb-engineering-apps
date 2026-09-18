@@ -38,6 +38,25 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.0.0 — 2026-09-18
+
+- Document the five changes, and what not to undo
+- A clock is not a fault, the appendix is one break, and Details groups in edit too
+- An R&D study is a folder: it groups parts and runs, not only coupons
+- A part can be made on several molds
+- A part shows what it looks like
+- Sections come in two kinds now, so the differences mean something
+
+<details><summary>3 more</summary>
+
+- Three heading levels instead of seven, and the mold's location gets a slot
+- Disposing an issue now records what was DONE, not only what happened
+- A disposed issue tells its story again, and its chip stops being a dead press
+
+</details>
+
+---
+
 ## v5.2.1 — 2026-09-18
 
 - The whole card is the press, runs get their own foot, and the cards carry facts
