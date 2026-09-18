@@ -3565,6 +3565,7 @@ function render() {
      this the rail renders with the selected row well below the fold. Same
      optional-function guard as the two above, for the same reason. */
   if (typeof syncWORailScroll === "function") syncWORailScroll();
+  if (typeof syncRdStrip === "function") syncRdStrip();
   if (typeof syncTicketRailScroll === "function") syncTicketRailScroll();
   syncChromeMetrics();
 }

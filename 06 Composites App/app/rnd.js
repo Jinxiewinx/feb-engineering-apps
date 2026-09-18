@@ -656,32 +656,156 @@ function rdDefaultStudy() {
 
 function renderRnd() {
   rdNormalize();
-  const sel = rdStudy(view.rdStudy);
-  /* The empty state is for an EMPTY BENCH, not for "nothing selected" — it says
-     "no studies yet", which would be a lie the moment one existed. */
-  return `${rdToolbar(sel)}${rdUndoBar()}${rdIndexHtml(sel)}${sel ? rdSheetHtml(sel) : rdEmptyHtml()}`;
+  return `${rdMastheadHtml()}${rdUndoBar()}${rdStripHtml()}${rdBenchHtml()}`;
 }
 
-function rdToolbar(sel) {
-  const studies = rdStudies().length;
-  const coupons = rdAll().filter(o => o.cls === "CPN").length;
-  return `<div class="toolbar no-print">
-    <button class="primary ib"${gx("Sign in to add a study.")} onclick="rdNewStudyModal()">${icon("plus", 15)} New study</button>
-    ${sel && !sel.parent ? `<button class="ib"${gx("Sign in to add a batch.")} onclick="rdNewStudyModal('${esc(sel.id)}')">${icon("plus", 15)} New batch</button>` : ""}
-    <span class="tny muted">${coupons} coupon${coupons === 1 ? "" : "s"} · ${studies} stud${studies === 1 ? "y" : "ies"}</span>
-    <span style="flex:1"></span>
-    ${sel && !sel.parent && canEdit() ? `<button class="sm" onclick="rdArchiveStudy('${esc(sel.id)}',${isArchived(sel) ? "false" : "true"})">${isArchived(sel) ? "Restore" : "Archive"} study</button>` : ""}
-    ${!sel ? ""
-      : rdIsParent(sel)
-        /* A project holds batches, and a coupon belongs in one of them. Offering
-           Add rows here would mint coupons that sit beside the batches rather
-           than in any of them — a provenance hole with no way to close it
-           afterwards. Say where they go instead. */
-        ? `<span class="tny muted">Coupons go in a batch — open one to add rows.</span>`
-        : `<label class="tny muted" for="rd-n">Rows</label>
-      <input id="rd-n" class="rdn" type="number" min="1" max="${RD_MAX_ROWS}" value="10" aria-label="How many coupons to add">
-      <button class="ib"${gx("Sign in to add coupons.")} onclick="rdAddRows()">${icon("plus", 15)} Add rows</button>`}
+/* The bench: one full-width storey under the strip, showing whatever is
+   selected. A study is the sheet, unchanged. The part and run panes arrive in
+   the next chunk; until then the router cannot produce those values. */
+function rdBenchHtml() {
+  const s = rdStudy(view.rdStudy);
+  /* The empty state is for an EMPTY BENCH, not for "nothing selected" — it says
+     "no studies yet", which would be a lie the moment one existed. */
+  return s ? rdSheetHtml(s) : rdEmptyHtml();
+}
+
+/* Counts of what EXISTS, not of what survived the filter — the same law the
+   Parts rail chips follow. A chip that counts itself tells you nothing. */
+function rdCounts() {
+  const parts = (DB.parts || []).filter(isRnd);
+  return {
+    studies: rdStudies().length,
+    coupons: rdAll().filter(o => o.cls === "CPN").length,
+    parts: parts.length,
+    runs: (DB.workOrders || []).filter(woIsRnd).length,
+  };
+}
+
+function rdMastheadHtml() {
+  const n = rdCounts();
+  const f = view.rdFilter || "";
+  const chip = (label, val, count) => summaryChip(label, count, f === val,
+    `view.rdFilter=${f === val ? '""' : JSON.stringify(val)};render()`);
+  const arch = rdRoots().filter(isArchived).length;
+  return `<div class="rdmast no-print">
+    <h1 class="rdmast-t">Programme</h1>
+    <p class="rdmast-n">${n.studies} stud${n.studies === 1 ? "y" : "ies"} ·
+      ${n.coupons} coupon${n.coupons === 1 ? "" : "s"} ·
+      ${n.parts} R&amp;D part${n.parts === 1 ? "" : "s"} ·
+      ${n.runs} run${n.runs === 1 ? "" : "s"}</p>
+    <div class="rdmast-acts">
+      ${chip("Active", "Active", rdRoots().filter(r => !isArchived(r) && (r.status || "Active") === "Active").length)}
+      ${chip("Done", "Done", rdRoots().filter(r => !isArchived(r) && r.status === "Done").length)}
+      ${chip("Parked", "Parked", rdRoots().filter(r => !isArchived(r) && r.status === "Parked").length)}
+      ${arch ? chip("Archived", "arch", arch) : ""}
+      <button class="primary ib"${gx("Sign in to add a study.")} onclick="rdNewStudyModal()">${icon("plus", 15)} Study</button>
+    </div>
+    <input id="searchbox" class="rdmast-q" type="search" placeholder="Search studies and parts…"
+      aria-label="Search the programme" value="${esc(view.q || "")}"
+      oninput="view.q=this.value;render()">
   </div>`;
+}
+
+/* ---------- the strip ----------
+   Horizontal, sticky, snap-scrolling. One card per programme unit. It is not a
+   rail: a rail is a list you walk top to bottom beside a pane, and the note in
+   the stylesheet explains why a pane cannot hold the sheet. */
+function rdStripHtml() {
+  const cards = rdStripStudies().map(rdStudyCard).join("");
+  if (!cards) return "";
+  return `<div class="rdstrip no-print" role="list" aria-label="R&D programme"
+    onscroll="RD_SCROLL=this.scrollLeft">${cards}</div>`;
+}
+
+/* Matching a card is matching its name or its id, and a study whose BATCH
+   matches stays — otherwise searching for a batch hides the card holding it. */
+function rdHit(rec, q) {
+  if (!q) return true;
+  const hay = `${rec.name || rec.partName || ""} ${rec.id || ""} ${rec.subteam || ""}`.toLowerCase();
+  return hay.includes(q);
+}
+
+function rdStripStudies() {
+  const q = String(view.q || "").trim().toLowerCase();
+  const f = view.rdFilter || "";
+  /* Archived studies (and their batches) leave the strip, not the database.
+     The OPEN study is always re-added at the end, so archiving it — or filtering
+     past it — never blanks the bench under a card that is no longer there. */
+  let rows = rdRoots().filter(r => f === "arch" ? isArchived(r) : !isArchived(r));
+  if (f && f !== "arch") rows = rows.filter(r => (r.status || "Active") === f);
+  if (q) rows = rows.filter(r => rdHit(r, q) || rdChildren(r.id).some(c => rdHit(c, q)));
+  if (view.rdPane === "study" && view.rdStudy) {
+    const open = rdStudy(view.rdStudy);
+    const root = open && open.parent ? rdStudy(open.parent) : open;
+    if (root && !rows.some(r => r.id === root.id)) rows = rows.concat([root]);
+  }
+  return rows;
+}
+
+function rdStudyCard(s) {
+  const kids = rdChildren(s.id);
+  const on = view.rdPane === "study" && (view.rdStudy === s.id || kids.some(c => c.id === view.rdStudy));
+  const cpn = rdCouponsDeep(s.id);
+  const by = st => cpn.filter(c => (c.status || "Planned") === st).length;
+  const tally = RD_STATUS.map(st => {
+    const n = by(st);
+    return `<span class="${n ? "" : "zero"}"><b>${n}</b> ${esc(st.toLowerCase())}</span>`;
+  }).join("");
+  const thumb = rdThumb(s);
+  return `<article class="rdcard rdcard-study${on ? " on" : ""}" id="rdc-${esc(s.id)}" role="listitem">
+    <div class="rdcard-hd">
+      <span class="rdkind">Study</span>
+      <span class="stage ${s.status === "Done" ? "st-done" : s.status === "Parked" ? "st-na" : "st-mid"}">${esc(s.status || "Active")}</span>
+      ${archivedPill(s, true)}
+    </div>
+    <div class="rdcard-hd">
+      ${pickBox("rnd", s.id)}
+      <button class="rd-open rdcard-nm" onclick="${pickClick("rnd", s.id, `rdOpen('${esc(s.id)}')`)}">${esc(s.name || s.id)}</button>
+      ${thumb}
+    </div>
+    <div class="rdtally">${tally}</div>
+    ${kids.length ? `<div class="rdcard-more">${kids.map(rdBatchRow).join("")}</div>` : ""}
+  </article>`;
+}
+
+/* One indent, and only one: a batch sits under its project and nothing sits
+   under a batch. The rule is enforced above; this is it made visible. */
+function rdBatchRow(c) {
+  const n = rdCoupons(c.id).length;
+  const on = view.rdPane === "study" && view.rdStudy === c.id;
+  return `<div class="rdrow rdchild${on ? " on" : ""}${pickIs("rnd", c.id) ? " picked" : ""}">
+    ${pickBox("rnd", c.id)}<button class="rd-open" onclick="${pickClick("rnd", c.id, `rdOpen('${esc(c.id)}')`)}">${esc(c.name || c.id)}</button>
+    <span class="tny muted">${n}</span>
+  </div>`;
+}
+
+function rdThumb(rec) {
+  const ph = (rdPhotos(rec) || []).filter(f => /^image\//.test(String(f.type || "")) || /\.(png|jpe?g|webp|gif)$/i.test(String(f.name || "")));
+  return ph[0] && ph[0].url ? `<img class="rdthumb" src="${esc(ph[0].url)}" alt="">` : "";
+}
+
+/* ---------- strip scroll, across a repaint ----------
+   render() blows #main away every time. rememberRailScroll/restoreRailScroll
+   handle .plist VERTICAL scroll keyed by aria-label and are shared by four
+   tabs — do not widen them for a horizontal strip that is not a .plist. This
+   is timeline.js's TL_SCROLL/TL_FOCUS idiom instead. */
+let RD_SCROLL = null;
+let RD_FOCUS = null;
+
+function syncRdStrip() {
+  if (view.tab !== "rnd" || typeof document.querySelector !== "function") return;
+  const strip = document.querySelector("#main .rdstrip");
+  if (!strip) return;
+  if (RD_FOCUS) {
+    const id = RD_FOCUS; RD_FOCUS = null;
+    const el = document.getElementById("rdc-" + id);
+    if (el && el.scrollIntoView) {
+      el.scrollIntoView({ inline: "nearest", block: "nearest" });
+      RD_SCROLL = strip.scrollLeft;
+      return;
+    }
+  }
+  if (RD_SCROLL != null) strip.scrollLeft = RD_SCROLL;
 }
 
 /* The empty state says what the thing IS, in the shop's own words, and offers
@@ -700,35 +824,6 @@ function rdEmptyHtml() {
   </div>`;
 }
 
-function rdStudyRow(s, isChild) {
-  const n = isChild ? rdCoupons(s.id).length : rdCouponsDeep(s.id).length;
-  const cols = rdCols(s);
-  const ins = cols.filter(c => c.role === "input").length;
-  const res = cols.filter(c => c.role === "result").length;
-  const on = view.rdStudy === s.id;
-  return `<div class="rdrow${isChild ? " rdchild" : ""}${on ? " on" : ""}${pickIs("rnd", s.id) ? " picked" : ""}">
-    ${pickBox("rnd", s.id)}<button class="rd-open" onclick="${pickClick("rnd", s.id, `rdOpen('${esc(s.id)}')`)}">${esc(s.name || s.id)}</button>
-    <span class="tny muted">${n} coupon${n === 1 ? "" : "s"}</span>
-    <span class="stage ${s.status === "Done" ? "st-done" : s.status === "Parked" ? "st-na" : "st-mid"}">${esc(s.status || "Active")}</span>${archivedPill(s, true)}
-    <span class="tny muted">${ins || res ? `${ins} in · ${res} result` : ""}</span>
-  </div>`;
-}
-
-function rdIndexHtml(sel) {
-  const all = rdRoots();
-  if (!all.length) return "";
-  /* Archived studies (and their batches) leave the index, not the database;
-     the open study stays listed so archiving it does not blank the sheet. */
-  const arch = all.filter(isArchived).length;
-  const roots = all.filter(r => view.rdArch ? isArchived(r) : (!isArchived(r) || (sel && sel.id === r.id)));
-  const shown = roots.map(r => r.id).concat(roots.flatMap(r => rdChildren(r.id).map(c => c.id)));
-  return `<div class="card rdindex no-print">
-    ${canEdit() ? `<div class="toolbar rdpick">${pickBar("rnd", { all: shown, onDelete: "deletePickedStudies()", hint: "Select several studies to delete them, coupons included" })}</div>` : ""}
-    ${roots.map(r => rdStudyRow(r, false) + rdChildren(r.id).map(c => rdStudyRow(c, true)).join("")).join("")}
-    ${arch ? `<label class="tny muted rdarch"><input type="checkbox" ${view.rdArch ? "checked" : ""} onchange="view.rdArch=this.checked;render()"> ${arch} archived stud${arch === 1 ? "y" : "ies"}</label>` : ""}
-    ${rdPartsHtml()}
-  </div>`;
-}
 /* Several studies from the index's Select…. Unlike rdDelStudy, a picked
    project takes its batches with it (the single delete refuses, because one
    press should not be three rounds of work; picking them together is that
@@ -829,6 +924,7 @@ function rdShowStrip() {
 function rdOpen(id) {
   if (!rdStudy(id)) return;
   view = { ...view, rdStudy: id, rdPane: "study", mode: "detail", id, edit: false };
+  RD_FOCUS = id;
   render(); syncUrl();
 }
 
@@ -861,7 +957,25 @@ function rdSheetHtml(s) {
       <button class="ib" onclick="rdCopyTSV('${esc(s.id)}')" title="Paste straight into a Google Sheet — works on a phone, where a download often does nothing">${icon("file", 15)} Copy</button>
       <span style="flex:1"></span>
       <button class="ib"${gx("Sign in to duplicate a study.")} onclick="rdDuplicateStudy('${esc(s.id)}')" title="Same columns and materials, no coupons — for the next round">Duplicate</button>
+      ${canEdit() ? `<button class="ib" onclick="rdArchiveStudy('${esc(s.id)}',${isArchived(s) ? "false" : "true"})">${isArchived(s) ? "Restore" : "Archive"}</button>` : ""}
       <button class="ib danger"${gx("Sign in to delete a study.")} onclick="rdDelStudy('${esc(s.id)}')">${icon("trash", 15)} Delete study</button>
+    </div>
+    ${/* Adding rows and adding a batch are things you do TO THE OPEN STUDY, so
+          they live on its sheet rather than in the masthead, which now speaks
+          for the whole programme. Same controls, same rules, one storey down. */""}
+    <div class="toolbar rdadd no-print">
+      ${!s.parent ? `<button class="ib"${gx("Sign in to add a batch.")} onclick="rdNewStudyModal('${esc(s.id)}')">${icon("plus", 15)} New batch</button>` : ""}
+      ${rdIsParent(s)
+        /* A project holds batches, and a coupon belongs in one of them. Offering
+           Add rows here would mint coupons that sit beside the batches rather
+           than in any of them — a provenance hole with no way to close it
+           afterwards. Say where they go instead. */
+        ? `<span class="tny muted">Coupons go in a batch — open one to add rows.</span>`
+        : `<label class="tny muted" for="rd-n">Rows</label>
+      <input id="rd-n" class="rdn" type="number" min="1" max="${RD_MAX_ROWS}" value="10" aria-label="How many coupons to add">
+      <button class="ib"${gx("Sign in to add coupons.")} onclick="rdAddRows()">${icon("plus", 15)} Add rows</button>`}
+      <span style="flex:1"></span>
+      ${canEdit() ? pickBar("rnd", { all: rdRoots().map(r => r.id).concat(rdRoots().flatMap(r => rdChildren(r.id).map(c => c.id))), onDelete: "deletePickedStudies()", hint: "Select several studies to delete them, coupons included" }) : ""}
     </div>
     ${rdPhotoStrip(s, canEdit())}
     ${rdMatBar(s)}

@@ -6774,24 +6774,27 @@ await t("archiving writes the flag and the stamp, restoring clears them, and it 
   assert(DB.parts[1].archived === false && view.partPick === null, "the pick-mode button restores and leaves pick mode");
 });
 
-await t("an archived R&D study leaves the index with its batches, and can come back", () => {
+await t("an archived R&D study leaves the strip with its batches, and can come back", () => {
   DB.rnd = [
     { id: "RDS-SN6-001", cls: "RDS", name: "Cure sweep", status: "Active" },
     { id: "RDS-SN6-002", cls: "RDS", name: "Batch A", status: "Active", parent: "RDS-SN6-001" },
     { id: "RDS-SN6-003", cls: "RDS", name: "Bond shear", status: "Active" },
   ];
   fb.roster = { name: "Nico", role: "member" };
-  view = { ...view, tab: "rnd", mode: "list", id: null, rdStudy: "RDS-SN6-003", rdArch: false };
+  /* view.rdArch folded into view.rdFilter when the index became the strip:
+     archived is one more masthead chip beside Active/Done/Parked, rather than a
+     checkbox with its own key. Same behaviour, one fewer thing on view. */
+  view = { ...view, tab: "rnd", mode: "list", id: null, rdStudy: "RDS-SN6-003", rdFilter: "", q: "" };
   rdArchiveStudy("RDS-SN6-001", true);
   assert(DB.rnd[0].archived && DB.rnd[1].archived && !DB.rnd[2].archived, "root and batch archived, the other study untouched");
   render();
-  assert(!main.innerHTML.includes("rdOpen('RDS-SN6-001')"), "the archived study is off the index");
-  assert(main.innerHTML.includes("1 archived study"), "and the index says one is put away");
-  view.rdArch = true; render();
-  assert(main.innerHTML.includes("rdOpen('RDS-SN6-001')"), "the toggle brings it back");
+  assert(!main.innerHTML.includes("rdOpen('RDS-SN6-001')"), "the archived study is off the strip");
+  assert(/<b>1<\/b> Archived/.test(main.innerHTML), "and the masthead says one is put away");
+  view.rdFilter = "arch"; render();
+  assert(main.innerHTML.includes("rdOpen('RDS-SN6-001')"), "the chip brings it back");
   rdArchiveStudy("RDS-SN6-001", false);
   assert(!DB.rnd[0].archived && !DB.rnd[1].archived, "restore clears the batch too");
-  view.rdArch = false;
+  view.rdFilter = "";
 });
 
 await t("Season column names sort on click, reverse on a second click, and wear the triangle", () => {
