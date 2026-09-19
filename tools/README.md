@@ -254,6 +254,42 @@ For manual phone checks, open `serve_populated.mjs`'s URL in Chrome's device
 toolbar at iPhone 15 rather than a narrow desktop window. Half the responsive
 rules key off `pointer: coarse`, and only the device toolbar sets that.
 
+## Traps in the harness itself
+
+**App files load per-file from `index.html`'s `<script>` tags** via
+`lib/appload.mjs`, each as its own `vm.Script` with its real path, so there is no
+FILES list to forget and coverage attributes by file. Two consequences bite:
+top-level `const`/`let` are global-**lexical**, so bare `DB` works while
+`globalThis.DB` is `undefined`; and **a duplicate `function` name across two app
+files silently shadows**, which has cost a debugging session — the later file
+wins and the earlier definition simply stops being called.
+
+**Never assert sanitizer allowlist policy in `test_app.mjs`.** It cannot see it.
+`test_sanitize.mjs` runs the real vendored DOMPurify in Chromium; the old stub
+ignored the allowlist entirely, which meant zero real coverage and hid two live
+bugs.
+
+**The design-system drift test compares only selectors present in BOTH copies.**
+A rule missing from one file is skipped, not reported — which is how `.bignum`
+carried state classes that did nothing for a year. The explicit state-modifier
+check beside the rule-by-rule diff exists for that reason; keep it, because a
+diff cannot see an absence.
+
+**Playwright suites skip and still exit 0** when Chromium is missing. Read the
+output; never trust the exit code alone.
+
+**`confirmProceed()` returns the callback's promise**, so a test that confirms an
+async delete must `await` it.
+
+**A backtick inside a JS template literal ends the literal.** It has bitten
+`documents.js`, `projects.js` and the `AUDIT` string in `test_detailui.mjs` —
+every time as prose quoting code in a comment. Write those without backticks.
+
+**Adding a method to `fb` means adding it to seven dev shims** (grep
+`window.fb = {`), and the shims must match the real thing: `allocIdBlock` once
+minted from the counter key instead of `ID_PREFIX[coll]` and nobody saw it for
+years.
+
 ## Why the browser tests exist
 
 Most of the suite asserts on strings and numbers, and a sheet can pass all of

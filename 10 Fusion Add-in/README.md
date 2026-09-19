@@ -58,6 +58,37 @@ you whether the macOS instructions in `INSTALL.txt` are right.
 
 `NEXT-SESSION-PROMPT.md` is a handoff from 2026-09-04 and is now history.
 
+## Why it ships the way it does
+
+**No .dmg and no .exe.** An *unsigned* installer package is blocked harder by
+both operating systems than a plain script is, and signing runs about $99/yr per
+platform. The two installers therefore sit **beside** the add-in folder in the
+zip and never inside it — inside, they get copied into Fusion's AddIns directory
+along with everything else and sit there forever.
+
+**The zip ships no `credentials.json`.** A member signs in as themselves, so
+their own name is what stamps the mold. Verified by installing from the
+downloaded zip over an existing install and onto a clean one, with the
+quarantine flag applied by hand: 13 quarantined files in, 0 left in AddIns.
+
+## Building against Fusion's API
+
+Six things that each cost a live experiment to find, and that the API
+documentation does not say:
+
+- **`STLExportOptions.unitType` reads inches but writes mm at its default**, so
+  the add-in meshes through `MeshCalculator` in cm and writes the mm itself
+  rather than trusting the exporter.
+- **Parametric mode needs a base feature for temporary bodies**, and names are
+  set after `finishEdit()`, not before.
+- **The `adsk` bridge object appears in the palette page about a second after
+  load**, and a `sendInfoToHTML` sent before the page has loaded is dropped. So
+  the page speaks first and the add-in queues the mesh until it does.
+- **Fusion's own `response` HTMLEvent is unreliable over https**, which is why
+  the add-in relies on the page's explicit `mold-received` instead.
+- **The `fusion360://` deep link opens nothing**, which is why the mold card
+  links `dataFile.fusionWebURL`.
+
 ## Known gaps
 
 The Windows installer targets Autodesk's documented per-user path but has never

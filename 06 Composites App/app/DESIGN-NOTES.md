@@ -166,6 +166,32 @@ Where a render is genuinely needed after an edit, use
 `renderSoonKeepFocus()` — it defers, renders, then refocuses by id and restores
 the caret. Fields that rely on it carry a stable id.
 
+The R&D coupon grid follows the same rule in `rdUpd` and `rdVal`, and pays a
+second price for it: **`render()`'s guest read-only cascade does not reach it.**
+That cascade works by clearing `view.edit`, and the grid has no Edit button to
+clear — so `rdCell` renders the `.ro` form itself. Anything that routes those
+cells through a shared field helper has to re-check both halves.
+
+## The trash
+
+Deleting is a tombstone, not a removal. **`onFbData` is the ONE place a
+tombstone is filtered**: it splits each snapshot into `DB[coll]` (live) and
+`DB.trash[coll]` (deleted), and nothing else in the app should ever test
+`.deleted`. Roughly forty read sites depend on not having to, so a stray
+`&& !r.deleted` somewhere means the split has been misunderstood.
+
+**`deletedFiles` on a tombstone is the only record of what a deleted record's
+uploads were.** Storage *listing* is denied by rule, so if that array is lost
+the blobs are unreachable forever — there is no way to enumerate them and no
+way to bill for them knowingly. `purgeTrash` in `reports.js` is the only code in
+the app that calls `deleteFiles`.
+
+**Two paths still hard-delete on purpose.** The cut commit consuming a board to
+zero, and `undoCuts` withdrawing offcuts it has just created. Both are stock
+being consumed rather than somebody deleting a record, and a tombstone for
+either would put a phantom board in the rack. Roster removal is likewise
+unchanged: `roster` is not one of the twelve collections and has no bin.
+
 ## Writes
 
 Edits save **per field**. `save(coll, obj, field)` names the field; array and
@@ -258,6 +284,20 @@ duplicates over real records).
 `archived` is **not** `retro`. An archived run still enforces its gates if
 somebody restores and works it; the flag changes where a record is listed,
 never what it means.
+
+## Accounts are self-serve
+
+Sign-up is name, username and password. **A username is the synthetic address
+`<u>@members.feb-composites.app`** (`USER_DOMAIN`, `loginEmailFor`, `userHandle`
+in `core.js`), so every email-keyed path in the app is unchanged and the older
+email accounts still sign in. `firestore.rules` lets an account create only its
+own roster doc, as a member, with the four sign-up fields; leads keep roles and
+removal.
+
+**Removal is a nudge, not a lock.** A removed person can sign up again, so the
+real lock is disabling the Auth user in the console. And a username account has
+no password reset — recovery is deleting the Auth user and signing up again with
+the same username.
 
 ## `rnd` is not a second `retro`
 
@@ -482,6 +522,11 @@ the parent, like every other edge here.
 Storing a copy would make moving a part a fan-out over every run it has, which
 is the argument `woIsRnd()` is built on two sections above.
 
+**Declined, so do not build speculatively**: std-dev and CV in the Compare fold,
+and computed stress from specimen dimensions. Both have been asked for and both
+were turned down — the grid is meant to beat a spreadsheet at capture, not to
+become one.
+
 This was declined twice before, on the grounds that "adjacency is what the link
 was for" — the strip already puts a study and a part on one screen. What changed
 is that adjacency cannot give the group a **name**, cannot answer "which of
@@ -563,6 +608,18 @@ Keep it that way. A dashboard line or a ⌘K entry over the collection would be 
 whole-collection scan, and the day the per-study query is wanted it could no
 longer be had without unpicking them first.
 
+## Retro records say so, and never on paper
+
+The 26 imported SN5 runs store the literal string `"not recorded (retro)"` in
+most fields, because a blank and an unknown are different things and the import
+had to keep them apart. `pv()` in `print.js` maps it back to empty so it never
+reaches paper looking like data — a printed traveler saying "not recorded
+(retro)" in a box somebody is meant to write in is worse than an empty box.
+
+`stripCS()` in `workorders.js` does the same job for standard references, at
+render time, on legacy and retro records: titles, notes and event-log text.
+Stored data is untouched, so the archive keeps its original wording.
+
 ## The public surfaces
 
 There are two deliberate public holes, and both are narrow on purpose.
@@ -628,6 +685,21 @@ before display. `proseHtml()` in `core.js` decorates *after* sanitising to add
 `.tblwrap` and `.cgal`, because `class` is not allowlisted and authors therefore
 cannot ask for either.
 
+## EH&S tag normalising
+
+A UC EH&S tag is 24 characters, `CA` + sixteen zeros + six hex. Across the 627
+real tags in the RSS export **positions 0-18 never vary**, so an undifferentiated
+strip is mostly shared prefix — which is why `invEhsShort` shows the twelve edge
+characters in four-character groups, last group at full weight and the rest at
+half. The dim half must stay legible rather than decorative: it is what gets
+compared against the sticker.
+
+**Any new writer of `ehsBarcode` calls `ehsNorm`, and comparisons go through
+`ehsKey`.** Two tags that differ only by case or spacing are the same tag, and
+the one place that forgot it produced a duplicate nobody could see.
+`ehsResolveTyped` accepts the twelve edge characters as a lookup with a floor of
+12, and an ambiguous tail returns no id rather than a guess.
+
 ## The receipt parser
 
 `✨ Fill from receipt` is the app's one Cloud Function (`functions/index.js`,
@@ -662,6 +734,14 @@ All screen CSS is in the `<style>` block in `index.html`; the printed sheet is
 stylesheet — at equal specificity the later rule wins, and keeping them together
 is what makes the cascade predictable. Rules scattered back up next to their
 components are a bug waiting to happen.
+
+Two rules in there are load-bearing and easy to undo. **`.sline` and `.shead`
+share one declaration of eight fixed grid tracks** on the Season blueprint,
+because a header and its rows drifting apart is the bug that declaration exists
+to prevent — do not reach for `columns:` on `.seasongrid` a third time. And
+**`render()` snapshots and restores every `.plist` rail's `scrollTop`**, keyed by
+`aria-label`, so anything new that scrolls inside `<main>` and has to survive a
+repaint should either be a `.plist` or get the same treatment.
 
 `print.css` is deliberately **not** inside `@media print`, so the sheet renders
 identically on screen and on paper. That is what makes the preview trustworthy
@@ -734,6 +814,47 @@ sheet, and 0.45 in either side of a 101.6 mm label leaves nothing. The preview
 would look right and only the saved file — the copy printed at the bench with no
 wifi — would be wrong.
 
+
+**`labelSheetHtml()` must never reuse `fitSheetHtml()`, `LAYOUTS` or
+`MAX_PAGES`.** Those exist to squeeze a work order onto two pages through a
+ladder of candidate row counts, measured most-generous-first; they mean nothing
+for a fixed label grid, where the geometry is the printer's and not the content's.
+
+Do not replace that ladder with fixed row counts either. The point of measuring
+is that a sparse work order gets room to write in and a dense one still lands on
+two pages; a fixed count gives one of those away.
+
+
+**Laminated tape was checked and rejected on print height, not on price.** A
+Brother PT-P750W takes 24 mm TZe laminated tape — IPA-proof, −80 to +150 °C —
+and does support AirPrint, so it was a real candidate. Its maximum print height
+is **18 mm** against the 21.4 mm this label needs (25.4 less a 2 mm margin top
+and bottom), so it cannot print this label at all without a tighter redesign and
+a QR dropped from 21.4 to about 17.5 mm. Tape also runs 3–4× the cost per label.
+
+The direct-thermal path was chosen knowing the labels fade in UV, blacken with
+heat and smear under solvent: they are for shelves, bins and lots indoors, and
+anything meeting a post-cure oven or an IPA wipe gets polyester off the sheet
+printer instead. Do not "fix" that weakness by switching to tape without redoing
+the vertical budget first.
+
+## The boot splash is a gate
+
+A cold load at RFS used to show a white page, so the splash holds the screen
+until the app can actually be used. Three things in it are load-bearing:
+
+- **`splashAuth()` marks `data` as not needed** when auth resolves to
+  `signedout` or `pending`. Without that the gate hangs in front of exactly the
+  people who need the sign-in card — there is a test named for this.
+- **`hideSplash(true)` must keep working.** Eight visual suites go through it;
+  if it stops forcing, every one of them photographs a splash screen.
+- **`splashFail()` returns early when nothing is outstanding**, because the 12s
+  backstop fires on healthy boots too and would otherwise report a failure that
+  did not happen.
+
+A failed lamp is a hollow amber ring by shape, not a filled dot — the same rule
+as everywhere else here, that hue is never the only carrier.
+
 ## The dashboard
 
 The grid class is `.dboard`, because `.board` belongs to the Tickets kanban.
@@ -744,6 +865,13 @@ proved the double-counting overstated "behind" by about 40%.
 Nothing that renders empty on the team's own archive sits above the fold. That
 is a layout constraint, not a preference — it is what stops the board reading as
 a wall of zeroes on a quiet week.
+
+**A lane cannot ship without an empty state.** `laneShell()` requires `emptyFn`
+and throws without one, which is the mechanical form of the rule above.
+
+**Nothing is scored across lanes.** `actScore` tiers sit 50 apart because the
+bonuses sum to 45, so a bonus can reorder within a tier and can never promote a
+row past one. `test_app.mjs` pins the arithmetic.
 
 ## Reviewing a UI change
 

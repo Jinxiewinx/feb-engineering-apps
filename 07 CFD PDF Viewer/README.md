@@ -162,6 +162,30 @@ cross a page break, and the matching fallbacks.
 npm test
 ```
 
+## Three things not to undo
+
+**Do not "simplify" the Electron shell to `loadFile`.** This app is ES modules
+because pdf.js ships as one and pulls a module worker with it, which forces an
+HTTP origin. The custom `app://` protocol is what lets the desktop and browser
+builds run identical code with nothing conditional between them.
+
+**Panels crop through one shared box across every report being compared**
+(`jointCrop` in `render.js`). Cropping each report to its own content would
+offset them, and the difference view would then report that offset as change
+everywhere. The guard is that two identical reports still diff to exactly 0
+pixels.
+
+**Nothing may assume a panel lives on one page.** Panels flow across page
+breaks; layout is in content space rather than paper space so a plot spanning a
+break is one continuous image, and paper-space `absY` survives as `paperAbsY`
+for the cases that still need it.
+
+Settled, and not worth re-asking: open access with no sign-in, the shared
+library in Storage, `07` untouched, the viewer canvas dark in both themes, and
+charts that are this app's own. Records backfill on first open, so there is no
+migration script and none is needed. The bucket's CORS is applied by gsutil, not
+by a deploy.
+
 ## Files
 
 | Path | What |

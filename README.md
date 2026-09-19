@@ -22,7 +22,7 @@ for everything in here.
 | `08 CFD Sims Dashboard/` | The CFD app, live at feb-cfd.web.app on its own Firebase project: a dashboard of every report with its downforce and drag by design point, saved views, and the report viewer from `07`, all in the composites app's shell | `README.md` |
 | `09 Website/` | The public team website, built on the design system. Not deployed; its README has the state of it | `README.md` |
 | `10 Fusion Add-in/` | `FEBPlanStock/`, a Fusion add-in that runs the stack planner from inside Fusion and draws the board layers over the mold, plus the feasibility study and spikes that led to it. Install it from the [latest release](https://github.com/Jinxiewinx/feb-engineering-apps/releases/latest): download the zip, unzip, double-click the installer | `10 Fusion Add-in/README.md` |
-| `tools/` | Everything that builds and checks the rest: the docx builder, the generators, the servers, and 19 test suites | `README.md` |
+| `tools/` | Everything that builds and checks the rest: the docx builder, the generators, the servers, and 24 test suites | `README.md` |
 
 ## Getting started
 
@@ -58,8 +58,8 @@ Anyone can open it and press **View as guest**: the whole app, read-only, with n
 account and nothing to ask a lead for. Editing needs a name, because every
 buy-off carries one.
 
-`06 Composites App/app/` is the team's shared workspace for a season, running on Firebase
-with an email allowlist for the roster. It updates live for everyone and works
+`06 Composites App/app/` is the team's shared workspace for a season, running on Firebase.
+Sign-up is self-serve: a name, a username and a password get you in as a member. It updates live for everyone and works
 on phones and tablets as well as desktop. The full manual lives in
 `06 Composites App/app/README.md` and the architecture in `06 Composites App/app/DESIGN-NOTES.md`;
 this is the short tour.
@@ -79,19 +79,27 @@ Twelve tabs, grouped in the sidebar by who is asking:
   exists. The Google Sheet is downstream, republished every 15 minutes.
 - **Work Orders:** the manufacturing traveler. Steps with named buy-offs,
   blocker steps, cure holds enforced from the resin datasheets, per-step
-  photos, and issues that block Complete until they carry a resolution and a
-  root cause. Prints to a hand-fillable sheet that is always exactly two
-  pages.
-- **Parts:** every part down the left, the selected one beside it, each stage
-  a row of steps you click.
+  photos, and issues that block Complete until they carry a resolution, a root
+  cause and an account of what was done about it. All three stay readable on
+  the run afterwards. Prints to a hand-fillable sheet that is always exactly
+  two pages.
+- **Parts:** every part down the left, the selected one beside it, each stage a
+  row of steps you click. A part shows a photo of itself at the top, and can be
+  made on several molds, so a split mold has both halves on the record with a
+  progress bar each.
 - **Molds:** the mold pipeline. A mold carries its stage, home location,
   sealing record and mold file; the planner slices an STL into board layers,
   splits at the ShopSabre depth limit, nests blanks onto the cheapest boards
   on the rack, and prints dimensioned drawing sets and cut sheets. "Mark
   these boards cut" updates the rack, offcuts included, with one Undo.
-- **R&D:** the bench. Studies and coupons in a grid you type into, with no
-  work order and no cure hold; Compare gives means and ranges once a study
-  has a swept setting and results.
+- **R&D:** the whole trial programme on one screen. A strip of cards across the
+  top carries every study and every R&D part, with that part's runs as chips
+  inside its card; pressing one opens it full width underneath. Coupon studies
+  are still a grid you type into with no work order and no cure hold, and
+  Compare gives means and ranges once a study has a swept setting and results.
+  A study also works as a folder: file parts and runs under it and they group
+  together. R&D records live here and only here, so Parts and Work Orders stay
+  the season lists.
 - **Inventory:** the storage map, one card per shelf with contents and
   warnings; flat lists for items, materials and the tooling-board rack; a
   spreadsheet-shaped Receiving page that runs the CS-011 chemical checks;
@@ -117,8 +125,9 @@ Twelve tabs, grouped in the sidebar by who is asking:
 Cross-links are everywhere; click a chip to jump to the related record. ⌘K
 searches everything. Light and dark themes follow the system setting, and
 printing always comes out black-on-white. Access is enforced server-side by
-`firestore.rules`: creating an account grants nothing until a lead adds the
-email to the roster.
+`firestore.rules`. Signing up creates your own roster entry as a member and
+nothing more: you cannot name your own role, and only a lead can grant one or
+remove anybody.
 
 ### Labels and scanning
 
