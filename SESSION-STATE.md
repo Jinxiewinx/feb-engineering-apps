@@ -10,7 +10,7 @@ anything, read `.claude/SESSION-STATE-POLICY.md`: it holds the five-part keep
 test and the per-section caps, and it exists because this file once reached
 3,183 lines and nobody could find anything in it.
 
-Everything dropped in the 2026-08-25 cleanup is recoverable:
+Everything dropped in a cleanup is recoverable:
 
 ```bash
 git log -p --follow -- SESSION-STATE.md
@@ -20,472 +20,281 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
-**Mold tracking, a trash can and lead-addable techniques: ALL FIFTEEN CHUNKS
-ARE LANDED, DEPLOYED AND VERIFIED LIVE** (2026-09-17). The plan and the
-reasoning behind every decision are in
-`~/.claude/plans/joyful-shimmying-bunny.md`; the commits carry the rest. Do not
-re-derive any of it.
+**`test_safearea` is red on purpose.** At landscape-max two step-action buttons
+on `wo-detail` sit past the safe area (x=873; the second reaches 945). The test
+is right, the CSS is not; fixing it needs Simon.
 
-What a future session most needs to know, none of it visible from the code:
+**`tools/test_drawings.mjs` has three pre-existing failures** (cutlist,
+cutcrowd, cutbatch) from the visual audit, unrelated to anything current.
 
-- **`onFbData` is the ONE place a tombstone is filtered.** `DB[coll]` is the
-  live records, `DB.trash[coll]` the deleted ones. Nothing else in the app
-  should ever test `.deleted`; roughly forty read sites depend on not having
-  to. If you add `&& !r.deleted` somewhere, you have misunderstood the split.
-- **`deletedFiles` on a tombstone is the only record of what a deleted
-  record's uploads were.** Storage LISTING is denied by rule. Lose that array
-  and the blobs are unreachable forever. `purgeTrash` in reports.js is the only
-  code in the app that calls `deleteFiles`.
-- **Two paths still hard-delete on purpose**: the cut commit consuming a board
-  to zero, and `undoCuts` withdrawing offcuts it just created. Both are stock
-  consumption, not somebody deleting a record. Roster removal likewise stays as
-  it was — roster is not one of the twelve collections and has no bin.
-- **The cut list is Designed-only and HARD.** Walking a mold's stage back is
-  the only override, deliberately, because it leaves a trail. The commit
-  advances the mold to "Tooling cut" — do not remove that without removing the
-  filter, or people will stop marking molds cut.
-- **`MIN_REMNANT_MM` is the packer's answer to "what counts as recovered value
-  when choosing a split"**, not to "is this worth keeping". `leftover` and
-  `scrap` are a partition; only `leftover` reaches the scoring, and moving that
-  line changes which boards get opened for every mold in a batch.
-- **A technique's steps are copied into a work order at creation and never
-  retro-fit.** `templateVersion` is what lets a run know it is behind, and it is
-  also what turns off the BLOCKER_WORDS title matching — which still enforces on
-  every record that predates it, including the 26 retro SN5 runs.
+**The Fusion add-in is barely exercised.** One member's 2026-09-07 install is
+the only run on real hardware; the Windows installer has never been run at all,
+and nobody has DOUBLE-CLICKED the Mac installer from a browser download —
+launching from a shell bypasses Gatekeeper, so the "Open Anyway" walkthrough in
+`INSTALL.txt` is written from Apple's documented behaviour rather than from
+watching it. Both are labelled untested there. No bottom face has been picked in
+the real Fusion command dialog, and the add-in has never run against a
+monolithic block plan. STK-SN6-014 predates the `applyMargin` half-inch snap and
+needs a re-plan to line up.
 
-**Rules deployed twice in this bundle**, which is the thing to know if
-something looks off server-side: `techniques` joined the guest read allowlist,
-and `items`/`lots` delete went back to `isLead()` (members still clear shelves
-— that is now a tombstone, which is an update). `storage.rules` was deployed
-once, for the `molds/`, `items/` and `lots/` trees.
+**The three placeholder collections in `firestore.rules`** still wait on Simon's
+talk with the team.
 
-**Releases no longer wait on Simon** (2026-09-17). Cutting one is standing
-authorization, same as pushing to main; the #composites note the script used to
-print is gone because he does not send it, and the release pictures went opt-in
-with it since they existed to be attached to that post. `WHATS_NEW` is the ONLY
-thing that reaches the team now, so its stale gate stayed — whoever cuts the
-release writes it. Announcing in `#composites` still needs asking.
-
-**The Fusion add-in's install decisions**, which cost something to reach and
-should not be quietly reversed. Decisions that cost something to reach and should not be quietly reversed. No
-.dmg or .exe: an UNSIGNED one is blocked harder than a plain script is, and
-signing runs about $99/yr per platform. The two installers sit beside the
-add-in folder in the zip, never inside it, or they get copied into Fusion's
-AddIns directory too. The zip ships no `credentials.json`, so a member signs
-in as themselves and their own name stamps the mold. Verified by installing
-from the downloaded zip, over an existing install and onto a clean one, with
-the quarantine flag applied by hand: 13 quarantined files in, 0 left in
-AddIns.
-
-**OPEN, two things nobody has done.** (1) The Windows installer has never
-been run, nor the add-in itself beyond one member's 2026-09-07 install; needs
-a Windows member. (2) Nobody has DOUBLE-CLICKED the Mac installer from a
-browser download. Launching it from a shell bypasses Gatekeeper entirely, so
-the "Open Anyway" walkthrough in `INSTALL.txt` is written from Apple's
-behaviour and not from watching it happen. Both are labelled untested in
-`INSTALL.txt`.
-
-**A test trap from the shared picker** (v4.8.0): `confirmProceed()` in
-`test_app.mjs` returns the callback's promise, so a test that confirms an
-async delete must `await` it.
-
-**Still open from v4.7.1 and v4.6.0.** Nobody has picked a bottom face in
-the actual Fusion command dialog; the add-in has never been run against a
-monolithic block plan. `applyMargin` now snaps every blank to the bottom
-blank's half-inch grid, which fixed the layer offset Simon saw, but
-STK-SN6-014 predates the fix and needs a re-plan to line up.
-`tools/test_drawings.mjs` has three pre-existing failures (cutlist, cutcrowd,
-cutbatch) from the visual audit, unrelated to any of this.
-
-**Fusion build-shaping facts** (2026-09-04, from the six spikes; all cost a
-live experiment to find). `STLExportOptions.unitType` reads inches but writes
-mm at its default, so the add-in meshes through `MeshCalculator` in cm and
-writes mm itself. Parametric mode needs a base feature for temporary bodies,
-and names are set after `finishEdit()`. The `adsk` bridge object appears in
-the palette page about a second after load, and a `sendInfoToHTML` before the
-page has loaded is dropped, so the page speaks first and the add-in queues
-the mesh. Fusion's own `response` HTMLEvent is unreliable over https, so the
-add-in relies on the page's explicit `mold-received`. The `fusion360://` deep
-link opens nothing, which is why the mold card links `dataFile.fusionWebURL`.
-
-The S4/S5 spike add-ins are still installed beside FEBPlanStock on Simon's
-Mac (`S4PaletteBridge`, `S5RestSignin`); delete when no longer wanted.
-
-**The CFD app is at cfd-v0.3.1** (2026-09-03). Decisions that must not be
-re-asked: open access with no sign-in; shared library in Storage; 07
-untouched; the viewer canvas stays dark in both themes (DECISIONS #5); charts
-are the CFD app's own (#6); the thumbnail plot is `stat-car-0` with a
-first-contour fallback; trend x-axis is the design point parsed from the
-name. Records backfill dp/results/meta/thumb on first open, so no migration
-script exists or is needed. The three placeholder collections in
-`firestore.rules` still wait on Simon's talk with the team. The bucket's CORS
-is applied by gsutil, not by deploy. `.claude/launch.json` serves app/ on
-:8792 for the browser pane, which refuses sub-path navigation, so the server
-root is app/ itself.
-
-**Pending presses that are Simon's, not a session's:** `⋯ → Announce this
-release`, standing in the newest build, which gives anyone on an older build
-a reload prompt (never pressed since v3.0.0; one press covers the newest
-only); **Link materials** on the Materials list, signed in, to backfill the
-50 imported containers; the **EH&S import** itself (lead sign-in; the file
-is `~/Downloads/Chemical Export Aug 28 2026.xlsx`), nothing imported into
-production yet.
-
-**R&D bench (`rnd` collection, v4.0.0), the load-bearing parts:**
-
-- **A study is physical and carries a label.** `RDS-SN6-###` a study,
-  `CPN-SN6-###` a coupon, both 11 characters with a QR. `test_qr.mjs` keeps
-  the 15-character form as a counterfactual so the 14-character cliff stays
-  proven.
-- **A cell edit never calls `render()`** (`rdUpd`, `rdVal`): `onchange` fires
-  while Tab already carries focus and a repaint destroys the field mid-hop.
-- **The guest cascade does not reach this grid**; it has no Edit button, so
-  `rdCell` renders `.ro` itself.
-- **A project's sheet rolls its batches up** (`rdSheetRows`).
-- **Do not fuse the two meanings of "R&D".** `parts.rnd` is a real part with
-  a traveler; the `rnd` collection is coupons with none. A test fails if
-  `rnd.js` ever tests `retro`. `rnd.js` DOES call `isRnd()` since the strip
-  (2026-09-18) and that is not the fusion — see DESIGN-NOTES.
-- Not shipped and declined for now, so do not build speculatively: UI to set
-  a study's `defaults`, std-dev/CV in Compare, computed stress, linking a
-  study to a part or mold (re-examined 2026-09-18 when the strip put them on
-  one screen, and declined again: adjacency is what the link was for).
-
-**R&D is only on the R&D tab (2026-09-18).** Both rails filter absolutely and
-`view.onlyRnd`/`woOnlyRnd` are gone. The mechanism is `rdHome(tab, id)` in
-core.js, called from `openRecord()` and `consumePendingLink()` — twenty-odd
-arrival routes pass through those two. **`tabForId()` stays pure and prefix-only
-on purpose**; do not push a record lookup into it. Full reasoning in
-DESIGN-NOTES, "The R&D tab IS the home".
-
-**Five fixes from Simon's v5.2.1 review (2026-09-18).** Mechanics are in
-DESIGN-NOTES under the three new dated sections. The decisions somebody would
-otherwise reverse thinking they found a bug: **a part's molds are `p.molds[]`
-and `p.mold` is read-only legacy** (no mirror — two fields for one fact is the
-shape `woIsRnd` derives to avoid); **a part's hero photo is first-image-wins**
-with no field, so the R&D strip card and the part page cannot disagree;
-**`undisposedIssuesForWO` requires a disposition note**, not just a method; and
-**a study groups parts through `part.study`, never `wo.study`**.
-
-**The programme strip (2026-09-18).** The mechanics are in DESIGN-NOTES under
-"The R&D tab is a lens, not a home". The two decisions that would otherwise get
-reversed by someone who thinks they found a bug: **an R&D part's id still routes
-to the Parts tab** on reload, and **the `onlyRnd`/`woOnlyRnd` rail chips stay**.
-Also: keep every new reader of `DB.rnd` inside `rnd.js`, or the per-study-query
-escape hatch for the ~2000 cliff above stops being available.
-- **If `DB.rnd` passes ~2,000, take `rnd` out of `COLLECTIONS`** and give the
-  tab a per-study query; it is the twelfth whole-collection listener.
-
-**The boot splash is a gate**, load-bearing bits: `splashAuth()` marks `data`
-as not needed when auth resolves to `signedout` or `pending`, or the gate
-hangs in front of the people who need the sign-in card (there is a test named
-for this); `hideSplash(true)` must keep working, eight visual suites go
-through it; `splashFail()` returns early when nothing is outstanding, because
-the 12s backstop fires on healthy boots. A failed lamp is a hollow amber ring
-by shape, not a filled dot.
-
-**CS-011 §6 still forbids resin and hardener co-storage on purpose** while
-the app's warning was removed code-only; Simon revises the standard himself
-at Rev D. Do not edit it from a session.
-
-**EH&S tags are Data Matrix** (settled 2026-08-29 from a photo), 24
-characters, `CA` + sixteen `0` + six hex in every sample. `invEhsShort`
-shows the twelve edge characters in four-character groups with the last
-group at full weight and the rest at 0.5, chosen against 627 real tags where
-positions 0-18 never vary; the reasoning sits above `invEhsShort`, do not
-re-litigate it. `ehsResolveTyped` accepts those twelve as a lookup, floor of
-12, and an ambiguous tail returns no id. Any new writer of `ehsBarcode`
-calls `ehsNorm`; comparisons go through `ehsKey`. The receiving grid stacks
-to cards below 1320px; do not claw that back by shaving columns.
-
-**Budget has two status tracks, not one enum** (v4.2.0): `status` is about
-goods, `reimb` about money. Legacy records read through `buyStatus()` /
-`reimbStatus()` and are never rewritten. The $50 gate lives on the money
-track.
-
-**`.sline` and `.shead` share one declaration of eight fixed grid tracks** on
-the Season blueprint. Do not reach for `columns:` on `.seasongrid` a third
-time.
-
-**Guest mode is on and the app is publicly readable.** Anonymous sign-in with
-`autodeleteAnonymousUsers`. Anyone with the URL reads everything, including
-the team email addresses stamped on records; accepted deliberately. Verified
-against production: every read 200, every write and delete 403, three client
-layers refuse independently. Turning it off is the same Auth switch; the
-rules can stay because `guest()` matches nothing then. Guest read costs
-eleven full-collection snapshots per visitor on Blaze; Simon's call was ship
-and watch the bill, the fix being a lazy per-tab sync, App Check its own
-project. The storage CLI selector is `storage`, not `storage:rules`.
-
-**A dashboard lane cannot ship without an empty state**: `laneShell()`
-requires `emptyFn` and throws without one. **Nothing is scored across
-lanes**; `actScore` tiers sit 50 apart because the bonuses sum to 45, and
-`test_app.mjs` pins that. **`min == max` is asserted byte-identical to the
-pre-range packer** in `test_packer.mjs`; it is the rollback story for density
-ranges.
-
-**Adding a method to `fb` means adding it to seven dev shims** (grep
-`window.fb = {`), and the shims must match: `allocIdBlock` once minted from
-the counter key instead of `ID_PREFIX[coll]` and nobody saw it for years.
-
-**`test_safearea` is red on purpose.** At landscape-max two step-action
-buttons on `wo-detail` sit past the safe area (x=873; the second reaches
-945). The test is right, the CSS is not; fixing it needs Simon.
+**The S4/S5 spike add-ins are still installed** beside FEBPlanStock on Simon's
+Mac (`S4PaletteBridge`, `S5RestSignin`). Delete when no longer wanted.
 
 ---
 
 ## Open questions for Simon
 
-**Two answers the mold plan is blocked on** (the second is now shipped; say if it is wrong).
+**Two need a real device.** (1) Tab through the Budget grid by hand: a synthetic
+Tab does no focus traversal, so a regression and a harness artifact are
+indistinguishable. (2) Does the wide-table scrollbar show on iOS? Headless
+Chromium's overlay one takes no space, so if it is invisible a wide table has no
+scroll cue — and an edge fade cannot stand in, because header tint and zebra
+rows paint over it.
 
-1. **The split waiver measures stack HEIGHT; the real limit is plunge DEPTH.**
-   Left open deliberately (Simon, 2026-09-17): the per-mold flag shipped in
-   Chunk 7 and is fine, and a "find the max plunge" feature is wanted one day,
-   but depth is not the only constraint. **His list, which is the reason not to
-   build it yet: collision with the collet, and the gantry's own maximum
-   height.** Computing cut depth from the mesh alone would answer a third of
-   the question and read as if it had answered all of it.
-2. **The layup-type fallback now lands on `"Other"` for both callers**
-   (was `"Other"` in one and `"MoldInfusion"` in the other, so a part with a
-   blank `layupType` silently got a ten-step infusion checklist). Shipped
-   rather than asked, because the old behaviour was a bug in one of the two
-   paths whichever way you read it. Say so if you wanted the infusion default.
+**Three presses only a lead can make**, also in `HANDOFF.md`: `⋯ → Announce this
+release`; **Tracker feed** on Reports (the feed URL 404s until it is pressed);
+and `Sync.gs` into the spreadsheet's Apps Script with its trigger.
 
-**Two things need a human with a real device; automation cannot settle either.**
-
-1. **Tab through the Budget grid by hand.** The Tab-moves-field-to-field
-   behaviour from `9fffc9e` is UNVERIFIED. A synthetic Tab does no focus
-   traversal in the harness, and the control case lands on `document.body` too,
-   so a real regression and a harness artifact are indistinguishable there. The
-   in-place update *is* confirmed working.
-2. **Does the wide-table scrollbar show on iOS?** A wide table scrolls sideways
-   in its own box and the only cue is a styled 6px scrollbar. Headless Chromium
-   draws an overlay scrollbar that takes no space and never appears in a
-   screenshot. If it is invisible on a real phone, a wide table has no scroll
-   cue at all. The edge-fade shadow is not the answer here — a table's header
-   tint and zebra rows paint over it, so it rendered as two grey smudges.
-
-**Two one-time actions only a lead can do**, both still pending (they are also
-items in `HANDOFF.md`):
-
-- Press **Tracker feed** on the Reports tab to mint the token and publish the
-  first snapshot. Until then the feed URL 404s rather than erroring, because
-  there is no token and no document yet.
-- Paste `Sync.gs` into the spreadsheet's Apps Script and install the trigger.
+**The split waiver measures stack HEIGHT; the real limit is plunge DEPTH.** Left
+open on purpose: collet collision and gantry height also bind, so depth from the
+mesh would answer a third of the question while reading as if it answered all
+of it.
 
 ---
 
 ## Next up (not started)
 
-- Chunks 1 through 14 of the mold/trash/techniques plan, above.
-- The dashboard and guest mode follow-ups named in **Now**.
-- Decide the four app-only families (Receiving, Export, Storage map, Search
-  results, plus `table.sub`): lift them into `components.css` or drop them
-  from `conventions.md`. `conventions.md` marks them app-only meanwhile.
-- Port the traveler to the offline single-file `work-orders.html`, which
-  still has the old print CSS.
+- Decide the app-only CSS families (Receiving, Export, Storage map, Search
+  results, `table.sub`): lift into `components.css` or drop from
+  `conventions.md`, which marks them app-only meanwhile.
+- Port the traveler to the offline single-file `work-orders.html`, which still
+  has the old print CSS.
 - `04 Printables/printables.html` is open to redesign; no house style.
 - Per-record history/audit trail (Phase 5 of the inventory plan), deferred.
+- **Link materials** on the Materials list, signed in, to backfill the 50
+  imported containers.
+- The **EH&S import** (lead sign-in; `~/Downloads/Chemical Export Aug 28
+  2026.xlsx`), nothing imported into production yet.
 - **The one label test that needs the printer in hand**: whether iOS lets a
   custom page length through on continuous stock. If it forces a fixed size,
-  switch the default media to `dk1201` (die-cut, already built). Test from
-  the shop PC first to isolate the question to iOS.
+  switch the default media to `dk1201` (die-cut, already built). Test from the
+  shop PC first to isolate the question to iOS.
 
 ---
 
 ## Constraints — don't relitigate
 
-**Over cap: 34 entries against a limit of 25**, and a cull needs Simon's eye
-rather than a session's — several of these are single sentences that cost a
-live experiment. The likeliest candidates are the ones now written up in
-`06 Composites App/app/README.md` (the print-system entries, the label media
-ones), which policy says to delete here and keep there.
+Each cost something to learn and would be easy to undo by accident. Anything
+already explained in a README or in `DESIGN-NOTES.md` is deliberately **not**
+repeated here; see `README.md`, `SETUP.md`, `tools/README.md`, `06 Composites
+App/app/README.md`, `.../DESIGN-NOTES.md`, `.../SHELVED.md`, `HANDOFF.md` and
+`.design-sync/NOTES.md`.
 
-**The roll printer must be AirPrint, and that is not a preference.** A browser
-cannot open a raw TCP socket, so port 9100 is unavailable; and the app is
-served over HTTPS, so `fetch`ing a plain-HTTP LAN printer is blocked as mixed
-content. Every "just POST to the printer" design dies on one of those two, and
-a cheaper Bluetooth-only label maker cannot be driven from the app at all. The
-reasoning is in `06 Composites App/app/DESIGN-NOTES.md`; what is here is the shopping
-constraint, because it is invisible from the code.
+### Deleting and the trash
 
-**The laminated-tape option was checked and rejected on print height, not on
-price.** A Brother PT-P750W ($155) takes 24 mm TZe laminated tape — IPA-proof,
-−80 to +150 °C — and does support AirPrint, so it was a real candidate. Its
-**maximum print height is 18 mm** against the 21.4 mm the current label needs
-(25.4 less 2 mm margin top and bottom), so it cannot print this label without a
-tighter redesign and a QR dropped from 21.4 to ~17.5 mm. Tape is also 3–4× the
-cost per label. Simon chose the QL-810W direct-thermal path 2026-08-28 knowing
-the labels fade in UV, blacken with heat and smear under solvent — they are for
-shelves, bins and lots indoors, and anything that meets a post-cure oven or an
-IPA wipe keeps Avery 5522 polyester off the sheet printer. Do not "fix" this by
-switching to tape without redoing the vertical budget.
+**`onFbData` is the ONE place a tombstone is filtered.** `DB[coll]` is the live
+records, `DB.trash[coll]` the deleted. Nothing else should ever test `.deleted`;
+about forty read sites depend on not having to. Adding `&& !r.deleted` somewhere
+means you have misunderstood the split.
 
-**The shelved `projects` TABS row is hidden but is NOT an alias.** The four
-hidden rows under it (`stock`, `items`, `lots`, `weekplan`) are normalised
-away in `render()` so their own render never runs. `projects` still renders
-itself, because the issue detail page lives there and is reached only by chip
-and by `#/PROJ-` link. Adding a normalisation line for it kills every link to
-every issue, silently. `06 Composites App/app/SHELVED.md` is the full record.
+**`deletedFiles` on a tombstone is the only record of a deleted record's
+uploads.** Storage listing is denied by rule, so losing that array makes the
+blobs unreachable forever. `purgeTrash` in reports.js is the only caller of
+`deleteFiles`. Two paths still hard-delete on purpose — the cut commit
+consuming a board to zero, and `undoCuts` withdrawing offcuts it just made —
+because both are stock consumption, not a deletion. Roster removal likewise:
+roster is not one of the twelve collections and has no bin.
 
+### Molds, stock and techniques
 
-Each of these cost something to learn and would be easy to undo by accident.
-Anything already explained in a README is deliberately not repeated here; see
-`README.md`, `SETUP.md`, `tools/README.md`, `06 Composites App/app/README.md`,
-`HANDOFF.md` and `.design-sync/NOTES.md`.
+**The cut list is Designed-only and HARD.** Walking a mold's stage back is the
+only override, deliberately, because it leaves a trail. The commit advances the
+mold to "Tooling cut"; do not remove that without removing the filter, or people
+stop marking molds cut.
 
-### Deploying
+**`MIN_REMNANT_MM` answers "what counts as recovered value when choosing a
+split"**, not "is this worth keeping". `leftover` and `scrap` partition the
+offcuts and only `leftover` is scored, so moving that line changes which boards
+get opened for a whole batch.
 
-**Rules deploy alone and FIRST, then hosting.** An old client under new rules
-is fine; a new client under old rules fails every allocation. `--only hosting`
-must stay meaning only hosting — `firestore.rules` and `storage.rules` can lock
-the team out of their own data.
+**A technique's steps are copied into a work order at creation, never
+retro-fit.** `templateVersion` is what lets a run know it is behind, and it is
+also what turns off BLOCKER_WORDS title matching — which still enforces on every
+record predating it, including the 26 retro SN5 runs.
 
-**The rules suites target the DEMO project.** They need Java and the firebase
-CLI, but no login and no network, so a fresh machine or CI can run them without
-touching the real `feb-composites` project.
+**A part's molds are `p.molds[]`; `p.mold` is read-only legacy.** No mirror:
+two fields holding one fact, maintained by convention across separate writers,
+is the shape `woIsRnd` derives to avoid. `partMold()` still answers with one.
 
-**Verify a deploy off the live host, not from the CLI.** "Deploy complete" is
-not a check; fetch a changed file and confirm the new code is actually in it.
+### R&D
 
-### Data model and rules
+**Do not fuse the two meanings.** `parts.rnd` is a real part with a traveler;
+the `rnd` collection is coupons with none. A test fails if `rnd.js` ever tests
+`retro`. It does call `isRnd()` since the programme strip, and that is not the
+fusion — see DESIGN-NOTES. In the coupon grid a cell edit never calls
+`render()` (`rdUpd`, `rdVal`): `onchange` fires while Tab already carries focus
+and a repaint destroys the field mid-hop. The guest cascade does not reach it
+either, so `rdCell` renders `.ro` itself.
 
-**The Firebase `apiKey` in `firebase-config.js` is public web config by
-design.** The repo is public, Simon's call, and scanned clean. Security lives
-in `firestore.rules`, not in hiding that key.
+**R&D lives on the R&D tab and only there.** Both rails filter absolutely;
+`onlyRnd`/`woOnlyRnd` are gone. `rdHome(tab, id)` in core.js does it, called
+from `openRecord()` and `consumePendingLink()`. **`tabForId()` stays pure and
+prefix-only** — do not push a record lookup into it. Related: if `DB.rnd` passes
+~2,000, take `rnd` out of `COLLECTIONS` and give the tab a per-study query. That
+escape hatch stays available only while every reader of `DB.rnd` is in
+`rnd.js`.
 
-**The tracker snapshot stores one compact JSON *string* per part.** The binding
-constraint is Firestore index entries — 7.5 KiB each, 20,000 per document — not
-the 1 MiB document limit. An array of maps would blow the entry count.
-
-**Unauthenticated Firestore REST honours `firestore.rules`.** Verified live: an
-anonymous GET of `pub/<id>` returns 404 while `parts/<id>` returns 403. That is
-the whole reason the sheet sync works with no server, no service account and
-no OAuth.
-
-### Printing
-
-**`print.css` is deliberately not inside `@media print`.** The sheet renders
-identically on screen and on paper, which is what makes the preview trustworthy
-and lets the design be reviewed from a screenshot. Tidying it into a print-only
-block breaks the entire review loop.
-
-**Label CSS lives in `print.css`, never `index.html`.** `downloadSheet()`
-fetches `print.css` and inlines it, so anything in `index.html` vanishes from
-every saved sheet — and a saved sheet on a phone at RFS with no wifi is the
-case that matters.
-
-**`labelSheetHtml()` must never reuse `fitSheetHtml()`, `LAYOUTS` or
-`MAX_PAGES`.** Those exist to squeeze a work order onto two pages via a ladder
-of candidate row counts, measured most-generous-first; they mean nothing for a
-fixed label grid. Do not replace the ladder with fixed row counts either — the
-point is that a sparse work order gets room to write and a dense one still
-lands on two pages.
-
-**`.dwg-tabwrap`'s `flex: 1 1 auto` is scoped to `.dwg-cols >` on purpose.**
-It exists to take the width left beside the fixed key and inset inside a flex
-ROW. `.dwg-page` is a flex COLUMN, so unscoped it made a full-width table grow
-vertically and pushed the cut schedule's two tables to opposite ends of the
-sheet. Widen the selector and the tables drift apart again.
-
-**Every distinction must survive grayscale.** Shop travelers print on a
-black-and-white laser first, so blockers use hatching plus heavy rules plus the
-literal word BLOCKER, never colour alone. Berkeley blue and gold are
-enhancement only.
-
-**Page numbering is hand-written (`Page ___ of ___`).** Chrome has no `@page`
-margin-box counters, so there is no honest way to print it.
-
-### The CFD viewer (07)
-
-**Pages stack into one continuous strip of PDF points, and a panel is a window
-into that strip.** Panels sit on a uniform 502.5 pt pitch and flow across page
-breaks, so nothing may assume a panel lives on one page.
-
-**Layout is in content space, not paper space.** Pages lay out with their print
-margins removed, so a plot spanning a page break is one continuous image and
-the crop stops mistaking the seam's white band for a title gap. Paper-space
-`absY` survives as `paperAbsY`.
-
-**Do not "simplify" the Electron shell to `loadFile`.** This app is ES modules
-because pdf.js ships as one and pulls a module worker with it, which forces an
-HTTP origin. The custom `app://` protocol is what lets the desktop and browser
-builds run identical code with nothing conditional between them.
-
-**Panels crop through one shared box across every report being compared**
-(`jointCrop` in `render.js`). Cropping each report to its own content would
-offset them and the difference view would report that offset as change
-everywhere. The guard is that two identical reports still diff to exactly 0
-pixels.
-
-### The test harness
-
-**App files load per-file from `index.html`'s `<script>` tags** via
-`tools/lib/appload.mjs`, each as its own `vm.Script` with its real path. There is
-no `FILES` list to forget and no regex allowlist. Coverage attributes by file as
-a result. The gotcha: top-level `const`/`let` are global-LEXICAL, so bare `DB`
-works and `globalThis.DB` is `undefined`.
-
-**Never assert sanitizer allowlist policy in `test_app.mjs`** — it cannot see
-it. `tools/test_sanitize.mjs` runs the real vendored DOMPurify in Chromium. The
-old stub ignored the allowlist entirely, which meant zero real coverage and hid
-two live bugs.
-
-**The design-system drift test compares only selectors present in BOTH copies.**
-A rule missing from one file is skipped, not reported — which is how `.bignum`
-carried state classes that did nothing for a year. There is now an explicit
-state-modifier check alongside the rule-by-rule diff; keep it, because the diff
-alone cannot see an absence.
-
-**A backtick inside a JS template literal ends the literal.** It has bitten
-`documents.js`, `projects.js` and the `AUDIT` string in `test_detailui.mjs` —
-every time it was prose in a comment quoting code. Write those comments without
-backticks. `AUDIT` says "no backticks below this line" for this reason.
-
-**Playwright suites skip and still exit 0** when Chromium is missing. Read the
-output; never trust the exit code alone. (Also in `SETUP.md`.)
+**A study is physical and carries a label.** `RDS-SN6-###` and `CPN-SN6-###`,
+both 11 characters with a QR; `test_qr.mjs` keeps the 15-character form as a
+counterfactual so the 14-character cliff stays proven. A study groups parts
+through `part.study`, never `wo.study`. Declined, so do not build
+speculatively: std-dev/CV in Compare, and computed stress.
 
 ### App behaviour
 
-**`formatBlock` needs the angle-bracket form (`"<h2>"`)** or it is a silent
-no-op in Safari. An empty contenteditable holds a bare text node with no block,
-so editors are seeded with `<p><br></p>` or formatBlock has nothing to convert.
+**Guest mode is on and the app is publicly readable.** Anonymous sign-in;
+anyone with the URL reads everything including team emails, accepted
+deliberately. Verified live: every read 200, every write and delete 403, three
+client layers refusing independently. Turning it off is the same Auth switch.
+Guest read costs eleven full-collection snapshots per visitor on Blaze.
 
-**`proseHtml()` decorates AFTER sanitising**, adding `.tblwrap` and `.cgal`,
-because `class` is not allowlisted and authors therefore cannot ask for either.
+**Seasons, archiving and accounts.** A record's season is read off its id
+against `config/season.code`; `inSeason()` also requires this season and not
+archived, and later seasons mint on `<key>@<code>` counters. Nothing is deleted
+to roll a season over — archive, never delete (Simon). A username is the
+synthetic address `<u>@members.feb-composites.app`, so every email-keyed path is
+unchanged; removal is a nudge, a real lock is disabling the Auth user, and
+username accounts have no password reset. Budget has **two status tracks, not
+one enum** — `status` is about goods, `reimb` about money, legacy records read
+through `buyStatus()`/`reimbStatus()` and are never rewritten, and the $50 gate
+lives on the money track.
 
-**Retro records store the literal `"not recorded (retro)"`.** `pv()` maps it to
-empty so it never reaches paper looking like data.
+**The boot splash is a gate, and a dashboard lane needs an empty state.**
+`splashAuth()` marks `data` as not needed when auth resolves to `signedout` or
+`pending`, or the gate hangs in front of the people who need the sign-in card;
+`hideSplash(true)` must keep working, eight visual suites go through it; and
+`splashFail()` returns early when nothing is outstanding because the 12s backstop
+fires on healthy boots. `laneShell()` requires `emptyFn` and throws without one.
+Nothing is scored across lanes — `actScore` tiers sit 50 apart because the
+bonuses sum to 45.
 
-**Standard references are off the printed sheet.** `stripCS()` in
-`workorders.js` removes them at render time from legacy and retro records,
-covering titles, notes and event-log text. Stored data is untouched, so the
-archive keeps its original wording.
+**Four smaller ones.** `.sline` and `.shead` share one declaration of eight fixed
+grid tracks on the Season blueprint — do not reach for `columns:` on
+`.seasongrid` a third time. `render()` restores every `.plist` rail's scrollTop
+by aria-label, so anything new that scrolls inside `<main>` should be a `.plist`.
+Retro records store the literal `"not recorded (retro)"`, which `pv()` maps to
+empty and `stripCS()` keeps off the printed sheet without touching stored data.
+Avatar and file upload need the Blaze plan.
 
-**Accounts are self-serve (v4.4.0).** Sign-up is name + username + password;
-a username is the synthetic address `<u>@members.feb-composites.app`
-(`USER_DOMAIN`, `loginEmailFor`, `userHandle` in core.js), so every email-keyed
-path is unchanged and old email accounts still sign in. `firestore.rules`
-lets an account create only its own roster doc, as member, with the four
-sign-up fields; leads keep roles and removal. **Deployed rules** on
-2026-09-03, purely additive on `/roster` create. Removal is a nudge now:
-a removed person can rejoin, so a real lock is disabling the Auth user in
-the console. Username accounts have no password reset; recovery is delete
-the Auth user, sign up again with the same username.
+### Data model and rules
 
-**Seasons and `archived` (v4.3.0).** A record's season is read off its id;
-the current one is `config/season.code` (Season settings, fallback SN6).
-`inSeason()` now also requires this season and not archived. Rails default to
-this season with archived hidden; chips swap in SN5 / archived. New ids for a
-later season mint on `<key>@<code>` counters, SN6 keys unchanged. Nothing is
-deleted to roll a season over. Simon's ask, 2026-09-03: archive, never delete.
+**The Firebase `apiKey` in `firebase-config.js` is public web config by design.**
+The repo is public, Simon's call, scanned clean. Security lives in
+`firestore.rules`, not in hiding that key — and unauthenticated REST honours
+them: an anonymous GET of `pub/<id>` returns 404 while `parts/<id>` returns 403,
+which is why the sheet sync needs no server, service account or OAuth.
 
-**`render()` snapshots and restores every `.plist` rail's scrollTop** (v4.2.1),
-keyed by aria-label. Anything new that scrolls inside `<main>` and must survive
-a re-render should be a `.plist` or get the same treatment.
+**The tracker snapshot stores one compact JSON *string* per part.** The binding
+constraint is Firestore index entries (7.5 KiB each, 20,000 per document), not
+the 1 MiB document limit. An array of maps would blow the entry count.
 
-**Storage-backed features (avatar, file upload) need the Firebase Blaze plan.**
-They are built and tested against the emulator.
+**EH&S tags are Data Matrix**, 24 characters, `CA` + sixteen `0` + six hex.
+`invEhsShort` shows the twelve edge characters because across 627 real tags
+positions 0-18 never vary. Any new writer of `ehsBarcode` calls `ehsNorm`;
+comparisons go through `ehsKey`. Related: **CS-011 §6 still forbids resin and
+hardener co-storage on purpose** while the app's warning was removed code-only.
+Simon revises the standard himself at Rev D; never edit it from a session.
+
+### Deploying
+
+**Rules deploy alone and FIRST, then hosting.** An old client under new rules is
+fine; a new client under old rules fails every allocation. `--only hosting` must
+stay meaning only hosting. And verify off the live host: "Deploy complete" is
+not a check, so fetch a changed file and confirm the new code is in it.
+
+**The rules suites target the DEMO project.** They need Java and the firebase
+CLI but no login and no network, so a fresh machine or CI runs them without
+touching production. The storage CLI selector is `storage`, not `storage:rules`.
+
+### Printing and labels
+
+**The roll printer must be AirPrint, and that is not a preference.** A browser
+cannot open a raw TCP socket and the app is HTTPS, so a plain-HTTP LAN printer
+is blocked as mixed content. A Bluetooth-only label maker cannot be driven at
+all. The full reasoning is in DESIGN-NOTES; this is the shopping constraint. **Laminated tape was rejected on
+print height, not price** — the Brother PT-P750W tops out at 18 mm against the
+21.4 mm this label needs. Do not "fix" direct thermal's fade/heat/solvent
+weakness by switching to tape without redoing the vertical budget.
+
+**`labelSheetHtml()` must never reuse `fitSheetHtml()`, `LAYOUTS` or
+`MAX_PAGES`.** Those squeeze a work order onto two pages via a ladder of
+candidate row counts; they mean nothing for a fixed label grid. Do not replace
+the ladder with fixed row counts either — a sparse run gets room to write and a
+dense one still lands on two pages. `.dwg-tabwrap`'s `flex: 1 1 auto` is scoped
+to `.dwg-cols >` for a related reason: `.dwg-page` is a flex COLUMN, so unscoped
+it pushed the cut schedule's tables to opposite ends of the sheet. Page numbering
+stays hand-written because Chrome has no `@page` margin-box counters.
+
+### Fusion
+
+**Install decisions that cost something to reach.** No .dmg or .exe: an unsigned
+one is blocked harder than a plain script, and signing is ~$99/yr per platform.
+The two installers sit beside the add-in folder in the zip, never inside it, or
+they get copied into Fusion's AddIns directory too. The zip ships no
+`credentials.json`, so a member signs in as themselves.
+
+**Build-shaping facts, all from live experiment.** `STLExportOptions.unitType`
+reads inches but writes mm at its default, so the add-in meshes through
+`MeshCalculator` in cm and writes mm itself. Parametric mode needs a base feature
+for temporary bodies, and names are set after `finishEdit()`. The `adsk` bridge
+appears about a second after load and a `sendInfoToHTML` before that is dropped,
+so the page speaks first. Fusion's own `response` event is unreliable over https.
+`fusion360://` opens nothing, which is why the mold card links
+`dataFile.fusionWebURL`.
+
+### The CFD viewer (07)
+
+**Nothing may assume a panel lives on one page** — panels flow across page
+breaks. Layout is in content space so a plot spanning a break is one continuous
+image, and paper-space `absY` survives as `paperAbsY` for the cases that still
+need it. (The pitch and the content-space rationale are in that app's README.)
+
+**Do not "simplify" the Electron shell to `loadFile`.** The app is ES modules
+because pdf.js ships as one and pulls a module worker, which forces an HTTP
+origin. The custom `app://` protocol is what lets desktop and browser run
+identical code. **Panels crop through one shared box** across every report being
+compared (`jointCrop`); cropping each to its own content would offset them and
+the difference view would call that offset change everywhere. Two identical
+reports must diff to exactly 0 pixels. **Settled, do not re-ask:** open access
+with no sign-in, shared library in Storage, 07 untouched, the viewer canvas dark
+in both themes, charts the CFD app's own. Records backfill on first open, so no
+migration script is needed, and the bucket's CORS is applied by gsutil.
+
+### The test harness
+
+**App files load per-file from `index.html`'s `<script>` tags**, each as its own
+`vm.Script`. There is no FILES list to forget. The gotcha: top-level
+`const`/`let` are global-LEXICAL, so bare `DB` works and `globalThis.DB` is
+`undefined` — and **a duplicate `function` name across two app files silently
+shadows**, which has cost a debugging session.
+
+**Never assert sanitizer allowlist policy in `test_app.mjs`** — it cannot see it.
+`tools/test_sanitize.mjs` runs the real vendored DOMPurify in Chromium. And the
+design-system drift test compares only selectors present in BOTH copies — a rule
+missing from one file is skipped, not reported, which is why the explicit
+state-modifier check beside it must stay: the diff cannot see an absence.
+
+**Three traps.** Playwright suites skip and still exit 0 when Chromium is
+missing — read the output, never the exit code. `confirmProceed()` returns the
+callback's promise, so a test confirming an async delete must `await` it. Adding
+a method to `fb` means adding it to seven dev shims (grep `window.fb = {`), and
+they must match: `allocIdBlock` once minted from the counter key instead of
+`ID_PREFIX[coll]` and nobody saw it for years. And a backtick inside a JS template literal ends
+the literal — it has bitten `documents.js`, `projects.js` and `AUDIT` in
+`test_detailui.mjs`, every time as prose quoting code.
 
 ---
 
@@ -493,32 +302,25 @@ They are built and tested against the emulator.
 
 Five sessions, newest first. Older entries live in `git log`, not here.
 
-**2026-09-17 — the storage suite can assert allow cases now.** The long-failing
-`authed write of a non-STL content type to stackplans/` was a bad assertion,
-not a rule gap: the emulator's simple-upload endpoint never reads the
-Content-Type header and reports `application/octet-stream` to the rules engine,
-which the stackplans rule accepts on purpose. A resumable upload carries the
-type through, so `writeTyped()` now covers the wrong-type and right-type cases
-both. No rule logic changed.
+**2026-09-18 — v6.1.0.** R&D moved wholly onto its own tab: both rails filter
+absolutely, `rdHome()` redirects the twenty-odd arrival routes, `tabForId()`
+stays pure. Also a stepper per mold on a multi-mold part, the stray note card
+folded into the Notes section, and TESTING/N-A subteams.
 
-**2026-09-17 — one version, one release** for the app and the Fusion add-in;
-`tools/release.mjs` cuts everything. Then the mold/trash/techniques plan
-approved, and Chunk 0 landed: `molds/`, `items/` and `lots/` added to
-`storage.rules`, which had been silently refusing every photo pasted into a
-Shop-tab note.
+**2026-09-18 — v6.0.0.** Five fixes from Simon's review: several molds per part,
+a part hero photo, a disposition note required to close an issue, R&D studies as
+folders, and two-tier work-order sections. A UI review of the rendered screens
+caught three things the string tests passed.
 
-**2026-09-04 — Fusion add-in study, Stage 1 and 2.** Spikes S1, S2, S3, S6
+**2026-09-18 — v5.2.0 and v5.2.1.** The R&D programme strip: studies, R&D parts
+and their runs on one sticky card strip over a full-width bench that renders the
+real part and run detail. `renderRnd` routes `view.id` instead of consuming it.
+
+**2026-09-17 — mold tracking, a trash can and lead-addable techniques**, fifteen
+chunks, landed and deployed. Rules deployed twice (techniques on the guest read
+allowlist; items/lots delete back to `isLead()`), storage.rules once for the
+`molds/`, `items/` and `lots/` trees. One version, one release for the app and
+the Fusion add-in; `tools/release.mjs` cuts everything.
+
+**2026-09-04 — Fusion add-in study**, stages 1 and 2. Spikes S1, S2, S3, S6
 through Fusion's built-in MCP server; S4 and S5 as throwaway add-ins.
-
-**2026-09-03 — composites app v4.2.1 to v4.4.1:** rails keep their scroll,
-Parts Select…, archive-not-delete with season codes, self-serve accounts
-with usernames, Roster page removed. CFD app to cfd-v0.3.1: dashboard, saved
-views, shell, splash gate, phone layout.
-
-**2026-09-02 — CFD viewer live at feb-cfd.web.app** (cfd-v0.1.0), folders
-renumbered (`03 App/` is `06 Composites App/`), repo renamed to
-`feb-engineering-apps`.
-
-**2026-08-28 — v4.0.0** (R&D bench, boot gate), mold stage stepper, inventory
-round 2 and EH&S phases complete.
-
