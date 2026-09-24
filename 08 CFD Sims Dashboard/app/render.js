@@ -1,98 +1,164 @@
 /* render.js — page and panel rasterisation, with a cache.
 
-   Two consumers, one path:
-   - the page view wants whole pages, lazily, as they scroll into sight
-   - the panel and overlay views want one panel, which is a crop of the strip and
-     may span two pages
+   Three consumers, one path: the page view wants each page's content slice as
+   it scrolls into sight, the panel and overlay views want one panel, which is
+   a crop of the strip and may span two pages. All of them go through
+   renderRange(), which rasterises ONLY the requested range, straight at the
+   size it will be shown. The old path rendered the whole A3 page into a cache
+   and then copied the slice out, which drew every page twice and kept both.
 
-   Both go through renderPage(). A panel is composited from the page canvases it
-   overlaps, which is what makes a panel that straddles a page break work at all.
+   Rendering is cancellable (pass an AbortSignal): a pinch that moves on
+   before a render lands must not leave pdf.js grinding through a scale nobody
+   wants any more.
 
-   These are A3 pages and a report is 39 of them, so rendering everything up
-   front would be slow and pointless. Pages render on demand and stay cached by
-   (document, page, scale); the cache is bounded because a few hundred A3
-   canvases will exhaust memory. */
+   Sizes are snapped. A requested width is rounded UP to the next quarter
+   octave (2^(k/4)) of device pixels, so the ten intermediate widths of one
+   pinch share a handful of rasters, and CSS scales the canvas the last few
+   per cent. Every canvas is capped at MAX_PX pixels: iOS Safari draws nothing
+   at all above about 16.7M, and past that point more pixels do not read as
+   sharper anyway.
 
-const CACHE_LIMIT = 60;          // page canvases held across all documents
-const cache = new Map();         // key -> { canvas, promise }
-const inflight = new Map();
+   The cache is bounded by BYTES, not by count. A thumbnail and a 6x-zoomed
+   page are not the same cost. */
 
-function touch(key, value) {
-  cache.delete(key);
-  cache.set(key, value);
-  while (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value);
+const MOBILE = typeof matchMedia === "function" && matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+const CACHE_BYTES = (MOBILE ? 96 : 320) * 1024 * 1024;
+const MAX_PX = 16_000_000;
+const MAX_SIDE = 16_384;
+
+const cache = new Map();         // key -> canvas, in LRU order (oldest first)
+let cacheBytes = 0;
+const inflight = new Map();      // key -> promise, shared by uncancellable callers
+const bytesOf = (c) => c.width * c.height * 4;
+
+function cachePut(key, canvas) {
+  const old = cache.get(key);
+  if (old) { cache.delete(key); cacheBytes -= bytesOf(old); }
+  cache.set(key, canvas);
+  cacheBytes += bytesOf(canvas);
+  for (const [k, c] of cache) {
+    if (cacheBytes <= CACHE_BYTES || k === key) break;
+    cache.delete(k);
+    cacheBytes -= bytesOf(c);
+    release(c);
+  }
+}
+function cacheGet(key) {
+  const c = cache.get(key);
+  if (!c) return null;
+  cache.delete(key); cache.set(key, c);          // most recently used
+  return c;
+}
+
+/* Hand a canvas's backing store back now, rather than whenever the collector
+   gets round to it. Safari in particular holds the memory until then. Never on
+   a canvas that is on screen: it would go blank. */
+export function release(canvas) {
+  if (canvas && !canvas.isConnected) { canvas.width = 0; canvas.height = 0; }
 }
 
 export function clearCache(docId) {
-  if (!docId) return cache.clear();
-  for (const k of [...cache.keys()]) if (k.startsWith(docId + "|")) cache.delete(k);
+  for (const [k, c] of [...cache]) {
+    if (docId && !k.startsWith(docId + "|")) continue;
+    cache.delete(k); cacheBytes -= bytesOf(c); release(c);
+  }
 }
+
+export function dpr() { return Math.min(window.devicePixelRatio || 1, 2); }
+
+/* Device-pixel width to render for `cssWidth`, snapped up to a quarter octave. */
+export function snapWidth(cssWidth) {
+  const px = Math.max(1, cssWidth * dpr());
+  return Math.ceil(2 ** (Math.ceil(Math.log2(px) * 4 - 1e-9) / 4));
+}
+
+/* Keep pdf.js's parsed pages warm while the reader is zooming and scrolling,
+   and let them go once they have been idle a while. Cleaning up after every
+   render, as before, made each zoom step re-parse the page from scratch. */
+const touched = new Map();       // doc -> Set(page proxies)
+let idleTimer = 0, running = 0;
+function remember(doc, page) {
+  if (!touched.has(doc)) touched.set(doc, new Set());
+  touched.get(doc).add(page);
+}
+function scheduleCleanup() {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    if (running) return scheduleCleanup();
+    for (const pages of touched.values()) for (const p of pages) { try { p.cleanup(); } catch { /* busy: next time */ } }
+    touched.clear();
+  }, 4000);
+}
+
+/* Rasterise [srcY, srcY + srcH] of one page (page points) into ctx at
+   `k` device px per point, `dstY` px down. */
+async function drawSegment(doc, pageNum, srcY, k, canvas, signal) {
+  if (signal?.aborted) throw abortError();
+  const page = await doc.pdf.getPage(pageNum);
+  remember(doc, page);
+  if (signal?.aborted) throw abortError();
+  const viewport = page.getViewport({ scale: k });
+  const task = page.render({
+    canvasContext: canvas.getContext("2d", { alpha: false }),
+    viewport,
+    transform: [1, 0, 0, 1, 0, -Math.round(srcY * k)],
+  });
+  const onAbort = () => task.cancel();
+  signal?.addEventListener("abort", onAbort, { once: true });
+  running++;
+  try { await task.promise; }
+  finally { running--; signal?.removeEventListener("abort", onAbort); scheduleCleanup(); }
+}
+function abortError() { const e = new Error("cancelled"); e.name = "AbortError"; return e; }
+export const isCancel = (e) => e && (e.name === "AbortError" || e.name === "RenderingCancelledException");
 
 /* Measure each page's ink margins, so withContentSpace can drop them.
 
    Renders every page small (a plot is a big object, a coarse raster locates it
    fine) and finds the first and last inked row. Returns per-page
-   { top, bottom } in page points. One pass at load; the pages view already
-   rasterises all of them at full size, so a low-res pass is cheap. A page that
-   fails to render contributes no trim rather than blocking the load. */
+   { top, bottom } in page points. Throwaway canvases, never the render cache,
+   three pages at a time. A page that fails to render contributes no trim
+   rather than blocking the load. */
 export async function measureMargins(doc, opts = {}) {
   const scale = opts.scale || 0.34;
   const threshold = opts.threshold ?? 246;
-  const out = [];
-  for (const pg of doc.index.pages) {
-    let top = 0, bottom = 0;
-    try {
-      const { canvas } = await renderPage(doc, pg.index, scale);
-      const w = canvas.width, h = canvas.height;
-      const data = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, w, h).data;
-      const inkRow = (y) => {
-        const base = y * w * 4;
-        for (let x = 0; x < w; x += 3) {
-          const i = base + x * 4;
-          if (data[i] < threshold || data[i + 1] < threshold || data[i + 2] < threshold) return true;
-        }
-        return false;
-      };
-      let a = 0, b = 0;
-      for (let y = 0; y < h; y++) { if (inkRow(y)) break; a++; }
-      for (let y = h - 1; y >= 0; y--) { if (inkRow(y)) break; b++; }
-      // A blank page (a === h) would trim everything; leave it whole instead.
-      if (a < h) { top = (a / h) * pg.height; bottom = (b / h) * pg.height; }
-    } catch { /* leave this page untrimmed */ }
-    out.push({ top, bottom });
-    if (opts.onProgress) opts.onProgress(pg.index, doc.index.pages.length);
+  const k = scale * dpr();
+  const pages = doc.index.pages;
+  const out = new Array(pages.length);
+  let next = 0, done = 0;
+  const canvas = () => document.createElement("canvas");
+  async function worker() {
+    const cv = canvas();
+    while (next < pages.length) {
+      const pg = pages[next++];
+      let top = 0, bottom = 0;
+      try {
+        cv.width = Math.ceil(pg.width * k); cv.height = Math.ceil(pg.height * k);
+        await drawSegment(doc, pg.index, 0, k, cv);
+        const w = cv.width, h = cv.height;
+        const data = cv.getContext("2d").getImageData(0, 0, w, h).data;
+        const inkRow = (y) => {
+          const base = y * w * 4;
+          for (let x = 0; x < w; x += 3) {
+            const i = base + x * 4;
+            if (data[i] < threshold || data[i + 1] < threshold || data[i + 2] < threshold) return true;
+          }
+          return false;
+        };
+        let a = 0, b = 0;
+        for (let y = 0; y < h; y++) { if (inkRow(y)) break; a++; }
+        for (let y = h - 1; y >= 0; y--) { if (inkRow(y)) break; b++; }
+        // A blank page (a === h) would trim everything; leave it whole instead.
+        if (a < h) { top = (a / h) * pg.height; bottom = (b / h) * pg.height; }
+      } catch { /* leave this page untrimmed */ }
+      out[pg.index - 1] = { top, bottom };
+      done++;
+      if (opts.onProgress) opts.onProgress(done, pages.length);
+    }
+    cv.width = cv.height = 0;
   }
+  await Promise.all([worker(), worker(), worker()]);
   return out;
-}
-
-/* Render one page at a given CSS scale. Device pixel ratio is folded in so text
-   and thin plot lines stay crisp on a retina display. */
-export async function renderPage(doc, pageNum, scale) {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const key = `${doc.id}|${pageNum}|${scale.toFixed(3)}|${dpr}`;
-  const hit = cache.get(key);
-  if (hit) { touch(key, hit); return hit; }
-  if (inflight.has(key)) return inflight.get(key);
-
-  const job = (async () => {
-    const page = await doc.pdf.getPage(pageNum);
-    const vp = page.getViewport({ scale: scale * dpr });
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.ceil(vp.width);
-    canvas.height = Math.ceil(vp.height);
-    const ctx = canvas.getContext("2d", { alpha: false });
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    await page.render({ canvasContext: ctx, viewport: vp }).promise;
-    page.cleanup();
-    const entry = { canvas, scale, dpr };
-    touch(key, entry);
-    inflight.delete(key);
-    return entry;
-  })();
-
-  inflight.set(key, job);
-  return job;
 }
 
 /* Which pages does a content-space range touch, and where does it land on each?
@@ -125,36 +191,63 @@ export function pagesForRange(index, absY, height) {
   return out;
 }
 
-/* Draw a strip range onto a canvas at `targetWidth` CSS pixels.
+/* Draw a strip range onto a canvas `targetWidth` CSS pixels wide.
 
-   Panels are cropped a little tighter than the raw pitch: the title sits at the
-   top of the range and the next panel's title marks the end, so trimming a few
-   points off the bottom keeps the neighbouring title out of the frame. */
+   Returns a canvas from the cache when one exists at this size. Callers may
+   put it on screen and set its CSS size, and must not draw on it; the same
+   canvas comes back to the next caller that asks for the same range.
+
+   opts.signal cancels the render. Cancelled renders reject with an error
+   isCancel() recognises; callers drop those silently. */
 export async function renderRange(doc, absY, height, targetWidth, opts = {}) {
   const index = doc.index;
   const pageW = index.pages[0].width;
-  const scale = targetWidth / pageW;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let pxW = snapWidth(targetWidth);
+  // Cap the pixel count (and either side), keeping the aspect.
+  const aspect = height / pageW;
+  const over = Math.max(1, Math.sqrt((pxW * pxW * aspect) / MAX_PX), pxW / MAX_SIDE, (pxW * aspect) / MAX_SIDE);
+  if (over > 1) pxW = Math.floor(pxW / over);
+  const k = pxW / pageW;                                   // device px per point
+  const pxH = Math.max(1, Math.round(height * k));
+  const key = `${doc.id}|${absY.toFixed(2)}|${height.toFixed(2)}|${pxW}`;
+  const style = (c) => { c.style.width = targetWidth + "px"; c.style.height = (height * targetWidth / pageW) + "px"; return c; };
 
-  const canvas = opts.canvas || document.createElement("canvas");
-  canvas.width = Math.ceil(targetWidth * dpr);
-  canvas.height = Math.ceil(height * scale * dpr);
-  canvas.style.width = targetWidth + "px";
-  canvas.style.height = height * scale + "px";
-  const ctx = canvas.getContext("2d", { alpha: false });
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const hit = cacheGet(key);
+  if (hit) return style(hit);
+  if (!opts.signal && inflight.has(key)) return style(await inflight.get(key));
 
-  for (const seg of pagesForRange(index, absY, height)) {
-    const { canvas: src, dpr: sdpr } = await renderPage(doc, seg.page, scale);
-    const k = scale * sdpr;                    // page points -> source pixels
-    ctx.drawImage(
-      src,
-      0, Math.round(seg.srcY * k), src.width, Math.round(seg.srcH * k),
-      0, Math.round(seg.dstY * scale * dpr), canvas.width, Math.round(seg.srcH * scale * dpr)
-    );
-  }
-  return canvas;
+  const job = (async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = pxW; canvas.height = pxH;
+    const segs = pagesForRange(index, absY, height);
+    try {
+      if (segs.length === 1 && segs[0].dstY === 0) {
+        // One page covers the range: pdf.js draws straight into the result.
+        await drawSegment(doc, segs[0].page, segs[0].srcY, k, canvas, opts.signal);
+      } else {
+        /* pdf.js clears the whole canvas before drawing a page, so a range
+           that spans a page break draws each piece on its own and stacks them. */
+        const ctx = canvas.getContext("2d", { alpha: false });
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, pxW, pxH);
+        for (const seg of segs) {
+          const h = Math.max(1, Math.round(seg.srcH * k));
+          const piece = document.createElement("canvas");
+          piece.width = pxW; piece.height = h;
+          await drawSegment(doc, seg.page, seg.srcY, k, piece, opts.signal);
+          ctx.drawImage(piece, 0, Math.round(seg.dstY * k));
+          piece.width = piece.height = 0;
+        }
+      }
+    } catch (e) { release(canvas); throw e; }
+    cachePut(key, canvas);
+    return canvas;
+  })();
+
+  if (opts.signal) return style(await job);
+  inflight.set(key, job);
+  try { return style(await job); }
+  finally { inflight.delete(key); }
 }
 
 /* A panel, cropped so the following panel's title does not bleed in. */
@@ -176,7 +269,16 @@ export async function renderPanel(doc, panel, targetWidth, opts) {
    comparison panes far denser. Rows are sampled rather than scanned pixel by
    pixel; a plot is a large object and there is no need to be exact about a
    hairline. */
+const boundsMemo = new WeakMap();   // canvas -> { key, value }: cached canvases are read again on every tab visit
 export function contentBounds(canvas, rangeHeight, opts = {}) {
+  const memoKey = `${rangeHeight}|${opts.threshold ?? 247}|${opts.minGapPts ?? 40}`;
+  const m = boundsMemo.get(canvas);
+  if (m && m.key === memoKey && m.w === canvas.width) return m.value;
+  const value = measureBounds(canvas, rangeHeight, opts);
+  boundsMemo.set(canvas, { key: memoKey, w: canvas.width, value });
+  return value;
+}
+function measureBounds(canvas, rangeHeight, opts) {
   const threshold = opts.threshold ?? 247;      // below this counts as ink
   const w = canvas.width, h = canvas.height;
   if (!w || !h) return { top: 0, bottom: rangeHeight };

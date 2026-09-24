@@ -550,8 +550,8 @@ function buildViewer() {
   root.querySelector("#zoomin").onclick = () => zoomStep(1.25);
   root.querySelector("#zoomout").onclick = () => zoomStep(1 / 1.25);
   root.querySelector("#zoomfit").onclick = () => {
-    if (S.tab === "pages") { zoomFit(); renderChrome(); }
-    else { S.fit = true; S.zoom = 1; render(); renderChrome(); }
+    if (S.tab === "pages") { zoomFit(); updateZoomLabel(); }
+    else { S.fit = true; S.zoom = 1; render(); updateZoomLabel(); }
   };
   return root;
 }
@@ -559,9 +559,17 @@ function buildViewer() {
    scroll position. Elsewhere they still go through a re-render, since those
    views have nothing to preserve. */
 const zoomStep = (factor) => {
-  if (S.tab === "pages") { zoomBy(factor); renderChrome(); }
-  else { S.fit = false; S.zoom = Math.max(0.15, Math.min(6, S.zoom * factor)); render(); renderChrome(); }
+  if (S.tab === "pages") { zoomBy(factor); updateZoomLabel(); }
+  else { S.fit = false; S.zoom = Math.max(0.15, Math.min(6, S.zoom * factor)); render(); updateZoomLabel(); }
 };
+/* The zoom readout, and nothing else. A pinch calls this every frame; it used
+   to rebuild the whole side panel, search results included, on every event. */
+function updateZoomLabel() {
+  const lbl = document.getElementById("zoomlabel");
+  if (!lbl) return;
+  const z = S.tab === "pages" && S.docs.length ? currentZoom() : S.zoom;
+  lbl.textContent = S.fit ? "Fit" : Math.round(z * 100) + "%";
+}
 
 export function renderPage() {
   shell.renderSidebar(S.page);
@@ -680,7 +688,7 @@ $("#filepick").onchange = e => {
   e.target.value = "";
   if (files.length) { if (S.page !== "viewer") setTab("viewer"); ingest(files); }
 };
-setZoomListener(() => renderChrome());
+setZoomListener(updateZoomLabel);
 
 // Drag and drop anywhere.
 let dragDepth = 0;
@@ -700,7 +708,7 @@ addEventListener("keydown", e => {
   if (e.key === "/" && !typing) { e.preventDefault(); focusSearch(); return; }
   if (typing) return;
   if (e.key === "s" || e.key === "S") { S.sync = !S.sync; setSync(S.sync); renderChrome(); }
-  if (e.key === "r" || e.key === "R") { resyncColumns(); }
+  if (e.key === "r" || e.key === "R") { resyncAndLock(); renderChrome(); }
   if (e.key === "j" || e.key === "k") {
     const rows = panelRows(); if (!rows.length) return;
     const i = Math.max(0, rows.findIndex(r => r.id === S.panelId));
@@ -710,7 +718,14 @@ addEventListener("keydown", e => {
   if (e.key >= "1" && e.key <= "4") { S.tab = TABS[+e.key - 1].id; render(); renderChrome(); syncUrl(); }
 });
 
-addEventListener("resize", () => { if (S.docs.length && inViewer()) render(); });
+/* The page view follows its columns' width itself (a ResizeObserver per
+   column, rescaling in place). The other views re-render, once the window
+   has stopped moving. */
+let resizeTimer = 0;
+addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (S.docs.length && inViewer() && S.tab !== "pages") render(); }, 150);
+});
 
 /* Inline handlers in shell and dashboard markup. */
 window.cfd = {
