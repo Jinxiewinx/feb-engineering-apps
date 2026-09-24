@@ -45,7 +45,7 @@ export async function fetchBytes(rec, onProgress) {
 }
 export async function rename() {}
 export async function setNote(id, note) { window.__stub.notes = [...(window.__stub.notes || []), { id, note }]; const r = recs.find(r => r.id === id); if (r) r.note = note; listener?.(recs.slice()); }
-export async function remove() {}
+export async function remove(rec) { window.__stub.removed = [...(window.__stub.removed || []), rec.id]; }
 export async function saveView(name, query, reports) { window.__stub.savedViews.push({ name, query, reports }); views.unshift({ id: "VW-B", name, query, reports, createdAt: new Date().toISOString() }); vlistener?.(views.slice()); }
 export async function renameView() {}
 export async function removeView() {}

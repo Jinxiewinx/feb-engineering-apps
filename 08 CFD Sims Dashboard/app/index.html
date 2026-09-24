@@ -46,6 +46,7 @@
 <link rel="modulepreload" href="compare.js">
 <link rel="modulepreload" href="summary.js">
 <link rel="modulepreload" href="search.js">
+<link rel="modulepreload" href="menu.js">
 </head>
 <body>
 
@@ -90,7 +91,7 @@
 
 <div id="lightbox-root"></div>
 <div id="drop" class="drop"><div class="drop-inner">Drop CFD reports to open</div></div>
-<div id="toasts"></div>
+<div id="toasts" aria-live="polite"></div>
 <input type="file" id="filepick" accept="application/pdf,.pdf" multiple hidden>
 
 <script src="firebase-config.js"></script>

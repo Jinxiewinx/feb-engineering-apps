@@ -10,10 +10,28 @@ export const el = (tag, cls, html) => {
 export function esc(s) {
   return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
-export function toast(msg, kind) {
-  const t = el("div", "toast " + (kind === "err" ? "err" : kind === "ok" ? "ok" : "info"), esc(msg));
+/* A toast. Errors stay until dismissed: an error that fades before anyone
+   reads it was the old behaviour. opts.action = { label, run } adds a button
+   (Undo); opts.ms sets how long a non-error stays. Returns { close }. */
+export function toast(msg, kind, opts = {}) {
+  const k = kind === "err" ? "err" : kind === "ok" ? "ok" : "info";
+  const t = el("div", "toast " + k);
+  t.setAttribute("role", k === "err" ? "alert" : "status");
+  t.appendChild(el("span", "toast-msg", esc(msg)));
+  let timer = 0;
+  const close = () => { clearTimeout(timer); if (!t.isConnected) return; t.classList.add("hide"); setTimeout(() => t.remove(), 250); };
+  if (opts.action) {
+    const b = el("button", "toast-act", esc(opts.action.label));
+    b.type = "button";
+    b.onclick = () => { close(); opts.action.run(); };
+    t.appendChild(b);
+  }
+  const x = el("button", "toast-x", "✕");
+  x.type = "button"; x.setAttribute("aria-label", "Dismiss"); x.onclick = close;
+  t.appendChild(x);
   $("#toasts").appendChild(t);
-  setTimeout(() => { t.classList.add("hide"); setTimeout(() => t.remove(), 350); }, 3200);
+  if (k !== "err" || opts.ms) timer = setTimeout(close, opts.ms || (opts.action ? 6000 : 3200));
+  return { close };
 }
 export const fmtMB = b => (b / 1048576).toFixed(b >= 10485760 ? 0 : 1) + " MB";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

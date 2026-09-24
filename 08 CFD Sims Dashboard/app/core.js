@@ -21,6 +21,7 @@
 import { indexDocument, withContentSpace, matchPanels } from "./indexer.js";
 import { clearCache, measureMargins, renderPanel, dpr } from "./render.js";
 import * as cache from "./cache.js";
+import * as menu from "./menu.js";
 import { renderPages, resyncColumns, resyncAndLock, setSync, zoomBy, zoomFit, setZoomListener, currentZoom } from "./pages.js";
 import { renderPanelView } from "./panels.js";
 import { renderOverlay } from "./compare.js";
@@ -29,7 +30,7 @@ import { renderSearch, focusSearch } from "./search.js";
 import { resultsFrom, dpFrom, metaFrom } from "./extract.js";
 import * as lib from "./library.js";
 import * as shell from "./shell.js";
-import { renderDashboard } from "./dashboard.js";
+import { paintDashboard } from "./dashboard.js";
 import { $, el, esc, toast, fmtMB, shortDate } from "./util.js";
 export { $, el, esc, toast };
 
@@ -137,6 +138,8 @@ export const S = {
   libError: null,
   addToLibrary: true,    // the checkbox: local files are uploaded as they open
   pagesPos: null,        // { y, panelId }: where the page view was, in strip points
+  hidden: new Set(),     // report ids deleted here, waiting out their Undo
+  sel: new Set(),        // report ids ticked on the Dashboard to compare
 };
 
 const TABS = [
@@ -192,8 +195,10 @@ async function readDoc(doc, data) {
     // Drop the page print margins so a plot spanning a page break renders as
     // one continuous image. Needs a canvas, so it runs here rather than inside
     // the (node-testable) indexer.
-    doc.index = raw;   // measureMargins reads doc.index.pages
-    const margins = await measureMargins(doc, { onProgress: (n, of) => { doc.progress = 0.5 + n / of / 2; refreshDoc(doc); } });
+    // measureMargins reads index.pages; doc.index itself stays null until
+    // the final, trimmed index exists, since "has an index" is what every view
+    // takes to mean "ready".
+    const margins = await measureMargins({ ...doc, index: raw }, { onProgress: (n, of) => { doc.progress = 0.5 + n / of / 2; refreshDoc(doc); } });
     doc.index = withContentSpace(raw, margins);
     cache.putIndex(doc.sha256, doc.index);
   }
@@ -437,37 +442,67 @@ export async function prefetch(id) {
   job.catch(() => {}).finally(() => prefetching.delete(id));
 }
 
-export async function renameReport(id) {
-  const rec = (S.library || []).find(r => r.id === id); if (!rec) return;
-  const name = prompt("Rename report", rec.name);
-  if (name == null || !name.trim() || name.trim() === rec.name) return;
+/* Rename, note, delete: small popovers anchored to the button pressed
+   (menu.js), not the browser's prompt() and confirm(). */
+const recById = (id) => (S.library || []).find(r => r.id === id);
+
+export async function renameReport(id, anchor) {
+  const rec = recById(id); if (!rec) return;
+  const name = await menu.ask(anchor, { title: "Rename report", value: rec.name, ok: "Rename", max: 120 });
+  if (!name || name === rec.name) return;
   try {
     await lib.rename(rec.id, name);
     for (const d of S.docs) if (d.reportId === rec.id) d.name = lib.cleanName(name);
     renderChrome(); render();
   } catch (e) { toast("Rename failed: " + (e?.message || e), "err"); }
 }
-export async function editNote(id) {
-  const rec = (S.library || []).find(r => r.id === id); if (!rec) return;
-  const note = prompt(`Note for "${rec.name}"\n\nWhat this run is about, one line.`, rec.note || "");
-  if (note == null) return;
-  try { await lib.setNote(rec.id, note.trim()); }
+export async function editNote(id, anchor) {
+  const rec = recById(id); if (!rec) return;
+  const note = await menu.ask(anchor, { title: `Note for ${rec.name}`, value: rec.note || "", placeholder: "What this run is about, one line", hint: "Shown on its card for everyone." });
+  if (note == null || note === (rec.note || "")) return;
+  try { await lib.setNote(rec.id, note); }
   catch (e) { toast("Could not save the note: " + (e?.message || e), "err"); }
 }
-export async function deleteReport(id) {
-  const rec = (S.library || []).find(r => r.id === id); if (!rec) return;
-  if (!confirm(`Delete "${rec.name}" from the shared library?\n\nEveryone loses it. Anything open stays open until closed.`)) return;
-  try {
-    await lib.remove(rec);
-    for (const d of S.docs) if (d.reportId === rec.id) d.reportId = null;
-    toast(`Deleted "${rec.name}"`);
-    renderChrome(); syncUrl();
-  } catch (e) { toast("Delete failed: " + (e?.message || e), "err"); }
+
+/* Delete hides the report at once and offers Undo for a few seconds; the
+   library only loses it when that runs out (or the page is closed). */
+const pendingDeletes = new Map();   // id -> timer
+export async function deleteReport(id, anchor) {
+  const rec = recById(id); if (!rec) return;
+  const ok = await menu.confirmPop(anchor, { title: `Delete ${rec.name}?`, text: "Everyone loses it from the library. Anything open stays open until closed." });
+  if (!ok) return;
+  S.hidden.add(id);
+  renderChrome();
+  const commit = async () => {
+    pendingDeletes.delete(id);
+    try {
+      await lib.remove(rec);
+      cache.dropBytes(rec.sha256); cache.dropIndex(rec.sha256);
+      for (const d of S.docs) if (d.reportId === rec.id) d.reportId = null;
+      syncUrl();
+    } catch (e) { toast("Delete failed: " + (e?.message || e), "err"); }
+    S.hidden.delete(id); renderChrome();
+  };
+  pendingDeletes.set(id, setTimeout(commit, 6000));
+  toast(`Deleted "${rec.name}"`, "info", { ms: 6000, action: { label: "Undo", run: () => {
+    clearTimeout(pendingDeletes.get(id)); pendingDeletes.delete(id);
+    S.hidden.delete(id); renderChrome();
+  } } });
 }
-export function reportMenu(id) {
-  const rec = (S.library || []).find(r => r.id === id); if (!rec) return;
-  const c = prompt(`"${rec.name}"\n\nType  rename,  note  or  delete`, "note");
-  if (c === "rename") renameReport(id); else if (c === "delete") deleteReport(id); else if (c === "note") editNote(id);
+addEventListener("pagehide", () => {
+  for (const [id, timer] of pendingDeletes) { clearTimeout(timer); const rec = recById(id); if (rec) lib.remove(rec).catch(() => {}); }
+});
+
+export function reportMenu(id, anchor) {
+  const rec = recById(id); if (!rec) return;
+  const open = S.docs.some(d => d.reportId === id);
+  return menu.menu(anchor, [
+    ...(S.page === "dashboard" ? [{ label: open ? "Show in Viewer" : "Open in Viewer", run: () => openInViewer(id) }, "-"] : []),
+    { label: "Rename…", run: () => renameReport(id, anchor) },
+    { label: rec.note ? "Edit note…" : "Add a note…", run: () => editNote(id, anchor) },
+    "-",
+    { label: "Delete…", danger: true, run: () => deleteReport(id, anchor) },
+  ], rec.name);
 }
 
 /* ---------- saved views ---------- */
@@ -481,11 +516,12 @@ export async function saveView() {
   if (ids.length < 1) { toast("Open a library report first; a view names what is open.", "err"); return; }
   const local = S.docs.length - ids.length;
   const dflt = S.docs.map(d => d.name).join(" vs ") + (S.tab !== "pages" ? ` · ${S.tab}` : "");
-  const name = prompt(`Name this view${local ? `\n\n(${local} open file${local > 1 ? "s are" : " is"} not in the library and will not be part of it)` : ""}`, dflt);
-  if (name == null || !name.trim()) return;
+  const name = await menu.ask($("#saveview"), { title: "Name this view", value: dflt, ok: "Save view", max: 80,
+    hint: local ? `${local} open file${local > 1 ? "s are" : " is"} not in the library and will not be part of it.` : "It goes on the Dashboard for everyone." });
+  if (!name) return;
   try {
-    await lib.saveView(name.trim(), currentQuery(), ids);
-    toast(`Saved "${name.trim()}". It is on the Dashboard for everyone.`, "ok");
+    await lib.saveView(name, currentQuery(), ids);
+    toast(`Saved "${name}". It is on the Dashboard for everyone.`, "ok");
   } catch (e) { toast("Could not save the view: " + (e?.message || e), "err"); }
 }
 export function openView(id) {
@@ -497,15 +533,15 @@ export function openView(id) {
   urlApplied = false;
   applyUrl(v.query);
 }
-export async function renameView(id) {
+export async function renameView(id, anchor) {
   const v = S.views.find(v => v.id === id); if (!v) return;
-  const name = prompt("Rename view", v.name);
-  if (name == null || !name.trim()) return;
-  try { await lib.renameView(id, name.trim()); } catch (e) { toast("Rename failed: " + (e?.message || e), "err"); }
+  const name = await menu.ask(anchor, { title: "Rename view", value: v.name, ok: "Rename", max: 80 });
+  if (!name || name === v.name) return;
+  try { await lib.renameView(id, name); } catch (e) { toast("Rename failed: " + (e?.message || e), "err"); }
 }
-export async function deleteView(id) {
+export async function deleteView(id, anchor) {
   const v = S.views.find(v => v.id === id); if (!v) return;
-  if (!confirm(`Delete the saved view "${v.name}"?`)) return;
+  if (!await menu.confirmPop(anchor, { title: `Delete the view ${v.name}?`, text: "The reports in it stay in the library." })) return;
   try { await lib.removeView(id); } catch (e) { toast("Delete failed: " + (e?.message || e), "err"); }
 }
 
@@ -700,11 +736,11 @@ export function renderPage() {
     renderChrome(); render();
   } else {
     if (viewerRoot && viewerRoot.parentNode === main) main.removeChild(viewerRoot);
-    main.innerHTML = renderDashboard();
+    paintDashboard(main);
   }
 }
 function refreshDashboard() {
-  if (S.page === "dashboard") $("#main").innerHTML = renderDashboard();
+  if (S.page === "dashboard") paintDashboard($("#main"));
 }
 
 /* Snapshots from the two listeners arrive in bursts (both at boot, one per
@@ -809,10 +845,12 @@ export function refreshDoc(d) {
   row._prog.classList.toggle("up", d.upload != null);
   if (row._nm.textContent !== d.name) { row._nm.textContent = d.name; row._nm.title = d.name; }
   row._sw.style.background = d.color;
+  const sk = document.querySelector(`.vcols.skel [data-skel="${d.id}"]`);
+  if (sk) sk.textContent = docMeta(d);
   // The note, asked on the row once the record exists; nothing waits for it.
   if (d.askNote && !row._note) {
     const f = el("form", "notefield");
-    f.innerHTML = `<input maxlength="500" placeholder="What changed in this run? One line for its card" aria-label="Note for ${esc(d.name)}"><button type="submit" class="sm">Save</button><button type="button" class="sm ghost" title="Skip">✕</button>`;
+    f.innerHTML = `<input maxlength="500" placeholder="What changed? One line for its card" aria-label="Note for ${esc(d.name)}"><button type="submit" class="sm">Save</button><button type="button" class="sm ghost" title="Skip">✕</button>`;
     const input = f.querySelector("input");
     const done = () => { d.askNote = null; f.remove(); row._note = null; };
     f.onsubmit = async (e) => {
@@ -871,7 +909,7 @@ function renderLibList() {
   else setNote(null, null);
   void note;
 
-  const recs = S.library || [];
+  const recs = (S.library || []).filter(r => !S.hidden.has(r.id));
   const live = new Set(recs.map(r => r.id));
   for (const [id, row] of libRows) if (!live.has(id)) { row.remove(); libRows.delete(id); }
   const q = S.libQuery.trim().toLowerCase();
@@ -944,7 +982,7 @@ function skeletonColumns() {
   const wrap = el("div", "vcols skel");
   for (const d of S.docs) {
     const col = el("div", "vcol");
-    col.innerHTML = `<div class="vcol-h"><span class="swatch" style="background:${d.color}"></span><span class="nm">${esc(d.name)}</span><span class="meta">${esc(docMeta(d))}</span></div>
+    col.innerHTML = `<div class="vcol-h"><span class="swatch" style="background:${d.color}"></span><span class="nm">${esc(d.name)}</span><span class="meta" data-skel="${d.id}">${esc(docMeta(d))}</span></div>
       <div class="scroller"><div class="skel-page"></div><div class="skel-page"></div></div>`;
     wrap.appendChild(col);
   }
@@ -974,10 +1012,18 @@ addEventListener("drop", e => {
 });
 
 addEventListener("keydown", e => {
-  if (S.page !== "viewer" || shell.lightboxOpen()) return;
+  if (shell.lightboxOpen() || menu.popOpen() || e.ctrlKey || e.metaKey || e.altKey) return;
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
-  if (e.key === "/" && !typing) { e.preventDefault(); focusSearch(); return; }
   if (typing) return;
+  if (e.key === "?") { e.preventDefault(); showShortcuts(); return; }
+  if (S.page !== "viewer") {
+    if (e.key === "/") { const f = $("#rfilter"); if (f) { e.preventDefault(); f.focus(); f.select(); } }
+    return;
+  }
+  if (e.key === "/") { e.preventDefault(); focusSearch(); return; }
+  if (e.key === "+" || e.key === "=") { zoomStep(1.25); return; }
+  if (e.key === "-" || e.key === "_") { zoomStep(1 / 1.25); return; }
+  if (e.key === "0") { $("#zoomfit").click(); return; }
   if (e.key === "s" || e.key === "S") { S.sync = !S.sync; setSync(S.sync); renderChrome(); }
   if (e.key === "r" || e.key === "R") { resyncAndLock(); renderChrome(); }
   if (e.key === "j" || e.key === "k") {
@@ -988,6 +1034,18 @@ addEventListener("keydown", e => {
   }
   if (e.key >= "1" && e.key <= "4") setViewTab(TABS[+e.key - 1].id);
 });
+
+/* ? — every key the app answers to, in one place. */
+function showShortcuts() {
+  const rows = [
+    ["Viewer", ""], ["/", "find a plot or text"], ["j  k", "next / previous plot"], ["1 – 4", "Pages, Panels, Overlay, Summary"],
+    ["+  −  0", "zoom in, out, fit"], ["⌘/Ctrl + scroll, pinch", "zoom around the pointer"], ["S", "sync scrolling on / off"], ["R", "re-sync to the column you last scrolled"],
+    ["Dashboard", ""], ["/", "filter the reports"], ["Enter", "open the first match"],
+    ["Anywhere", ""], ["?", "this list"], ["Esc", "close a menu, the picture viewer, this list"],
+  ];
+  const list = el("div", "keys", rows.map(([k, v]) => v ? `<kbd>${esc(k)}</kbd><span>${esc(v)}</span>` : `<div class="keys-h">${esc(k)}</div>`).join(""));
+  menu.menu(null, [{ label: "Close", run: () => {} }], "Keyboard", list);
+}
 
 /* The page view follows its columns' width itself (a ResizeObserver per
    column, rescaling in place). The other views re-render, once the window

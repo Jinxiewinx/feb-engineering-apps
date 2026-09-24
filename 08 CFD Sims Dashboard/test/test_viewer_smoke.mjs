@@ -50,7 +50,8 @@ try {
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
   page.on("pageerror", e => { errors.push(String(e)); if (process.env.DEBUG) console.log("PAGEERROR", e); });
   page.on("console", m => { if (m.type() === "error") { errors.push(m.text()); if (process.env.DEBUG) console.log("CONSOLE", m.text()); } });
-  page.on("dialog", d => d.type() === "prompt" ? d.accept(d.defaultValue() || "x") : d.accept());
+  let dialogs = 0;
+  page.on("dialog", d => { dialogs++; d.type() === "prompt" ? d.accept(d.defaultValue() || "x") : d.accept(); });
   await page.route("**/library.js", r => r.fulfill({ contentType: "text/javascript", body: LIB_STUB }));
   // library.js is stubbed, so the Firebase SDK that index.html preloads is never used; do not reach for it.
   await page.route("https://www.gstatic.com/**", r => r.fulfill({ contentType: "text/javascript", body: "" }));
@@ -112,6 +113,8 @@ try {
 
   // Save view hands the current query to the library.
   await page.click("#saveview");
+  await page.waitForSelector(".popask input");   // named in a popover, not a prompt()
+  await page.press(".popask input", "Enter");
   await page.waitForFunction(() => window.__stub.savedViews.length === 1, null, { timeout: 5000 });
   const sv = await page.evaluate(() => window.__stub.savedViews[0]);
   t("Save view stores the query and the report ids", sv.query.includes("open=RPT-AAAAAAAA%2CRPT-BBBBBBBB") && sv.query.includes("tab=overlay") && sv.query.includes("mode=diff") && sv.reports.length === 2, JSON.stringify(sv));
@@ -131,6 +134,11 @@ try {
   t("a stat-car-0 thumbnail was rendered and uploaded", th.panel === "stat-car-0" && th.size > 5000, JSON.stringify(th));
   t("the new doc carries the library id", await page.evaluate(() => window.CFD.S.docs[2].reportId) === "RPT-CCCCCCCC");
   t("library list shows all three records", await page.evaluate(() => document.querySelectorAll("#liblist .doc.lib").length) === 3);
+  t("the note is asked on the new report's row", !!(await page.$("#doclist .notefield input")));
+  await page.fill("#doclist .notefield input", "new front wing");
+  await page.press("#doclist .notefield input", "Enter");
+  await page.waitForFunction(() => (window.__stub.notes || []).some(n => n.id === "RPT-CCCCCCCC" && n.note === "new front wing"), null, { timeout: 5000 });
+  t("the note typed on the row is saved to the record", true);
 
   // Back to the Dashboard: the new card is there, three points per chart.
   await page.click(".sb-item:not(.active)");
@@ -145,6 +153,47 @@ try {
   await page.click(".sb-item:not(.active)");
   await page.waitForFunction(() => window.CFD.S.page === "viewer" && window.CFD.S.docs.length === 2, null, { timeout: 5000 });
   t("returning to the viewer keeps its open reports", true);
+
+  /* ---- a second open comes from this browser's cache ---- */
+  const fetches0 = await page.evaluate(() => window.__stub.fetches);
+  for (let i = 0; i < 2; i++) await page.click("#doclist .doc .x");
+  await page.waitForFunction(() => window.CFD.S.docs.length === 0, null, { timeout: 5000 });
+  await page.evaluate(() => window.CFD.openReports(window.CFD.S.library.filter(r => r.id !== "RPT-CCCCCCCC")));
+  await page.waitForFunction(() => window.CFD.S.docs.length === 2 && window.CFD.S.docs.every(d => d.index), null, { timeout: 30000 });
+  t("reopening reports already seen downloads nothing", await page.evaluate(() => window.__stub.fetches) === fetches0, `${fetches0} -> ${await page.evaluate(() => window.__stub.fetches)}`);
+  for (let i = 0; i < 2; i++) await page.click("#doclist .doc .x");
+
+  /* ---- the Dashboard is patched, not redrawn ---- */
+  await page.click(".sb-item:not(.active)");
+  await page.waitForFunction(() => window.CFD.S.page === "dashboard" && document.querySelectorAll(".rcard").length === 3, null, { timeout: 5000 });
+  await page.evaluate(async () => {
+    document.querySelector('.rcard[data-id="RPT-AAAAAAAA"]').__mark = 1;
+    (await import("/app/library.js")).patch("RPT-BBBBBBBB", { dp: 24 });
+  });
+  await page.waitForFunction(() => document.querySelector('.rcard[data-id="RPT-BBBBBBBB"] .pill')?.textContent === "DP 24", null, { timeout: 5000 });
+  t("a record change replaces its own card and leaves the others alone", await page.evaluate(() => document.querySelector('.rcard[data-id="RPT-AAAAAAAA"]').__mark === 1));
+
+  /* ---- the ⋯ menu, delete with Undo ---- */
+  await page.click('.rcard[data-id="RPT-AAAAAAAA"] .rcard-acts .icon-btn');
+  const items = await page.$$eval(".popmenu .pop-item", b => b.map(x => x.textContent.trim()));
+  t("⋯ opens a menu: open, rename, note, delete", ["Rename…", "Edit note…", "Delete…"].every(x => items.includes(x)) && items.some(x => x.includes("Viewer")), JSON.stringify(items));
+  await page.click(".popmenu .pop-item.danger");
+  await page.click(".popask button.danger");
+  await page.waitForFunction(() => !document.querySelector('.rcard[data-id="RPT-AAAAAAAA"]'), null, { timeout: 3000 });
+  t("delete hides the card at once", true);
+  await page.click(".toast .toast-act");
+  await page.waitForFunction(() => !!document.querySelector('.rcard[data-id="RPT-AAAAAAAA"]'), null, { timeout: 3000 });
+  await page.waitForTimeout(6500);
+  t("Undo brings it back and nothing is deleted", await page.evaluate(() => !(window.__stub.removed || []).length && !!document.querySelector('.rcard[data-id="RPT-AAAAAAAA"]')));
+
+  /* ---- tick two cards, compare them ---- */
+  await page.click('.rcard[data-id="RPT-AAAAAAAA"] .rsel input');
+  await page.click('.rcard[data-id="RPT-CCCCCCCC"] .rsel input');
+  t("the selection bar offers to compare both", (await page.textContent("#selbar #selgo")).includes("Compare 2"));
+  await page.click("#selgo");
+  await page.waitForFunction(() => window.CFD.S.page === "viewer" && window.CFD.S.docs.length === 2 && window.CFD.S.docs.every(d => d.index), null, { timeout: 60000 });
+  t("Compare opens both ticked reports in the Viewer", (await page.evaluate(() => window.CFD.S.docs.map(d => d.reportId).sort().join())) === "RPT-AAAAAAAA,RPT-CCCCCCCC");
+  t("no native prompt() or confirm() anywhere", dialogs === 0, `${dialogs} dialogs`);
 
   /* ---- mobile: one report at a time ---- */
   const mob = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

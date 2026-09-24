@@ -74,6 +74,8 @@ try {
 
   // Save a view, and see it on the Dashboard.
   await page.click("#saveview");
+  await page.waitForSelector(".popask input");   // named in a popover, not a prompt()
+  await page.press(".popask input", "Enter");
   await page.waitForFunction(() => window.CFD.S.views.length === 1, null, { timeout: 20000 });
   const v = await page.evaluate(() => window.CFD.S.views[0]);
   t("saved view round-trips with the query and report ids", v.query.includes("open=") && v.reports.length === 1 && v.name.length > 0, JSON.stringify(v));
