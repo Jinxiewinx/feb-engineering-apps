@@ -20,9 +20,13 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
-**cfd-v0.4.0 is tagged and pushed but NOT deployed (2026-09-24).** The cloud
-session that cut it has no Firebase login and its network blocks
-feb-cfd.web.app. From `08 CFD Sims Dashboard/`: `npm run deploy`, then
+**cfd-v0.4.0 is on main but NOT tagged on GitHub and NOT deployed
+(2026-09-24).** The cloud session that cut it could push branches but its git
+proxy refused the tag (HTTP 403), it has no Firebase login, and its network
+blocks feb-cfd.web.app. The release commit is `506845a` ("Release
+cfd-v0.4.0"). To finish, from the repo root:
+`git tag -a cfd-v0.4.0 506845a -m cfd-v0.4.0 && git push origin cfd-v0.4.0`,
+then from `08 CFD Sims Dashboard/`: `npm run deploy`, and
 `curl -s https://feb-cfd.web.app/core.js | grep APP_VERSION` must say 0.4.0.
 Hosting only; no rules changed. Delete this entry once live.
 
