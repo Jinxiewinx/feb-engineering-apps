@@ -332,6 +332,23 @@ const fb = {
      rule, and a nameplate that outlives its record is bad, but it is not worth
      failing the real delete over — whereas putting it in the main batch would
      mean one rules hiccup abandons every record delete in the chunk. */
+  /* Many small field updates in batches of 400, NOT stamped. Written for the
+     person-link backfill: linking eighty old records to their people is not
+     eighty edits, and stamping each would fill the activity feed and every
+     "saved ... by" line with one lead's name for a change nobody made to the
+     content. `fields` may use dotted paths ("defaults.byEmail") so a nested
+     key is set without rewriting the map around it. */
+  async patchMany(items) {
+    noWrites();
+    const list = (items || []).filter(x => x && x.coll && x.id && x.fields);
+    if (!list.length) return;
+    for (let i = 0; i < list.length; i += 400) {
+      const batch = writeBatch(db);
+      for (const it of list.slice(i, i + 400)) batch.update(doc(db, it.coll, it.id), it.fields);
+      await batch.commit();
+    }
+    [...new Set(list.map(x => x.coll))].forEach(c => trackerSync(c));
+  },
   async delMany(items) {
     noWrites();
     const list = (items || []).filter(x => x && x.coll && x.id);

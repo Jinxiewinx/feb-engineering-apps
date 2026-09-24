@@ -1741,6 +1741,16 @@ cmd-click opens it in a new tab like any record link. A name with a dashed
 outline and no face is somebody not on the app, or an old typed name nobody
 has linked yet.
 
+Leads get a third view on People, **Unlinked**, for the old typed names. The
+top card counts records whose name already matches exactly one person and
+links them all with one press. That only stores who they are; the names stay
+as typed. Below it, one row per name nobody could match (a first name two
+people share, a retro SN5 first name, someone who never joined) with the
+records it appears on, a "Who is this?" list that offers the likely people
+first, and a "Not on the app" button. A row applies to every record with that
+exact name in that kind of field. These writes are not stamped as edits, so
+linking eighty records doesn't fill the activity feed with your name.
+
 ## Files, photos, and watchers
 
 Uploads (avatars, project files, comment images) live in Firebase Storage, which

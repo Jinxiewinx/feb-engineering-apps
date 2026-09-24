@@ -63,11 +63,23 @@ function renderPeople() {
     return !view.fTrain || (u.trainings && u.trainings[view.fTrain]);
   });
   const mtx = view.pplView === "matrix";
+  // The review is a lead's tool; anybody else asking for it gets the list.
+  const unl = view.pplView === "unlinked" && isLead();
+  const U = isLead() ? unlinkedScan() : null;
+  const nU = U ? U.groups.length + (U.auto.length ? 1 : 0) : 0;
   const archived = allTrainings(true).filter(t => t.archived);
+  if (unl) return `
+  <div class="filters no-print">
+    <button class="ib" onclick="view.pplView='list';render()">List</button>
+    <button class="ib" onclick="view.pplView='matrix';render()">Matrix</button>
+    <button class="ib primary">Unlinked${nU ? ` (${nU})` : ""}</button>
+  </div>
+  ${renderUnlinked(U)}`;
   return `
   <div class="filters no-print">
     <button class="ib ${mtx ? "" : "primary"}" ${mtx ? `onclick="view.pplView='list';render()"` : ""}>List</button>
     <button class="ib ${mtx ? "primary" : ""}" ${mtx ? "" : `onclick="view.pplView='matrix';render()"`}>Matrix</button>
+    ${isLead() ? `<button class="ib" onclick="view.pplView='unlinked';render()" title="Typed names that aren't linked to anyone on the roster">Unlinked${nU ? ` (${nU})` : ""}</button>` : ""}
     <input id="searchbox" placeholder="search name / email…" value="${esc(view.q)}" oninput="searchInput(this)">
     <select onchange="view.fTrain=this.value;render()" title="Show only people who hold a training">
       <option value="">qualified for…</option>
@@ -226,6 +238,119 @@ function renderPerson(email) {
     ${buyoffs}
     ${other.length ? sec("Also on record", other.length, other.join(""), "") : ""}
   </div>`;
+}
+
+/* ---------- unlinked names (leads) ----------
+   Every record whose person field holds text and no email: the SN5 import's
+   first names, and everything typed before the pickers existed. Two piles.
+   "auto" is what personRef already resolves without argument (exact email,
+   one full name, a first name only one account has; never a bare first name
+   on a retro record), so the screen shows the right person today and the
+   button only stores that answer. "groups" is the rest, one row per distinct
+   text per kind of field, for a lead to say who it is or that it is somebody
+   not on the app. Nothing here ever changes the name text or overwrites an
+   email or "ext" already stored, so running it twice writes nothing. */
+function personFieldRecs(f) {
+  return (DB[f.coll] || []).filter(r => (f.coll !== "items" || r.cls === "BIN") && (f.coll !== "rnd" || r.cls === "RDS"));
+}
+function personFieldSrc(f, rec) { return f.path ? (rec[f.path] || null) : rec; }
+function unlinkedScan() {
+  const auto = [], groups = new Map();
+  for (const f of PERSON_FIELDS) for (const rec of personFieldRecs(f)) {
+    const src = personFieldSrc(f, rec);
+    if (!src || String(src[f.key + "Email"] || "").trim()) continue;
+    const ref = personRef(rec, f.key, src);
+    if (ref.kind === "inferred") { auto.push({ f, rec, email: ref.email }); continue; }
+    if (ref.kind !== "unlinked") continue;
+    const k = f.fam + "|" + ref.name.toLowerCase();
+    const g = groups.get(k) || { fam: f.fam, name: ref.name, items: [] };
+    g.items.push({ f, rec });
+    groups.set(k, g);
+  }
+  const list = [...groups.values()].sort((a, b) => b.items.length - a.items.length || a.name.localeCompare(b.name));
+  // Who it might be, to put first in the list: the ambiguous candidates, or
+  // on a retro record the one person the first-name rule would have picked.
+  list.forEach(g => { const m = rosterMatch(g.name); g.maybe = !m ? [] : m.email ? [m.email] : m.ambiguous; });
+  return { auto, groups: list };
+}
+function linkPatch(f, rec, email) {
+  return { coll: f.coll, id: rec.id, fields: { [(f.path ? f.path + "." : "") + f.key + "Email"]: email } };
+}
+function linkLocal(f, rec, email) {
+  if (f.path) rec[f.path] = { ...(rec[f.path] || {}), [f.key + "Email"]: email };
+  else rec[f.key + "Email"] = email;
+}
+async function linkWrite(pairs, email) {
+  const items = pairs.map(x => linkPatch(x.f, x.rec, x.email || email));
+  try {
+    await fb.patchMany(items);
+    pairs.forEach(x => linkLocal(x.f, x.rec, x.email || email));
+    return true;
+  } catch (e) { toast("Couldn't link those: " + e.message, "error"); return false; }
+}
+async function linkUnambiguous() {
+  if (!isLead() || guestBlocked()) return;
+  const { auto } = unlinkedScan();
+  if (!auto.length) return;
+  const ok = await confirmAsync(`Store the person on ${plural(auto.length, "record", "records")} whose name already matches exactly one person on the roster? The names stay as typed; this only records who they are.`,
+    { ok: "Link them", danger: false });
+  if (!ok) return;
+  if (await linkWrite(auto)) { toast(`Linked ${plural(auto.length, "record", "records")}.`); render(); }
+}
+async function linkGroupAt(i, notOnApp) {
+  if (!isLead() || guestBlocked()) return;
+  const g = (window.__unlinked || [])[i];
+  if (!g) return;
+  const sel = document.getElementById("ul-sel-" + i);
+  const email = notOnApp ? PERSON_EXT : String((sel && sel.value) || "").toLowerCase();
+  if (!email) { toast("Pick who this is first.", "info"); return; }
+  if (await linkWrite(g.items, email)) {
+    toast(notOnApp ? `"${g.name}" marked as not on the app.` : `"${g.name}" linked to ${userName(email)} on ${plural(g.items.length, "record", "records")}.`);
+    render();
+  }
+}
+function unlinkedRecChip(rec) {
+  const label = rec.item || rec.partName || rec.name || rec.id;
+  return `<button type="button" class="chip" data-open="${esc(rec.id)}"
+    onclick="event.stopPropagation();openRecord(tabForId(this.dataset.open) || 'people', this.dataset.open)">${esc(label)}</button>`;
+}
+function renderUnlinked(U) {
+  window.__unlinked = U.groups;
+  const users = usersSorted();
+  const where = (g) => {
+    const n = new Map();
+    g.items.forEach(x => n.set(x.f.label, (n.get(x.f.label) || 0) + 1));
+    return [...n.entries()].map(([l, c]) => `${l} ×${c}`).join(", ");
+  };
+  const autoCard = U.auto.length ? `<div class="card">
+    <h3 style="margin-top:0">${plural(U.auto.length, "record", "records")} can link themselves</h3>
+    <p class="muted tny">Each of these names matches exactly one person on the roster (an exact email, a full name, or a
+      first name nobody else has), and the app already shows them as that person. Linking stores the answer so it holds
+      even if somebody else with that first name joins later.</p>
+    <button class="primary" onclick="linkUnambiguous()">Link ${plural(U.auto.length, "record", "records")}</button></div>` : "";
+  if (!U.groups.length) return autoCard + `<div class="card"><p class="muted">${U.auto.length ? "Nothing else needs a person." : "Every name in the app is linked to somebody, or marked as not on the app."}</p></div>`;
+  return autoCard + `<div class="card">
+    <h3 style="margin-top:0">${plural(U.groups.length, "name", "names")} nobody could match</h3>
+    <p class="muted tny">Typed names that fit nobody on the roster, or fit more than one person. Pick who each one is, or
+      mark it as somebody not on the app. It applies to every record with that exact name in that kind of field.
+      Retro SN5 records never link on a first name alone, since last season's Nick may not be this season's.</p>
+    <div class="ulist">${U.groups.map((g, i) => {
+      const maybe = g.maybe.filter(e => userByEmail(e));
+      const rest = users.filter(u => !maybe.includes(u.email));
+      return `<div class="ulrow">
+        <div class="ulname"><span class="pchip ext"><span>${esc(g.name)}</span></span>
+          <div class="tny muted">${esc(where(g))}</div></div>
+        <div class="ulrecs">${g.items.slice(0, 4).map(x => unlinkedRecChip(x.rec)).join(" ")}${g.items.length > 4 ? ` <span class="tny muted">+${g.items.length - 4}</span>` : ""}</div>
+        <div class="ulact">
+          <select id="ul-sel-${i}" aria-label="Who is this">
+            <option value="">Who is this?</option>
+            ${maybe.length ? `<optgroup label="Could be">${maybe.map(e => `<option value="${esc(e)}">${esc(userName(e))}</option>`).join("")}</optgroup>` : ""}
+            <optgroup label="Everyone">${rest.map(u => `<option value="${esc(u.email)}">${esc(u.name || u.email)}</option>`).join("")}</optgroup>
+          </select>
+          <button class="sm primary" onclick="linkGroupAt(${i})">Link</button>
+          <button class="sm" onclick="linkGroupAt(${i}, true)">Not on the app</button>
+        </div></div>`;
+    }).join("")}</div></div>`;
 }
 
 /* The matrix: rows = people (the search and qualified-for filter still filter

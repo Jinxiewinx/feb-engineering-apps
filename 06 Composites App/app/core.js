@@ -988,7 +988,7 @@ function personChip(ref, opts) {
       data-open="person/${esc(encodeURIComponent(ref.email))}" title="${esc(tip)}"
       onclick="event.stopPropagation();openPerson(this.dataset.email)">${avatar(ref.email, size)}<span>${esc(ref.name)}</span>${role}</button>`;
   }
-  const tip = ref.kind === "ext" ? "Not on the app" : (isLead() ? "Not linked to anyone yet. People › Unlinked names" : "Not linked to anyone on the roster");
+  const tip = ref.kind === "ext" ? "Not on the app" : (isLead() ? "Not linked to anyone yet. People › Unlinked" : "Not linked to anyone on the roster");
   return `<span class="pchip ext" title="${esc(tip)}"><span>${esc(ref.name)}</span>${role}</span>`;
 }
 // A roster email → its chip, for fields that have always stored an email.

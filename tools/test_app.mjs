@@ -98,6 +98,7 @@ globalThis.fb = {
   state: "loading", user: null, roster: null, rosterCheckFailed: false,
   async save(coll, obj, field) { calls.push(["save", coll, obj.id, field]); },
   async patch(coll, obj, fields) { calls.push(["patch", coll, obj.id, fields.slice()]); },
+  async patchMany(items) { (items || []).forEach(it => calls.push(["patchMany", it.coll, it.id, it.fields])); },
   // The mutator is kept as a fifth element so a test can re-apply it against
   // fresh server data — which is the whole point of mutateField, and the only
   // way to prove an index-based stack edit still finds its own ply.
@@ -12298,6 +12299,78 @@ await t("an engineer filter survives an apostrophe", () => {
 });
 
 
+console.log("unlinked names:");
+{
+  const seed = () => {
+    signInAsLead();
+    DB.users = [
+      { email: "starbuck@berkeley.edu", name: "Simon Starbuck", role: "lead" },
+      { email: "nick@berkeley.edu", name: "Nick Jepsen", role: "member" },
+      { email: "nalvarez@berkeley.edu", name: "Nick Alvarez", role: "member" },
+      { email: "nico@berkeley.edu", name: "Nico Rossi", role: "member" },
+    ];
+    DB.budget = [
+      { id: "BUY-U1", item: "tape", cost: "5", purchaser: "Nico" },                                   // auto
+      { id: "BUY-U2", item: "bag", cost: "5", purchaser: "Nick" },                                    // ambiguous
+      { id: "BUY-U3", item: "glue", cost: "5", purchaser: "Nico", purchaserEmail: "ext" },            // deliberate, leave alone
+      { id: "BUY-U4", item: "wax", cost: "5", purchaser: "Nico", purchaserEmail: "nico@berkeley.edu" }, // already linked
+    ];
+    DB.parts = [
+      { id: "P-U1", partName: "NOSE", moldEngineer: "nick", manufacturingEngineer: "Nico Rossi" },
+      { id: "P-U2", partName: "OLD", retro: true, moldEngineer: "Nico", manufacturingEngineer: "N/A (Flat)" },
+    ];
+    DB.workOrders = []; DB.molds = [{ id: "MOLD-U1", name: "nose mold", sealedBy: "Visiting Tech" }];
+    DB.items = []; DB.rnd = [{ id: "RDS-U1", cls: "RDS", name: "Cure study", defaults: { by: "Nico" } }];
+  };
+  await t("the scan splits what can link itself from what needs a lead", () => {
+    seed();
+    const U = unlinkedScan();
+    const auto = U.auto.map(x => x.rec.id + ":" + x.f.key).sort();
+    assert(auto.join(",") === "BUY-U1:purchaser,P-U1:manufacturingEngineer,RDS-U1:by", "auto: " + auto.join(","));
+    const names = U.groups.map(g => g.fam + ":" + g.name.toLowerCase()).sort();
+    assert(names.join(",") === "eng:nick,eng:nico,purchaser:nick,sealedBy:visiting tech", "groups: " + names.join(","));
+    const retro = U.groups.find(g => g.fam === "eng" && g.name === "Nico");
+    assert(retro.maybe[0] === "nico@berkeley.edu", "a retro first name suggests who it might be, without linking it");
+    assert(U.groups.find(g => g.name === "Nick" && g.fam === "purchaser").maybe.length === 2, "two Nicks offered");
+  });
+  await t("linking the unambiguous stores emails only, and a second run writes nothing", async () => {
+    seed();
+    calls.length = 0;
+    const p = linkUnambiguous();
+    await Promise.resolve(); confirmProceed(); await p;
+    const w = calls.filter(c => c[0] === "patchMany");
+    assert(w.length === 3, "three records: " + JSON.stringify(w));
+    assert(w.some(c => c[2] === "RDS-U1" && c[3]["defaults.byEmail"] === "nico@berkeley.edu"), "the R&D default by dotted path");
+    assert(w.every(c => Object.keys(c[3]).every(k => /Email$/.test(k))), "never the name text");
+    assert(!w.some(c => c[2] === "BUY-U3" || c[2] === "BUY-U4"), "ext and already-linked are left alone");
+    assert(DB.budget[0].purchaser === "Nico" && DB.budget[0].purchaserEmail === "nico@berkeley.edu", "local copy updated, name untouched");
+    assert(DB.rnd[0].defaults.by === "Nico" && DB.rnd[0].defaults.byEmail === "nico@berkeley.edu");
+    assert(unlinkedScan().auto.length === 0, "nothing left to auto-link, so a second press writes nothing");
+  });
+  await t("a lead links a group, or marks it not on the app", async () => {
+    seed();
+    view = { ...view, tab: "people", mode: "list", id: null, pplView: "unlinked" }; render();
+    assert(main.innerHTML.includes("Visiting Tech") && main.innerHTML.includes("Link 3 records"), "the review renders");
+    assert(!/onclick="[^"]*(Visiting|Nick)/.test(main.innerHTML), "no typed name inside a handler");
+    const i = window.__unlinked.findIndex(g => g.fam === "eng" && g.name.toLowerCase() === "nick");
+    document.getElementById("ul-sel-" + i).value = "nick@berkeley.edu";
+    calls.length = 0;
+    await linkGroupAt(i);
+    assert(calls.filter(c => c[0] === "patchMany").length === 1 && DB.parts[0].moldEngineerEmail === "nick@berkeley.edu", JSON.stringify(calls));
+    const j = window.__unlinked.findIndex(g => g.name === "Visiting Tech");
+    calls.length = 0;
+    await linkGroupAt(j, true);
+    assert(DB.molds[0].sealedByEmail === "ext", "not on the app is stored, so it leaves the review for good");
+    assert(!unlinkedScan().groups.some(g => g.name === "Visiting Tech"));
+  });
+  await t("members never see the review", () => {
+    seed();
+    fb.roster = { name: "Nick", role: "member" };
+    view = { ...view, tab: "people", mode: "list", id: null, pplView: "unlinked" }; render();
+    assert(!main.innerHTML.includes("Unlinked") && !main.innerHTML.includes("nobody could match"), "no toggle, no review");
+    signInAsLead(); view.pplView = "list";
+  });
+}
 console.log("person page:");
 await t("a person page gathers their money, engineering, issues and buy-offs", () => {
   signInAsLead();

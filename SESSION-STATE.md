@@ -25,8 +25,10 @@ git log -p --follow -- SESSION-STATE.md
 become roster picks stored as `<key>` + `<key>Email` (email / `ext` / unset).
 Seven commits: (1) resolver helpers + `fb.patch` DONE; (2) owed/mine grouping by
 person DONE; (3) person page `#/person/<email>` + `personChip` DONE; (4) picker, built
-twice (inline combobox vs chip+popover) in worktrees and scored by ui-reviewer;
-(5) remaining fields; (6) lead-only Unlinked review + backfill; (7) exporters,
+twice (inline combobox vs chip+popover) in worktrees and scored by ui-reviewer,
+IN FLIGHT: two background agents on worktree branches, not merged;
+(5) remaining fields; (6) lead-only Unlinked review + backfill DONE (People ›
+Unlinked; "Link N records" has NOT been pressed on live data); (7) exporters,
 docs, release 6.2.0. Simon's calls: new person page, all fields, auto-link
 unambiguous + lead review, Other = name only. Mine: retro records skip
 first-name linking. Do NOT run the backfill on live data without asking.
