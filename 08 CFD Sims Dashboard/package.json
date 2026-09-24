@@ -15,7 +15,8 @@
     "test:smoke": "node test/test_viewer_smoke.mjs",
     "vendor": "node tools/vendor-pdfjs.mjs",
     "test:library": "firebase emulators:exec --only firestore,storage --project demo-feb-cfd \"node test/test_library_emu.mjs\"",
-    "test:ds": "node tools/check_ds.mjs"
+    "test:ds": "node tools/check_ds.mjs",
+    "perf": "node test/test_perf.mjs"
   },
   "devDependencies": {
     "pdfjs-dist": "6.1.200"

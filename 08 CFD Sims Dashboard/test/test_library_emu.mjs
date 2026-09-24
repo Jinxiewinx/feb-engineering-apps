@@ -49,6 +49,8 @@ try {
   await go();
   t("library listener connected to the Firestore emulator", true);
 
+  // Record how each new record looked the first time the listener delivered it.
+  await page.evaluate(() => { window.__first = {}; setInterval(() => { for (const r of window.CFD.S.library || []) if (!(r.id in window.__first)) window.__first[r.id] = !!r.thumb; }, 5); });
   await page.setInputFiles("#filepick", FIXTURE);
   // The note is asked on the report's row once the record exists; nothing waits for it.
   await page.waitForSelector(".notefield input", { timeout: 120000 });
@@ -62,6 +64,10 @@ try {
   t("record carries dp, results and meta from the report", rec.dp === 22 && rec.results.total.lift === -486.6432 && rec.meta.analyst === "beldon", JSON.stringify([rec.dp, rec.results && rec.results.total, rec.meta]));
   t("record carries the thumbnail with a download URL", rec.thumb && rec.thumb.path === `reports/${rec.id}/thumb.png` && /^http/.test(rec.thumb.url) && rec.thumb.panel === "stat-car-0", JSON.stringify(rec.thumb));
   t("the note typed at upload was saved", rec.note === "first run of the season", rec.note);
+  t("the record arrived with its thumbnail: one write, not a write and a patch", await page.evaluate(id => window.__first[id] === true, rec.id));
+  const meta = async (path) => (await fetch(`http://127.0.0.1:9198/v0/b/feb-cfd.firebasestorage.app/o/${encodeURIComponent(path)}`)).json();
+  const [mPdf, mThumb] = [await meta(rec.path), await meta(rec.thumb.path)];
+  t("report.pdf and thumb.png are stored immutable-cacheable", /immutable/.test(mPdf.cacheControl || "") && /immutable/.test(mThumb.cacheControl || ""), JSON.stringify([mPdf.cacheControl, mThumb.cacheControl]));
   const thumbOk = await page.evaluate(async url => { const r = await fetch(url); return r.ok && (r.headers.get("content-type") || "").includes("png"); }, rec.thumb.url);
   t("thumb.png is fetchable from the emulator bucket", thumbOk);
 

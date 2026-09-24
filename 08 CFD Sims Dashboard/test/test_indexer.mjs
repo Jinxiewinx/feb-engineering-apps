@@ -33,6 +33,9 @@ function assert(c, m) { if (!c) throw new Error(m || "assertion failed"); }
 const data = new Uint8Array(readFileSync(SAMPLE));
 const doc = await pdfjs.getDocument({ data, useSystemFonts: false }).promise;
 const ix = await indexDocument(doc);
+/* The same document read one page at a time, the way the indexer worked
+   before it kept six pages' text requests in flight. Must be identical. */
+const ixSerial = await indexDocument(doc, { concurrency: 1 });
 
 console.log("document shape:");
 t("39 pages, all A3", () => {
@@ -49,6 +52,9 @@ t("strip coordinates stack the pages", () => {
   assert(Math.abs(ix.stripHeight - 39 * 1191.12) < 1, "strip height is the sum of the pages");
 });
 
+t("reading pages in parallel gives exactly the serial index", () => {
+  assert(JSON.stringify(ix) === JSON.stringify(ixSerial), "parallel and serial indexes differ");
+});
 console.log("sections:");
 t("the three comparable sections are found, in order", () => {
   assert(ix.sections.map(s => s.name).join(",") === "Plots,Contours,Vectors",

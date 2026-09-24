@@ -723,7 +723,9 @@ function updateZoomLabel() {
   const lbl = document.getElementById("zoomlabel");
   if (!lbl) return;
   const z = S.tab === "pages" && S.docs.length ? currentZoom() : S.zoom;
-  lbl.textContent = S.fit ? "Fit" : Math.round(z * 100) + "%";
+  // A percentage even when fitted: "Fit" next to the Fit button read twice.
+  lbl.textContent = Math.round((S.fit ? 1 : z) * 100) + "%";
+  lbl.title = S.fit ? "Fitted to the column width" : "";
 }
 
 export function renderPage() {
@@ -1039,7 +1041,7 @@ addEventListener("keydown", e => {
 function showShortcuts() {
   const rows = [
     ["Viewer", ""], ["/", "find a plot or text"], ["j  k", "next / previous plot"], ["1 – 4", "Pages, Panels, Overlay, Summary"],
-    ["+  −  0", "zoom in, out, fit"], ["⌘/Ctrl + scroll, pinch", "zoom around the pointer"], ["S", "sync scrolling on / off"], ["R", "re-sync to the column you last scrolled"],
+    ["+  −  0", "zoom in, out, fit"], ["⌘/Ctrl + scroll", "zoom around the pointer"], ["pinch", "the same, on a trackpad"], ["S", "sync scrolling on / off"], ["R", "re-sync to the column you last scrolled"],
     ["Dashboard", ""], ["/", "filter the reports"], ["Enter", "open the first match"],
     ["Anywhere", ""], ["?", "this list"], ["Esc", "close a menu, the picture viewer, this list"],
   ];
