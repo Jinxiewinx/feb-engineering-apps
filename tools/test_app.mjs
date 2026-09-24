@@ -400,22 +400,30 @@ await t("a lead override raises a hold at the choke point, and can never weaken 
 });
 await t("the hold editor refuses an under-datasheet number and an unsigned name", async () => {
   const rid = RESINS[0].id, sheet = RESINS[0].sheetH;
+  const savedUsers = DB.users;
+  DB.users = [{ email: "nick@berkeley.edu", name: "Nick Jepsen", role: "lead" }];
   openEditResinHold(rid);
   assert(document.getElementById("modal").innerHTML.includes("Change the"), "lead gets the editor");
+  assert(document.getElementById("modal").innerHTML.includes('<select id="rh-who"'), "the signer is picked from the roster, not typed");
   calls.length = 0;
   document.getElementById("rh-hours").value = String(Math.max(0, sheet - 1));
-  document.getElementById("rh-by").value = "Nick Jepsen, 2026-08-08";
+  document.getElementById("rh-who").value = "nick@berkeley.edu";
+  document.getElementById("rh-on").value = "2026-08-08";
   await submitResinHold(rid);
   assert(!calls.some(c => c[0] === "setConfig"), "under-datasheet write refused: " + JSON.stringify(calls));
   document.getElementById("rh-hours").value = String(sheet + 24);
-  document.getElementById("rh-by").value = "TBD";
+  document.getElementById("rh-who").value = "";
   await submitResinHold(rid);
-  assert(!calls.some(c => c[0] === "setConfig"), "placeholder sign-off refused");
-  document.getElementById("rh-by").value = "Nick Jepsen, 2026-08-08";
+  assert(!calls.some(c => c[0] === "setConfig"), "nobody chosen, nothing signed");
+  document.getElementById("rh-who").value = "nick@berkeley.edu";
   await submitResinHold(rid);
   assert(calls.some(c => c[0] === "setConfig" && c[1] === "resins"), "a valid override writes config/resins");
-  assert(window.RESIN_OVERRIDES[rid].febHoldH === sheet + 24, "and lands locally at once");
-  window.RESIN_OVERRIDES = null;
+  const o = window.RESIN_OVERRIDES[rid];
+  assert(o.febHoldH === sheet + 24, "and lands locally at once");
+  assert(o.febBy === "Nick Jepsen, 2026-08-08" && o.febByEmail === "nick@berkeley.edu" && o.febOn === "2026-08-08",
+    "febBy keeps its validated 'Name, date' shape, and the email rides beside it: " + JSON.stringify(o));
+  assert(resinById(rid).overridden && resinById(rid).febByEmail === "nick@berkeley.edu", "and resinById still accepts it");
+  window.RESIN_OVERRIDES = null; DB.users = savedUsers;
   closeModal();
 });
 await t("the why-modal offers the editor to a lead and not to a member", () => {
@@ -12389,6 +12397,40 @@ await t("exports carry the person's current name, never an email, and keep senti
   assert(!TRACKER_FIELDS.some(f => /Email$/.test(f)), "the public feed never lists an email field");
   const r = trackerRow({ ...p, id: "P-SN6-777" });
   assert(r && r.moldEngineer === "Nico Rossi-Marsh" && !JSON.stringify(r).includes("@"), "tracker row: live name, no address: " + JSON.stringify(r));
+});
+console.log("remaining person fields:");
+await t("mold sealed-by and bin confirmed-by are roster picks with chips in read mode", () => {
+  signInAsLead();
+  DB.users = [{ email: "nico@berkeley.edu", name: "Nico Rossi", role: "member" }];
+  const spec = shopSpec("molds");
+  const o = { id: "MOLD-PF1", cls: "MOLD", name: "nose", sealedBy: "Nico" };
+  (DB.molds = DB.molds || []).push(o);
+  view = { ...view, tab: "molds", mode: "detail", id: o.id, edit: false };
+  const f = ["sealedBy", "Sealed by", "person"];
+  const ro = shopFld(spec, "molds", o, f, { cls: "MOLD" });
+  assert(ro.includes("pchip") && ro.includes("Nico Rossi"), "read mode is the person chip: " + ro);
+  view.edit = true;
+  const ed = shopFld(spec, "molds", o, f, { cls: "MOLD" });
+  assert(ed.includes("pfield") && !ed.includes('onchange="updShop(\'molds\',\'sealedBy\''), "edit mode is the picker, not a text box");
+  calls.length = 0;
+  updShopPerson("molds", "sealedBy", "", "Visiting Tech");
+  const w = calls.filter(c => c[0] === "patch");
+  assert(w.length === 1 && o.sealedBy === "Visiting Tech" && o.sealedByEmail === "ext", "Other writes ext in one patch: " + JSON.stringify(w));
+  view.edit = false;
+});
+await t("an R&D study's laid-up-by is a pick, and clearing it hands the batch back to its project", () => {
+  signInAsLead();
+  DB.users = [{ email: "nico@berkeley.edu", name: "Nico Rossi", role: "member" }];
+  DB.rnd = [
+    { id: "RDS-PF-P", cls: "RDS", name: "project", defaults: { by: "Nico Rossi", byEmail: "nico@berkeley.edu" } },
+    { id: "RDS-PF-B", cls: "RDS", name: "batch", parent: "RDS-PF-P", defaults: {} },
+  ];
+  const html = rdMatBar(DB.rnd[1]);
+  assert(html.includes("inherited: Nico Rossi"), "the inherited person is said under the picker");
+  rdDefPerson("RDS-PF-B", "by", "nico@berkeley.edu", "");
+  assert(DB.rnd[1].defaults.by === "Nico Rossi" && DB.rnd[1].defaults.byEmail === "nico@berkeley.edu");
+  rdDefPerson("RDS-PF-B", "by", "", "");
+  assert(!("by" in DB.rnd[1].defaults) && !("byEmail" in DB.rnd[1].defaults), "clear deletes both keys: " + JSON.stringify(DB.rnd[1].defaults));
 });
 console.log("person page:");
 await t("a person page gathers their money, engineering, issues and buy-offs", () => {

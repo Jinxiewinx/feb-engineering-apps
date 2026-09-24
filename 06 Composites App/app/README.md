@@ -1707,8 +1707,9 @@ so you can't promote yourself, and increment-only id counters.
 ## Who did it: person fields
 
 Every field that names a person (purchaser, mold and manufacturing engineer,
-sealed by, bin confirmed by, R&D laid up by, resin signed off by) is being
-moved from typed text to a pick from the roster. Until September 2026 these
+sealed by, bin confirmed by, R&D laid up by, resin signed off by) is a pick
+from the roster, not typed text. The resin sign-off, a lead-only form, uses a
+plain list of people and a date. Until September 2026 these
 were all free text, so "Nico" and "Nico R." were two different people and the
 reimbursement board owed money to both.
 

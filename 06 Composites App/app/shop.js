@@ -87,7 +87,7 @@ const SHOP = {
       ["layers", "Board layers", "text"],
       ["sealingType", "Sealing system", "select", ["XCR", "S120", "Resin", "Other"]],
       ["sealedDate", "Sealed on", "date"],
-      ["sealedBy", "Sealed by", "text"],
+      ["sealedBy", "Sealed by", "person"],
       // The number nobody currently tracks, and the reason molds get run past
       // their release life. It is on the printed label for the same reason.
       ["uses", "Parts pulled", "num"],
@@ -125,7 +125,7 @@ const SHOP = {
          works in both their app and ours. */
       ["ehsBarcode", "EH&S barcode", "ehs"],
       ["walkedAt", "Contents last confirmed", "date"],
-      ["walkedBy", "Confirmed by", "text"],
+      ["walkedBy", "Confirmed by", "person"],
       ["stack", "Layup stack", "text"],           // PNL: the PP-09 answer
       ["session", "Laid in session", "text"],
       ["laidOn", "Laid up on", "date"],
@@ -404,6 +404,13 @@ async function shopBulkDelete(coll, ids) {
   });
 }
 
+function updShopPerson(tab, key, email, name) {
+  const spec = shopSpec(tab);
+  const o = shopById(spec.coll, view.id);
+  if (!o || guestBlocked()) return;
+  savePatch(spec.coll, o, personPatch(key, email, name));
+  renderSoonKeepFocus();
+}
 function updShop(tab, key, val) {
   const spec = shopSpec(tab);
   const o = shopById(spec.coll, view.id);
@@ -815,12 +822,19 @@ function shopFld(spec, tab, o, f, c) {
 
   if (!view.edit) {
     const shown = key === "stage" ? `<span class="pill ${shopStageClass(spec, o)}">${esc(o.stage || "—")}</span>`
+      : type === "person" ? personChip(personRef(o, key), { empty: "—" })
       : String(type).startsWith("rec:") && v ? shopRefChip(String(v))
       : type === "money" ? (esc(shopMoneyText(o, key)) || "—")
       : esc(v) || "—";
     return `<div class="f"><label>${esc(label)}</label><div class="ro">${shown}</div></div>`;
   }
 
+  /* "person" — a pick from the roster, stored as <key> + <key>Email (see
+     personRef in core.js). The picker keeps its own state across repaints. */
+  if (type === "person") {
+    return personField({ id: `shop-${spec.coll}-${o.id}-${key}`, label, value: personRef(o, key),
+      save: "updShopPerson", args: [tab, key] });
+  }
   if (type === "select") {
     const list = key === "stage" ? (c.stage || []) : (opts || []);
     /* A stored value the list no longer offers stays selectable instead of

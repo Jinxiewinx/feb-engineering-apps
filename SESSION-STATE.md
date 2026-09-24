@@ -20,18 +20,14 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
-**Person fields, in progress (2026-09-24).** Plan:
-`~/.claude/plans/for-the-composites-app-tender-wave.md`. Typed "who" fields
-become roster picks stored as `<key>` + `<key>Email` (email / `ext` / unset).
-Seven commits: (1) resolver helpers + `fb.patch` DONE; (2) owed/mine grouping by
-person DONE; (3) person page `#/person/<email>` + `personChip` DONE; (4) picker, built
-twice (inline combobox vs chip+popover) in worktrees and scored by ui-reviewer,
-IN FLIGHT: two background agents on worktree branches, not merged;
-(5) remaining fields; (6) lead-only Unlinked review + backfill DONE (People ›
-Unlinked; "Link N records" has NOT been pressed on live data); (7) exporters DONE,
-docs, release 6.2.0. Simon's calls: new person page, all fields, auto-link
-unambiguous + lead review, Other = name only. Mine: retro records skip
-first-name linking. Do NOT run the backfill on live data without asking.
+**Person fields (2026-09-24), all seven steps landed, release pending.**
+Plan: `~/.claude/plans/for-the-composites-app-tender-wave.md`. Typed "who"
+fields are roster picks stored as `<key>` + `<key>Email` (email / `ext` /
+unset). Picker is variant B (chip + popover), chosen by ui-reviewer over A
+(inline combobox, lost on typo+Enter writing junk); A's branch
+`worktree-agent-a9045248d93b53197` is kept, unmerged. People › Unlinked has
+NOT been run on live data: that is a mass write and waits on Simon. Resin
+built-in RESINS rows still carry febBy text only (no email), on purpose.
 
 **`test_safearea` is red on purpose.** At landscape-max two step-action buttons
 on `wo-detail` sit past the safe area (x=873; the second reaches 945). The test

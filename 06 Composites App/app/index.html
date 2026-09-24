@@ -2647,6 +2647,9 @@
     min-width: 0; flex: 0 1 auto; max-width: 46ch; }
   .rdmat-body p { margin: 2px 8px 6px; }
   .rdmat-body .grid { padding: 0 8px 6px; }
+  /* The person picker brings the app-wide .f label; in this grid the other
+     fields label with a plain span, so match them rather than shout. */
+  .rdmat-body div.f > label { font-size: 14px; text-transform: none; letter-spacing: normal; color: var(--ink); }
   /* An inherited value is muted and says so, because a batch showing its
      project's resin otherwise looks identical to one that set its own — and
      then an override is invisible until it bites somebody. */

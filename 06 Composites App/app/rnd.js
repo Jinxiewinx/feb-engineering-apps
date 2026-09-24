@@ -1326,6 +1326,17 @@ function rdMatBar(s) {
     const shown = inherited ? pd[key] : (own ?? "");
     const hint = inherited ? ` <span class="tny muted rd-inh" title="From ${esc(parent.name || parent.id)}">inherited</span>` : "";
     let ctl;
+    /* The person a study was laid up by is a roster pick like every other
+       "who" field. An inherited name shows under the field, since a picker
+       has no placeholder to carry it. */
+    if (kind === "person") {
+      const own = personRef(null, key, d);
+      const up = personRef(null, key, pd);
+      const inh = own.kind === "none" && up.kind !== "none";
+      if (!E) return `<div class="f"><label>${esc(label)}${hint}</label><div class="ro">${personChip(inh ? up : own, { empty: "—" })}</div></div>`;
+      return personField({ id: `rd-${s.id}-${key}`, label, value: own, save: "rdDefPerson", args: [s.id, key], compact: true,
+        after: inh ? `<span class="tny muted rd-inh">inherited: ${esc(up.name)}</span>` : "" });
+    }
     if (!E) ctl = ro(shown);
     else if (kind === "FAB" || kind === "RSN") {
       const opts = typeof shopRefOptions === "function" ? shopRefOptions(kind, own || "") : [];
@@ -1346,6 +1357,8 @@ function rdMatBar(s) {
   /* The one-line summary on the closed fold, because "what went into this" is
      read far more often than it is set. */
   const sum = RD_INHERITS.map(k => {
+    // A person reads as their name, never the stored text or an address.
+    if (k === "by") { const own = personRef(null, "by", d); return esc((own.kind !== "none" ? own : personRef(null, "by", pd)).name || ""); }
     const v = d[k] ?? pd[k];
     return v ? esc(String(v)) : "";
   }).filter(Boolean).slice(0, 4).join(" · ");
@@ -1365,7 +1378,7 @@ function rdMatBar(s) {
         ${fld("hardenerLot", "Hardener lot", "RSN")}
         ${fld("lotSource", "Lot record", "src")}
         ${fld("laidOn", "Laid up on", "date")}
-        ${fld("by", "Laid up by", "text")}
+        ${fld("by", "Laid up by", "person")}
       </div>
     </div>
   </div>`;
@@ -1382,6 +1395,19 @@ function rdDefUpd(id, key, val) {
   else s.defaults[key] = val;
   save("rnd", s, "defaults");
   render();
+}
+
+/* Name and email together, and clearing both deletes both, so the batch
+   falls back to its project's person exactly as the other defaults do. */
+function rdDefPerson(id, key, email, name) {
+  const s = rdStudy(id);
+  if (!s || guestBlocked("set the materials")) return;
+  const p = personPatch(key, email, name);
+  s.defaults = { ...(s.defaults || {}) };
+  if (!p[key]) { delete s.defaults[key]; delete s.defaults[key + "Email"]; }
+  else Object.assign(s.defaults, p);
+  save("rnd", s, "defaults");
+  renderSoonKeepFocus();
 }
 
 /* ---------- columns ---------- */

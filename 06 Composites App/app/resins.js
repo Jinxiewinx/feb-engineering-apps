@@ -128,7 +128,7 @@ function resinById(id) {
   const o = r && window.RESIN_OVERRIDES && window.RESIN_OVERRIDES[id];
   if (!r || !o || typeof o.febHoldH !== "number" || o.febHoldH < r.sheetH
       || !o.febBy || /pending|tbd|todo/i.test(o.febBy)) return r;
-  return { ...r, febHoldH: o.febHoldH, febBy: o.febBy, overridden: true };
+  return { ...r, febHoldH: o.febHoldH, febBy: o.febBy, febByEmail: o.febByEmail || "", febOn: o.febOn || "", overridden: true };
 }
 
 /* The editor. Lead-only, reached from the "Why N hours?" modal, because that
@@ -147,7 +147,11 @@ function openEditResinHold(id) {
     <div class="field"><label>In the code table</label><div class="ro">${base.febHoldH} h — ${esc(base.febBy)}</div></div>
     ${cur.overridden ? `<div class="field"><label>Current override</label><div class="ro">${cur.febHoldH} h — ${esc(cur.febBy)}</div></div>` : ""}
     <div class="field"><label>FEB hold (hours)</label><input id="rh-hours" type="number" min="${base.sheetH}" step="0.5" value="${cur.febHoldH}"></div>
-    <div class="field"><label>Signed off by</label><input id="rh-by" value="${esc(signerName())}, ${today()}"></div>
+    <div class="field"><label>Signed off by</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="rh-who" style="flex:1 1 180px">${usersSorted().filter(u => u.role === "lead").concat(usersSorted().filter(u => u.role !== "lead"))
+          .map(u => `<option value="${esc(u.email)}" ${u.email === myEmail().toLowerCase() ? "selected" : ""}>${esc(u.name || u.email)}</option>`).join("")}</select>
+        <input id="rh-on" type="date" value="${today()}" style="flex:0 1 160px"></div></div>
     <p class="muted tny">Never below the datasheet's ${base.sheetH} h. The change reaches everyone's app immediately and locks demould steps accordingly.</p>
     <div class="foot">
       ${cur.overridden ? `<button class="danger" onclick="revertResinHold('${esc(id)}')">Revert to the code table</button>` : ""}
@@ -160,10 +164,17 @@ async function submitResinHold(id) {
   const base = RESINS.find(r => r.id === id);
   if (!base) return;
   const hours = parseFloat(document.getElementById("rh-hours").value);
-  const by = document.getElementById("rh-by").value.trim();
+  /* Signed by a roster person, chosen rather than typed. febBy stays the
+     "Name, date" string resinById and resinTableProblems validate, so every
+     reader of it is unchanged; febByEmail and febOn say the same thing in a
+     form the app can link. */
+  const who = String((document.getElementById("rh-who") || {}).value || "").toLowerCase();
+  const on = String((document.getElementById("rh-on") || {}).value || "") || today();
+  const u = userByEmail(who);
+  const by = u ? `${u.name || u.email}, ${on}` : "";
   if (!(hours >= base.sheetH)) { toast(`Not below the datasheet: ${base.label} needs at least ${base.sheetH} h.`, "error"); return; }
   if (!by || /pending|tbd|todo/i.test(by)) { toast("Sign it — a hold nobody signed off never enforces.", "error"); return; }
-  const next = { ...(window.RESIN_OVERRIDES || {}), [id]: { febHoldH: hours, febBy: by } };
+  const next = { ...(window.RESIN_OVERRIDES || {}), [id]: { febHoldH: hours, febBy: by, febByEmail: who, febOn: on } };
   try {
     await fb.setConfig("resins", next);
     window.RESIN_OVERRIDES = next;
