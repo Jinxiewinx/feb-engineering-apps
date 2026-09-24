@@ -6,8 +6,8 @@
 
    What it measures, at devicePixelRatio 2 like a retina laptop:
      open1     ?open=A: navigation to the first page painted
-     open2     ?open=A,B: navigation to a page painted in both columns
-     reopen    reload the same link: the second open, where caches can help
+     open2     ?open=A,B, nothing cached: navigation to a page painted in both
+     reopen    ?open=A again: the second open, where this browser's cache helps
      pinch     30 ctrl-wheel events at 60 Hz over two synced columns:
                frames delivered, long-task time, worst long task, and how long
                until every visible page is sharp at the final zoom
@@ -84,6 +84,7 @@ try {
     page.on("dialog", d => d.accept());
     await page.addInitScript(INIT);
     await page.route("**/library.js", r => r.fulfill({ contentType: "text/javascript", body: LIB_STUB }));
+    await page.route("https://www.gstatic.com/**", r => r.fulfill({ contentType: "text/javascript", body: "" }));
     await page.route("**/fixtures/DP_22.pdf*", async r => { await new Promise(res => setTimeout(res, LATENCY)); await r.continue(); });
     const base = `http://127.0.0.1:${port}/app/`;
     const r = {};
@@ -93,6 +94,8 @@ try {
     await page.waitForFunction(() => window.__paint[0] != null, null, { timeout: 60000 });
     r.open1 = await page.evaluate(() => window.__paint[0]);
 
+    // Cold for both: forget what the first open cached.
+    await page.evaluate(async () => { try { await caches.delete("cfd-pdf-v1"); } catch {} await new Promise(r => { const q = indexedDB.deleteDatabase("cfd"); q.onsuccess = q.onerror = q.onblocked = r; }); });
     await page.goto(`${base}?p=viewer&open=RPT-AAAAAAAA,RPT-BBBBBBBB`);
     await goThroughSplash(page);
     await page.waitForFunction(() => window.__paint[0] != null && window.__paint[1] != null, null, { timeout: 90000 });

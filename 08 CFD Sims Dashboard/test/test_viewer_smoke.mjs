@@ -52,6 +52,8 @@ try {
   page.on("console", m => { if (m.type() === "error") { errors.push(m.text()); if (process.env.DEBUG) console.log("CONSOLE", m.text()); } });
   page.on("dialog", d => d.type() === "prompt" ? d.accept(d.defaultValue() || "x") : d.accept());
   await page.route("**/library.js", r => r.fulfill({ contentType: "text/javascript", body: LIB_STUB }));
+  // library.js is stubbed, so the Firebase SDK that index.html preloads is never used; do not reach for it.
+  await page.route("https://www.gstatic.com/**", r => r.fulfill({ contentType: "text/javascript", body: "" }));
 
   /* ---- the Dashboard ---- */
   await page.goto(`http://127.0.0.1:${port}/app/`);
@@ -149,6 +151,7 @@ try {
   mob.on("pageerror", e => errors.push("mobile: " + e));
   mob.on("dialog", d => d.accept(d.defaultValue() || "x"));
   await mob.route("**/library.js", r => r.fulfill({ contentType: "text/javascript", body: LIB_STUB }));
+  await mob.route("https://www.gstatic.com/**", r => r.fulfill({ contentType: "text/javascript", body: "" }));
   await mob.goto(`http://127.0.0.1:${port}/app/`);
   await mob.waitForFunction(() => window.CFD && window.CFD.S.library && document.querySelector(".rcard") && document.querySelector("#splash.ready"), null, { timeout: 15000 });
   await mob.tap("#splash");
@@ -160,7 +163,7 @@ try {
   await mob.click(".rcard .primary");
   await mob.waitForFunction(() => window.CFD.S.page === "viewer" && window.CFD.S.docs.length === 1 && window.CFD.S.docs[0].index, null, { timeout: 60000 });
   t("mobile: a card opens one report in the viewer", await mob.evaluate(() => window.CFD.S.docs[0].reportId === "RPT-BBBBBBBB"));
-  t("mobile: no side panel, no Save view, only Pages and Panels", await mob.evaluate(() => getComputedStyle(document.querySelector(".vside")).display === "none" && getComputedStyle(document.querySelector("#saveview")).display === "none" && document.querySelectorAll("#tabs button").length === 2));
+  t("mobile: no side panel, no Save view, only Pages and Panels", await mob.evaluate(() => getComputedStyle(document.querySelector(".vside")).display === "none" && getComputedStyle(document.querySelector("#saveview")).display === "none" && [...document.querySelectorAll("#tabs button")].filter(b => getComputedStyle(b).display !== "none").length === 2));
   t("mobile: the toolbar select lists the library with the open one selected", await mob.evaluate(() => { const s = document.querySelector("#mobilepick"); return getComputedStyle(s).display !== "none" && s.value === "RPT-BBBBBBBB" && s.querySelectorAll("option").length === 4; }));
   await mob.selectOption("#mobilepick", "RPT-AAAAAAAA");
   await mob.waitForFunction(() => window.CFD.S.docs.length === 1 && window.CFD.S.docs[0].reportId === "RPT-AAAAAAAA" && window.CFD.S.docs[0].index, null, { timeout: 60000 });

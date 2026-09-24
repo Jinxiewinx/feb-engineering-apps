@@ -12,7 +12,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
 import {
-  getFirestore, connectFirestoreEmulator, collection, doc, onSnapshot, setDoc, updateDoc,
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager, connectFirestoreEmulator, collection, doc, onSnapshot, setDoc, updateDoc,
   deleteDoc, getDocs, query, where, orderBy, serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 import {
@@ -23,7 +23,10 @@ const cfg = window.FIREBASE_CONFIG;
 if (!cfg || !cfg.projectId) throw new Error("FIREBASE_CONFIG missing: edit firebase-config.js");
 
 const app = initializeApp(cfg);
-const db = getFirestore(app);
+/* The library and the views are kept in IndexedDB between visits, so the
+   Dashboard paints from the last copy at once and the listener brings it up
+   to date. Where IndexedDB is unavailable the SDK falls back to memory. */
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
 const storage = getStorage(app);
 
 // Local dev: talk to the emulators on this app's offset ports (firebase.json).
@@ -71,32 +74,37 @@ export function newId() {
   return "RPT-" + [...a].map(v => B32[v % B32.length]).join("");
 }
 
-/* Upload a PDF the app has already read into memory (so the same bytes feed
-   the hash, the upload and the viewer without a second read). `meta` carries
-   the page and panel counts from the indexer. Returns the record; if the hash
-   is already in the library, returns THAT record with `existing: true` and
-   uploads nothing. Storage first, then Firestore: a record never points at a
-   file that is not there. */
-export async function upload(bytes, name, meta = {}, onProgress) {
-  /* meta: { pages, panels, dp, results, meta } from the indexer and extract.js. */
+/* Uploads are content-addressed in effect (a record never changes its file),
+   so browsers and the CDN may keep them for good. */
+const IMMUTABLE = "public, max-age=31536000, immutable";
+
+/* Upload a PDF's bytes under a record id made with newId(). Starts at once,
+   while the app is still reading the file; the record is written afterwards
+   by createRecord(), once, with everything in it. Storage first, then
+   Firestore: a record never points at a file that is not there. Resolves to
+   the storage path. */
+export async function uploadPdf(id, bytes, onProgress) {
   if (bytes.byteLength >= MAX_BYTES) throw new Error(`Over the ${Math.round(MAX_BYTES / 1048576)} MB library limit`);
-  const sha256 = await sha256Hex(bytes);
-  const dup = await findByHash(sha256);
-  if (dup) return { ...dup, existing: true };
-  const id = newId();
   const path = `${COLL}/${id}/report.pdf`;
-  const task = uploadBytesResumable(sRef(storage, path), bytes, { contentType: "application/pdf" });
+  const task = uploadBytesResumable(sRef(storage, path), bytes, { contentType: "application/pdf", cacheControl: IMMUTABLE });
   await new Promise((res, rej) => task.on("state_changed",
     s => onProgress?.(s.bytesTransferred / s.totalBytes), rej, res));
+  return path;
+}
+
+/* The record for an uploaded PDF. `r` carries id, name, path, size, sha256,
+   pages, panels, dp, results, meta and, if there is one, thumb. */
+export async function createRecord(r) {
   const rec = {
-    id, name: cleanName(name), path, size: bytes.byteLength, sha256,
-    pages: meta.pages | 0, panels: meta.panels | 0, createdAt: serverTimestamp(),
-    dp: Number.isInteger(meta.dp) ? meta.dp : null,
-    results: meta.results && typeof meta.results === "object" ? meta.results : {},
-    meta: meta.meta && typeof meta.meta === "object" ? meta.meta : {},
+    id: r.id, name: cleanName(r.name), path: r.path, size: r.size, sha256: r.sha256,
+    pages: r.pages | 0, panels: r.panels | 0, createdAt: serverTimestamp(),
+    dp: Number.isInteger(r.dp) ? r.dp : null,
+    results: r.results && typeof r.results === "object" ? r.results : {},
+    meta: r.meta && typeof r.meta === "object" ? r.meta : {},
   };
-  await setDoc(doc(db, COLL, id), rec);
-  return { ...rec, createdAt: new Date().toISOString() };
+  if (r.thumb) rec.thumb = r.thumb;
+  await setDoc(doc(db, COLL, r.id), rec);
+  return { ...rec, note: "", createdAt: new Date().toISOString() };
 }
 export function cleanName(name) {
   const n = String(name || "report").replace(/\.pdf$/i, "").trim();
@@ -106,11 +114,25 @@ export function cleanName(name) {
 /* Fetch the PDF bytes for a record. getDownloadURL carries a token that
    bypasses rules, and the bucket's CORS (../cors.json) is what lets fetch()
    read it from the hosting origin. */
-export async function fetchBytes(rec) {
+export async function fetchBytes(rec, onProgress) {
   const url = await getDownloadURL(sRef(storage, rec.path));
   const res = await fetch(url);
   if (!res.ok) throw new Error("HTTP " + res.status + " fetching " + rec.name);
-  return new Uint8Array(await res.arrayBuffer());
+  const total = +res.headers.get("content-length") || rec.size || 0;
+  if (!onProgress || !res.body || !total) return new Uint8Array(await res.arrayBuffer());
+  // Streamed, so the Open list can say how far along the download is.
+  const parts = [];
+  let n = 0;
+  for (const reader = res.body.getReader(); ;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    parts.push(value); n += value.byteLength;
+    onProgress(Math.min(1, n / total));
+  }
+  const out = new Uint8Array(n);
+  let at = 0;
+  for (const p of parts) { out.set(p, at); at += p.byteLength; }
+  return out;
 }
 
 /* Whatever a record is missing: dp, results, meta, thumb. The rules let
@@ -127,7 +149,7 @@ export async function patch(id, fields) {
 export async function uploadThumb(id, blob, panel) {
   const path = `${COLL}/${id}/thumb.png`;
   const r = sRef(storage, path);
-  const task = uploadBytesResumable(r, blob, { contentType: "image/png" });
+  const task = uploadBytesResumable(r, blob, { contentType: "image/png", cacheControl: IMMUTABLE });
   await new Promise((res, rej) => task.on("state_changed", null, rej, res));
   const url = await getDownloadURL(r);
   return { path, url, panel: String(panel || "").slice(0, 120) };

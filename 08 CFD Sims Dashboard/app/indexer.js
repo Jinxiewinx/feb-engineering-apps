@@ -60,12 +60,29 @@ export async function indexDocument(doc, opts = {}) {
   const text = [];
   let absY = 0;
 
+  /* Ask the worker for every page's text a few at a time rather than one
+     round trip after another: the worker parses while the main thread waits,
+     so keeping several requests in flight is most of the win. The pages are
+     then walked in order, exactly as before. */
+  const fetched = new Array(doc.numPages);
+  let nextPage = 1, got = 0;
+  const pool = Array.from({ length: Math.min(opts.concurrency || 6, doc.numPages) }, async () => {
+    while (nextPage <= doc.numPages) {
+      const p = nextPage++;
+      const page = await doc.getPage(p);
+      const vp = page.getViewport({ scale: 1 });
+      const content = await page.getTextContent();
+      page.cleanup();
+      fetched[p - 1] = { vp, content };
+      onProgress(++got, doc.numPages);
+    }
+  });
+  await Promise.all(pool);
+
   for (let p = 1; p <= doc.numPages; p++) {
-    const page = await doc.getPage(p);
-    const vp = page.getViewport({ scale: 1 });
+    const { vp, content } = fetched[p - 1];
     pages.push({ index: p, width: vp.width, height: vp.height, absY });
 
-    const content = await page.getTextContent();
     const words = [];
     for (const item of content.items) {
       if (!item.str || !item.str.trim()) continue;
@@ -78,8 +95,6 @@ export async function indexDocument(doc, opts = {}) {
     text.push({ page: p, text: words.join(" ") });
 
     absY += vp.height;
-    onProgress(p, doc.numPages);
-    page.cleanup();
   }
 
   headings.sort((a, b) => a.absY - b.absY);

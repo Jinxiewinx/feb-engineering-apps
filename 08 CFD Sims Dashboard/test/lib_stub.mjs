@@ -23,22 +23,28 @@ export async function findByHash() { return null; }
 export async function sha256Hex() { return "c".repeat(64); }
 export function newId() { return "RPT-CCCCCCCC"; }
 export function cleanName(n) { return String(n || "report").replace(/\\.pdf$/i, "").trim().slice(0, 120); }
-export async function upload(bytes, name, meta, onProgress) {
+export async function uploadPdf(id, bytes, onProgress) {
   onProgress?.(0.5); onProgress?.(1);
-  const rec = { id: newId(), name: cleanName(name), path: "reports/RPT-CCCCCCCC/report.pdf", size: bytes.byteLength, sha256: "c".repeat(64), pages: meta.pages, panels: meta.panels, dp: meta.dp, results: meta.results, meta: meta.meta, note: "", createdAt: new Date().toISOString() };
-  window.__stub.uploads.push({ name, bytes: bytes.byteLength, meta });
+  window.__stub.pdfs = (window.__stub.pdfs || 0) + 1;
+  return "reports/" + id + "/report.pdf";
+}
+export async function createRecord(r) {
+  const rec = { ...r, name: cleanName(r.name), note: "", createdAt: new Date().toISOString() };
+  window.__stub.uploads.push({ name: r.name, bytes: r.size, meta: { pages: r.pages, panels: r.panels, dp: r.dp, results: r.results, meta: r.meta }, thumb: r.thumb || null });
   recs.unshift(rec);
   listener?.(recs.slice());   // what the real onSnapshot does after a write
   return rec;
 }
 export async function uploadThumb(id, blob, panel) { window.__stub.thumbs.push({ id, size: blob.size, panel }); return { path: "reports/" + id + "/thumb.png", url: "${THUMB}", panel }; }
 export async function patch(id, fields) { window.__stub.patches.push({ id, fields }); const r = recs.find(r => r.id === id); if (r) Object.assign(r, fields); listener?.(recs.slice()); }
-export async function fetchBytes(rec) {
-  const res = await fetch("/test/fixtures/DP_22.pdf");
+export async function fetchBytes(rec, onProgress) {
+  window.__stub.fetches = (window.__stub.fetches || 0) + 1;
+  const res = await fetch("/test/fixtures/DP_22.pdf?" + rec.id);
+  onProgress?.(1);
   return new Uint8Array(await res.arrayBuffer());
 }
 export async function rename() {}
-export async function setNote() {}
+export async function setNote(id, note) { window.__stub.notes = [...(window.__stub.notes || []), { id, note }]; const r = recs.find(r => r.id === id); if (r) r.note = note; listener?.(recs.slice()); }
 export async function remove() {}
 export async function saveView(name, query, reports) { window.__stub.savedViews.push({ name, query, reports }); views.unshift({ id: "VW-B", name, query, reports, createdAt: new Date().toISOString() }); vlistener?.(views.slice()); }
 export async function renameView() {}

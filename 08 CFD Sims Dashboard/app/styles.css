@@ -436,3 +436,7 @@ svg.trend .lastlbl { fill: var(--ink); font-weight: 600; font-variant-numeric: t
   #mobilepick { display: inline-block; flex: 1 1 100%; min-width: 0; }
   .viewer .empty-card { padding: 18px; }
 }
+
+/* The hidden attribute wins over any display rule. The viewer's lists and
+   tabs are kept and toggled rather than rebuilt (core.js), so this matters. */
+[hidden] { display: none !important; }

@@ -50,6 +50,10 @@ try {
   t("library listener connected to the Firestore emulator", true);
 
   await page.setInputFiles("#filepick", FIXTURE);
+  // The note is asked on the report's row once the record exists; nothing waits for it.
+  await page.waitForSelector(".notefield input", { timeout: 120000 });
+  await page.fill(".notefield input", "first run of the season");
+  await page.press(".notefield input", "Enter");
   await page.waitForFunction(() => window.CFD.S.docs.length === 1 && window.CFD.S.docs[0].reportId
     && window.CFD.S.library.some(r => r.id === window.CFD.S.docs[0].reportId && r.thumb && r.note), null, { timeout: 120000 });
   const rec = await page.evaluate(() => window.CFD.S.library.find(r => r.id === window.CFD.S.docs[0].reportId));

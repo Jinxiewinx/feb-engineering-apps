@@ -18,9 +18,9 @@
    Everything the views need hangs off S. Views are pure-ish: they read S and
    rebuild their own subtree when render() is called. */
 
-import * as pdfjs from "./vendor/pdf.mjs";
 import { indexDocument, withContentSpace, matchPanels } from "./indexer.js";
-import { clearCache, measureMargins, renderPanel } from "./render.js";
+import { clearCache, measureMargins, renderPanel, dpr } from "./render.js";
+import * as cache from "./cache.js";
 import { renderPages, resyncColumns, resyncAndLock, setSync, zoomBy, zoomFit, setZoomListener, currentZoom } from "./pages.js";
 import { renderPanelView } from "./panels.js";
 import { renderOverlay } from "./compare.js";
@@ -113,7 +113,6 @@ MQ.addEventListener("change", () => {
   renderPage(); syncUrl();
 });
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL("./vendor/pdf.worker.mjs", import.meta.url).href;
 
 const COLORS = ["#FDB515", "#5b8cff", "#34c88f", "#c07de8", "#ef8f5a", "#5ad2d2"];
 
@@ -137,7 +136,7 @@ export const S = {
   libQuery: "",
   libError: null,
   addToLibrary: true,    // the checkbox: local files are uploaded as they open
-  uploads: {},           // docId -> 0..1 while an upload is in flight; -1 while downloading
+  pagesPos: null,        // { y, panelId }: where the page view was, in strip points
 };
 
 const TABS = [
@@ -147,61 +146,106 @@ const TABS = [
   { id: "summary", label: "Summary" },
 ];
 
-/* ---------- loading ---------- */
+/* ---------- loading ----------
+
+   A report goes on the Open list the moment it is asked for, with a phase
+   (downloading N%, reading), and every report asked for at once loads at
+   once: a saved view with two reports takes as long as the slower one, not
+   the two added up. Bytes and index come from this browser's cache (cache.js)
+   when it has them, keyed by sha256, so a second open is a local read. */
 
 let seq = 0;
-/* sources: [{ name, data: Uint8Array } | { name, file: File }], optionally with
-   reportId when the bytes came from the library. Returns the docs it made
-   (null where a source failed), so a caller can go on to upload them. */
-export async function addDocs(sources) {
-  const made = [];
-  for (const src of sources) {
-    const id = "d" + (++seq);
-    const doc = {
-      id, name: src.name.replace(/\.pdf$/i, ""), color: COLORS[(S.docs.length) % COLORS.length],
-      pdf: null, index: null, loading: true, reportId: src.reportId || null,
-    };
-    S.docs.push(doc);
-    renderChrome();
-    try {
-      const data = src.data || new Uint8Array(await src.file.arrayBuffer());
-      // Keep the loading task: in pdf.js 6 the document proxy has no destroy(),
-      // so tearing a report down goes through the task, not the proxy.
-      // pdf.js transfers the buffer to its worker (detaching it), so the caller
-      // keeps its own copy if it still needs the bytes: see ingest().
-      doc.task = pdfjs.getDocument({ data });
-      doc.pdf = await doc.task.promise;
-      doc.index = await indexDocument(doc.pdf);
-      // Drop the page print margins so a plot spanning a page break renders as
-      // one continuous image. Needs a canvas, so it runs here rather than inside
-      // the (node-testable) indexer.
-      const margins = await measureMargins(doc);
-      doc.index = withContentSpace(doc.index, margins);
-      doc.loading = false;
-      made.push(doc);
-      renderChrome(); render();
-    } catch (e) {
-      console.error(e);
-      S.docs = S.docs.filter(d => d.id !== id);
-      made.push(null);
-      toast("Could not read " + src.name + ": " + (e && e.message), "err");
-      renderChrome(); render();
-    }
+function newDoc(name, reportId, sha256) {
+  const doc = {
+    id: "d" + (++seq), name: String(name).replace(/\.pdf$/i, ""), color: COLORS[S.docs.length % COLORS.length],
+    pdf: null, index: null, loading: true, reportId: reportId || null, sha256: sha256 || null,
+    phase: "read", progress: null, upload: null,
+  };
+  S.docs.push(doc);
+  return doc;
+}
+
+/* pdf.js is half a megabyte of module and a 1.3 MB worker. The Dashboard
+   never needs it, so it is imported the first time a report is opened, or
+   earlier when the browser is idle or the pointer rests on a card. */
+let pdfjsP = null;
+export function loadPdfjs() {
+  return pdfjsP ||= import("./vendor/pdf.mjs").then(m => {
+    m.GlobalWorkerOptions.workerSrc = new URL("./vendor/pdf.worker.mjs", import.meta.url).href;
+    return m;
+  });
+}
+
+/* Parse and index one document from its bytes. `data` is handed to pdf.js,
+   which detaches it; callers keep their own copy if they still need one. */
+async function readDoc(doc, data) {
+  doc.phase = "read"; doc.progress = null; refreshDoc(doc);
+  const pdfjs = await loadPdfjs();
+  // Keep the loading task: in pdf.js 6 the document proxy has no destroy(),
+  // so tearing a report down goes through the task, not the proxy.
+  doc.task = pdfjs.getDocument({ data });
+  doc.pdf = await doc.task.promise;
+  const cached = await cache.getIndex(doc.sha256);
+  if (cached && cached.numPages === doc.pdf.numPages) doc.index = cached;
+  else {
+    const raw = await indexDocument(doc.pdf, { onProgress: (n, of) => { doc.progress = n / of / 2; refreshDoc(doc); } });
+    // Drop the page print margins so a plot spanning a page break renders as
+    // one continuous image. Needs a canvas, so it runs here rather than inside
+    // the (node-testable) indexer.
+    doc.index = raw;   // measureMargins reads doc.index.pages
+    const margins = await measureMargins(doc, { onProgress: (n, of) => { doc.progress = 0.5 + n / of / 2; refreshDoc(doc); } });
+    doc.index = withContentSpace(raw, margins);
+    cache.putIndex(doc.sha256, doc.index);
   }
-  // Two documents is the case the app is for, so start comparing immediately.
-  if (S.docs.length >= 2 && !S.panelId) {
-    const first = S.docs[0].index?.panels?.[0];
+  doc.loading = false; doc.phase = null; doc.progress = null;
+}
+
+function dropDoc(doc) {
+  try { doc.task?.destroy?.(); } catch { /* already gone */ }
+  S.docs = S.docs.filter(d => d !== doc);
+}
+
+/* Once the first two reports are in, start comparing: select the first plot. */
+function afterOpen() {
+  if (S.docs.filter(d => d.index).length >= 2 && !S.panelId) {
+    const first = S.docs.find(d => d.index)?.index?.panels?.[0];
     if (first) S.panelId = first.id;
   }
+  scheduleRender(); renderChrome(); syncUrl();
+}
+
+/* sources: [{ name, data: Uint8Array, reportId?, sha256? }]. Opens them all
+   concurrently, in list order. Returns the docs it made (null where a source
+   failed). Kept for the console and the tests; the app goes through
+   openReports() and ingest(). */
+export async function addDocs(sources) {
+  const docs = sources.map(src => newDoc(src.name, src.reportId, src.sha256));
+  renderChrome();
+  const made = await Promise.all(docs.map(async (doc, i) => {
+    try {
+      const src = sources[i];
+      await readDoc(doc, src.data || new Uint8Array(await src.file.arrayBuffer()));
+      scheduleRender();
+      return doc;
+    } catch (e) {
+      console.error(e);
+      dropDoc(doc);
+      toast("Could not read " + sources[i].name + ": " + (e && e.message), "err");
+      return null;
+    }
+  }));
+  afterOpen();
   return made;
 }
 
 export function removeDoc(id) {
   const d = S.docs.find(x => x.id === id);
+  if (!d) return;
   // Tear down through the loading task, guarded: a failed teardown must never
   // stop the report from being removed from the list, which is the bug this
   // replaces (destroy() threw and the filter below never ran).
-  try { d?.task?.destroy?.(); } catch (e) { console.warn("pdf teardown failed", e); }
+  d.cancelled = true;
+  try { d.task?.destroy?.(); } catch (e) { console.warn("pdf teardown failed", e); }
   clearCache(id);
   S.docs = S.docs.filter(x => x.id !== id);
   if (S.overlay.a >= S.docs.length) S.overlay.a = 0;
@@ -220,22 +264,32 @@ function extractAll(doc, name) {
 }
 
 /* The card thumbnail: THUMB_PANEL if the report has it, else the first
-   contour, else the first plot. Rendered from the open document at 640 px
-   wide, so it costs one canvas and no second read. */
+   contour, else the first plot. Rendered from the open document at the size a
+   card shows it (a retina card is about 800 device px), so it costs one small
+   canvas and no second read. PNG, because storage.rules says so. */
+const THUMB_PX = 800;
 async function thumbnail(doc) {
   const panels = doc.index.panels;
   const panel = panels.find(p => p.name === THUMB_PANEL)
     || panels.find(p => p.section === "Contours")
     || panels[0];
   if (!panel) return null;
-  const canvas = await renderPanel(doc, panel, 640);
+  const canvas = await renderPanel(doc, panel, THUMB_PX / dpr());
   const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
   return blob ? { blob, panel: panel.name, w: canvas.width, h: canvas.height } : null;
 }
 
+/* JSON with sorted keys. Firestore hands maps back sorted, extract.js builds
+   them in print order; comparing plain JSON.stringify of the two said
+   "changed" every time, and rewrote the record on every open. */
+function stable(v) {
+  if (v && typeof v === "object" && !Array.isArray(v)) return "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + stable(v[k])).join(",") + "}";
+  return JSON.stringify(v ?? null);
+}
+
 /* Fill in whatever a record is missing, from the open document. Runs after
-   an upload (the record is fresh) and after opening an older record (the
-   record predates the dashboard). Anyone may write these four fields. */
+   opening an older record (the record predates the dashboard). Anyone may
+   write these four fields. */
 async function backfill(doc, rec) {
   const patch = {};
   const hasNums = rec.results && rec.results.total, hasMeta = rec.meta && Object.keys(rec.meta).length;
@@ -243,7 +297,7 @@ async function backfill(doc, rec) {
     const ex = extractAll(doc, rec.name);
     // Only what actually changed, so a report with no numbers is not
     // rewritten with the same empty map on every open.
-    for (const k of ["dp", "results", "meta"]) if (JSON.stringify(ex[k]) !== JSON.stringify(rec[k] ?? null)) patch[k] = ex[k];
+    for (const k of ["dp", "results", "meta"]) if (stable(ex[k]) !== stable(rec[k])) patch[k] = ex[k];
   }
   if (!rec.thumb) {
     try {
@@ -256,63 +310,131 @@ async function backfill(doc, rec) {
   }
 }
 
-/* Local files, from the picker or a drop. Each is opened first (so the
-   indexer has run), then uploaded to the library unless the checkbox says
-   not to, with its numbers, its thumbnail, and a note if the uploader types
-   one. The upload gets the original bytes; the viewer got a copy, because
-   pdf.js detaches what it is handed. */
+/* Local files, from the picker or a drop. Each file is hashed first, which
+   says whether the library already has it (from the listener's copy of the
+   library, no round trip). A new one starts uploading at once, WHILE it is
+   being read; its thumbnail is rendered once the read is done, and the
+   record is written once, complete, with the thumbnail in it. The note is
+   asked for on the report's row, and nothing waits on it. Two files at a
+   time. */
 async function ingest(files) {
   if (isMobile()) { files = files.slice(0, 1); for (const d of [...S.docs]) removeDoc(d.id); }
-  for (const f of files) {
+  const queue = [...files];
+  const one = async () => { for (let f; (f = queue.shift());) await ingestOne(f); };
+  await Promise.all([one(), one()]);
+}
+async function ingestOne(f) {
+  let doc = null;
+  try {
     const bytes = new Uint8Array(await f.arrayBuffer());
-    const [doc] = await addDocs([{ name: f.name, data: bytes.slice() }]);
-    if (!doc || !S.addToLibrary) continue;
-    if (bytes.byteLength >= lib.MAX_BYTES) { toast(`${doc.name}: open, but over the library's ${fmtMB(lib.MAX_BYTES)} limit, so not uploaded`, "err"); continue; }
-    S.uploads[doc.id] = 0; renderChrome();
-    try {
-      const ex = extractAll(doc, f.name);
-      const rec = await lib.upload(bytes, f.name, { pages: doc.index.numPages, panels: doc.index.panels.length, ...ex },
-        p => { S.uploads[doc.id] = p; renderChrome(); });
-      doc.reportId = rec.id;
-      if (rec.existing) { toast(`Already in the library as "${rec.name}"`); await backfill(doc, rec); }
-      else {
-        toast(`Added "${rec.name}" to the library`, "ok");
-        await backfill(doc, { ...rec, thumb: null });
-        const note = prompt(`What changed in "${rec.name}"?\n\nOne line, shown on its card. Leave blank to skip.`, "");
-        if (note && note.trim()) await lib.setNote(rec.id, note.trim());
-      }
-    } catch (e) {
-      console.error(e);
-      toast("Upload failed: " + (e?.message || e), "err");
-    } finally {
-      delete S.uploads[doc.id]; renderChrome(); syncUrl();
+    const sha = await lib.sha256Hex(bytes);
+    const known = S.library ? S.library.find(r => r.sha256 === sha) || null
+      : await lib.findByHash(sha).catch(() => null);   // the listener has not answered yet
+    doc = newDoc(f.name, known?.id, sha);
+    renderChrome();
+    cache.putBytes(sha, bytes);
+    const canUpload = !known && S.addToLibrary && bytes.byteLength < lib.MAX_BYTES;
+    const id = canUpload ? lib.newId() : null;
+    const up = canUpload ? lib.uploadPdf(id, bytes, p => { doc.upload = p; refreshDoc(doc); }) : null;
+    if (up) { doc.upload = 0; up.catch(() => {}); }
+    await readDoc(doc, bytes.slice());
+    scheduleRender(); afterOpen();
+
+    if (known) {
+      toast(`Already in the library as "${known.name}"`);
+      backfill(doc, known);
+      return;
     }
+    if (!S.addToLibrary) return;
+    if (!canUpload) { toast(`${doc.name}: open, but over the library's ${fmtMB(lib.MAX_BYTES)} limit, so not uploaded`, "err"); return; }
+    const ex = extractAll(doc, f.name);
+    const [path, thumbField] = await Promise.all([up, thumbnail(doc).then(t => t && lib.uploadThumb(id, t.blob, t.panel)).catch(e => { console.warn("thumbnail", e); return null; })]);
+    const rec = await lib.createRecord({
+      id, name: f.name, path, size: bytes.byteLength, sha256: sha,
+      pages: doc.index.numPages, panels: doc.index.panels.length, ...ex, thumb: thumbField,
+    });
+    doc.reportId = rec.id;
+    doc.askNote = rec.id;
+    toast(`Added "${rec.name}" to the library`, "ok");
+  } catch (e) {
+    console.error(e);
+    if (doc && doc.loading) { dropDoc(doc); scheduleRender(); }
+    toast((doc && !doc.loading ? "Upload failed: " : "Could not read " + f.name + ": ") + (e?.message || e), "err");
+  } finally {
+    if (doc) { doc.upload = null; }
+    renderChrome(); syncUrl();
   }
 }
 
-/* A library record: fetch its bytes and open it, once; then backfill what
-   the record lacks. */
-export async function openReport(rec, opts = {}) {
-  if (S.docs.some(d => d.reportId === rec.id)) { if (!opts.quiet) toast(`"${rec.name}" is already open`); return; }
-  if (isMobile()) for (const d of [...S.docs]) removeDoc(d.id);   // one at a time on a phone
-  const id = "d" + (seq + 1);
-  S.uploads[id] = -1; // -1: downloading, indeterminate
-  try {
-    const data = await lib.fetchBytes(rec);
-    const [doc] = await addDocs([{ name: rec.name, data, reportId: rec.id }]);
-    if (doc) backfill(doc, rec);
-  } catch (e) {
-    console.error(e);
-    toast("Could not open " + rec.name + ": " + (e?.message || e), "err");
-  } finally {
-    delete S.uploads[id]; renderChrome(); syncUrl();
-  }
+/* The bytes of a library record: from this browser's cache, else downloaded
+   (with progress) and kept for next time. */
+async function recordBytes(rec, onProgress) {
+  const hit = await cache.getBytes(rec.sha256);
+  if (hit) return hit;
+  const inflight = prefetching.get(rec.id);
+  const bytes = inflight ? await inflight : await lib.fetchBytes(rec, onProgress);
+  if (!inflight) cache.putBytes(rec.sha256, bytes);
+  return bytes;
 }
-/* From a dashboard card: open it and go to the viewer. */
-export async function openInViewer(id) {
-  const rec = (S.library || []).find(r => r.id === id); if (!rec) return;
+
+/* Library records: each goes on the Open list straight away and they all
+   load concurrently. Then whatever a record lacks is backfilled. */
+export async function openReports(recs, opts = {}) {
+  recs = recs.filter(rec => {
+    if (!S.docs.some(d => d.reportId === rec.id)) return true;
+    if (!opts.quiet) toast(`"${rec.name}" is already open`);
+    return false;
+  });
+  if (!recs.length) return;
+  if (isMobile()) { recs = recs.slice(0, 1); for (const d of [...S.docs]) removeDoc(d.id); }   // one at a time on a phone
+  loadPdfjs();
+  const docs = recs.map(rec => {
+    const d = newDoc(rec.name, rec.id, rec.sha256);
+    d.phase = "download"; d.progress = 0;
+    return d;
+  });
+  renderChrome(); scheduleRender();
+  await Promise.all(docs.map(async (doc, i) => {
+    const rec = recs[i];
+    try {
+      const data = await recordBytes(rec, p => { doc.progress = p; refreshDoc(doc); });
+      if (doc.cancelled) return;
+      await readDoc(doc, data);
+      if (doc.cancelled) return;
+      scheduleRender(); renderChrome();
+      backfill(doc, rec);
+    } catch (e) {
+      if (doc.cancelled) return;
+      console.error(e);
+      dropDoc(doc);
+      toast("Could not open " + rec.name + ": " + (e?.message || e), "err");
+    }
+  }));
+  afterOpen();
+}
+export function openReport(rec, opts = {}) { return openReports([rec], opts); }
+
+/* From a dashboard card: open it (or several) and go to the viewer. */
+export async function openInViewer(...ids) {
+  const recs = ids.map(id => (S.library || []).find(r => r.id === id)).filter(Boolean);
+  if (!recs.length) return;
   setTab("viewer");
-  await openReport(rec, { quiet: true });
+  await openReports(recs, { quiet: true });
+}
+
+/* Warm the cache for a record the pointer is resting on: pdf.js, and the
+   report's bytes if this browser does not have them. One at a time, never on
+   a metered connection, never on a phone. */
+const prefetching = new Map();
+export async function prefetch(id) {
+  const rec = (S.library || []).find(r => r.id === id);
+  if (!rec || prefetching.size || isMobile() || navigator.connection?.saveData) return;
+  if (S.docs.some(d => d.reportId === id)) return;
+  loadPdfjs();
+  if (await cache.hasBytes(rec.sha256)) return;
+  const job = lib.fetchBytes(rec).then(b => { cache.putBytes(rec.sha256, b); return b; });
+  prefetching.set(id, job);
+  job.catch(() => {}).finally(() => prefetching.delete(id));
 }
 
 export async function renameReport(id) {
@@ -454,11 +576,8 @@ async function applyUrl(qs = location.search) {
   const a = +p.get("a"), b = +p.get("b");
   renderPage();
   const panel = p.get("panel");
-  const missing = [];
-  for (const id of ids) {
-    const rec = S.library.find(r => r.id === id);
-    if (rec) await openReport(rec, { quiet: true }); else missing.push(id);
-  }
+  const missing = ids.filter(id => !S.library.some(r => r.id === id));
+  await openReports(ids.map(id => S.library.find(r => r.id === id)).filter(Boolean), { quiet: true });
   if (missing.length) toast(`Not in the library any more: ${missing.join(", ")}`, "err");
   if (panel && panelRows().some(r => r.id === panel)) S.panelId = panel;
   if (Number.isInteger(a) && p.has("a")) S.overlay.a = Math.min(a, Math.max(0, S.docs.length - 1));
@@ -584,100 +703,252 @@ export function renderPage() {
     main.innerHTML = renderDashboard();
   }
 }
+function refreshDashboard() {
+  if (S.page === "dashboard") $("#main").innerHTML = renderDashboard();
+}
 
-/* ---------- viewer chrome ---------- */
+/* Snapshots from the two listeners arrive in bursts (both at boot, one per
+   write after an upload). Draw once per frame, whatever arrived. */
+let pageFrame = 0;
+function schedulePage() {
+  if (pageFrame) return;
+  pageFrame = requestAnimationFrame(() => {
+    pageFrame = 0;
+    if (S.page === "dashboard") refreshDashboard(); else renderChrome();
+  });
+}
+
+/* ---------- viewer chrome ----------
+
+   Built once in buildViewer(); after that each part is updated in place, and
+   only when what it shows changed. The Open and Library lists are keyed by
+   id, so an upload's progress tick touches one bar and a new record adds one
+   row, rather than every call rebuilding the side panel and the search
+   results with it (what a pinch used to trigger 60 times a second). */
 
 function inViewer() { return viewerRoot && viewerRoot.parentNode; }
 
 export function renderChrome() {
-  if (!inViewer()) { if (S.page === "dashboard" && S.library) $("#main").innerHTML = renderDashboard(); return; }
-  const tabs = $("#tabs");
-  tabs.innerHTML = "";
-  const mobile = isMobile();
-  if (mobile && !["pages", "panels"].includes(S.tab)) S.tab = "pages";
-  for (const t of TABS) {
-    if (mobile && !["pages", "panels"].includes(t.id)) continue;
-    const b = el("button", S.tab === t.id ? "active" : "", t.label);
-    b.onclick = () => { S.tab = t.id; render(); renderChrome(); syncUrl(); };
-    b.disabled = (t.id === "overlay" || t.id === "summary") && S.docs.length < 2;
-    tabs.appendChild(b);
-  }
+  if (!inViewer()) { if (S.page === "dashboard") refreshDashboard(); return; }
+  renderTabs();
+  renderDocList();
+  renderLibList();
+  renderMobilePick();
   $("#saveview").disabled = !S.docs.some(d => d.reportId);
-  const mp = $("#mobilepick");
-  const cur = S.docs[0]?.reportId || "";
-  mp.innerHTML = `<option value="" ${cur ? "" : "selected"} disabled>${S.docs.length ? esc(S.docs[0].name) : "Pick a report…"}</option>` +
-    (S.library || []).map(r => `<option value="${esc(r.id)}" ${r.id === cur ? "selected" : ""}>${esc(r.name)}${Number.isInteger(r.dp) ? ` (DP ${r.dp})` : ""}</option>`).join("") +
-    `<option value="__pick">Open a PDF from this phone…</option>`;
-
-  // Open reports.
-  const list = $("#doclist");
-  list.innerHTML = "";
-  for (const d of S.docs) {
-    const row = el("div", "doc" + (d.loading ? " loading" : ""));
-    const up = S.uploads[d.id];
-    const meta = d.loading ? "reading…" : up != null && up >= 0 ? `uploading ${Math.round(up * 100)}%` : d.index.numPages + "p · " + d.index.panels.length;
-    row.innerHTML = `<span class="swatch" style="background:${d.color}"></span>
-      <span class="nm" title="${esc(d.name)}">${esc(d.name)}</span>
-      <span class="meta">${esc(meta)}</span>`;
-    if (up != null && up >= 0) row.appendChild(el("div", "prog", `<i style="width:${Math.round(up * 100)}%"></i>`));
-    const x = el("button", "x", "✕");
-    x.title = "Close this report";
-    x.onclick = () => removeDoc(d.id);
-    row.appendChild(x);
-    list.appendChild(row);
-  }
-  $("#doclist-empty").hidden = S.docs.length > 0;
-  $("#addtolib").checked = S.addToLibrary;
-
-  // The library.
-  const ll = $("#liblist");
-  ll.innerHTML = "";
-  const q = S.libQuery.trim().toLowerCase();
-  if (S.libError) ll.appendChild(el("div", "lib-note err", "Library unavailable: " + esc(S.libError)));
-  else if (!S.library) ll.appendChild(el("div", "lib-note", "Loading the library…"));
-  else {
-    const recs = S.library.filter(r => !q || r.name.toLowerCase().includes(q) || (r.note || "").toLowerCase().includes(q));
-    if (!S.library.length) ll.appendChild(el("div", "lib-note", "Nothing here yet. Open a PDF and it is added for everyone."));
-    else if (!recs.length) ll.appendChild(el("div", "lib-note", "No report matches."));
-    const busy = Object.values(S.uploads).some(v => v === -1);
-    for (const r of recs) {
-      const open = S.docs.find(d => d.reportId === r.id);
-      const row = el("div", "doc lib" + (open ? " open" : ""));
-      row.innerHTML = `<span class="swatch" style="background:${open ? open.color : "transparent"};border:1px solid ${open ? open.color : "var(--line)"}"></span>
-        <span class="nm" title="${esc(r.note ? r.name + "\n" + r.note : r.name)}">${esc(r.name)}</span>
-        <span class="meta">${r.pages}p · ${r.panels} · ${fmtMB(r.size)} · ${shortDate(r.createdAt)}</span>`;
-      const acts = el("span", "acts");
-      const o = el("button", "sm", "Open"); o.disabled = !!open || busy; o.title = open ? "Already open" : "Open this report";
-      o.onclick = () => openReport(r);
-      const m = el("button", "sm ghost", "⋯"); m.title = "Rename, note or delete";
-      m.onclick = () => reportMenu(r.id);
-      acts.append(o, m);
-      row.appendChild(acts);
-      ll.appendChild(row);
-    }
-  }
-  $("#libcount").textContent = S.library ? `${S.library.length}` : "";
-
   $("#synccontrols").style.display = S.tab === "pages" ? "" : "none";
   $("#synctoggle").classList.toggle("on", S.sync);
   $("#synctoggle").querySelector(".lbl").textContent = S.sync ? "Synced" : "Free";
-  $("#resync").disabled = S.docs.length < 2;
+  $("#resync").disabled = S.docs.filter(d => d.index).length < 2;
   viewerRoot.querySelector(".ctl.zoom").style.display = (S.tab === "pages" || S.tab === "panels") ? "" : "none";
-  const z = S.tab === "pages" && S.docs.length ? currentZoom() : S.zoom;
-  $("#zoomlabel").textContent = S.fit ? "Fit" : Math.round(z * 100) + "%";
-  renderSearch();
+  updateZoomLabel();
+  // Search depends on the open reports, the query and the selected plot only.
+  const sk = S.docs.filter(d => d.index).map(d => d.id).join() + "|" + S.query + "|" + S.panelId;
+  if (sk !== lastSearchKey) { lastSearchKey = sk; renderSearch(); }
+}
+let lastSearchKey = null;
+
+function tabAllowed(id) {
+  if (isMobile()) return id === "pages" || id === "panels";
+  return !((id === "overlay" || id === "summary") && S.docs.filter(d => d.index).length < 2);
+}
+export function setViewTab(id) {
+  if (!tabAllowed(id) || S.tab === id) return;
+  S.tab = id; render(); renderChrome(); syncUrl();
+}
+function renderTabs() {
+  const tabs = $("#tabs");
+  if (isMobile() && !["pages", "panels"].includes(S.tab)) S.tab = "pages";
+  if (!tabs.children.length) for (const t of TABS) {
+    const b = el("button", "", t.label);
+    b.dataset.tab = t.id;
+    b.onclick = () => setViewTab(t.id);
+    tabs.appendChild(b);
+  }
+  for (const b of tabs.children) {
+    const id = b.dataset.tab;
+    b.hidden = isMobile() && !["pages", "panels"].includes(id);
+    b.disabled = !tabAllowed(id);
+    b.classList.toggle("active", S.tab === id);
+  }
+}
+
+function renderMobilePick() {
+  const mp = $("#mobilepick");
+  const cur = S.docs[0]?.reportId || "";
+  const key = cur + "|" + (S.docs[0]?.name || "") + "|" + (S.library || []).map(r => r.id + r.name + r.dp).join();
+  if (mp._key === key) return;
+  mp._key = key;
+  mp.innerHTML = `<option value="" ${cur ? "" : "selected"} disabled>${S.docs.length ? esc(S.docs[0].name) : "Pick a report…"}</option>` +
+    (S.library || []).map(r => `<option value="${esc(r.id)}" ${r.id === cur ? "selected" : ""}>${esc(r.name)}${Number.isInteger(r.dp) ? ` (DP ${r.dp})` : ""}</option>`).join("") +
+    `<option value="__pick">Open a PDF from this phone…</option>`;
+}
+
+/* ---- the Open list ---- */
+const docRows = new Map();   // doc id -> row element
+function docMeta(d) {
+  if (d.phase === "download") return d.progress ? `downloading ${Math.round(d.progress * 100)}%` : "downloading…";
+  if (d.loading) return d.progress ? `reading ${Math.round(d.progress * 100)}%` : "reading…";
+  if (d.upload != null) return `uploading ${Math.round(d.upload * 100)}%`;
+  return d.index.numPages + "p · " + d.index.panels.length;
+}
+function docBar(d) {
+  if (d.upload != null) return d.upload;
+  if (d.loading) return d.progress;
+  return null;
+}
+/* One row, in place. Also what progress callbacks call, so a tick costs a
+   text node and a style write. */
+export function refreshDoc(d) {
+  const row = docRows.get(d.id);
+  if (!row) return;
+  row.classList.toggle("loading", !!d.loading);
+  row._meta.textContent = docMeta(d);
+  const bar = docBar(d);
+  row._prog.hidden = bar == null;
+  if (bar != null) row._prog.firstChild.style.transform = `scaleX(${Math.max(0.02, bar)})`;
+  row._prog.classList.toggle("up", d.upload != null);
+  if (row._nm.textContent !== d.name) { row._nm.textContent = d.name; row._nm.title = d.name; }
+  row._sw.style.background = d.color;
+  // The note, asked on the row once the record exists; nothing waits for it.
+  if (d.askNote && !row._note) {
+    const f = el("form", "notefield");
+    f.innerHTML = `<input maxlength="500" placeholder="What changed in this run? One line for its card" aria-label="Note for ${esc(d.name)}"><button type="submit" class="sm">Save</button><button type="button" class="sm ghost" title="Skip">✕</button>`;
+    const input = f.querySelector("input");
+    const done = () => { d.askNote = null; f.remove(); row._note = null; };
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      const note = input.value.trim(), id = d.askNote;
+      done();
+      if (!note) return;
+      try { await lib.setNote(id, note); toast("Note saved", "ok"); }
+      catch (err) { toast("Could not save the note: " + (err?.message || err), "err"); }
+    };
+    f.querySelector("button[type=button]").onclick = done;
+    input.onkeydown = e => { if (e.key === "Escape") done(); };
+    row.appendChild(f);
+    row._note = f;
+    if (!document.activeElement || document.activeElement === document.body) input.focus({ preventScroll: true });
+  }
+}
+function renderDocList() {
+  const list = $("#doclist");
+  const live = new Set(S.docs.map(d => d.id));
+  for (const [id, row] of docRows) if (!live.has(id)) { row.remove(); docRows.delete(id); }
+  for (const d of S.docs) {
+    let row = docRows.get(d.id);
+    if (!row) {
+      row = el("div", "doc");
+      row.innerHTML = `<span class="swatch"></span><span class="nm"></span><span class="meta"></span><div class="prog" hidden><i></i></div>`;
+      row._sw = row.children[0]; row._nm = row.children[1]; row._meta = row.children[2]; row._prog = row.children[3];
+      const x = el("button", "x", "✕");
+      x.title = "Close this report";
+      x.setAttribute("aria-label", "Close " + d.name);
+      x.onclick = () => removeDoc(d.id);
+      row.insertBefore(x, row._prog);
+      docRows.set(d.id, row);
+    }
+    list.appendChild(row);   // moves it into order; a no-op when it already is
+    refreshDoc(d);
+  }
+  $("#doclist-empty").hidden = S.docs.length > 0;
+  $("#addtolib").checked = S.addToLibrary;
+}
+
+/* ---- the Library list ---- */
+const libRows = new Map();   // record id -> row element
+function renderLibList() {
+  const ll = $("#liblist");
+  const note = ll.querySelector(".lib-note");
+  const setNote = (cls, html) => {
+    let n = ll.querySelector(".lib-note");
+    if (!html) { n?.remove(); return; }
+    if (!n) { n = el("div"); ll.prepend(n); }
+    n.className = "lib-note" + (cls ? " " + cls : ""); n.innerHTML = html;
+  };
+  if (S.libError) { setNote("err", "Library unavailable: " + esc(S.libError)); }
+  else if (!S.library) { setNote("", `<span class="skel-line"></span><span class="skel-line short"></span>`); }
+  else if (!S.library.length) setNote("", "Nothing here yet. Open a PDF and it is added for everyone.");
+  else setNote(null, null);
+  void note;
+
+  const recs = S.library || [];
+  const live = new Set(recs.map(r => r.id));
+  for (const [id, row] of libRows) if (!live.has(id)) { row.remove(); libRows.delete(id); }
+  const q = S.libQuery.trim().toLowerCase();
+  let shown = 0;
+  for (const r of recs) {
+    let row = libRows.get(r.id);
+    if (!row) {
+      row = el("div", "doc lib");
+      row.innerHTML = `<span class="swatch"></span><span class="nm"></span><span class="meta"></span>`;
+      const acts = el("span", "acts");
+      const o = el("button", "sm", "Open");
+      o.onclick = () => openReport(S.library.find(x => x.id === r.id));
+      const m = el("button", "sm ghost", "⋯");
+      m.title = "Rename, note or delete";
+      m.setAttribute("aria-label", "More for " + r.name);
+      m.onclick = (e) => reportMenu(r.id, e.currentTarget);
+      acts.append(o, m);
+      row.appendChild(acts);
+      row._o = o;
+      row.onmouseenter = () => prefetch(r.id);
+      libRows.set(r.id, row);
+    }
+    const open = S.docs.find(d => d.reportId === r.id);
+    const sig = [r.name, r.note, r.pages, r.panels, r.size, r.createdAt, open ? open.color : ""].join("|");
+    if (row._sig !== sig) {
+      row._sig = sig;
+      const [sw, nm, meta] = row.children;
+      sw.style.background = open ? open.color : "transparent";
+      sw.style.border = "1px solid " + (open ? open.color : "var(--line)");
+      nm.textContent = r.name; nm.title = r.note ? r.name + "\n" + r.note : r.name;
+      meta.textContent = `${r.pages}p · ${r.panels} · ${fmtMB(r.size)} · ${shortDate(r.createdAt)}`;
+      row.classList.toggle("open", !!open);
+      row._o.disabled = !!open; row._o.title = open ? "Already open" : "Open this report";
+    }
+    const match = !q || r.name.toLowerCase().includes(q) || (r.note || "").toLowerCase().includes(q);
+    row.hidden = !match;
+    if (match) shown++;
+    ll.appendChild(row);
+  }
+  if (S.library && S.library.length && !shown) setNote("", "No report matches.");
+  $("#libcount").textContent = S.library ? `${S.library.length}` : "";
+}
+
+/* Re-render the active view once per frame at most, however many documents
+   finish loading in it. */
+let renderFrame = 0;
+export function scheduleRender() {
+  if (renderFrame) return;
+  renderFrame = requestAnimationFrame(() => { renderFrame = 0; render(); });
 }
 
 export function render() {
   if (!inViewer()) return;
+  cancelAnimationFrame(renderFrame); renderFrame = 0;
   const main = $("#vmain");
   main.innerHTML = "";
   if (!S.docs.length) { main.appendChild(viewerRoot._empty); return; }
+  if (!S.docs.some(d => d.index)) { main.appendChild(skeletonColumns()); return; }
   if (S.tab === "pages") renderPages(main);
   else if (S.tab === "panels") renderPanelView(main);
   else if (S.tab === "overlay") renderOverlay(main);
   else if (S.tab === "summary") renderSummary(main);
   syncUrl();
+}
+
+/* What the Viewer shows while its reports are still arriving: a column per
+   report with page-shaped placeholders, instead of the "Compare CFD reports"
+   welcome card, which read as "nothing happened". */
+function skeletonColumns() {
+  const wrap = el("div", "vcols skel");
+  for (const d of S.docs) {
+    const col = el("div", "vcol");
+    col.innerHTML = `<div class="vcol-h"><span class="swatch" style="background:${d.color}"></span><span class="nm">${esc(d.name)}</span><span class="meta">${esc(docMeta(d))}</span></div>
+      <div class="scroller"><div class="skel-page"></div><div class="skel-page"></div></div>`;
+    wrap.appendChild(col);
+  }
+  return wrap;
 }
 
 /* ---------- wiring ---------- */
@@ -715,7 +986,7 @@ addEventListener("keydown", e => {
     const next = rows[Math.min(rows.length - 1, Math.max(0, i + (e.key === "j" ? 1 : -1)))];
     if (next) selectPanel(next.id);
   }
-  if (e.key >= "1" && e.key <= "4") { S.tab = TABS[+e.key - 1].id; render(); renderChrome(); syncUrl(); }
+  if (e.key >= "1" && e.key <= "4") setViewTab(TABS[+e.key - 1].id);
 });
 
 /* The page view follows its columns' width itself (a ResizeObserver per
@@ -730,7 +1001,7 @@ addEventListener("resize", () => {
 /* Inline handlers in shell and dashboard markup. */
 window.cfd = {
   setTab, pick, saveView, openView, renameView, deleteView,
-  openInViewer, renameReport, editNote, deleteReport, reportMenu,
+  openInViewer, renameReport, editNote, deleteReport, reportMenu, prefetch,
   closeLightbox: shell.closeLightbox, lbStep: shell.lbStep,
 };
 
@@ -740,12 +1011,18 @@ renderPage();
 
 lib.watchReports(recs => {
   S.library = recs; S.libError = null;
-  if (S.page === "dashboard") renderPage(); else renderChrome();
+  schedulePage();
   splashStep("library", 1);
   applyUrl();
-}, err => { S.libError = err?.code || err?.message || String(err); if (S.page === "dashboard") renderPage(); else renderChrome(); splashStep("library", -1); });
-lib.watchViews(views => { S.views = views; if (S.page === "dashboard") renderPage(); splashStep("views", 1); },
+}, err => { S.libError = err?.code || err?.message || String(err); schedulePage(); splashStep("library", -1); });
+lib.watchViews(views => { S.views = views; schedulePage(); splashStep("views", 1); },
   () => splashStep("views", -1));
 
+/* Once the page is up and the browser has nothing better to do, fetch pdf.js
+   and its worker, so the first report opened does not wait for them. */
+(window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => {
+  loadPdfjs().then(() => fetch(new URL("./vendor/pdf.worker.mjs", import.meta.url), { priority: "low" })).catch(() => {});
+}, { timeout: 4000 });
+
 // Handy in the console and used by the browser-driven checks.
-window.CFD = { S, addDocs, ingest, openReport, render, renderChrome, renderPage, setTab, panelRows, selectPanel, currentQuery, isMobile, APP_VERSION };
+window.CFD = { S, addDocs, ingest, openReport, openReports, setViewTab, render, renderChrome, renderPage, setTab, panelRows, selectPanel, currentQuery, isMobile, APP_VERSION };

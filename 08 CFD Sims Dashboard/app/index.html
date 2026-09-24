@@ -21,6 +21,31 @@
 <link rel="stylesheet" href="ds/tokens.css">
 <link rel="stylesheet" href="ds/components.css">
 <link rel="stylesheet" href="styles.css">
+<!-- The whole module graph, announced up front. Without these the browser
+     discovers it in three round trips (core.js, then its imports, then
+     theirs, Firebase last). pdf.js is not here on purpose: the Dashboard
+     does not need it, and core.js fetches it when the browser is idle. -->
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin>
+<link rel="modulepreload" href="core.js">
+<link rel="modulepreload" href="library.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/12.16.0/firebase-storage.js">
+<link rel="modulepreload" href="util.js">
+<link rel="modulepreload" href="shell.js">
+<link rel="modulepreload" href="dashboard.js">
+<link rel="modulepreload" href="chart.js">
+<link rel="modulepreload" href="extract.js">
+<link rel="modulepreload" href="cache.js">
+<link rel="modulepreload" href="indexer.js">
+<link rel="modulepreload" href="render.js">
+<link rel="modulepreload" href="pages.js">
+<link rel="modulepreload" href="panels.js">
+<link rel="modulepreload" href="compare.js">
+<link rel="modulepreload" href="summary.js">
+<link rel="modulepreload" href="search.js">
 </head>
 <body>
 
