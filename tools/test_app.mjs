@@ -97,6 +97,7 @@ const counters = {};
 globalThis.fb = {
   state: "loading", user: null, roster: null, rosterCheckFailed: false,
   async save(coll, obj, field) { calls.push(["save", coll, obj.id, field]); },
+  async patch(coll, obj, fields) { calls.push(["patch", coll, obj.id, fields.slice()]); },
   // The mutator is kept as a fifth element so a test can re-apply it against
   // fresh server data — which is the whole point of mutateField, and the only
   // way to prove an index-based stack edit still finds its own ply.
@@ -1517,13 +1518,14 @@ await t("the part page surfaces what points at it: work orders, tickets, schedul
   assert(html.includes("WO-SN6-042"), "linked work order");
   assert(html.includes("Nose fit-up"), "ticket that lists this part");
   assert(html.includes("week of 2026-03-02"), "the week it's scheduled on a station");
-  assert(html.includes("filterByEngineer('Nick')"), "ME/RE are people you can filter by, not plain text");
+  assert(html.includes('data-pk="nick@berkeley.edu"') && html.includes("filterByEngineer(this.dataset.pk)"),
+    "ME/RE are people you can filter by, keyed by who they are and never by a name inside onclick");
   assert(html.includes("avatar"), "with a face");
 });
 await t("clicking an engineer filters the index to their parts", () => {
   partsFixture(); render();
   filterByEngineer("Nick");
-  assert(view.fEng === "Nick");
+  assert(view.fEng === "nick@berkeley.edu", "a typed name normalises to the person: " + view.fEng);
   assert(main.innerHTML.includes('id="pi-P-N1"') && !main.innerHTML.includes('id="pi-P-N2"'), "only Nick's parts");
   filterByEngineer("Nick");
   assert(!view.fEng && main.innerHTML.includes('id="pi-P-N2"'), "clicking again clears it");
@@ -2426,7 +2428,7 @@ await t("off-budget purchases are costed and owed, but never counted against com
   assert(main.innerHTML.includes('bignum">$250</div><div class="stat-label">Other budgets (1)'), "and it is visible on its own tile instead of vanishing");
   // Still real money somebody fronted.
   const owed = owedRows();
-  assert(owed.find(([who]) => who === "Simon")[1] === 350, "the purchaser is owed for both: " + JSON.stringify(owed));
+  assert(owed.find(o => /^Simon/.test(o.ref.name)).amt === 350, "the purchaser is owed for both: " + JSON.stringify(owed));
   assert(main.innerHTML.includes(">Chassis</span>"), "the row says whose budget it lands on");
   // And the filter can cut the list either way.
   view.fBudget = "other"; render();
@@ -10766,7 +10768,9 @@ await t("engineer fields suggest only the qualified, stamp the email sidecar, an
   calls.length = 0;
   setEngineer("parts", "P-TR", "moldEngineer", "Nick Jepsen");
   assert(DB.parts[0].moldEngineerEmail === "nick@b.edu", "a roster match stamps the sidecar");
-  assert(calls.some(c => c[0] === "save" && c[3] === "moldEngineer") && calls.some(c => c[0] === "save" && c[3] === "moldEngineerEmail"));
+  const w = calls.filter(c => c[1] === "parts");
+  assert(w.length === 1 && w[0][0] === "patch" && w[0][3].includes("moldEngineer") && w[0][3].includes("moldEngineerEmail"),
+    "name and email land in ONE write, never two a snapshot could split: " + JSON.stringify(w));
   setEngineer("parts", "P-TR", "moldEngineer", "Sander Green");
   assert(DB.parts[0].moldEngineer === "Sander Green", "an unqualified name still saves — assignment is planning");
   assert(engFld("parts", DB.parts[0], "Mold Engineer", "moldEngineer").includes("not Mold design-trained"), "but wears the warning");
@@ -12169,6 +12173,126 @@ await t("the splash fact comes from the same pool the dashboard draws from", asy
   assert(f && f.t, "factOfTheDay returns a fact");
   assert(FACT_POOL.length > FACTS.length,
     "the pool double-weights the team's own lore, which a raw pick over FACTS would miss");
+});
+
+
+console.log("person references:");
+{
+  const PEOPLE = [
+    { email: "starbuck@berkeley.edu", name: "Simon Starbuck", role: "lead" },
+    { email: "nick@berkeley.edu", name: "Nick Jepsen", role: "member" },
+    { email: "nalvarez@berkeley.edu", name: "Nick Alvarez", role: "member" },
+    { email: "nico@berkeley.edu", name: "Nico Rossi", role: "member" },
+    { email: "twin1@berkeley.edu", name: "Sam Lee", role: "member" },
+    { email: "twin2@berkeley.edu", name: "Sam Lee", role: "member" },
+  ];
+  await t("rosterMatch links only what nobody could argue with", () => {
+    DB.users = PEOPLE.slice();
+    assert(rosterMatch("NICO@berkeley.edu").email === "nico@berkeley.edu", "exact email, any case");
+    assert(rosterMatch("nico rossi").email === "nico@berkeley.edu", "exact full name, any case");
+    assert(rosterMatch("Nico").email === "nico@berkeley.edu", "a first name exactly one account has");
+    const nick = rosterMatch("Nick");
+    assert(nick && !nick.email && nick.ambiguous.length === 2, "two Nicks: ambiguous, never a guess");
+    assert(rosterMatch("Sam Lee").ambiguous.length === 2, "two accounts with one full name stay ambiguous");
+    assert(rosterMatch("Nico", true) === null, "strict (retro) drops the first-name rule");
+    assert(rosterMatch("Nico Rossi", true).email === "nico@berkeley.edu", "but keeps full names");
+    assert(rosterMatch("Nico R.") === null, "a near miss is not a match");
+  });
+  await t("every sentinel is not a person", () => {
+    for (const v of ["", "N/A", "N/A (Flat)", "n/a (flat)", "not recorded (retro)", "cross-team (powertrain + composites)", "TBD", "?", "—"])
+      assert(notAPerson(v), "should not be a person: " + JSON.stringify(v));
+    for (const v of ["Nico", "Ana Rivera", "Nathan"]) assert(!notAPerson(v), "is a person: " + v);
+  });
+  await t("personRef names each kind and prefers the live roster name", () => {
+    DB.users = PEOPLE.slice();
+    const k = (o, key) => personRef(o, key || "purchaser");
+    assert(k({ purchaser: "Nico", purchaserEmail: "nico@berkeley.edu" }).name === "Nico Rossi", "linked shows the roster name");
+    assert(k({ purchaser: "Nico", purchaserEmail: "nico@berkeley.edu" }).kind === "linked");
+    assert(k({ purchaser: "Old Member", purchaserEmail: "gone@berkeley.edu" }).kind === "gone");
+    assert(k({ purchaser: "Old Member", purchaserEmail: "gone@berkeley.edu" }).name === "Old Member", "gone keeps the snapshot");
+    assert(k({ purchaser: "Home Depot guy", purchaserEmail: "ext" }).kind === "ext");
+    assert(k({ purchaser: "Nico" }).kind === "inferred" && k({ purchaser: "Nico" }).email === "nico@berkeley.edu");
+    assert(k({ purchaser: "Nick" }).kind === "unlinked", "ambiguous stays unlinked");
+    assert(k({ purchaser: "N/A" }).kind === "none" && k({}).kind === "none");
+    assert(k({ purchaser: "Nico", retro: true }).kind === "unlinked", "a retro first name waits for the review");
+    assert(personKey({ purchaser: "Nico" }, "purchaser") === personKey({ purchaser: "Nico Rossi" }, "purchaser"), "same person, same key");
+    assert(personKey({ purchaser: "Nick" }, "purchaser") === "name:nick");
+  });
+  await t("personPatch writes email + live name, ext for Other…, blanks for clear", () => {
+    DB.users = PEOPLE.slice();
+    const a = personPatch("purchaser", "NICO@berkeley.edu", "whatever");
+    assert(a.purchaser === "Nico Rossi" && a.purchaserEmail === "nico@berkeley.edu", JSON.stringify(a));
+    const b = personPatch("purchaser", "", "  Bob from Fibreglast ");
+    assert(b.purchaser === "Bob from Fibreglast" && b.purchaserEmail === "ext", JSON.stringify(b));
+    const c = personPatch("purchaser", "", "");
+    assert(c.purchaser === "" && c.purchaserEmail === "", JSON.stringify(c));
+  });
+  await t("savePatch is one write carrying every key", () => {
+    signInAsLead();
+    const rec = { id: "BUY-T1" };
+    calls.length = 0;
+    savePatch("budget", rec, { purchaser: "Nico Rossi", purchaserEmail: "nico@berkeley.edu" });
+    assert(calls.length === 1 && calls[0][0] === "patch" && calls[0][3].length === 2, JSON.stringify(calls));
+    assert(rec.purchaserEmail === "nico@berkeley.edu", "applied locally first");
+  });
+  await t("rdEffPerson never takes the name from one level and the email from another", () => {
+    DB.users = PEOPLE.slice();
+    const saved = DB.rnd;
+    DB.rnd = [
+      { id: "RDS-P", cls: "RDS", defaults: { by: "Nico Rossi", byEmail: "nico@berkeley.edu" } },
+      { id: "RDS-B", cls: "RDS", parent: "RDS-P", defaults: {} },
+    ];
+    const own = { id: "CPN-1", cls: "CPN", study: "RDS-B", by: "Visiting Student" };
+    const r1 = rdEffPerson(own, "by");
+    assert(r1.name === "Visiting Student" && r1.email === "", "own name, no borrowed email: " + JSON.stringify(r1));
+    const r2 = rdEffPerson({ id: "CPN-2", cls: "CPN", study: "RDS-B" }, "by");
+    assert(r2.email === "nico@berkeley.edu" && r2.kind === "linked", "the project's pair, whole: " + JSON.stringify(r2));
+    DB.rnd = saved;
+  });
+}
+
+
+console.log("person grouping:");
+await t("the owed board is one row per person, however the name was typed", () => {
+  DB.users = [
+    { email: "nico@berkeley.edu", name: "Nico Rossi", role: "member" },
+    { email: "nick@berkeley.edu", name: "Nick Jepsen", role: "member" },
+    { email: "nalvarez@berkeley.edu", name: "Nick Alvarez", role: "member" },
+  ];
+  DB.budget = [
+    { id: "B-1", cost: "10", purchaser: "Nico" },
+    { id: "B-2", cost: "20", purchaser: "Nico R.", purchaserEmail: "nico@berkeley.edu" },
+    { id: "B-3", cost: "5", purchaser: "nico rossi" },
+    { id: "B-4", cost: "7", purchaser: "Nick" },
+    { id: "B-5", cost: "3", purchaser: "Shop guy", purchaserEmail: "ext" },
+  ];
+  const owed = owedRows();
+  const nico = owed.find(o => o.key === "nico@berkeley.edu");
+  assert(nico && nico.amt === 35 && nico.ref.name === "Nico Rossi", "three spellings, one person, $35: " + JSON.stringify(owed));
+  assert(owed.find(o => o.key === "name:nick").amt === 7, "an ambiguous Nick stays its own row, not a guess");
+  assert(owed.length === 3, "Nico, Nick, Shop guy: " + owed.map(o => o.key).join(","));
+});
+await t("'mine' is by email: two Nicks no longer both claim a first-name part", () => {
+  DB.users = [
+    { email: "nick@berkeley.edu", name: "Nick Jepsen", role: "member" },
+    { email: "nalvarez@berkeley.edu", name: "Nick Alvarez", role: "member" },
+  ];
+  fb.state = "ready"; fb.guest = false;
+  fb.user = { uid: "u2", email: "nick@berkeley.edu", name: "Nick Jepsen" };
+  fb.roster = { name: "Nick Jepsen", role: "member" };
+  assert(!isMineRef({ moldEngineer: "Nick" }, ENG_KEYS), "bare 'Nick' is nobody's until a lead says whose");
+  assert(isMineRef({ moldEngineer: "Nick", moldEngineerEmail: "nick@berkeley.edu" }, ENG_KEYS), "linked is mine");
+  assert(isMineRef({ manufacturingEngineer: "Nick Jepsen" }, ENG_KEYS), "full name infers");
+  assert(!isMineRef({ moldEngineer: "Nick Jepsen", moldEngineerEmail: "nalvarez@berkeley.edu" }, ENG_KEYS), "the stored email wins over the text");
+  signInAsLead();
+});
+await t("an engineer filter survives an apostrophe", () => {
+  DB.users = [{ email: "oneil@berkeley.edu", name: "Pat O'Neil", role: "member" }];
+  const chip = engineerChip(partEngineers({ moldEngineer: "Pat O'Neil" })[0]);
+  assert(!/onclick="[^"]*O'Neil/.test(chip), "no name inside the handler: " + chip);
+  filterByEngineer("oneil@berkeley.edu");
+  assert(partHasEngineer({ moldEngineer: "Pat O'Neil" }, view.fEng), "and the filter finds the part");
+  view.fEng = "";
 });
 
 /* Nothing below should inherit a splash the tests above left half-dismissed. */

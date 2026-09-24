@@ -297,6 +297,17 @@ function save(coll, obj, field) {
   if (guestBlocked()) return;
   if (obj) fb.save(coll, obj, field).catch(e => toast("Save failed: " + e.message,"error"));
 }
+/* Several fields of one record in ONE write. A person field is a name and an
+   email, and two field saves meant a moment where the name was new and the
+   email still said who it used to be — with a snapshot landing in between,
+   that is what the screen showed. `fields` are applied to obj first so the
+   page is right before the write returns. */
+function savePatch(coll, obj, fields) {
+  if (guestBlocked()) return;
+  if (!obj || !fields) return;
+  Object.assign(obj, fields);
+  fb.patch(coll, obj, Object.keys(fields)).catch(e => toast("Save failed: " + e.message,"error"));
+}
 // Concurrency-safe edit of one array/object field: apply `mutator` to the
 // fresh server value inside a transaction so simultaneous edits to *other*
 // items in the same field don't clobber each other. `obj` already carries the
@@ -848,6 +859,128 @@ function avatar(emailOrUser, size) {
   if (u.avatar) return `<span class="avatar" style="${st}" title="${title}"><img src="${esc(u.avatar)}" alt="${title}"></span>`;
   return `<span class="avatar init" style="${st};background:hsl(${hueOf(u.email || u.name || "?")} 55% 45%)" title="${title}">${esc(initials(u.name || u.email))}</span>`;
 }
+/* ---------- person references ----------
+   Every "who" field used to be typed text, so "Nico" and "Nico R." were two
+   people and the reimbursement board owed money to both. A person field is now
+   TWO keys: <key> is the name as it read when it was set (the CSV, the Sheets
+   feed, print and labels all read it, and tracker.js promises the sheet never
+   carries an email), and <key>Email says who that is:
+     "<email>"  linked to a roster account
+     "ext"      deliberately somebody not on the app (picked through Other…)
+     "" / unset not resolved yet; People › Unlinked is where a lead fixes it
+   Display goes through personRef, which prefers the LIVE roster name, so a
+   rename reaches every screen and export without touching the records.
+   PERSON_FIELDS is the one list of where these live; the review, the backfill,
+   the person page and the tests all read it rather than keeping their own. */
+const PERSON_FIELDS = [
+  { coll: "budget", key: "purchaser", label: "Purchaser", fam: "purchaser" },
+  { coll: "parts", key: "moldEngineer", label: "Mold engineer", fam: "eng" },
+  { coll: "parts", key: "manufacturingEngineer", label: "Manufacturing engineer", fam: "eng" },
+  { coll: "workOrders", key: "moldEngineer", label: "Mold engineer", fam: "eng" },
+  { coll: "workOrders", key: "manufacturingEngineer", label: "Manufacturing engineer", fam: "eng" },
+  { coll: "molds", key: "sealedBy", label: "Sealed by", fam: "sealedBy" },
+  { coll: "items", key: "walkedBy", label: "Bin confirmed by", fam: "walkedBy" },
+  { coll: "rnd", key: "by", path: "defaults", label: "Laid up by", fam: "by" },
+];
+const PERSON_EXT = "ext";
+/* Values that sit in a person field without naming a person. The SN5 import
+   left "N/A (Flat)" in engineer cells and "not recorded (retro)" on retro
+   buy-offs; none of those should read as, or match, somebody. */
+function notAPerson(v) { return !v || /^(n\/?a\b|not recorded|cross-team|tbd\b|pending\b|\?+$|—$|-$)/i.test(String(v).trim()); }
+/* Text → roster account, only when nobody could argue: an exact email, an
+   exact full name exactly one account has, or a bare first name exactly one
+   account has. Anything else is null, or {ambiguous} so a caller can say who
+   it might be. `strict` drops the first-name rule (retro SN5 records: last
+   season's "Nick" is not necessarily this season's). Cached per roster array,
+   because this runs per row per render and onFbData swaps in a new array on
+   every roster change. */
+let _rmCache = { users: null, n: 0, map: new Map() };
+function rosterMatch(text, strict) {
+  const t = String(text || "").trim().toLowerCase();
+  if (!t || notAPerson(t)) return null;
+  const users = DB.users || [];
+  if (_rmCache.users !== users || _rmCache.n !== users.length) _rmCache = { users, n: users.length, map: new Map() };
+  const ck = (strict ? "s:" : "l:") + t;
+  if (_rmCache.map.has(ck)) return _rmCache.map.get(ck);
+  let out = null;
+  const byMail = users.find(u => String(u.email || "").toLowerCase() === t);
+  if (byMail) out = { email: byMail.email.toLowerCase() };
+  else {
+    const full = users.filter(u => String(u.name || "").trim().toLowerCase() === t);
+    if (full.length === 1) out = { email: full[0].email.toLowerCase() };
+    else if (full.length > 1) out = { ambiguous: full.map(u => u.email) };
+    else if (!/\s/.test(t) && !strict) {
+      const first = users.filter(u => String(u.name || "").trim().toLowerCase().split(/\s+/)[0] === t);
+      if (first.length === 1) out = { email: first[0].email.toLowerCase() };
+      else if (first.length > 1) out = { ambiguous: first.map(u => u.email) };
+    }
+  }
+  _rmCache.map.set(ck, out);
+  return out;
+}
+/* The one reader of a person field. kind:
+     none     empty, or a sentinel like "N/A (Flat)"
+     linked   stored email the roster knows; name is the live roster name
+     gone     stored email the roster no longer has; name is the snapshot
+     ext      deliberately not on the app
+     inferred nothing stored, but rosterMatch finds exactly one person — the
+              screen is right before any backfill runs, as it always was
+     unlinked a name nobody can resolve
+   `src` lets a caller read the pair off another object (R&D defaults). */
+function personRef(rec, key, src) {
+  const o = src || rec || {};
+  const name = String(o[key] ?? "").trim();
+  const stored = String(o[key + "Email"] ?? "").trim().toLowerCase();
+  if (stored === PERSON_EXT) return name ? { email: "", name, kind: "ext" } : { email: "", name: "", kind: "none" };
+  if (stored) {
+    const u = userByEmail(stored);
+    if (u) return { email: stored, name: u.name || name || stored, kind: "linked" };
+    return { email: stored, name: name || stored, kind: "gone" };
+  }
+  if (!name || notAPerson(name)) return { email: "", name, kind: "none" };
+  const m = rosterMatch(name, !!(rec && rec.retro));
+  if (m && m.email) { const u = userByEmail(m.email); return { email: m.email, name: (u && u.name) || name, kind: "inferred" }; }
+  return { email: "", name, kind: "unlinked" };
+}
+function personName(rec, key, src) { const r = personRef(rec, key, src); return r.kind === "none" ? "" : r.name; }
+// What to GROUP by: the person when there is one, else the text itself.
+function personKey(rec, key, src) {
+  const r = personRef(rec, key, src);
+  return r.email ? r.email : (r.kind === "none" ? "" : "name:" + r.name.toLowerCase());
+}
+/* "Is this record mine?" for person fields: by email, through personRef. The
+   text match it replaces (isMine) let every Nick claim every "Nick" part.
+   isMine stays for ticket assignees, which already store emails. With me not on the loaded roster (it has not arrived yet)
+   there is nothing to resolve against, so the old text match is the honest
+   fallback. */
+function isMineRef(rec, keys) {
+  if (!rec) return false;
+  const me = myEmail().toLowerCase();
+  if (!me || !userByEmail(me)) return isMine(keys.map(k => rec[k]));
+  return !!me && keys.some(k => personRef(rec, k).email === me);
+}
+/* The names on a record's person fields, one per person: "Justin / justin"
+   and a name beside the same person's email both read as one. */
+function personNames(rec, keys) {
+  const seen = new Set(), out = [];
+  for (const k of keys) {
+    const key = personKey(rec, k); if (!key || seen.has(key)) continue;
+    seen.add(key); out.push(personName(rec, k));
+  }
+  return out;
+}
+const ENG_KEYS = ["moldEngineer", "manufacturingEngineer"];
+function meRef() { return { name: signerName(), email: myEmail() }; }
+/* The two keys of a person field as one patch. email "" with a name means
+   Other… (stored as ext); both empty clears the field. */
+function personPatch(key, email, name) {
+  email = String(email || "").trim().toLowerCase();
+  name = String(name || "").trim();
+  if (email && email !== PERSON_EXT) { const u = userByEmail(email); name = (u && u.name) || name || email; }
+  else email = name ? PERSON_EXT : "";
+  return { [key]: name, [key + "Email"]: email };
+}
+
 // Let the signed-in user set their own photo (rules allow avatar/name self-edit).
 function setMyAvatar() {
   const inp = document.createElement("input");

@@ -309,17 +309,7 @@ function advancePartStage(n) {
    The optional *Email fields (new, default empty) let a part name a roster
    account exactly; without one we fall back to the same name match People and
    the Dashboard already use, so all 33 SN5 records get a face today. */
-function partEngineerEmail(p, key) {
-  const explicit = p[key + "Email"];
-  if (explicit) return explicit;
-  const nm = String(p[key] || "").trim().toLowerCase();
-  if (!nm || (typeof notAPerson === "function" && notAPerson(nm))) return "";
-  const u = (DB.users || []).find(u => {
-    const n = (u.name || "").toLowerCase();
-    return u.email.toLowerCase() === nm || n === nm || n.split(" ")[0] === nm;
-  });
-  return u ? u.email : "";
-}
+function partEngineerEmail(p, key) { return personRef(p, key).email; }
 /* One person often holds both roles — "Justin / Justin" was half the SN5
    tracker. Two identical faces in a row reads as two people at a glance, which
    is worse than saying nothing, so the same name collapses to one chip that
@@ -328,28 +318,44 @@ function partEngineerEmail(p, key) {
 function partEngineers(p) {
   const out = [];
   for (const [key, role] of [["moldEngineer", "ME"], ["manufacturingEngineer", "RE"]]) {
-    const name = String(p[key] || "").trim();
-    if (!name || (typeof notAPerson === "function" && notAPerson(name))) continue;
-    const same = out.find(e => e.name.toLowerCase() === name.toLowerCase());
+    const ref = personRef(p, key);
+    if (ref.kind === "none") continue;
+    const pk = personKey(p, key);
+    const same = out.find(e => e.pk === pk);
     if (same) { same.role += "+" + role; continue; }
-    out.push({ role, key, name, email: partEngineerEmail(p, key) });
+    out.push({ role, key, name: ref.name, email: ref.email, pk, kind: ref.kind });
   }
   return out;
 }
-// Avatar + name, and clicking it filters the index to that person's parts —
-// "ME/RE" stops being dead text and becomes the fastest way to see your work.
+/* Avatar + name, and clicking it filters the index to that person's parts —
+   "ME/RE" stops being dead text and becomes the fastest way to see your work.
+   The filter is a personKey (an email, or name:<text> for somebody unlinked),
+   so "Nico" and "Nico Rossi" are one filter. It rides in a data attribute:
+   esc() does not escape an apostrophe, and a name inside onclick='…' broke on
+   the first O'Neil. */
 function engineerChip(e) {
-  const on = (view.fEng || "").toLowerCase() === e.name.toLowerCase();
-  return `<span class="chip engchip ${on ? "on" : ""}" title="${esc(e.role)} — show only ${esc(e.name)}'s parts"
-    onclick="event.stopPropagation();filterByEngineer('${esc(e.name)}')">${avatar(e.email || e.name, 18)}${esc(e.name)}</span>`;
+  const on = (view.fEng || "") === e.pk;
+  return `<span class="chip engchip ${on ? "on" : ""}" data-pk="${esc(e.pk)}" title="${esc(e.role)} — show only ${esc(e.name)}'s parts"
+    onclick="event.stopPropagation();filterByEngineer(this.dataset.pk)">${avatar(e.email || e.name, 18)}${esc(e.name)}</span>`;
 }
-function filterByEngineer(name) {
-  view.fEng = (view.fEng || "").toLowerCase() === String(name).toLowerCase() ? "" : name;
+// Accepts a personKey, or a bare name/email (normalised to one).
+function engFilterKey(v) {
+  v = String(v || "").trim();
+  if (!v || v.startsWith("name:")) return v;
+  return personKey({ x: v }, "x");
+}
+function filterByEngineer(v) {
+  const k = engFilterKey(v);
+  view.fEng = (view.fEng || "") === k ? "" : k;
   render();
 }
-function partHasEngineer(p, name) {
-  const n = String(name || "").toLowerCase();
-  return [p.moldEngineer, p.manufacturingEngineer].some(v => String(v || "").toLowerCase() === n);
+function engFilterName(k) {
+  k = String(k || "");
+  return k.startsWith("name:") ? k.slice(5) : userName(k);
+}
+function partHasEngineer(p, k) {
+  k = engFilterKey(k);
+  return ENG_KEYS.some(key => personKey(p, key) === k);
 }
 
 /* A part with nothing in it but an id.
@@ -499,7 +505,7 @@ function partIndexRows() {
     .filter(p => showDone || !partDone(p))
     .filter(p => (!view.fSub || p.subteam === view.fSub))
     .filter(p => (!view.fLate || partLate(p)))
-    .filter(p => (!view.fMine || isMine([p.moldEngineer, p.manufacturingEngineer])))
+    .filter(p => (!view.fMine || isMineRef(p, ENG_KEYS)))
     .filter(p => (!view.fEng || partHasEngineer(p, view.fEng)))
     /* THIS RAIL IS THE SEASON LIST. Full stop — there is no longer a chip that
        swaps it for the R&D list, because an R&D part is viewable and editable
@@ -609,7 +615,7 @@ function partSummary() {
     open: open.length,
     done: D.length - open.length,
     late: D.filter(partLate).length,
-    mine: open.filter(p => isMine([p.moldEngineer, p.manufacturingEngineer])).length,
+    mine: open.filter(p => isMineRef(p, ENG_KEYS)).length,
   };
 }
 // Open parts only, for all three stages — a breakdown that counted finished
@@ -697,7 +703,7 @@ function renderPartIndex() {
         </select>
         <button class="sm sortdir" title="Reverse sort order" onclick="togglePartSortDir()">${view.sortDir === "desc" ? "▼" : "▲"}</button>
       </div>
-      ${view.fEng ? `<div class="pfilternote">Showing <b>${esc(view.fEng)}</b>'s parts <button class="sm" onclick="filterByEngineer('${esc(view.fEng)}')">clear</button></div>` : ""}
+      ${view.fEng ? `<div class="pfilternote">Showing <b>${esc(engFilterName(view.fEng))}</b>'s parts <button class="sm" onclick="filterByEngineer(view.fEng)">clear</button></div>` : ""}
       ${/* Finding 3: C/M/L were three unlabelled letters on every row. Say what
             they stand for ONCE, at the top of the column they head, the way a
             table header does — this team turns over every year, and learnable
@@ -730,7 +736,7 @@ function renderPartOverview() {
   const s = partSummary();
   const live = railLive(DB.parts);
   const late = live.filter(partLate).sort((a, b) => (a.layupDeadline || "").localeCompare(b.layupDeadline || ""));
-  const mine = live.filter(p => !partDone(p) && isMine([p.moldEngineer, p.manufacturingEngineer]));
+  const mine = live.filter(p => !partDone(p) && isMineRef(p, ENG_KEYS));
   const soon = live.filter(p => !partDone(p) && !partLate(p) && daysUntil(p.layupDeadline) != null && daysUntil(p.layupDeadline) <= 21)
     .sort((a, b) => (a.layupDeadline || "").localeCompare(b.layupDeadline || ""));
   const miniRow = p => `<div class="pmini" onclick="selectPart('${esc(p.id)}')">

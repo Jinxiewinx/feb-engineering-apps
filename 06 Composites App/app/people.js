@@ -23,14 +23,16 @@ function assignmentsFor(email) {
     const vals = Array.isArray(val) ? val : [val];
     return vals.some(v => { v = String(v || "").toLowerCase(); return v === email.toLowerCase() || v === name.toLowerCase() || v === name.toLowerCase().split(" ")[0]; });
   };
-  const parts = DB.parts.filter(p => !["Layup Complete", "Polished"].includes(p.layupProgress) && mine([p.moldEngineer, p.manufacturingEngineer]));
+  const me = String(email || "").toLowerCase();
+  const eng = (r) => ENG_KEYS.some(k => personRef(r, k).email === me);
+  const parts = DB.parts.filter(p => !["Layup Complete", "Polished"].includes(p.layupProgress) && eng(p));
   /* Open issues only. This column answers "what is this person on the hook
      for", and since the project tracker was shelved the answer is the runs
      they are holding up — a project ticket nobody can navigate to is not an
      obligation, it is history. The parentId test that used to keep sub-tickets
      out is gone with them: an issue is never a sub-ticket. */
   const projects = DB.projects.filter(p => isIssue(p) && !["Done", "Cancelled"].includes(projStatus(p)) && mine(p.assignees || []));
-  const wos = DB.workOrders.filter(w => w.status !== "Complete" && mine([w.moldEngineer, w.manufacturingEngineer]));
+  const wos = DB.workOrders.filter(w => w.status !== "Complete" && eng(w));
   return { parts, projects, wos };
 }
 

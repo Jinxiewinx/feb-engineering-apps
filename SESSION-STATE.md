@@ -20,6 +20,17 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**Person fields, in progress (2026-09-24).** Plan:
+`~/.claude/plans/for-the-composites-app-tender-wave.md`. Typed "who" fields
+become roster picks stored as `<key>` + `<key>Email` (email / `ext` / unset).
+Seven commits: (1) resolver helpers + `fb.patch` DONE; (2) owed/mine grouping by
+person DONE; (3) person page `#/person/<email>` + `personChip`; (4) picker, built
+twice (inline combobox vs chip+popover) in worktrees and scored by ui-reviewer;
+(5) remaining fields; (6) lead-only Unlinked review + backfill; (7) exporters,
+docs, release 6.2.0. Simon's calls: new person page, all fields, auto-link
+unambiguous + lead review, Other = name only. Mine: retro records skip
+first-name linking. Do NOT run the backfill on live data without asking.
+
 **`test_safearea` is red on purpose.** At landscape-max two step-action buttons
 on `wo-detail` sit past the safe area (x=873; the second reaches 945). The test
 is right, the CSS is not; fixing it needs Simon.
