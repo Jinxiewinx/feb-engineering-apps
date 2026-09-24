@@ -20,12 +20,12 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
-**Person fields (2026-09-24), all seven steps landed, release pending.**
+**Person fields (2026-09-24), shipped as v6.2.0.**
 Plan: `~/.claude/plans/for-the-composites-app-tender-wave.md`. Typed "who"
 fields are roster picks stored as `<key>` + `<key>Email` (email / `ext` /
 unset). Picker is variant B (chip + popover), chosen by ui-reviewer over A
 (inline combobox, lost on typo+Enter writing junk); A's branch
-`worktree-agent-a9045248d93b53197` is kept, unmerged. People › Unlinked has
+`worktree-agent-a9045248d93b53197` is kept locally, unmerged, worktree removed. People › Unlinked has
 NOT been run on live data: that is a mass write and waits on Simon. Resin
 built-in RESINS rows still carry febBy text only (no email), on purpose.
 
