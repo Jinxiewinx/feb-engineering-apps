@@ -38,6 +38,37 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.2.0 — 2026-09-24
+
+- Person fields: What's New for 6.2.0, a design note, and no <details> fold
+- Person fields, step 5: sealed by, laid up by and resin sign-off are picks too
+- Person picker: fold in the review's notes from variant A, fix touch focus
+- Person fields: chip + popover picker (variant B)
+- Person fields: a bin walk records who walked it by email
+- Person fields, step 7: exports, paper and the Sheet print the current name
+
+<details><summary>15 more</summary>
+
+- Person fields, step 6: a lead's review for names nobody has linked
+- Person fields: shared groundwork for the picker competition
+- Person fields, step 3: a page per person, and names that link to it
+- SESSION-STATE: cfd-v0.4.0 is tagged and live
+- SESSION-STATE: cfd-v0.4.0 still needs its tag pushed and a deploy
+- Release cfd-v0.4.0
+- CFD: legibility fixes from a screenshot review, and the remaining tests
+- CFD: popovers instead of prompt(), compare from the Dashboard, patched cards
+- Person fields, step 2: group money owed and "mine" by person, not spelling
+- Person fields, step 1: one resolver for every "who" field
+- CFD: reports open from a local cache, in parallel, with progress
+- CFD: pinch zoom runs on the compositor, renders are cancellable and exact
+- CFD: a perf harness with baseline numbers, and the ds copy re-synced
+- Move the over-long constraints into the docs, and refresh the root README
+- Prune SESSION-STATE from 524 lines to 326
+
+</details>
+
+---
+
 ## v6.1.0 — 2026-09-18
 
 - R&D records are on the R&D tab, and only there
