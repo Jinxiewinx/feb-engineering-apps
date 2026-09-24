@@ -40,6 +40,7 @@ function el(id) {
     attrs: {},
     setAttribute(k, v) { this.attrs[k] = String(v); },
     getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; },
+    removeAttribute(k) { delete this.attrs[k]; },
     closest: () => null, focus() {}, setSelectionRange() {}, click() {},
     querySelector: () => null, querySelectorAll: () => [],
     // toast() appends a .toast child here; capture its text for assertions.
@@ -12487,6 +12488,60 @@ await t("an open picker survives a snapshot render with its query, highlight and
   q.setSelectionRange = () => {};
   view = { ...view, edit: false }; render();
   assert(!PF_STATE[id].open, "leaving edit mode closes it");
+});
+await t("nobody trained: one heading, no per-row tag, no dimming, the email line instead", () => {
+  signInAsLead();
+  DB.users = [
+    { email: "ana@b.edu", name: "Ana Rivera", role: "member" },
+    { email: "dana@b.edu", name: "Dana Chen", role: "member" },
+  ];
+  DB.parts = [{ id: "P-NT", partName: "NT", layupType: "MOLD INFUSION", moldEngineer: "", manufacturingEngineer: "" }];
+  view = { ...view, tab: "parts", mode: "detail", id: "P-NT", edit: true };
+  render();
+  const id = "eng-parts-P-NT-moldEngineer";
+  pfOpen(id);
+  const list = pfListHtml(id);
+  assert((list.match(/Nobody is Mold design-trained yet/g) || []).length === 1, "one heading: " + list);
+  assert(!list.includes("pf-tag") && !list.includes("untrained") && !list.includes("pf-sep"), "no tags, no dimming, no separator");
+  assert(list.includes("ana@b.edu") && list.includes("dana@b.edu"), "the email line instead");
+  assert(!pfOptions(id).some(o => o.t === "more"), "and nothing hidden behind Show everyone");
+  pfClose(id);
+  view = { ...view, edit: false };
+});
+await t("N/A, TBD and friends are never offered as somebody not on the app", () => {
+  const id = pfBudgetSetup();
+  pfOpen(id);
+  for (const q of ["N/A", "TBD", "not recorded", "??"]) {
+    pfInput(id, { value: q });
+    assert(!pfOptions(id).some(o => o.t === "ext"), "no Use row for " + q);
+  }
+  pfInput(id, { value: "Shop guy" });
+  assert(pfOptions(id).some(o => o.t === "ext"), "a real name still gets one");
+  pfClose(id);
+});
+await t("typing a letter on the closed chip opens the picker searching for it", () => {
+  const id = pfBudgetSetup();
+  let prevented = false;
+  pfBtnKey({ key: "p", preventDefault() { prevented = true; }, stopPropagation() {} }, id);
+  assert(prevented && PF_STATE[id].open && PF_STATE[id].q === "p", JSON.stringify(PF_STATE[id]));
+  const opts = pfOptions(id);
+  assert(PF_STATE[id].hi === 0 && opts[0].u.email === "oneil@berkeley.edu", "the best match is highlighted");
+  pfClose(id);
+  pfBtnKey(pfEv(" "), id);
+  assert(!PF_STATE[id].open, "Space is left to the button");
+  pfBtnKey({ key: "c", metaKey: true, preventDefault() {}, stopPropagation() {} }, id);
+  assert(!PF_STATE[id].open, "a shortcut is not a search");
+});
+await t("aria-activedescendant is absent, not empty, when nothing is highlighted", () => {
+  const id = pfBudgetSetup();
+  pfOpen(id);
+  assert(!pfBody(id).includes("aria-activedescendant"), "fresh open, nothing highlighted, no attribute");
+  pfKey(pfEv("ArrowDown"), id);
+  assert(el("pf-q-" + id).getAttribute("aria-activedescendant") === "pf-opt-" + id + "-0", "set when a row is highlighted");
+  assert(pfBody(id).includes('aria-activedescendant="pf-opt-' + id + '-0"'), "and in a repaint");
+  pfInput(id, { value: "zzqx" });
+  assert(el("pf-q-" + id).getAttribute("aria-activedescendant") === null, "removed again when nothing is");
+  pfClose(id);
 });
 await t("no name or email inside any handler, apostrophe included", () => {
   const id = pfBudgetSetup({ purchaser: "Pat O'Neil", purchaserEmail: "oneil@berkeley.edu" });

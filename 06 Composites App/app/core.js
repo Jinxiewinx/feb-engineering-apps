@@ -3083,8 +3083,11 @@ function personField(o) {
 // The value as read mode would show it, so switching into edit changes the frame and not the face.
 function pfFace(v) {
   if (!v || v.kind === "none" || !(v.name || v.email)) return `<span class="pf-empty">Choose someone</span>`;
-  if (v.email) return `<span class="pchip${v.kind === "gone" ? " gone" : ""}">${avatar(v.email, 22)}<span>${esc(v.name)}</span></span>`;
-  return `<span class="pchip ext" title="${v.kind === "ext" ? "Not on the app" : "Not linked to anyone yet"}"><span>${esc(v.name)}</span></span>`;
+  // Said on the field, not only in a tooltip: nobody hovers with gloves on.
+  const kind = { ext: "not on the app", unlinked: "not linked", gone: "left the roster" }[v.kind];
+  const tail = kind ? `<span class="pf-kind">${kind}</span>` : "";
+  if (v.email) return `<span class="pchip${v.kind === "gone" ? " gone" : ""}">${avatar(v.email, 22)}<span>${esc(v.name)}</span></span>${tail}`;
+  return `<span class="pchip ext"><span>${esc(v.name)}</span></span>${tail}`;
 }
 /* How well a roster entry answers a query, or -1. Name start beats a later
    word, which beats initials ("nj"), which beats a match inside the name or
@@ -3116,7 +3119,8 @@ function pfOptions(id) {
     else if (no.length) out.push({ t: "more", n: no.length });
   } else hits.forEach(u => out.push({ t: "person", u }));
   const exact = q && (DB.users || []).some(u => String(u.name || "").trim().toLowerCase() === q || String(u.email || "").toLowerCase() === q);
-  if (q && !exact) out.push({ t: "ext", name: st.q.trim() });
+  // "N/A" or "TBD" is not somebody, so it is never offered as one.
+  if (q && !exact && !notAPerson(q)) out.push({ t: "ext", name: st.q.trim() });
   if (s.allowNone && s.value && s.value.kind !== "none") out.push({ t: "clear" });
   return out;
 }
@@ -3128,24 +3132,29 @@ function pfListHtml(id) {
   const cur = (s.value && s.value.email) || "";
   let html = "";
   const anyTrained = opts.some(o => o.t === "person" && !o.untrained);
-  if (s.training && !q) html += `<div class="pf-grp" role="presentation">${anyTrained ? `${esc(tr)}-trained` : `Nobody is ${esc(tr)}-trained yet`}</div>`;
+  /* With nobody trained at all, tagging every row says the same thing five
+     times and dims the whole list. One heading says it once. */
+  const noneTrained = !!s.training && !qualifiedFor(s.training).length;
+  if (noneTrained) html += `<div class="pf-grp" role="presentation">Nobody is ${esc(tr)}-trained yet</div>`;
+  else if (s.training && !q) html += `<div class="pf-grp" role="presentation">${esc(tr)}-trained</div>`;
   if (q && !opts.some(o => o.t === "person")) html += `<div class="pf-note" role="presentation">Nobody on the app matches</div>`;
   let sepDone = !anyTrained;
   opts.forEach((o, i) => {
     const hi = i === st.hi;
     const a = `id="pf-opt-${id}-${i}" role="option" aria-selected="${hi}" onclick="pfPick('${id}',${i})"`;
     if (o.t === "person") {
-      const sep = o.untrained && !sepDone ? (sepDone = true, " pf-sep") : "";
+      const un = o.untrained && !noneTrained;
+      const sep = un && !sepDone ? (sepDone = true, " pf-sep") : "";
       const mine = o.u.email === cur;
-      html += `<div class="opt pf-opt${hi ? " hi" : ""}${mine ? " cur" : ""}${o.untrained ? " untrained" : ""}${sep}" ${a}>${avatar(o.u, 28)}
-        <span class="pf-nm"><span>${esc(o.u.name || o.u.email)}</span><span class="pf-sub">${o.untrained ? `<span class="pf-tag">not ${esc(tr)}-trained</span> · ` : ""}${esc(o.u.email)}</span></span>
+      html += `<div class="opt pf-opt${hi ? " hi" : ""}${mine ? " cur" : ""}${un ? " untrained" : ""}${sep}" ${a}>${avatar(o.u, 28)}
+        <span class="pf-nm"><span>${esc(o.u.name || o.u.email)}</span><span class="pf-sub">${un ? `<span class="pf-tag">not ${esc(tr)}-trained</span> · ` : ""}${esc(o.u.email)}</span></span>
         ${mine ? `<span class="pf-cur" aria-label="current">${icon("check", 16)}</span>` : ""}</div>`;
     } else if (o.t === "more") {
       html += `<div class="opt pf-opt pf-more${hi ? " hi" : ""}" ${a}><span class="pf-ico">${icon("chevronDown", 16)}</span><span class="pf-nm"><span>Show everyone</span><span class="pf-sub">${o.n} not ${esc(tr)}-trained</span></span></div>`;
     } else if (o.t === "ext") {
       html += `<div class="opt pf-opt pf-ext${hi ? " hi" : ""}" ${a}><span class="pf-ico">${icon("plus", 16)}</span><span class="pf-nm"><span>Use “${esc(o.name)}”</span><span class="pf-sub">not on the app</span></span></div>`;
     } else {
-      html += `<div class="opt pf-opt pf-clear${hi ? " hi" : ""}" ${a}><span class="pf-ico">${icon("x", 16)}</span><span class="pf-nm"><span>Clear</span></span></div>`;
+      html += `<div class="opt pf-opt pf-clear${hi ? " hi" : ""}" ${a}><span class="pf-ico">${icon("x", 16)}</span><span class="pf-nm"><span>Clear, nobody</span></span></div>`;
     }
   });
   return html;
@@ -3158,11 +3167,11 @@ function pfBody(id) {
   const btn = `<button type="button" class="pf-btn" id="pf-btn-${id}" aria-haspopup="listbox" aria-expanded="${open}"${open ? ` aria-controls="pf-list-${id}"` : ""}
     onclick="pfToggle('${id}')" onkeydown="pfBtnKey(event,'${id}')">${pfFace(s.value)}<span class="pf-caret">${icon("chevronDown", 16)}</span></button>`;
   if (!open) return btn;
-  const ad = st.hi >= 0 ? `pf-opt-${id}-${st.hi}` : "";
+  const ad = st.hi >= 0 ? ` aria-activedescendant="pf-opt-${id}-${st.hi}"` : "";
   return btn + `<div class="pf-pop" id="pf-pop-${id}">
     <div class="pf-search">${icon("search", 15)}<input class="pf-q" id="pf-q-${id}" type="text" role="combobox" aria-expanded="true" aria-controls="pf-list-${id}"
-      aria-autocomplete="list" aria-activedescendant="${ad}" aria-label="Search people for ${esc(s.label)}" autocomplete="off" autocapitalize="words" spellcheck="false"
-      placeholder="Search name or email" value="${esc(st.q)}" oninput="pfInput('${id}',this)" onkeydown="pfKey(event,'${id}')"></div>
+      aria-autocomplete="list"${ad} aria-label="Search people for ${esc(s.label)}" autocomplete="off" autocapitalize="words" spellcheck="false"
+      placeholder="Search name or email" value="${esc(st.q)}" onfocus="pfFocused('${id}')" oninput="pfInput('${id}',this)" onkeydown="pfKey(event,'${id}')"></div>
     <div class="pf-list" id="pf-list-${id}" role="listbox" aria-label="${esc(s.label)}" onmousedown="event.preventDefault()">${pfListHtml(id)}</div>
     <div class="pf-foot" id="pf-foot-${id}">${pfFootHtml(id)}</div>
   </div>`;
@@ -3175,7 +3184,9 @@ function pfPaintList(id) {
   const foot = document.getElementById("pf-foot-" + id);
   if (foot) foot.innerHTML = pfFootHtml(id);
   const q = document.getElementById("pf-q-" + id);
-  if (q && q.setAttribute) q.setAttribute("aria-activedescendant", st.hi >= 0 ? `pf-opt-${id}-${st.hi}` : "");
+  // Absent, not empty, when nothing is highlighted: an empty idref is invalid.
+  if (q && st.hi >= 0 && q.setAttribute) q.setAttribute("aria-activedescendant", `pf-opt-${id}-${st.hi}`);
+  else if (q && q.removeAttribute) q.removeAttribute("aria-activedescendant");
   // Keep the highlighted row visible by scrolling the list only. scrollIntoView
   // would scroll the page too and drag the chip out from under the popover.
   const row = st.hi >= 0 && document.getElementById("pf-opt-" + id + "-" + st.hi);
@@ -3186,17 +3197,25 @@ function pfPaintList(id) {
   }
 }
 function pfFocus(elId) { const el = document.getElementById(elId); if (el && el.focus) el.focus(); return el; }
-function pfOpen(id) {
+function pfCoarse() { return !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches); }
+/* `q` opens with a query already typed (a printable key pressed on the chip).
+   On a touch screen the search box is NOT focused on a plain open: the phone
+   keyboard would come up over the very list the member is trying to tap, and
+   the list is usually short enough to need no search. It is one tap away. */
+function pfOpen(id, q) {
   const s = PF_SPECS[id], st = PF_STATE[id];
   if (!s || !st) return;
   for (const k in PF_STATE) if (k !== id && PF_STATE[k].open) pfClose(k);
-  Object.assign(st, { open: true, q: "", showAll: false, caret: 0, caretEnd: 0 });
+  q = q || "";
+  Object.assign(st, { open: true, q, showAll: false, caret: q.length, caretEnd: q.length });
   // Nothing preselected unless it is the current value: Enter on a freshly
   // opened list should not quietly assign whoever sorts first.
-  st.hi = pfOptions(id).findIndex(o => o.t === "person" && o.u.email === (s.value && s.value.email));
+  st.hi = q ? pfFirstPerson(id) : pfOptions(id).findIndex(o => o.t === "person" && o.u.email === (s.value && s.value.email));
   pfPaint(id);
   pfPaintList(id);
-  pfFocus("pf-q-" + id);
+  st.focus = q || !pfCoarse() ? "q" : "btn";
+  const inp = pfFocus(st.focus === "q" ? "pf-q-" + id : "pf-btn-" + id);
+  if (q && inp && inp.setSelectionRange) try { inp.setSelectionRange(q.length, q.length); } catch (e) { /* no caret */ }
   pfPlace(id);
 }
 function pfClose(id, focusBtn) {
@@ -3212,6 +3231,7 @@ function pfOpenFirst() {
   const id = first && first.id ? first.id.slice(3) : Object.keys(PF_SPECS).find(k => PF_SPECS[k].gen === PF_GEN);
   if (id) pfOpen(id);
 }
+function pfFocused(id) { if (PF_STATE[id]) PF_STATE[id].focus = "q"; }
 function pfInput(id, inp) {
   const st = PF_STATE[id];
   if (!st) return;
@@ -3225,6 +3245,13 @@ function pfBtnKey(e, id) {
   if (!st) return;
   if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !st.open) { e.preventDefault(); pfOpen(id); }
   else if (e.key === "Escape" && st.open) { e.preventDefault(); e.stopPropagation(); pfClose(id, true); }
+  // Start typing on the chip and you are searching: the key becomes the query.
+  // Space stays the button's own press.
+  else if (e.key && e.key.length === 1 && e.key !== " " && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault();
+    if (!st.open) pfOpen(id, e.key);
+    else { const inp = pfFocus("pf-q-" + id); if (inp) { inp.value = st.q + e.key; pfInput(id, inp); } }
+  }
 }
 function pfKey(e, id) {
   const st = PF_STATE[id];
@@ -3277,12 +3304,22 @@ function pfPlace(id) {
   // above the keyboard, and innerHeight can be the larger layout viewport.
   const vv = window.visualViewport;
   const vw = document.documentElement.clientWidth || window.innerWidth, vh = (vv && vv.height) || window.innerHeight;
+  const tb = document.getElementById("topbar");
+  const topH = tb && tb.getBoundingClientRect ? Math.max(0, tb.getBoundingClientRect().bottom) : 0;
+  /* Cap the list to what can be seen with the chip parked just under the
+     topbar, so the popover always fits once scrolled, even above a phone
+     keyboard. 132px keeps at least two and a half rows. */
+  const list = document.getElementById("pf-list-" + id);
+  if (list && list.style && list.getBoundingClientRect) {
+    list.style.maxHeight = "";
+    const chrome = pop.getBoundingClientRect().height - list.getBoundingClientRect().height;
+    const room = vh - topH - 8 - wrap.getBoundingClientRect().height - 4 - chrome - 8;
+    list.style.maxHeight = Math.max(132, Math.min(300, Math.floor(room))) + "px";
+  }
   let r = wrap.getBoundingClientRect(), p = pop.getBoundingClientRect();
   if (p.right > vw - 8) pop.classList.add("right");
   // Scroll the page just enough to show the whole list, but never so far the
   // chip itself goes under the sticky topbar.
-  const tb = document.getElementById("topbar");
-  const topH = tb && tb.getBoundingClientRect ? Math.max(0, tb.getBoundingClientRect().bottom) : 0;
   if (p.bottom > vh - 7 && window.scrollBy) {
     const need = Math.min(p.bottom - (vh - 8), r.top - topH - 8);
     if (need > 0) { window.scrollBy(0, need); r = wrap.getBoundingClientRect(); p = pop.getBoundingClientRect(); }
@@ -3300,20 +3337,28 @@ function pfPlace(id) {
    no longer on the page (another record, edit mode off) is closed. */
 function pfSnapshot() {
   const ae = document.activeElement;
-  if (!ae || typeof ae.id !== "string" || !ae.id.startsWith("pf-q-")) return;
-  const st = PF_STATE[ae.id.slice(5)];
-  if (!st) return;
-  st.q = ae.value != null ? ae.value : st.q;
-  try { st.caret = ae.selectionStart; st.caretEnd = ae.selectionEnd; } catch (e) { /* no caret */ }
+  const aid = ae && typeof ae.id === "string" ? ae.id : "";
+  for (const id in PF_STATE) {
+    const st = PF_STATE[id];
+    if (!st.open) continue;
+    // Where focus was is where it goes back: the search box, the chip (an
+    // open list on a phone, keyboard down), or nowhere of ours.
+    st.focus = aid === "pf-q-" + id ? "q" : aid === "pf-btn-" + id ? "btn" : null;
+    if (st.focus !== "q") continue;
+    st.q = ae.value != null ? ae.value : st.q;
+    try { st.caret = ae.selectionStart; st.caretEnd = ae.selectionEnd; } catch (e) { /* no caret */ }
+  }
 }
 function pfRestore() {
   for (const id in PF_STATE) {
     const st = PF_STATE[id], s = PF_SPECS[id];
     if (!s || s.gen !== PF_GEN) { Object.assign(st, { open: false, q: "", hi: -1, showAll: false, refocus: false }); continue; }
     if (st.open) {
-      const q = pfFocus("pf-q-" + id);
-      const at = st.caret != null ? st.caret : st.q.length;
-      try { if (q && q.setSelectionRange) q.setSelectionRange(at, st.caretEnd != null ? st.caretEnd : at); } catch (e) { /* not a text input */ }
+      if (st.focus === "q") {
+        const q = pfFocus("pf-q-" + id);
+        const at = st.caret != null ? st.caret : st.q.length;
+        try { if (q && q.setSelectionRange) q.setSelectionRange(at, st.caretEnd != null ? st.caretEnd : at); } catch (e) { /* not a text input */ }
+      } else if (st.focus === "btn") pfFocus("pf-btn-" + id);
       pfPlace(id);
     } else if (st.refocus) { st.refocus = false; pfFocus("pf-btn-" + id); }
   }
@@ -3331,6 +3376,11 @@ if (typeof document !== "undefined" && document.addEventListener) {
   if (typeof window !== "undefined" && window.addEventListener) {
     const re = () => { for (const id in PF_STATE) if (PF_STATE[id].open) pfPlace(id); };
     window.addEventListener("resize", re);
+    // The phone keyboard coming up or going away resizes only the visual viewport.
+    if (window.visualViewport && window.visualViewport.addEventListener) {
+      window.visualViewport.addEventListener("resize", re);
+      window.visualViewport.addEventListener("scroll", re);
+    }
   }
 }
 
