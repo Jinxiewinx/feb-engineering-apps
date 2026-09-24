@@ -1724,6 +1724,12 @@ email, an exact full name, or a first name only one roster member has. SN5
 retro records skip the first-name rule, because last season's "Nick" is not
 necessarily this season's.
 
+Everything that asks "whose is this" now asks by person rather than by
+spelling: the Budget tab's "Waiting on reimbursement" board, the "mine"
+filters on Parts, Work Orders and the Dashboard, and the People tab's
+assignment counts. A bare first name that two roster members share ("Nick")
+belongs to nobody until a lead says whose it is. It used to belong to both.
+
 ## Files, photos, and watchers
 
 Uploads (avatars, project files, comment images) live in Firebase Storage, which

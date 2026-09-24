@@ -894,12 +894,12 @@ function notAPerson(v) { return !v || /^(n\/?a\b|not recorded|cross-team|tbd\b|p
    season's "Nick" is not necessarily this season's). Cached per roster array,
    because this runs per row per render and onFbData swaps in a new array on
    every roster change. */
-let _rmCache = { users: null, map: new Map() };
+let _rmCache = { users: null, n: 0, map: new Map() };
 function rosterMatch(text, strict) {
   const t = String(text || "").trim().toLowerCase();
   if (!t || notAPerson(t)) return null;
   const users = DB.users || [];
-  if (_rmCache.users !== users) _rmCache = { users, map: new Map() };
+  if (_rmCache.users !== users || _rmCache.n !== users.length) _rmCache = { users, n: users.length, map: new Map() };
   const ck = (strict ? "s:" : "l:") + t;
   if (_rmCache.map.has(ck)) return _rmCache.map.get(ck);
   let out = null;
@@ -948,6 +948,28 @@ function personKey(rec, key, src) {
   const r = personRef(rec, key, src);
   return r.email ? r.email : (r.kind === "none" ? "" : "name:" + r.name.toLowerCase());
 }
+/* "Is this record mine?" for person fields: by email, through personRef. The
+   text match it replaces (isMine) let every Nick claim every "Nick" part.
+   isMine stays for ticket assignees, which already store emails. With me not on the loaded roster (it has not arrived yet)
+   there is nothing to resolve against, so the old text match is the honest
+   fallback. */
+function isMineRef(rec, keys) {
+  if (!rec) return false;
+  const me = myEmail().toLowerCase();
+  if (!me || !userByEmail(me)) return isMine(keys.map(k => rec[k]));
+  return !!me && keys.some(k => personRef(rec, k).email === me);
+}
+/* The names on a record's person fields, one per person: "Justin / justin"
+   and a name beside the same person's email both read as one. */
+function personNames(rec, keys) {
+  const seen = new Set(), out = [];
+  for (const k of keys) {
+    const key = personKey(rec, k); if (!key || seen.has(key)) continue;
+    seen.add(key); out.push(personName(rec, k));
+  }
+  return out;
+}
+const ENG_KEYS = ["moldEngineer", "manufacturingEngineer"];
 function meRef() { return { name: signerName(), email: myEmail() }; }
 /* The two keys of a person field as one patch. email "" with a name means
    Other… (stored as ext); both empty clears the field. */

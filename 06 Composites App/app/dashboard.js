@@ -22,9 +22,9 @@ function deadlineItems() {
   const items = [];
   DB.parts.forEach(p => items.push({
     coll: "parts", id: p.id, kind: "Part", label: p.partName || p.id,
-    who: whoLabel([p.moldEngineer, p.manufacturingEngineer]),
+    who: personNames(p, ENG_KEYS).join(" / "),
     date: p.layupDeadline, done: partDone(p),
-    mine: isMine([p.moldEngineer, p.manufacturingEngineer]),
+    mine: isMineRef(p, ENG_KEYS),
     // Included, never filtered: an R&D layup that misses its date is really
     // late. `rnd` rides along so the row can say so.
     rnd: isRnd(p),
@@ -40,9 +40,9 @@ function deadlineItems() {
      can never under-report lateness. */
   DB.workOrders.forEach(w => items.push({
     coll: "workOrders", id: w.id, kind: "WO", label: w.partName || w.id,
-    who: whoLabel([w.moldEngineer, w.manufacturingEngineer]),
+    who: personNames(w, ENG_KEYS).join(" / "),
     date: w.dueDate, done: w.status === "Complete",
-    mine: isMine([w.moldEngineer, w.manufacturingEngineer]),
+    mine: isMineRef(w, ENG_KEYS),
     rnd: woIsRnd(w),
   }));
   return items;
@@ -267,7 +267,7 @@ function signableSteps(email) {
       wo: w, step: s, i: next, tr, blocker, curing, selfReview,
       missing: ev.missing || [],
       isBlockerStep: typeof isBlocker === "function" && isBlocker(s, w),
-      mine: typeof isMine === "function" && isMine([w.moldEngineer, w.manufacturingEngineer]),
+      mine: isMineRef(w, ENG_KEYS),
       // Scarce: almost nobody else can do it, so it is much more yours.
       scarce: !!tr && qualified.length > 0 && qualified.length <= 2,
       qualified,
@@ -597,7 +597,7 @@ function laneRow(cls, main, meta) {
 function laneStopped(L) {
   const rows = L.stopped.slice(0, 6).map(s => {
     const step = (s.why === "stranded" ? s.blocker : s.step) || s.step || {};
-    const who = whoLabel([s.wo.moldEngineer, s.wo.manufacturingEngineer]);
+    const who = personNames(s.wo, ENG_KEYS).join(" / ");
     return laneRow("bad",
       `${chip("workOrders", s.wo.id, s.wo.partName || s.wo.id)} <b>${esc(step.title || "")}</b> unsigned`,
       `${who || "nobody assigned"}${s.why === "stranded"

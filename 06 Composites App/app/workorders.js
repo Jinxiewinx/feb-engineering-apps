@@ -964,7 +964,7 @@ function woIndexRows() {
     .filter(w => (!view.fStatus || w.status === view.fStatus))
     .filter(w => (!view.fSub || w.subteam === view.fSub))
     .filter(w => (!view.woLate || isWoLate(w)))
-    .filter(w => (!view.woMine || isMine([w.moldEngineer, w.manufacturingEngineer])))
+    .filter(w => (!view.woMine || isMineRef(w, ENG_KEYS)))
     .filter(w => (!view.woIssues || openIssuesForWO(w.id).length))
     /* ABSOLUTE, matching the Parts rail: this is the season runs, and an R&D
        run is viewable and editable from the R&D tab alone. The dashboard, the
@@ -994,7 +994,7 @@ function woSummary() {
   return {
     total: D.length, open: open.length, done: D.length - open.length,
     late: D.filter(isWoLate).length,
-    mine: open.filter(w => isMine([w.moldEngineer, w.manufacturingEngineer])).length,
+    mine: open.filter(w => isMineRef(w, ENG_KEYS)).length,
     curing, blocked, issues,
   };
 }
@@ -1265,7 +1265,7 @@ function renderWOOverview() {
   const curing = [], blocked = [];
   open.forEach(w => { const f = woFlags(w); if (f.curing) curing.push({ w, h: f.curing }); if (f.blocked) blocked.push({ w, b: f.blocked }); });
   const late = D.filter(isWoLate).sort((a, b) => (a.dueDate || "").localeCompare(b.dueDate || ""));
-  const mine = open.filter(w => isMine([w.moldEngineer, w.manufacturingEngineer]));
+  const mine = open.filter(w => isMineRef(w, ENG_KEYS));
   const noRun = woPartsNoRun();
   const mini = (w, right) => `<div class="pmini" onclick="selectWO('${esc(w.id)}')">
     <span class="pm-name">${esc(w.partName || w.id)}</span>

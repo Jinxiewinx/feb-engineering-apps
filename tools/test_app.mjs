@@ -1518,13 +1518,14 @@ await t("the part page surfaces what points at it: work orders, tickets, schedul
   assert(html.includes("WO-SN6-042"), "linked work order");
   assert(html.includes("Nose fit-up"), "ticket that lists this part");
   assert(html.includes("week of 2026-03-02"), "the week it's scheduled on a station");
-  assert(html.includes("filterByEngineer('Nick')"), "ME/RE are people you can filter by, not plain text");
+  assert(html.includes('data-pk="nick@berkeley.edu"') && html.includes("filterByEngineer(this.dataset.pk)"),
+    "ME/RE are people you can filter by, keyed by who they are and never by a name inside onclick");
   assert(html.includes("avatar"), "with a face");
 });
 await t("clicking an engineer filters the index to their parts", () => {
   partsFixture(); render();
   filterByEngineer("Nick");
-  assert(view.fEng === "Nick");
+  assert(view.fEng === "nick@berkeley.edu", "a typed name normalises to the person: " + view.fEng);
   assert(main.innerHTML.includes('id="pi-P-N1"') && !main.innerHTML.includes('id="pi-P-N2"'), "only Nick's parts");
   filterByEngineer("Nick");
   assert(!view.fEng && main.innerHTML.includes('id="pi-P-N2"'), "clicking again clears it");
@@ -2427,7 +2428,7 @@ await t("off-budget purchases are costed and owed, but never counted against com
   assert(main.innerHTML.includes('bignum">$250</div><div class="stat-label">Other budgets (1)'), "and it is visible on its own tile instead of vanishing");
   // Still real money somebody fronted.
   const owed = owedRows();
-  assert(owed.find(([who]) => who === "Simon")[1] === 350, "the purchaser is owed for both: " + JSON.stringify(owed));
+  assert(owed.find(o => /^Simon/.test(o.ref.name)).amt === 350, "the purchaser is owed for both: " + JSON.stringify(owed));
   assert(main.innerHTML.includes(">Chassis</span>"), "the row says whose budget it lands on");
   // And the filter can cut the list either way.
   view.fBudget = "other"; render();
@@ -12249,6 +12250,50 @@ console.log("person references:");
     DB.rnd = saved;
   });
 }
+
+
+console.log("person grouping:");
+await t("the owed board is one row per person, however the name was typed", () => {
+  DB.users = [
+    { email: "nico@berkeley.edu", name: "Nico Rossi", role: "member" },
+    { email: "nick@berkeley.edu", name: "Nick Jepsen", role: "member" },
+    { email: "nalvarez@berkeley.edu", name: "Nick Alvarez", role: "member" },
+  ];
+  DB.budget = [
+    { id: "B-1", cost: "10", purchaser: "Nico" },
+    { id: "B-2", cost: "20", purchaser: "Nico R.", purchaserEmail: "nico@berkeley.edu" },
+    { id: "B-3", cost: "5", purchaser: "nico rossi" },
+    { id: "B-4", cost: "7", purchaser: "Nick" },
+    { id: "B-5", cost: "3", purchaser: "Shop guy", purchaserEmail: "ext" },
+  ];
+  const owed = owedRows();
+  const nico = owed.find(o => o.key === "nico@berkeley.edu");
+  assert(nico && nico.amt === 35 && nico.ref.name === "Nico Rossi", "three spellings, one person, $35: " + JSON.stringify(owed));
+  assert(owed.find(o => o.key === "name:nick").amt === 7, "an ambiguous Nick stays its own row, not a guess");
+  assert(owed.length === 3, "Nico, Nick, Shop guy: " + owed.map(o => o.key).join(","));
+});
+await t("'mine' is by email: two Nicks no longer both claim a first-name part", () => {
+  DB.users = [
+    { email: "nick@berkeley.edu", name: "Nick Jepsen", role: "member" },
+    { email: "nalvarez@berkeley.edu", name: "Nick Alvarez", role: "member" },
+  ];
+  fb.state = "ready"; fb.guest = false;
+  fb.user = { uid: "u2", email: "nick@berkeley.edu", name: "Nick Jepsen" };
+  fb.roster = { name: "Nick Jepsen", role: "member" };
+  assert(!isMineRef({ moldEngineer: "Nick" }, ENG_KEYS), "bare 'Nick' is nobody's until a lead says whose");
+  assert(isMineRef({ moldEngineer: "Nick", moldEngineerEmail: "nick@berkeley.edu" }, ENG_KEYS), "linked is mine");
+  assert(isMineRef({ manufacturingEngineer: "Nick Jepsen" }, ENG_KEYS), "full name infers");
+  assert(!isMineRef({ moldEngineer: "Nick Jepsen", moldEngineerEmail: "nalvarez@berkeley.edu" }, ENG_KEYS), "the stored email wins over the text");
+  signInAsLead();
+});
+await t("an engineer filter survives an apostrophe", () => {
+  DB.users = [{ email: "oneil@berkeley.edu", name: "Pat O'Neil", role: "member" }];
+  const chip = engineerChip(partEngineers({ moldEngineer: "Pat O'Neil" })[0]);
+  assert(!/onclick="[^"]*O'Neil/.test(chip), "no name inside the handler: " + chip);
+  filterByEngineer("oneil@berkeley.edu");
+  assert(partHasEngineer({ moldEngineer: "Pat O'Neil" }, view.fEng), "and the filter finds the part");
+  view.fEng = "";
+});
 
 /* Nothing below should inherit a splash the tests above left half-dismissed. */
 resetSplash();

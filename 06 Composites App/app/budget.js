@@ -110,13 +110,17 @@ function catSpend(name) {
 /* Members front their own money and wait; this is the treasurer's nag list.
    Off-budget purchases ARE on it — whose line the cost lands on is nothing to
    do with whether somebody is still out of pocket. */
+/* Grouped by PERSON (personKey), not by the text typed into the box: "Nico"
+   and "Nico Rossi" used to be two rows each owed part of one person's money. */
 function owedRows() {
   const m = new Map();
   (DB.budget || []).filter(b => !buyReimbursed(b) && num(b.cost)).forEach(b => {
-    const k = b.purchaser || "—";
-    m.set(k, (m.get(k) || 0) + num(b.cost));
+    const k = personKey(b, "purchaser") || "—";
+    const row = m.get(k) || { key: k, ref: personRef(b, "purchaser"), amt: 0 };
+    row.amt += num(b.cost);
+    m.set(k, row);
   });
-  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  return [...m.values()].sort((a, b) => b.amt - a.amt);
 }
 
 function goalBar(label, spent, goal, opts) {
@@ -154,7 +158,7 @@ function budgetBoardsHtml(totalSpent) {
     </div>
     ${owed.length ? `<div class="card owedcard">
       <h3>Waiting on reimbursement</h3>
-      ${owed.map(([who, amt]) => `<div class="orow"><span>${esc(who)}</span><b>$${amt.toFixed(2)}</b></div>`).join("")}
+      ${owed.map(o => `<div class="orow"><span>${esc(o.ref.name || "—")}</span><b>$${o.amt.toFixed(2)}</b></div>`).join("")}
     </div>` : ""}
   </div>`;
 }
