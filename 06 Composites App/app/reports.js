@@ -17,10 +17,10 @@ function downloadCSV(name, csv) {
    trials rather than the car — is unanswerable if the trials are missing
    instead of marked. Same reasoning as budget's two money columns below. */
 const CSV_SPECS = {
-  parts: { file: "parts", rows: () => DB.parts, cols: [["id", r => r.id], ["part", r => r.partName], ["subteam", r => r.subteam], ["layupType", r => r.layupType], ["cad", r => r.cadProgress], ["mold", r => r.moldProgress], ["layup", r => r.layupProgress], ["moldEngineer", r => r.moldEngineer], ["mfgEngineer", r => r.manufacturingEngineer], ["weightG", r => r.weightG], ["deadline", r => r.layupDeadline], ["rnd", r => isRnd(r) ? "R&D" : ""]] },
-  workOrders: { file: "work-orders", rows: () => DB.workOrders, cols: [["id", r => r.id], ["part", r => r.partName], ["subteam", r => r.subteam], ["process", r => r.processType], ["status", r => r.status], ["moldEngineer", r => r.moldEngineer], ["mfgEngineer", r => r.manufacturingEngineer], ["due", r => r.dueDate], ["rnd", r => woIsRnd(r) ? "R&D" : ""]] },
+  parts: { file: "parts", rows: () => DB.parts, cols: [["id", r => r.id], ["part", r => r.partName], ["subteam", r => r.subteam], ["layupType", r => r.layupType], ["cad", r => r.cadProgress], ["mold", r => r.moldProgress], ["layup", r => r.layupProgress], ["moldEngineer", r => personText(r, "moldEngineer")], ["mfgEngineer", r => personText(r, "manufacturingEngineer")], ["weightG", r => r.weightG], ["deadline", r => r.layupDeadline], ["rnd", r => isRnd(r) ? "R&D" : ""]] },
+  workOrders: { file: "work-orders", rows: () => DB.workOrders, cols: [["id", r => r.id], ["part", r => r.partName], ["subteam", r => r.subteam], ["process", r => r.processType], ["status", r => r.status], ["moldEngineer", r => personText(r, "moldEngineer")], ["mfgEngineer", r => personText(r, "manufacturingEngineer")], ["due", r => r.dueDate], ["rnd", r => woIsRnd(r) ? "R&D" : ""]] },
   projects: { file: "issues", rows: () => DB.projects.filter(isIssue), cols: [["id", r => r.id], ["title", r => r.title], ["status", r => projStatus(r)], ["workOrder", r => r.workOrderId], ["resolution", r => r.resolutionMethod], ["priority", r => r.priority], ["due", r => r.dueDate], ["assignees", r => (r.assignees || []).join("; ")]] },
-  budget: { file: "budget", rows: () => DB.budget, cols: [["id", r => r.id], ["item", r => r.item], ["purchaser", r => r.purchaser], ["purpose", r => r.purpose],
+  budget: { file: "budget", rows: () => DB.budget, cols: [["id", r => r.id], ["item", r => r.item], ["purchaser", r => personText(r, "purchaser")], ["purpose", r => r.purpose],
     // Two status columns, because there are two tracks: where the goods are and
     // where the money is. chargedTo is blank for composites' own spend, so the
     // advisor can sum our season without filtering anything out.
@@ -238,7 +238,7 @@ function statusBoardScreen() {
       <h3>Work orders in progress (${d.woInWork.length})</h3>
       ${d.woInWork.length ? d.woInWork.map(w => `<div class="srow">
         <span class="sr-main"><span class="kind">WO</span> ${chip("workOrders", w.id, w.partName || w.id)}${rndBadge(woIsRnd(w))}</span>
-        <span class="srow-meta">${esc(w.manufacturingEngineer || w.moldEngineer || "unassigned")}</span>
+        <span class="srow-meta">${esc(personText(w, "manufacturingEngineer") || personText(w, "moldEngineer") || "unassigned")}</span>
       </div>`).join("") : '<p class="muted">None marked in-work.</p>'}
     </div>
     <div class="card">
@@ -300,7 +300,7 @@ function statusBoardSheetHtml() {
     <td class="idc">${esc(w.id)}</td>
     <td>${esc(w.partName || w.id)}${rnd(woIsRnd(w))}</td>
     <td>${esc(w.subteam || "")}</td>
-    <td>${esc(w.manufacturingEngineer || w.moldEngineer || "unassigned")}</td></tr>`);
+    <td>${esc(personText(w, "manufacturingEngineer") || personText(w, "moldEngineer") || "unassigned")}</td></tr>`);
 
   const blk = d.openBlockers.map(b => `<tr>
     <td class="idc">${esc(b.wo.id)}</td>

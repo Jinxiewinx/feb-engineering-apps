@@ -943,6 +943,15 @@ function personRef(rec, key, src) {
   return { email: "", name, kind: "unlinked" };
 }
 function personName(rec, key, src) { const r = personRef(rec, key, src); return r.kind === "none" ? "" : r.name; }
+/* For exports and paper: the person's current name, or the cell exactly as it
+   was when it names nobody ("N/A (Flat)" stays on the CSV rather than
+   vanishing, because a blank reads as "never filled in"). */
+function personText(rec, key, src) {
+  const n = personName(rec, key, src);
+  if (n) return n;
+  const o = src || rec || {};
+  return String(o[key] ?? "");
+}
 // What to GROUP by: the person when there is one, else the text itself.
 function personKey(rec, key, src) {
   const r = personRef(rec, key, src);
@@ -988,7 +997,7 @@ function personChip(ref, opts) {
       data-open="person/${esc(encodeURIComponent(ref.email))}" title="${esc(tip)}"
       onclick="event.stopPropagation();openPerson(this.dataset.email)">${avatar(ref.email, size)}<span>${esc(ref.name)}</span>${role}</button>`;
   }
-  const tip = ref.kind === "ext" ? "Not on the app" : (isLead() ? "Not linked to anyone yet. People › Unlinked names" : "Not linked to anyone on the roster");
+  const tip = ref.kind === "ext" ? "Not on the app" : (isLead() ? "Not linked to anyone yet. People › Unlinked" : "Not linked to anyone on the roster");
   return `<span class="pchip ext" title="${esc(tip)}"><span>${esc(ref.name)}</span>${role}</span>`;
 }
 // A roster email → its chip, for fields that have always stored an email.

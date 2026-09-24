@@ -379,6 +379,14 @@
   .powed { margin-bottom: 8px; }
   .powed b { font-size: 18px; margin: 0 4px; }
   .pfold summary { cursor: pointer; margin-top: 6px; }
+  .ulist { display: flex; flex-direction: column; }
+  .ulrow { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(0, 2fr) auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .ulrow:first-child { border-top: 0; }
+  .ulname { min-width: 0; }
+  .ulrecs { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+  .ulact { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .ulact select { max-width: 200px; }
+  @media (max-width: 700px) { .ulrow { grid-template-columns: 1fr; } .ulact select { max-width: none; flex: 1 1 100%; } }
   .pbuy .chip { flex: 1 1 160px; min-width: 0; }
   .pbuy-amt { font-variant-numeric: tabular-nums; }
   .psec { min-width: 0; overflow-wrap: anywhere; }

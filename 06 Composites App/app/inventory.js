@@ -886,10 +886,10 @@ function invMoveHere(binId) {
 function invConfirmContents(binId) {
   const b = shopById("items", binId);
   if (!b) return;
-  b.walkedAt = new Date().toISOString().slice(0, 10);
-  b.walkedBy = signerName();
-  save("items", b, "walkedAt");
-  save("items", b, "walkedBy");
+  // One write, and the email with the name, so the walk is linked to the
+  // person who did it from the moment it is recorded.
+  if (guestBlocked()) return;
+  savePatch("items", b, { walkedAt: new Date().toISOString().slice(0, 10), ...personPatch("walkedBy", myEmail(), signerName()) });
   toast(`${b.name || b.id} confirmed — thanks for walking it.`);
   render();
 }

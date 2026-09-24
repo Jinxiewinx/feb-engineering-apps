@@ -179,6 +179,12 @@ function lblCouponCount(s) { return typeof rdCouponsDeep === "function" ? rdCoup
 
    This is a printed, team-facing label. The PUBLIC nameplate is pubProjection,
    which carries no person at all — see the never-add list on it. */
+/* A person field on a label: the current name when the field is linked, the
+   text as typed when it is not. Guarded because labels.js must not assume the
+   app's person helpers are loaded. */
+function lblPerson(o, key) {
+  return typeof personText === "function" ? personText(o, key) : String(o[key] || "");
+}
 function lblWho(v) {
   const s = String(v || "");
   return typeof userName === "function" && s.includes("@") ? userName(s) : s;
@@ -421,7 +427,7 @@ function labelLines(coll, o, p) {
   if (coll === "molds") {
     return {
       name: up(o.name || o.partName),
-      key: j(o.sealedDate ? `SEALED ${o.sealedDate}` : "", o.sealedBy ? up(o.sealedBy) : "",
+      key: j(o.sealedDate ? `SEALED ${o.sealedDate}` : "", o.sealedBy ? up(lblPerson(o, "sealedBy")) : "",
              o.uses != null ? `USES ${String(o.uses).padStart(2, "0")}` : "", o.rev ? `REV ${up(o.rev)}` : ""),
       mid: j(o.density ? `${canonDensity(o.density) ?? o.density} PCF` : "", up(o.layers), up(o.sealingType)),
       // Short because it competes with board and location for one 7pt line, and
@@ -435,7 +441,7 @@ function labelLines(coll, o, p) {
       name: up(o.partName || o.name),
       key: up(o.layupSchedule || o.stack || ""),                 // the PP-09 answer
       mid: j(up(o.layupType || o.process), up(o.mold || o.moldRef), up(o.workOrderId || o.wo)),
-      foot: j(o.laidOn ? `LAID ${o.laidOn}` : "", up(o.by), o.weightG ? `${o.weightG}G` : "", up(o.subteam))
+      foot: j(o.laidOn ? `LAID ${o.laidOn}` : "", up(lblPerson(o, "by")), o.weightG ? `${o.weightG}G` : "", up(o.subteam))
     };
   }
   if (coll === "rnd") {
@@ -459,7 +465,7 @@ function labelLines(coll, o, p) {
       name: up(j(lblStudyName(o), o.label)),
       key: up(lblEff(o, "stack")),                      // the PP-09 answer, same as a panel
       mid: j(up(lblEff(o, "fabricLots")), up(lblEff(o, "resinLot"))),
-      foot: j(o.laidOn ? `LAID ${o.laidOn}` : "", up(lblWho(lblEff(o, "by"))), up(o.status)),
+      foot: j(o.laidOn ? `LAID ${o.laidOn}` : "", up(typeof rdEffPerson === "function" ? (rdEffPerson(o, "by").name || lblWho(lblEff(o, "by"))) : lblWho(lblEff(o, "by"))), up(o.status)),
     };
   }
   if (coll === "lots") {

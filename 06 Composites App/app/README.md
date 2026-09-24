@@ -1741,15 +1741,35 @@ cmd-click opens it in a new tab like any record link. A name with a dashed
 outline and no face is somebody not on the app, or an old typed name nobody
 has linked yet.
 
+Leads get a third view on People, **Unlinked**, for the old typed names. The
+top card counts records whose name already matches exactly one person and
+links them all with one press. That only stores who they are; the names stay
+as typed. Below it, one row per name nobody could match (a first name two
+people share, a retro SN5 first name, someone who never joined) with the
+records it appears on, a "Who is this?" list that offers the likely people
+first, and a "Not on the app" button. A row applies to every record with that
+exact name in that kind of field. These writes are not stamped as edits, so
+linking eighty records doesn't fill the activity feed with your name.
+
+Exports and paper follow the same rule as the screen: the CSV, the Google
+Sheet feed, printed travelers and labels all print the person's current
+roster name when the field is linked, and the text as typed when it is not
+(so "N/A (Flat)" stays "N/A (Flat)" instead of going blank). No email is ever
+exported to the Sheet.
+
 In edit mode the purchaser and both engineer fields are pickers. The field
-shows the same chip read mode does, with a caret; press it and a list of people
-opens under it with a search box on top (name, email or initials). For an
-engineer field the people who hold the matching training come first, and
-everyone else sits behind one "Show everyone" row, tagged "not X-trained" when
-shown. Typing searches everybody. To name someone who is not on the app, type
-their name and pick the `Use "…"` row at the bottom; Enter alone will not pick
-it, so a typo does not become a person. Clear empties the field. Arrow keys
-move, Enter picks, Escape closes without a change.
+shows the same chip read mode does, with a caret, and says in small type when
+the name is not on the app, not linked, or has left the roster. Press it and a
+list of people opens under it with a search box on top (name, email or
+initials); on a phone the search box waits for a tap, so the keyboard does not
+cover the list. Typing a letter on the field starts a search. For an engineer
+field the people who hold the matching training come first, and everyone else
+sits behind one "Show everyone" row, tagged "not X-trained" when shown; when
+nobody holds it yet the list says so once. Typing searches everybody. To name
+someone who is not on the app, type their name and pick the `Use "…"` row at
+the bottom; Enter alone will not pick it, so a typo does not become a person,
+and "N/A" or "TBD" is never offered as one. "Clear, nobody" empties the field.
+Arrow keys move, Enter picks, Escape closes without a change.
 
 ## Files, photos, and watchers
 

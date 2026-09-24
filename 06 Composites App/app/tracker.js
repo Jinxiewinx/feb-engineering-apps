@@ -101,6 +101,9 @@ function trackerRow(p) {
   // The sheet has ONE "Weight (g)" column. The measured weight is the
   // interesting number once it exists; the target is what to show until then.
   r.weightG = String(p.weightActualG || p.weightG || "");
+  // The person's current name, never an email: a linked engineer renamed on
+  // the roster should read the new name in the sheet too.
+  if (typeof personText === "function") for (const k of ENG_KEYS) r[k] = personText(p, k);
   return r;
 }
 

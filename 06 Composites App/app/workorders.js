@@ -1042,7 +1042,9 @@ function woIndexItem(w, opts) {
   const pr = woProgress(w);
   const fl = woFlags(w);
   const late = isWoLate(w);
-  const engs = [w.moldEngineer, w.manufacturingEngineer].filter(Boolean);
+  // One face per person, by who they are: "Justin" and "Justin Lee" are one.
+  const engs = [...new Map(ENG_KEYS.map(k => personRef(w, k)).filter(r => r.kind !== "none")
+    .map(r => [r.email || "name:" + r.name.toLowerCase(), r])).values()];
   // Grouped by part, the header already said the part name — repeating it down
   // twelve rows is a column of the same word. Lead with the id instead.
   const name = opts.hidePart
@@ -1067,7 +1069,7 @@ function woIndexItem(w, opts) {
     <span class="pi-name">${box}${name}${w.retro ? ' <span class="pill retro tny">retro</span>' : ""}${rndBadge(woIsRnd(w))}${archivedPill(w, true)}</span>
     <span class="pi-due ${late ? "warn" : ""}">${w.dueDate ? shortDate(w.dueDate) + (late ? " " + icon("warning", 12) : "") : ""}</span>
     <span class="pi-sub">${woProgBar(pr)}${flag || `<span class="tny">${esc(opts.hidePart ? (w.processType || "") : (w.subteam || ""))}</span>`}</span>
-    <span class="pi-who">${engs.map(e => avatar(e, 20)).join("")}</span>
+    <span class="pi-who">${engs.map(r => avatar(r.email ? r.email : { email: "", name: r.name }, 20)).join("")}</span>
   </div>`;
 }
 /* The one number the flat table never had: how far through its buy-offs this
@@ -1555,7 +1557,7 @@ function renderWODetail() {
             const nm = String(wo[k] || "").trim();
             if (!nm || (typeof notAPerson === "function" && notAPerson(nm))) return "";
             const email = partEngineerEmail(wo, k);
-            return `<span class="wf-eng" title="${esc(role)} — ${esc(nm)}">${avatar(email || nm, 24)}</span>`;
+            return `<span class="wf-eng" title="${esc(role)} — ${esc(personName(wo, k) || nm)}">${avatar(email || nm, 24)}</span>`;
           }).filter(Boolean).join("");
         return engs ? `<span class="wo-fact">${engs}</span>` : "";
       })()}
