@@ -194,8 +194,11 @@ table.list.dash td { cursor: default; }
 .wosec-hd { display: flex; align-items: center; gap: 8px; margin: 0; list-style: none; }
 button.wosec-hd { appearance: none; -webkit-appearance: none; width: 100%; background: none; border: 0;
   padding: 0; font: inherit; text-align: left; cursor: pointer; min-height: 40px; color: inherit; }
+/* The one heading on a detail page that is ink. Three heading levels, told
+   apart by case and colour rather than by a pixel of size: section = ink Saira
+   caps, subsection = grey caps, group = sentence-case ink with a rule. */
 .wosec-hd > span:first-child { position: relative; padding-left: 11px; font-family: var(--font-display);
-  font-size: 13.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  font-size: 13.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--ink); }
 .wosec-hd > span:first-child::before { content: ""; position: absolute; left: 1px; top: 1px; bottom: 1px; width: 3px;
   border-radius: 0 2px 2px 0; background: var(--gold); transform: skewX(-12deg); }
 .wosec-hd.warn > span:first-child::before { background: var(--bad); }
@@ -221,8 +224,10 @@ button.wosec-hd { appearance: none; -webkit-appearance: none; width: 100%; backg
 .wo-subfold[open] > summary.wo-subhd::before { content: "▾"; }
 .w110 { width: 110px; }
 /* Second-tier group label inside a section card, below h3, above a grid. */
-.fgroup-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--faint); margin: 12px 0 4px; }
+/* A group heading that reads as a heading. At 11px uppercase --faint it was
+   the same register as the --muted field labels beneath it. */
+.fgroup-label { font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: 0;
+  color: var(--ink); margin: 14px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
 .fgroup-label:first-child { margin-top: 0; }
 
 /* ---- photos ----

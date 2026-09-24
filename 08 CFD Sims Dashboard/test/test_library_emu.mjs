@@ -15,6 +15,7 @@
 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readFile } from "node:fs/promises";
 import { serveDir, loadChromium, skipMessage } from "../../tools/lib/browser.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -30,6 +31,16 @@ const browser = await chromium.launch();
 const errors = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+  /* Where gstatic.com is out of reach (a sandbox with a network allowlist),
+     FIREBASE_SDK_DIR=<unpacked firebase npm package> serves the same CDN
+     builds from disk. The npm package ships them byte for byte. */
+  if (process.env.FIREBASE_SDK_DIR) {
+    await page.route("https://www.gstatic.com/firebasejs/**", async route => {
+      const file = new URL(route.request().url()).pathname.split("/").pop();
+      try { await route.fulfill({ contentType: "text/javascript", body: await readFile(join(process.env.FIREBASE_SDK_DIR, file)) }); }
+      catch { await route.abort(); }
+    });
+  }
   page.on("pageerror", e => errors.push(String(e)));
   page.on("dialog", d => d.type() === "prompt" ? d.accept("first run of the season") : d.accept());
   const go = async () => { await page.waitForSelector("#splash.ready", { timeout: 20000 }); await page.click("#sp-go"); };
