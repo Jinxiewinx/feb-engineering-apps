@@ -12371,6 +12371,19 @@ console.log("unlinked names:");
     signInAsLead(); view.pplView = "list";
   });
 }
+console.log("person exports:");
+await t("exports carry the person's current name, never an email, and keep sentinels", () => {
+  DB.users = [{ email: "nico@berkeley.edu", name: "Nico Rossi-Marsh", role: "member" }];
+  const p = { id: "P-EX", partName: "SEAT", moldEngineer: "Nico Rossi", moldEngineerEmail: "nico@berkeley.edu", manufacturingEngineer: "N/A (Flat)", layupProgress: "In Layup" };
+  const cols = Object.fromEntries(CSV_SPECS.parts.cols.map(([k, f]) => [k, f(p)]));
+  assert(cols.moldEngineer === "Nico Rossi-Marsh", "a rename reaches the CSV: " + cols.moldEngineer);
+  assert(cols.mfgEngineer === "N/A (Flat)", "a sentinel stays as typed rather than blanking: " + cols.mfgEngineer);
+  const buy = Object.fromEntries(CSV_SPECS.budget.cols.map(([k, f]) => [k, f({ id: "B", purchaser: "Nico", purchaserEmail: "nico@berkeley.edu" })]));
+  assert(buy.purchaser === "Nico Rossi-Marsh");
+  assert(!TRACKER_FIELDS.some(f => /Email$/.test(f)), "the public feed never lists an email field");
+  const r = trackerRow({ ...p, id: "P-SN6-777" });
+  assert(r && r.moldEngineer === "Nico Rossi-Marsh" && !JSON.stringify(r).includes("@"), "tracker row: live name, no address: " + JSON.stringify(r));
+});
 console.log("person page:");
 await t("a person page gathers their money, engineering, issues and buy-offs", () => {
   signInAsLead();

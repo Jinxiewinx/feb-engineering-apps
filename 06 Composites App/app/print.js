@@ -245,8 +245,8 @@ function woSheetHtml(wo, opts) {
           records, and only an R&D sheet can be pushed a rung — into `compact`,
           which is a designed floor rather than a failure. */""}
     ${rndTxt ? pfield("Build type", rndTxt, "span2") : ""}
-    ${pfield("Mold engineer", blank ? "" : wo.moldEngineer)}
-    ${pfield("Manufacturing engineer", blank ? "" : wo.manufacturingEngineer)}
+    ${pfield("Mold engineer", blank ? "" : personText(wo, "moldEngineer"))}
+    ${pfield("Manufacturing engineer", blank ? "" : personText(wo, "manufacturingEngineer"))}
     ${pfield("Created", blank ? "" : wo.createdDate, "", "date")}
     ${pfield("Due", blank ? "" : wo.dueDate, "", "date")}
     ${pfield("Mass target (g)", blank ? "" : wo.weightTargetG)}
@@ -300,7 +300,7 @@ function woSheetHtml(wo, opts) {
     <div class="ws-signgrid">
       <div class="ws-sigbox">
         <div class="role">Manufacturing engineer</div>
-        <div class="who">${esc(blank ? "" : pv(wo.manufacturingEngineer))}&nbsp;</div>
+        <div class="who">${esc(blank ? "" : pv(personText(wo, "manufacturingEngineer")))}&nbsp;</div>
         <div class="ws-sigrow"><div class="sigline"></div><div class="dateline"></div></div>
         <div class="ws-caps"><div class="c1 cap">Signature</div><div class="c2 cap">Date</div></div>
       </div>

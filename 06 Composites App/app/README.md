@@ -1751,6 +1751,12 @@ first, and a "Not on the app" button. A row applies to every record with that
 exact name in that kind of field. These writes are not stamped as edits, so
 linking eighty records doesn't fill the activity feed with your name.
 
+Exports and paper follow the same rule as the screen: the CSV, the Google
+Sheet feed, printed travelers and labels all print the person's current
+roster name when the field is linked, and the text as typed when it is not
+(so "N/A (Flat)" stays "N/A (Flat)" instead of going blank). No email is ever
+exported to the Sheet.
+
 ## Files, photos, and watchers
 
 Uploads (avatars, project files, comment images) live in Firebase Storage, which

@@ -943,6 +943,15 @@ function personRef(rec, key, src) {
   return { email: "", name, kind: "unlinked" };
 }
 function personName(rec, key, src) { const r = personRef(rec, key, src); return r.kind === "none" ? "" : r.name; }
+/* For exports and paper: the person's current name, or the cell exactly as it
+   was when it names nobody ("N/A (Flat)" stays on the CSV rather than
+   vanishing, because a blank reads as "never filled in"). */
+function personText(rec, key, src) {
+  const n = personName(rec, key, src);
+  if (n) return n;
+  const o = src || rec || {};
+  return String(o[key] ?? "");
+}
 // What to GROUP by: the person when there is one, else the text itself.
 function personKey(rec, key, src) {
   const r = personRef(rec, key, src);
