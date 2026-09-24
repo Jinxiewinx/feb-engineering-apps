@@ -325,7 +325,7 @@ async function submitRestockPurchase() {
     b = {
       id, item: `Restock — ${take.length} item${take.length === 1 ? "" : "s"}`,
       purpose: "Restock", status: "Submitted", reimb: "Submitted", chargedTo: "", source: common,
-      purchaser: signerName(), cost: "", dateOrdered: "", lines,
+      purchaser: signerName(), purchaserEmail: myEmail().toLowerCase(), cost: "", dateOrdered: "", lines,
     };
     (DB.budget = DB.budget || []).push(b);
     save("budget", b);

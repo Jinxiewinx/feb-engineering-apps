@@ -227,7 +227,7 @@ async function newBuy() {
   const id = await allocId("budget");
   if (!id) return;
   const b = {
-    id, item: "", purchaser: signerName(), purpose: (budgetCats()[0] || {}).name || "Manufacturing",
+    id, item: "", purchaser: signerName(), purchaserEmail: myEmail().toLowerCase(), purpose: (budgetCats()[0] || {}).name || "Manufacturing",
     status: "Submitted", reimb: "Submitted", chargedTo: "",
     cost: "", dateOrdered: today(), source: "", notes: "", retro: false, createdBy: myEmail(),
     receiptUrl: "", receiptPath: "",
@@ -617,6 +617,14 @@ function renderBuyDetail() {
   </div>`;
 }
 
+/* The purchaser picker's writer: an email, "" with a typed name for Other…,
+   or both empty to clear. One write for the name and the email. */
+function buyPerson(key, email, name) {
+  const b = buyById(view.id);
+  if (!b || guestBlocked()) return;
+  savePatch("budget", b, personPatch(key, email, name));
+  renderSoonKeepFocus();
+}
 function updBuy(key, val) {
   const b = buyById(view.id); b[key] = val; saveBuy(b, key);
   if (["status", "reimb", "cost", "purpose", "chargedTo"].includes(key)) renderSoonKeepFocus();

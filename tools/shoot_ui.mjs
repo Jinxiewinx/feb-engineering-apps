@@ -89,6 +89,10 @@ const STATES = [
   { id: "list-all", js: tab => `setTab(${JSON.stringify(tab)}); view.fDone = true; render();` },
   { id: "detail", js: (tab, id) => `setTab(${JSON.stringify(tab)}); openRecord(${JSON.stringify(tab)}, ${JSON.stringify(id)});` },
   { id: "detail-edit", js: (tab, id) => `setTab(${JSON.stringify(tab)}); openRecord(${JSON.stringify(tab)}, ${JSON.stringify(id)}); view.edit = true; render();` },
+  /* A person picker, open. pfOpenFirst() is the component's own entry point
+     (core.js): it opens the first person field on the page the way a click
+     would, so this photographs the list a member actually chooses from. */
+  { id: "detail-edit-pick", js: (tab, id) => `setTab(${JSON.stringify(tab)}); openRecord(${JSON.stringify(tab)}, ${JSON.stringify(id)}); view.edit = true; render(); if (typeof pfOpenFirst === "function") pfOpenFirst();` },
 ];
 
 /* --tab all sweeps the whole app instead of one tab. Every tab in core.js's
@@ -122,7 +126,7 @@ window.fb = {
   user: { uid: "u1", email: "simon@berkeley.edu", name: "Simon Starbuck" },
   roster: { role: "lead", name: "Simon Starbuck", email: "simon@berkeley.edu" },
   rosterCheckFailed: false,
-  save: async () => {}, del: async () => {}, mutateField: async () => {}, appendTo: async () => {},
+  save: async () => {}, patch: async () => {}, del: async () => {}, mutateField: async () => {}, appendTo: async () => {},
   // The bulk delete path. Present here because the app calls it: a shim missing
   // it turns "delete these work orders" into a TypeError in every local run.
   delMany: async () => {}, deleteFiles: async (p) => ({ ok: (p || []).length, failed: [] }),
