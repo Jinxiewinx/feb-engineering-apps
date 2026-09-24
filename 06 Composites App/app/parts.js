@@ -309,17 +309,7 @@ function advancePartStage(n) {
    The optional *Email fields (new, default empty) let a part name a roster
    account exactly; without one we fall back to the same name match People and
    the Dashboard already use, so all 33 SN5 records get a face today. */
-function partEngineerEmail(p, key) {
-  const explicit = p[key + "Email"];
-  if (explicit) return explicit;
-  const nm = String(p[key] || "").trim().toLowerCase();
-  if (!nm || (typeof notAPerson === "function" && notAPerson(nm))) return "";
-  const u = (DB.users || []).find(u => {
-    const n = (u.name || "").toLowerCase();
-    return u.email.toLowerCase() === nm || n === nm || n.split(" ")[0] === nm;
-  });
-  return u ? u.email : "";
-}
+function partEngineerEmail(p, key) { return personRef(p, key).email; }
 /* One person often holds both roles — "Justin / Justin" was half the SN5
    tracker. Two identical faces in a row reads as two people at a glance, which
    is worse than saying nothing, so the same name collapses to one chip that

@@ -300,6 +300,17 @@ const fb = {
     pubSync(coll, obj);
     trackerSync(coll);
   },
+  /* save() with a list of fields: those keys, one updateDoc. For values that
+     only mean something together (a person's name and email). */
+  async patch(coll, obj, fields) {
+    noWrites();
+    const stamp = { updatedAt: serverTimestamp(), updatedBy: fb.user ? fb.user.email : "?" };
+    const out = {};
+    for (const f of fields) out[f] = JSON.parse(JSON.stringify(obj[f] ?? null));
+    await updateDoc(doc(db, coll, obj.id), { ...out, ...stamp });
+    pubSync(coll, obj);
+    trackerSync(coll);
+  },
   async del(coll, id) {
     noWrites();
     await deleteDoc(doc(db, coll, id));

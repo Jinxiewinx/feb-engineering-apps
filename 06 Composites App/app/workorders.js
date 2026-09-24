@@ -226,12 +226,19 @@ function setEngineer(coll, id, key, val) {
   const rec = recById(coll, id);
   if (!rec) return;
   val = String(val || "");
-  rec[key] = val;
-  const nm = val.trim().toLowerCase();
-  const u = nm ? (DB.users || []).find(u => (u.name || "").toLowerCase() === nm || u.email.toLowerCase() === nm) : null;
-  rec[key + "Email"] = u ? u.email : "";
-  save(coll, rec, key);
-  save(coll, rec, key + "Email");
+  const m = rosterMatch(val, !!rec.retro);
+  // Typed text that names nobody on the roster stays unresolved ("") rather
+  // than ext: that is the review's job, not a guess made at the keyboard.
+  const p = personPatch(key, m && m.email ? m.email : "", val);
+  if (!(m && m.email)) { p[key] = val; p[key + "Email"] = ""; }
+  savePatch(coll, rec, p);
+  render();
+}
+/* The picker's writer: an email, "ext" with a typed name, or "" to clear. */
+function setEngineerRef(coll, id, key, email, name) {
+  const rec = recById(coll, id);
+  if (!rec) return;
+  savePatch(coll, rec, personPatch(key, email, name));
   render();
 }
 

@@ -215,6 +215,21 @@ function rdEff(coupon, key) {
   const theirs = up && up.defaults ? up.defaults[key] : "";
   return theirs === undefined || theirs === null ? "" : theirs;
 }
+/* A person is two keys (by, byEmail) and they must come from the SAME level:
+   resolving each through rdEff would let a coupon show its own typed name
+   beside its study's email. Walk the levels once, take the first that names
+   anybody, and read both keys off it. byEmail stays out of RD_INHERITS on
+   purpose, so the study CSV never grows a column of addresses. */
+function rdEffPerson(coupon, key) {
+  const levels = [];
+  if (coupon) levels.push(coupon);
+  const s = rdStudyOf(coupon);
+  if (s && s.defaults) levels.push(s.defaults);
+  const up = s && s.parent ? rdStudy(s.parent) : null;
+  if (up && up.defaults) levels.push(up.defaults);
+  const lv = levels.find(o => { const v = o[key]; return v !== undefined && v !== null && v !== ""; });
+  return lv ? personRef(coupon, key, lv) : { email: "", name: "", kind: "none" };
+}
 /* Is this coupon's value its own, or the study's? The grid renders an inherited
    value muted, because a coupon showing its study's resin otherwise looks
    identical to one that set it — and then an override is invisible until it

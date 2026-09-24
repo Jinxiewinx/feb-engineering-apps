@@ -97,6 +97,7 @@ const counters = {};
 globalThis.fb = {
   state: "loading", user: null, roster: null, rosterCheckFailed: false,
   async save(coll, obj, field) { calls.push(["save", coll, obj.id, field]); },
+  async patch(coll, obj, fields) { calls.push(["patch", coll, obj.id, fields.slice()]); },
   // The mutator is kept as a fifth element so a test can re-apply it against
   // fresh server data — which is the whole point of mutateField, and the only
   // way to prove an index-based stack edit still finds its own ply.
@@ -10766,7 +10767,9 @@ await t("engineer fields suggest only the qualified, stamp the email sidecar, an
   calls.length = 0;
   setEngineer("parts", "P-TR", "moldEngineer", "Nick Jepsen");
   assert(DB.parts[0].moldEngineerEmail === "nick@b.edu", "a roster match stamps the sidecar");
-  assert(calls.some(c => c[0] === "save" && c[3] === "moldEngineer") && calls.some(c => c[0] === "save" && c[3] === "moldEngineerEmail"));
+  const w = calls.filter(c => c[1] === "parts");
+  assert(w.length === 1 && w[0][0] === "patch" && w[0][3].includes("moldEngineer") && w[0][3].includes("moldEngineerEmail"),
+    "name and email land in ONE write, never two a snapshot could split: " + JSON.stringify(w));
   setEngineer("parts", "P-TR", "moldEngineer", "Sander Green");
   assert(DB.parts[0].moldEngineer === "Sander Green", "an unqualified name still saves — assignment is planning");
   assert(engFld("parts", DB.parts[0], "Mold Engineer", "moldEngineer").includes("not Mold design-trained"), "but wears the warning");
@@ -12170,6 +12173,82 @@ await t("the splash fact comes from the same pool the dashboard draws from", asy
   assert(FACT_POOL.length > FACTS.length,
     "the pool double-weights the team's own lore, which a raw pick over FACTS would miss");
 });
+
+
+console.log("person references:");
+{
+  const PEOPLE = [
+    { email: "starbuck@berkeley.edu", name: "Simon Starbuck", role: "lead" },
+    { email: "nick@berkeley.edu", name: "Nick Jepsen", role: "member" },
+    { email: "nalvarez@berkeley.edu", name: "Nick Alvarez", role: "member" },
+    { email: "nico@berkeley.edu", name: "Nico Rossi", role: "member" },
+    { email: "twin1@berkeley.edu", name: "Sam Lee", role: "member" },
+    { email: "twin2@berkeley.edu", name: "Sam Lee", role: "member" },
+  ];
+  await t("rosterMatch links only what nobody could argue with", () => {
+    DB.users = PEOPLE.slice();
+    assert(rosterMatch("NICO@berkeley.edu").email === "nico@berkeley.edu", "exact email, any case");
+    assert(rosterMatch("nico rossi").email === "nico@berkeley.edu", "exact full name, any case");
+    assert(rosterMatch("Nico").email === "nico@berkeley.edu", "a first name exactly one account has");
+    const nick = rosterMatch("Nick");
+    assert(nick && !nick.email && nick.ambiguous.length === 2, "two Nicks: ambiguous, never a guess");
+    assert(rosterMatch("Sam Lee").ambiguous.length === 2, "two accounts with one full name stay ambiguous");
+    assert(rosterMatch("Nico", true) === null, "strict (retro) drops the first-name rule");
+    assert(rosterMatch("Nico Rossi", true).email === "nico@berkeley.edu", "but keeps full names");
+    assert(rosterMatch("Nico R.") === null, "a near miss is not a match");
+  });
+  await t("every sentinel is not a person", () => {
+    for (const v of ["", "N/A", "N/A (Flat)", "n/a (flat)", "not recorded (retro)", "cross-team (powertrain + composites)", "TBD", "?", "—"])
+      assert(notAPerson(v), "should not be a person: " + JSON.stringify(v));
+    for (const v of ["Nico", "Ana Rivera", "Nathan"]) assert(!notAPerson(v), "is a person: " + v);
+  });
+  await t("personRef names each kind and prefers the live roster name", () => {
+    DB.users = PEOPLE.slice();
+    const k = (o, key) => personRef(o, key || "purchaser");
+    assert(k({ purchaser: "Nico", purchaserEmail: "nico@berkeley.edu" }).name === "Nico Rossi", "linked shows the roster name");
+    assert(k({ purchaser: "Nico", purchaserEmail: "nico@berkeley.edu" }).kind === "linked");
+    assert(k({ purchaser: "Old Member", purchaserEmail: "gone@berkeley.edu" }).kind === "gone");
+    assert(k({ purchaser: "Old Member", purchaserEmail: "gone@berkeley.edu" }).name === "Old Member", "gone keeps the snapshot");
+    assert(k({ purchaser: "Home Depot guy", purchaserEmail: "ext" }).kind === "ext");
+    assert(k({ purchaser: "Nico" }).kind === "inferred" && k({ purchaser: "Nico" }).email === "nico@berkeley.edu");
+    assert(k({ purchaser: "Nick" }).kind === "unlinked", "ambiguous stays unlinked");
+    assert(k({ purchaser: "N/A" }).kind === "none" && k({}).kind === "none");
+    assert(k({ purchaser: "Nico", retro: true }).kind === "unlinked", "a retro first name waits for the review");
+    assert(personKey({ purchaser: "Nico" }, "purchaser") === personKey({ purchaser: "Nico Rossi" }, "purchaser"), "same person, same key");
+    assert(personKey({ purchaser: "Nick" }, "purchaser") === "name:nick");
+  });
+  await t("personPatch writes email + live name, ext for Other…, blanks for clear", () => {
+    DB.users = PEOPLE.slice();
+    const a = personPatch("purchaser", "NICO@berkeley.edu", "whatever");
+    assert(a.purchaser === "Nico Rossi" && a.purchaserEmail === "nico@berkeley.edu", JSON.stringify(a));
+    const b = personPatch("purchaser", "", "  Bob from Fibreglast ");
+    assert(b.purchaser === "Bob from Fibreglast" && b.purchaserEmail === "ext", JSON.stringify(b));
+    const c = personPatch("purchaser", "", "");
+    assert(c.purchaser === "" && c.purchaserEmail === "", JSON.stringify(c));
+  });
+  await t("savePatch is one write carrying every key", () => {
+    signInAsLead();
+    const rec = { id: "BUY-T1" };
+    calls.length = 0;
+    savePatch("budget", rec, { purchaser: "Nico Rossi", purchaserEmail: "nico@berkeley.edu" });
+    assert(calls.length === 1 && calls[0][0] === "patch" && calls[0][3].length === 2, JSON.stringify(calls));
+    assert(rec.purchaserEmail === "nico@berkeley.edu", "applied locally first");
+  });
+  await t("rdEffPerson never takes the name from one level and the email from another", () => {
+    DB.users = PEOPLE.slice();
+    const saved = DB.rnd;
+    DB.rnd = [
+      { id: "RDS-P", cls: "RDS", defaults: { by: "Nico Rossi", byEmail: "nico@berkeley.edu" } },
+      { id: "RDS-B", cls: "RDS", parent: "RDS-P", defaults: {} },
+    ];
+    const own = { id: "CPN-1", cls: "CPN", study: "RDS-B", by: "Visiting Student" };
+    const r1 = rdEffPerson(own, "by");
+    assert(r1.name === "Visiting Student" && r1.email === "", "own name, no borrowed email: " + JSON.stringify(r1));
+    const r2 = rdEffPerson({ id: "CPN-2", cls: "CPN", study: "RDS-B" }, "by");
+    assert(r2.email === "nico@berkeley.edu" && r2.kind === "linked", "the project's pair, whole: " + JSON.stringify(r2));
+    DB.rnd = saved;
+  });
+}
 
 /* Nothing below should inherit a splash the tests above left half-dismissed. */
 resetSplash();

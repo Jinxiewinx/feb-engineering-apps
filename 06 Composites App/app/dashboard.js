@@ -9,7 +9,7 @@
 // row reading "Justin" — userName() is what every other surface already uses.
 // The SN5 import also left literal stage values ("N/A (Flat)") in 7 parts'
 // moldEngineer cells; those are not people and shouldn't read as one.
-function notAPerson(v) { return !v || /^n\/?a\b/i.test(String(v).trim()); }
+// notAPerson() lives in core.js beside personRef, which is its main reader.
 function whoLabel(vals) {
   return (Array.isArray(vals) ? vals : [vals])
     .filter(v => !notAPerson(v))

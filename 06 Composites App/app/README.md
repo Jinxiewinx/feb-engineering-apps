@@ -1704,6 +1704,26 @@ The rules do genuinely enforce roster membership for everything, lead-only
 deletes, lead-only roster changes, roster self-edits limited to avatar and name
 so you can't promote yourself, and increment-only id counters.
 
+## Who did it: person fields
+
+Every field that names a person (purchaser, mold and manufacturing engineer,
+sealed by, bin confirmed by, R&D laid up by, resin signed off by) is being
+moved from typed text to a pick from the roster. Until September 2026 these
+were all free text, so "Nico" and "Nico R." were two different people and the
+reimbursement board owed money to both.
+
+Each person field is stored as two keys. `<field>` holds the name as it read
+when it was set, which is what the CSV, the Google Sheet, printed travelers and
+labels read. `<field>Email` says who that is: an email for someone on the
+roster, `ext` for someone deliberately entered as not on the app, and empty for
+an old typed name nobody has resolved yet. Screens show the roster's current
+name when there is an email, so renaming yourself fixes every record at once.
+
+Old typed names still find their person when the match is unambiguous: an exact
+email, an exact full name, or a first name only one roster member has. SN5
+retro records skip the first-name rule, because last season's "Nick" is not
+necessarily this season's.
+
 ## Files, photos, and watchers
 
 Uploads (avatars, project files, comment images) live in Firebase Storage, which
