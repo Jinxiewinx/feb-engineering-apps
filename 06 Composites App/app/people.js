@@ -192,9 +192,9 @@ function renderPerson(email) {
   ].join("");
   const engDone = doneParts.length + doneWos.length;
   const engBody = `${eng || '<p class="muted tny">Nothing open.</p>'}
-    ${engDone ? `<details class="pfold"><summary class="tny muted">${engDone} finished</summary>
-      ${doneParts.map(x => engRow("parts", x.p, x.roles, x.p.partName || x.p.id)).join("")}
-      ${doneWos.map(x => engRow("workOrders", x.w, x.roles, `${x.w.id} ${x.w.partName || ""}`.trim())).join("")}</details>` : ""}`;
+    ${engDone ? `<button class="ib sm pfold" aria-expanded="${!!view.personDone}" onclick="view.personDone=!view.personDone;render()">${icon(view.personDone ? "chevronDown" : "chevronRight", 13)} ${engDone} finished</button>
+      ${view.personDone ? doneParts.map(x => engRow("parts", x.p, x.roles, x.p.partName || x.p.id)).join("")
+        + doneWos.map(x => engRow("workOrders", x.w, x.roles, `${x.w.id} ${x.w.partName || ""}`.trim())).join("") : ""}` : ""}`;
 
   // Money is visible to any member on the Budget tab already; a per-person
   // owed total is a new summary, and a guest has no business with it.

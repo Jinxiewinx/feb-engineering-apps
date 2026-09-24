@@ -211,6 +211,30 @@ Incoming reconciliation trusts the received record's `buyRef` (the lot exists)
 rather than the purchase's own back-link, so a half-landed save heals itself at
 the next render.
 
+## Person fields
+
+A field that names a person is two keys: `<key>` is the name as it read when
+set, and `<key>Email` says who that is. The email is the link, `ext` means
+"deliberately somebody not on the app", and empty means an old typed name
+nobody has resolved. The name stays because the Sheet feed must never carry
+an email, a removed member must still read as somebody, and CSV, print and
+labels all read it. Everything that displays or groups goes through
+`personRef` (core.js), which prefers the live roster name, so a rename needs
+no migration. `PERSON_FIELDS` is the one list of where these live.
+
+Old names are linked by a lead from People › Unlinked, never automatically on
+load: every client writing at once would race, and the screen is already right
+because `personRef` infers unambiguous matches at render time. The backfill is
+not stamped (`fb.patchMany`), so it does not bury the activity feed. Retro
+records never link on a bare first name.
+
+The picker (`personField`) keeps its state outside the DOM so a snapshot
+repaint mid-typing leaves it open, and its handlers carry only a field id and
+a row index: `esc()` does not escape apostrophes. Enter on text that matches
+nobody writes nothing; Other has to be chosen. Two designs were built and
+scored against each other; the inline combobox lost because Enter after a
+typo saved the typo.
+
 ## The `config/` documents
 
 Lead-writable, roster-readable, and each one is the answer to "where does this

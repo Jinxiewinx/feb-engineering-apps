@@ -32,11 +32,11 @@ var APP_VERSION = "6.1.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "R&D lives on the R&D tab now, and only there. Parts and Work Orders are the season lists; open a trial from anywhere — a search, the dashboard, a scanned label — and you land on the R&D tab with it open.",
-  "Start a trial from the R&D tab. The R&D part and R&D run buttons moved there with everything else.",
-  "A part made on several molds shows a progress bar for each one, so you can see which half is still on the Shopbot.",
-  "Notes on a work order are all in one place again, inside the Notes section, instead of a stray box at the bottom.",
-  "Subteam now offers Testing and N/A.",
+  "Purchaser, engineers, sealed by and laid up by are now picked from the team list instead of typed. Tap the name, choose the person. Someone not on the app? Type their name and pick \"Use\".",
+  "Every name is a link. Tap one to see that person's page: what they're engineering, their open issues, their buy-offs, and what they're still owed.",
+  "Waiting on reimbursement adds up per person now. \"Nico\" and \"Nico R.\" used to be two people splitting one person's money.",
+  "\"My parts\" and \"my runs\" go by who you are, not by your first name, so two Nicks no longer get each other's work.",
+  "Leads: People has an Unlinked view for old typed names. One press links the obvious ones; the rest take a pick each.",
 ];
 
 
