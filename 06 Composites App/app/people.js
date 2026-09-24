@@ -53,6 +53,9 @@ function trainingPills(u) {
 }
 
 function renderPeople() {
+  // Only an email is a person: a record id left in view.id by another tab
+  // (anything that sets view.tab without going through setTab) is not one.
+  if (view.mode === "detail" && String(view.id || "").includes("@")) return renderPerson(view.id);
   const users = usersSorted();
   const rows = users.filter(u => {
     const q = (view.q || "").toLowerCase();
@@ -91,7 +94,7 @@ function renderPeopleList(rows) {
       return `<tr class="${pickIs("people", u.email) ? "picked" : ""}"${picking && !me ? ` onclick="togglePick('people','${esc(u.email)}')"` : ""}>
         ${picking ? `<td class="pickcell">${me ? "" : pickBox("people", u.email)}</td>` : ""}
         <td><div style="display:flex;align-items:center;gap:8px">${avatar(u.email, 26)}
-          <div><div class="pname">${esc(u.name || u.email)}${me ? ' <span class="muted tny">(you)</span>' : ""}</div>
+          <div><div class="pname">${picking ? esc(u.name || u.email) : `<button type="button" class="plink" data-email="${esc(u.email)}" data-open="person/${esc(encodeURIComponent(u.email))}" onclick="event.stopPropagation();openPerson(this.dataset.email)">${esc(u.name || u.email)}</button>`}${me ? ' <span class="muted tny">(you)</span>' : ""}</div>
           <div class="muted tny">${esc(userHandle(u.email))}</div></div></div></td>
         <td>${isLead() && !me && !picking
           ? `<select onchange="setRole('${esc(u.email)}',this.value)"><option ${u.role === "member" ? "selected" : ""}>member</option><option ${u.role === "lead" ? "selected" : ""}>lead</option></select>
@@ -108,6 +111,121 @@ function renderPeopleList(rows) {
       </tr>`;
     }).join("")}
   </table>`;
+}
+
+/* ---------- one person's page ----------
+   #/person/<email>. Everything the app knows that person did or holds, read
+   off DB in one pass through the same resolver the fields use, so a record
+   shows up here exactly when its chip would link here. Somebody removed from
+   the roster still gets a page: their records still name them. */
+function personRecords(email) {
+  email = String(email || "").trim().toLowerCase();
+  const hit = (r, k, src) => personRef(r, k, src).email === email;
+  const roles = (r) => ENG_KEYS.filter(k => hit(r, k)).map(k => k === "moldEngineer" ? "ME" : "RE");
+  const buys = (DB.budget || []).filter(b => hit(b, "purchaser"))
+    .sort((a, b) => String(b.dateOrdered || "").localeCompare(String(a.dateOrdered || "")));
+  const unpaid = buys.filter(b => !(typeof buyReimbursed === "function" && buyReimbursed(b)) && num(b.cost));
+  const owed = unpaid.reduce((s, b) => s + num(b.cost), 0);
+  const parts = (DB.parts || []).map(p => ({ p, roles: roles(p) })).filter(x => x.roles.length);
+  const wos = (DB.workOrders || []).map(w => ({ w, roles: roles(w) })).filter(x => x.roles.length);
+  const issues = (DB.projects || []).filter(p => (typeof isIssue !== "function" || isIssue(p))
+    && !["Done", "Cancelled"].includes(typeof projStatus === "function" ? projStatus(p) : p.status)
+    && (p.assignees || []).some(a => String(a).toLowerCase() === email));
+  const buyoffs = [];
+  (DB.workOrders || []).forEach(w => (w.steps || []).forEach(s => {
+    const b = s && s.buyoff;
+    if (b && String(b.email || "").toLowerCase() === email) buyoffs.push({ w, s, when: b.time || b.date || "" });
+  }));
+  buyoffs.sort((a, b) => String(b.when).localeCompare(String(a.when)));
+  const molds = (DB.molds || []).filter(m => hit(m, "sealedBy"));
+  const bins = (DB.items || []).filter(o => o.cls === "BIN" && hit(o, "walkedBy"));
+  const studies = (DB.rnd || []).filter(s => s.cls === "RDS" && s.defaults && hit(s, "by", s.defaults));
+  const any = !!(buys.length || parts.length || wos.length || issues.length || buyoffs.length || molds.length || bins.length || studies.length);
+  return { email, buys, unpaid, owed, parts, wos, issues, buyoffs, molds, bins, studies, any };
+}
+
+function personBackBtn() {
+  const prev = navPeek();
+  const label = !prev || prev.tab === "people" ? "All people"
+    : (() => {
+        const rec = prev.id ? recById(prev.tab === "workorders" ? "workOrders" : prev.tab, prev.id) : null;
+        const t = TABS.find(t => t.id === prev.tab);
+        const name = rec ? (rec.title || rec.partName || rec.item || rec.name || rec.id) : (prev.id || (t ? t.label : prev.tab));
+        return "Back to " + String(name).slice(0, 28);
+      })();
+  return `<button class="ib" title="${esc(label)}" onclick="navBack({tab:'people',mode:'list',id:null})">${icon("chevronLeft", 16)} ${esc(label)}</button>`;
+}
+
+function renderPerson(email) {
+  email = String(email || "").toLowerCase();
+  const u = userByEmail(email);
+  const R = personRecords(email);
+  const me = email === myEmail().toLowerCase();
+  // A name for somebody off the roster: whatever their records last called them.
+  const offName = !u && (R.buys[0] ? personName(R.buys[0], "purchaser")
+    : R.buyoffs[0] ? R.buyoffs[0].s.buyoff.name : "") || email;
+  const name = u ? (u.name || email) : offName;
+  const sec = (title, n, body, empty) => `<div class="card psec">
+    <h3>${esc(title)}${n ? ` <span class="muted tny">${n}</span>` : ""}</h3>
+    ${n ? body : `<p class="muted tny">${esc(empty)}</p>`}</div>`;
+
+  const openParts = R.parts.filter(x => !partDone(x.p)), doneParts = R.parts.filter(x => partDone(x.p));
+  const openWos = R.wos.filter(x => x.w.status !== "Complete"), doneWos = R.wos.filter(x => x.w.status === "Complete");
+  // The role rides inside the chip: beside it, a 40px phone chip pushed the
+  // two-letter tag onto a line of its own.
+  const engRow = (coll, rec, roles, label) => `<div class="prow">${chip(coll, rec.id, `${label} · ${roles.join("+")}`)}</div>`;
+  const eng = [
+    ...openParts.map(x => engRow("parts", x.p, x.roles, x.p.partName || x.p.id)),
+    ...openWos.map(x => engRow("workOrders", x.w, x.roles, `${x.w.id} ${x.w.partName || ""}`.trim())),
+  ].join("");
+  const engDone = doneParts.length + doneWos.length;
+  const engBody = `${eng || '<p class="muted tny">Nothing open.</p>'}
+    ${engDone ? `<details class="pfold"><summary class="tny muted">${engDone} finished</summary>
+      ${doneParts.map(x => engRow("parts", x.p, x.roles, x.p.partName || x.p.id)).join("")}
+      ${doneWos.map(x => engRow("workOrders", x.w, x.roles, `${x.w.id} ${x.w.partName || ""}`.trim())).join("")}</details>` : ""}`;
+
+  // Money is visible to any member on the Budget tab already; a per-person
+  // owed total is a new summary, and a guest has no business with it.
+  const money = fb.guest ? "" : sec("Purchases", R.buys.length, `
+    ${R.owed > 0.005 ? `<div class="powed">Waiting on reimbursement <b>$${R.owed.toFixed(2)}</b>
+      <span class="muted tny">across ${plural(R.unpaid.length, "purchase", "purchases")}</span></div>` : `<div class="muted tny">Nothing waiting on reimbursement.</div>`}
+    ${R.buys.slice(0, 25).map(b => `<div class="prow pbuy">${chip("budget", b.id, b.item || b.id)}
+      <span class="pbuy-amt">${esc(b.cost ? "$" + num(b.cost).toFixed(2) : "")}</span>
+      <span class="pill ${typeof buyStatusClass === "function" ? buyStatusClass(reimbStatus(b)) : ""}">${esc(typeof reimbStatus === "function" ? reimbStatus(b) : "")}</span></div>`).join("")}${R.buys.length > 25 ? `<p class="muted tny">and ${R.buys.length - 25} more on the Budget tab.</p>` : ""}`,
+    "No purchases.");
+
+  const buyoffs = sec("Recent buy-offs", R.buyoffs.length, R.buyoffs.slice(0, 15).map(x =>
+    `<div class="prow">${chip("workOrders", x.w.id, x.w.id)} <span>${esc(x.s.title || "")}</span>
+      <span class="muted tny">${esc(String(x.s.buyoff.date || x.when).slice(0, 10))}</span></div>`).join(""), "No buy-offs yet.");
+
+  // Shop records route by their id prefix (a BIN lives on Inventory, not a
+  // tab named after its collection), so these go through tabForId.
+  const idChip = (id, label) => `<button type="button" class="chip" data-open="${esc(id)}"
+    onclick="event.stopPropagation();openRecord(tabForId(this.dataset.open) || 'people', this.dataset.open)">${esc(label || id)}</button>`;
+  const other = [
+    ...R.molds.map(m => `<div class="prow">${idChip(m.id, m.name || m.id)} <span class="tny muted">sealed</span></div>`),
+    ...R.bins.map(o => `<div class="prow">${idChip(o.id, o.name || o.id)} <span class="tny muted">bin confirmed</span></div>`),
+    ...R.studies.map(s => `<div class="prow">${idChip(s.id, s.name || s.id)} <span class="tny muted">laid up</span></div>`),
+  ];
+
+  return `
+  <div class="toolbar no-print">${personBackBtn()}</div>
+  <div class="card phead">
+    ${avatar(u || { email, name }, 56)}
+    <div class="phead-txt">
+      <h2>${esc(name)}${me ? ' <span class="muted tny">(you)</span>' : ""}</h2>
+      <div class="muted tny">${u ? `<span class="pill">${esc(displayRole(u))}</span> ${esc(userHandle(email))}` : "No longer on the roster"}</div>
+      ${u ? `<div class="trwrap" style="margin-top:6px"><span class="tny muted">Trainings</span> ${trainingPills(u)}
+        ${isLead() ? `<button class="ib sm no-print" title="Edit ${esc(name)}'s trainings" onclick="openPersonTrainings(this.dataset.email)" data-email="${esc(email)}">${icon("edit", 13)}</button>` : ""}</div>` : ""}
+    </div>
+  </div>
+  <div class="persgrid">
+    ${sec("Engineering", R.parts.length + R.wos.length, engBody, "Not an engineer on any part or run.")}
+    ${sec("Open issues", R.issues.length, R.issues.map(p => `<div class="prow">${chip("projects", p.id, p.title || p.id)}</div>`).join(""), "No open issues assigned.")}
+    ${money}
+    ${buyoffs}
+    ${other.length ? sec("Also on record", other.length, other.join(""), "") : ""}
+  </div>`;
 }
 
 /* The matrix: rows = people (the search and qualified-for filter still filter

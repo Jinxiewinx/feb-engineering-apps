@@ -971,6 +971,38 @@ function personNames(rec, keys) {
 }
 const ENG_KEYS = ["moldEngineer", "manufacturingEngineer"];
 function meRef() { return { name: signerName(), email: myEmail() }; }
+/* A person as the page shows them. Somebody with an email is a button onto
+   their person page (data-open makes ctrl/cmd/middle-click a new tab, through
+   the same delegated listener every record chip uses). Somebody without one,
+   an Other… name or an old typed name nobody has resolved, is a hollow chip:
+   it reads as a name and deliberately not as a member. The email rides in a
+   data attribute, never inside onclick, because esc() leaves apostrophes. */
+function personChip(ref, opts) {
+  opts = opts || {};
+  if (!ref || ref.kind === "none" || !(ref.name || ref.email)) return opts.empty != null ? opts.empty : "";
+  const size = opts.size || 18;
+  const role = opts.role ? ` <span class="pchip-role">${esc(opts.role)}</span>` : "";
+  if (ref.email) {
+    const tip = ref.kind === "gone" ? `${ref.name}, no longer on the roster` : `Open ${ref.name}'s page`;
+    return `<button type="button" class="pchip${ref.kind === "gone" ? " gone" : ""}" data-email="${esc(ref.email)}"
+      data-open="person/${esc(encodeURIComponent(ref.email))}" title="${esc(tip)}"
+      onclick="event.stopPropagation();openPerson(this.dataset.email)">${avatar(ref.email, size)}<span>${esc(ref.name)}</span>${role}</button>`;
+  }
+  const tip = ref.kind === "ext" ? "Not on the app" : (isLead() ? "Not linked to anyone yet. People › Unlinked names" : "Not linked to anyone on the roster");
+  return `<span class="pchip ext" title="${esc(tip)}"><span>${esc(ref.name)}</span>${role}</span>`;
+}
+// A roster email → its chip, for fields that have always stored an email.
+function personChipFor(email, opts) {
+  email = String(email || "").trim().toLowerCase();
+  if (!email) return (opts && opts.empty) || "";
+  const u = userByEmail(email);
+  return personChip({ email, name: (u && u.name) || email, kind: u ? "linked" : "gone" }, opts);
+}
+function openPerson(email) {
+  email = String(email || "").trim().toLowerCase();
+  if (!email) return;
+  openRecord("people", email);
+}
 /* The two keys of a person field as one patch. email "" with a name means
    Other… (stored as ext); both empty clears the field. */
 function personPatch(key, email, name) {
@@ -1702,6 +1734,29 @@ function ehsConflict(raw, excludeId) {
   return hit.id !== excludeId ? hit : null;
 }
 
+/* The link a hash names, normalised: a record id uppercased, or
+   "person/<email>" for a person page. The person branch is matched FIRST and
+   kept lowercase: the record regex would read #/person/a@b.edu as "PERSON",
+   find no such prefix, and throw the link away. */
+function hashLink(hash) {
+  hash = String(hash || "");
+  const p = hash.match(/^#\/person\/([^/?#]+)/i);
+  if (p) {
+    let e = p[1];
+    try { e = decodeURIComponent(e); } catch { /* a malformed escape stays as typed */ }
+    e = e.trim().toLowerCase();
+    return e ? "person/" + e : "";
+  }
+  const m = hash.match(/^#\/([A-Za-z0-9-]+)/);
+  return m ? m[1].toUpperCase() : "";
+}
+/* Does anything in the app know this person? The roster, or any record that
+   names them: a person removed from the roster still has a page. */
+function personKnown(email) {
+  if (userByEmail(email)) return true;
+  return typeof personRecords === "function" && personRecords(email).any;
+}
+
 /* Read at file-scope load, which is early enough: index.html's
    `<script>render()</script>` runs after this file, so nothing there needs to
    change. Mirrored into sessionStorage so the link also survives a reload or a
@@ -1711,8 +1766,7 @@ let PENDING_LINK = (() => {
   // DOM stub has no location and no sessionStorage. Reading either at file
   // scope without a guard throws before a single test runs.
   if (typeof location === "undefined") return "";
-  const m = String(location.hash || "").match(/^#\/([A-Za-z0-9-]+)/);
-  const v = m ? m[1].toUpperCase() : "";
+  const v = hashLink(location.hash);
   try {
     if (v) sessionStorage.setItem("feb-pending-link", v);
     return v || sessionStorage.getItem("feb-pending-link") || "";
@@ -1737,6 +1791,7 @@ let PENDING_TIMER = null;
 function consumePendingLink() {
   if (!PENDING_LINK) return false;
   const id = PENDING_LINK;
+  if (id.startsWith("person/")) return consumePendingPerson(id.slice(7));
   const tab = tabForId(id);
 
   // An unknown prefix can never resolve, so there is nothing to wait for.
@@ -1774,6 +1829,31 @@ function consumePendingLink() {
   return true;
 }
 
+/* The same wait-for-data contract as a record link, for #/person/<email>:
+   the roster arrives on its own snapshot, so the first ready render has an
+   empty DB.users. Give up the same way, onto the People list with the
+   address already in the search box. */
+function consumePendingPerson(email) {
+  if (personKnown(email)) {
+    clearPendingLink();
+    navClear();
+    view = { ...view, tab: "people", mode: "detail", id: email, edit: false };
+    return true;
+  }
+  if (!PENDING_SINCE) {
+    PENDING_SINCE = Date.now();
+    if (typeof setTimeout === "function" && !PENDING_TIMER) {
+      PENDING_TIMER = setTimeout(() => { PENDING_TIMER = null; if (PENDING_LINK) render(); }, PENDING_GRACE_MS + 50);
+    }
+    return false;
+  }
+  if (Date.now() - PENDING_SINCE < PENDING_GRACE_MS) return false;
+  clearPendingLink();
+  view = { ...view, tab: "people", mode: "list", id: null, q: email };
+  if (typeof toast === "function") toast(`Nobody here goes by ${email}. Searching for it.`, "error");
+  return true;
+}
+
 /* THE ONE THING THE CENTRAL TOMBSTONE FILTER COSTS. recById reads DB[coll],
    which no longer contains deleted records, so a scanned label or a pasted deep
    link for something in the bin would otherwise say "no record here" — which is
@@ -1808,7 +1888,9 @@ function syncUrl() {
      next load to redeem. Nothing calls syncUrl with one today; this is what
      keeps that true when someone wires up the rail. */
   const real = /^[A-Z]+-/.test(String(view.id || ""));
-  const frag = view.mode === "detail" && view.id && real ? "#/" + view.id : "#/" + view.tab;
+  const person = view.tab === "people" && view.mode === "detail" && view.id;
+  const frag = person ? "#/person/" + encodeURIComponent(view.id)
+    : view.mode === "detail" && view.id && real ? "#/" + view.id : "#/" + view.tab;
   if (location.hash !== frag) history.replaceState(null, "", frag);
 }
 
@@ -1852,9 +1934,9 @@ if (typeof document !== "undefined" && typeof document.addEventListener === "fun
    URL. Our own replaceState never fires this event, so there is no loop. */
 if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
   window.addEventListener("hashchange", () => {
-    const m = String(location.hash || "").match(/^#\/([A-Za-z0-9-]+)/);
-    if (!m) return;
-    const id = m[1].toUpperCase();
+    const id = hashLink(location.hash);
+    if (!id) return;
+    if (id.startsWith("person/")) { if (personKnown(id.slice(7))) openPerson(id.slice(7)); return; }
     const tab = tabForId(id);
     if (tab && recById(TABS.find(t => t.id === tab).coll, id)) openRecord(tab, id);
   });
@@ -3405,7 +3487,7 @@ function gotoResult(i) {
   const r = (window.__searchRes || [])[i]; if (!r) return;
   closeModal();
   if (r.tab === "documents") { setTab("documents"); if (typeof openDocFromRow === "function" && r.docSrc) openDocFromRow(r.docSrc, r.uploaded ? "up" : ""); }
-  else if (r.tab === "people") { setTab("people"); }
+  else if (r.tab === "people") { openPerson(r.id); }
   else openRecord(r.tab, r.id);
 }
 

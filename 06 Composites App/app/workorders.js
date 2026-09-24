@@ -213,7 +213,7 @@ function engWarnHtml(rec, key) {
 function engFld(coll, rec, label, key) {
   const v = rec[key] ?? "";
   const warn = engWarnHtml(rec, key);
-  if (!view.edit) return `<div class="f"><label>${label}</label><div class="ro">${esc(v) || "—"}${warn}</div></div>`;
+  if (!view.edit) return `<div class="f"><label>${label}</label><div class="ro">${personChip(personRef(rec, key), { empty: esc(v) || "—" })}${warn}</div></div>`;
   const tr = engTrainingFor(rec, key);
   const dl = `dl-${coll}-${key}`;
   const q = tr ? qualifiedFor(tr) : usersSorted();
@@ -2074,7 +2074,7 @@ function woSecSteps(wo, E) {
             ? `<span class="warn">✗ ${esc(s.status)}</span>`
             : state === "done"
               ? (isSigned(s)
-                ? `<span class="ok">✔ ${avatar(s.buyoff.email || s.buyoff.name, 18)} ${esc(s.buyoff.name)} ${esc(s.buyoff.date || "")}</span>`
+                ? `<span class="ok">✔ ${s.buyoff.email ? personChipFor(s.buyoff.email) : `${avatar(s.buyoff.name, 18)} ${esc(s.buyoff.name)}`} ${esc(s.buyoff.date || "")}</span>`
                 : `<span class="muted">done, buy-off not recorded (retro)</span>`)
               : (wo.retro ? `<span class="muted">${esc(s.status || "open")}</span>`
                 : held && !isLead()

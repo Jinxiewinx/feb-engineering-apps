@@ -158,7 +158,7 @@ function budgetBoardsHtml(totalSpent) {
     </div>
     ${owed.length ? `<div class="card owedcard">
       <h3>Waiting on reimbursement</h3>
-      ${owed.map(o => `<div class="orow"><span>${esc(o.ref.name || "—")}</span><b>$${o.amt.toFixed(2)}</b></div>`).join("")}
+      ${owed.map(o => `<div class="orow">${personChip(o.ref, { empty: "<span>—</span>" })}<b>$${o.amt.toFixed(2)}</b></div>`).join("")}
     </div>` : ""}
   </div>`;
 }
@@ -464,7 +464,7 @@ function renderBuyList() {
     .filter(b => (!view.fStatus || buyStatus(b) === view.fStatus))
     .filter(b => (!view.fReimb || reimbStatus(b) === view.fReimb))
     .filter(b => !view.fBudget || (view.fBudget === "other" ? isOffBudget(b) : !isOffBudget(b)))
-    .filter(b => { const q = view.q.toLowerCase(); return !q || (b.item || "").toLowerCase().includes(q) || (b.purchaser || "").toLowerCase().includes(q) || (b.chargedTo || "").toLowerCase().includes(q); })
+    .filter(b => { const q = view.q.toLowerCase(); return !q || (b.item || "").toLowerCase().includes(q) || (personName(b, "purchaser") || b.purchaser || "").toLowerCase().includes(q) || (b.chargedTo || "").toLowerCase().includes(q); })
     .sort((a, b) => (b.dateOrdered || "").localeCompare(a.dateOrdered || ""));
   /* Season total is COMPOSITES money only — that is the number the goal bars
      are drawn against, and putting a chassis order inside it is the exact bug
@@ -528,7 +528,7 @@ function renderBuyList() {
       return `<tr data-open="${b.id}" class="${pickIs("budget", b.id) ? "picked" : ""}" onclick="${pickClick("budget", b.id, `view={...view,mode:'detail',id:'${b.id}',edit:false};render()`)}">
       ${pickOn("budget") ? `<td class="pickcell">${pickBox("budget", b.id)}</td>` : ""}
       <td><b>${esc(b.item || b.id)}</b>${b.retro ? ' <span class="pill retro">retro</span>' : ""}${isOffBudget(b) ? ` <span class="pill offbudget" title="Charged to ${esc(chargedToLabel(b))} — cost tracked, not counted against the composites budget">${esc(chargedToLabel(b))}</span>` : ""}${needsApproval(b) ? ' <span class="pill OnHold" title="Over $50 — needs #purchasing sign-off before ordering">needs approval</span>' : ""}</td>
-      <td>${esc(b.purchaser || "—")}</td>
+      <td>${personChip(personRef(b, "purchaser"), { empty: "—" })}</td>
       <td onclick="event.stopPropagation()"><select class="buy-cat" onchange="setBuyField('${b.id}','purpose',this.value)" aria-label="Category of ${esc(b.item || b.id)}">
         ${opts.map(o => `<option ${String(b.purpose || "") === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></td>
       <td onclick="event.stopPropagation()"><div class="statusdrop ${buyStatusClass(buyStatus(b))}">
@@ -556,7 +556,7 @@ function setBuyField(id, key, val) {
 function buyFld(b, label, key, opts, x) {
   x = x || {};
   const v = b[key] ?? "";
-  if (!view.edit) return `<div class="f"><label>${label}</label><div class="ro">${esc(x.ro != null ? x.ro : v) || "—"}</div></div>`;
+  if (!view.edit) return `<div class="f"><label>${label}</label><div class="ro">${x.roHtml != null ? x.roHtml : (esc(x.ro != null ? x.ro : v) || "—")}</div></div>`;
   // Stable ids so budgetRenderSoon() can hand focus back after a repaint.
   if (opts) return `<div class="f"><label>${label}</label><select id="bf-${key}" onchange="updBuy('${key}',this.value)">${opts.map(o => `<option ${v === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></div>`;
   return `<div class="f"><label>${label}</label><input id="bf-${key}" value="${esc(v)}"${x.placeholder ? ` placeholder="${esc(x.placeholder)}"` : ""} onchange="updBuy('${key}',this.value)">${x.hint ? `<span class="tny muted nocaps">${esc(x.hint)}</span>` : ""}</div>`;
@@ -587,11 +587,11 @@ function renderBuyDetail() {
       <span class="pill ${buyStatusClass(reimbStatus(b))}" title="Where the money is">${esc(reimbStatus(b))}</span>
       ${isOffBudget(b) ? `<span class="pill offbudget" title="Cost tracked here, counted against ${esc(chargedToLabel(b))} rather than composites">${esc(chargedToLabel(b))}</span>` : ""}${b.updatedAt ? " · saved " + fmtWhen(b.updatedAt) + " by " + esc(b.updatedBy || "?") : ""}</div>
     ${needsApproval(b) ? `<p class="warn">Over $50 — needs #purchasing sign-off before it's ordered.</p>` : ""}
-    ${isOffBudget(b) ? `<p class="muted tny">Charged to ${esc(chargedToLabel(b))}. The cost is tracked and ${esc(b.purchaser || "whoever paid")} still gets reimbursed; it does not count against the composites season total or any goal.</p>` : ""}
+    ${isOffBudget(b) ? `<p class="muted tny">Charged to ${esc(chargedToLabel(b))}. The cost is tracked and ${esc(personName(b, "purchaser") || "whoever paid")} still gets reimbursed; it does not count against the composites season total or any goal.</p>` : ""}
     ${(() => { const gw = buyGoalWarning(b); return gw ? `<p class="warn">${esc(gw)}</p>` : ""; })()}
     <h3>Details</h3>
     <div class="grid">
-      ${buyFld(b, "Item", "item")}${buyFld(b, "Purchaser", "purchaser")}${buyFld(b, "Purpose", "purpose", budgetCats().length ? budgetCats().map(c => c.name) : PURPOSE)}
+      ${buyFld(b, "Item", "item")}${buyFld(b, "Purchaser", "purchaser", null, { roHtml: personChip(personRef(b, "purchaser"), { empty: "—" }) })}${buyFld(b, "Purpose", "purpose", budgetCats().length ? budgetCats().map(c => c.name) : PURPOSE)}
       ${buyFldSel(b, "Order status", "status", BUY_STATUS, buyStatus(b))}${buyFldSel(b, "Reimbursement", "reimb", REIMB_STATUS, reimbStatus(b))}
       ${buyFld(b, "Cost ($)", "cost")}${buyFld(b, "Date ordered", "dateOrdered")}
       ${buyFld(b, "Source / vendor", "source")}

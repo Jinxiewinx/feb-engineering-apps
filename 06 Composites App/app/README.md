@@ -1730,6 +1730,17 @@ filters on Parts, Work Orders and the Dashboard, and the People tab's
 assignment counts. A bare first name that two roster members share ("Nick")
 belongs to nobody until a lead says whose it is. It used to belong to both.
 
+Names now link to the person's own page, at `#/person/<email>`. It shows
+their open engineering work (parts and runs, tagged ME or RE), open issues
+assigned to them, their purchases and what they are still owed, their recent
+buy-offs, and molds, bins and R&D studies they are on record for. Guests see
+everything but the money. Someone removed from the roster still has a page,
+because their records still name them. You get there from any person chip,
+from a name on the People list, or from a person in search (⌘K). Ctrl- or
+cmd-click opens it in a new tab like any record link. A name with a dashed
+outline and no face is somebody not on the app, or an old typed name nobody
+has linked yet.
+
 ## Files, photos, and watchers
 
 Uploads (avatars, project files, comment images) live in Firebase Storage, which

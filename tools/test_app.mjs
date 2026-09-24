@@ -7508,7 +7508,9 @@ await t("accounts: sign-up writes through fb.signUp with the synthetic address, 
   render();
   const row = (main.innerHTML.match(/<tr>[\s\S]*?nico[\s\S]*?<\/tr>/) || [""])[0];
   assert(/openChangeName\(\)/.test(row), "Change name sits on your own row");
-  assert(!row.includes(USER_DOMAIN) && row.includes(">nico<"), "and the row shows the handle, not the synthetic domain");
+  // Visible text only: the name links to the person page by address, and a
+  // data-email attribute is not something anybody reads.
+  assert(!row.replace(/<[^>]*>/g, "").includes(USER_DOMAIN) && row.includes(">nico<"), "and the row shows the handle, not the synthetic domain");
   openChangeName();
   const nm = document.getElementById("nm-name"); nm.value = "Nick Jepsen";
   calls.length = 0;
@@ -12293,6 +12295,59 @@ await t("an engineer filter survives an apostrophe", () => {
   filterByEngineer("oneil@berkeley.edu");
   assert(partHasEngineer({ moldEngineer: "Pat O'Neil" }, view.fEng), "and the filter finds the part");
   view.fEng = "";
+});
+
+
+console.log("person page:");
+await t("a person page gathers their money, engineering, issues and buy-offs", () => {
+  signInAsLead();
+  DB.users = [
+    { email: "starbuck@berkeley.edu", name: "Simon Starbuck", role: "lead" },
+    { email: "nico@berkeley.edu", name: "Nico Rossi", role: "member" },
+  ];
+  DB.budget = [
+    { id: "BUY-P1", item: "peel ply", cost: "40", purchaser: "Nico" },
+    { id: "BUY-P2", item: "resin", cost: "100", purchaser: "Nico R.", purchaserEmail: "nico@berkeley.edu", reimb: "Reimbursed" },
+    { id: "BUY-P3", item: "not his", cost: "9", purchaser: "Simon Starbuck" },
+  ];
+  DB.parts = [{ id: "P-PP", partName: "DIFFUSER", moldEngineer: "Nico", manufacturingEngineer: "Nico Rossi", layupProgress: "In Layup" }];
+  DB.workOrders = [{ id: "WO-PP", partName: "DIFFUSER", status: "InWork", steps: [
+    { title: "Infuse", buyoff: { name: "Nico", email: "nico@berkeley.edu", date: "2026-09-20", time: "2026-09-20T10:00:00Z" } }] }];
+  DB.projects = [{ id: "TKT-PP", kind: "issue", title: "dry spot", status: "In Progress", workOrderId: "WO-PP", assignees: ["nico@berkeley.edu"] }];
+  const R = personRecords("nico@berkeley.edu");
+  assert(R.buys.length === 2 && R.owed === 40, "two purchases, $40 still owed: " + JSON.stringify([R.buys.length, R.owed]));
+  assert(R.parts.length === 1 && R.parts[0].roles.join("+") === "ME+RE", "both roles on one part");
+  assert(R.issues.length === 1 && R.buyoffs.length === 1);
+  openPerson("NICO@berkeley.edu");
+  assert(view.tab === "people" && view.mode === "detail" && view.id === "nico@berkeley.edu", "lowercased, detail view");
+  const html = main.innerHTML;
+  assert(html.includes("Nico Rossi") && html.includes("$40.00") && html.includes("DIFFUSER") && html.includes("dry spot") && html.includes("Infuse"),
+    "every section renders");
+  assert(!html.includes("not his"), "only their purchases");
+});
+await t("a guest sees the person but not what they are owed", () => {
+  fb.guest = true;
+  const html = renderPerson("nico@berkeley.edu");
+  assert(html.includes("Nico Rossi") && !html.includes("Waiting on reimbursement"), "no money section for a guest");
+  fb.guest = false; signInAsLead();
+});
+await t("somebody removed from the roster still has a page", () => {
+  DB.users = [{ email: "starbuck@berkeley.edu", name: "Simon Starbuck", role: "lead" }];
+  const html = renderPerson("nico@berkeley.edu");
+  assert(html.includes("No longer on the roster") && html.includes("Infuse"), "the page still renders from the records");
+  assert(personKnown("nico@berkeley.edu"), "the buy-off and linked purchase still name them");
+  assert(!personKnown("nobody@berkeley.edu"));
+});
+await t("person links: hash round-trips, chips carry the email outside onclick", () => {
+  assert(hashLink("#/person/nico%40berkeley.edu") === "person/nico@berkeley.edu", hashLink("#/person/nico%40berkeley.edu"));
+  assert(hashLink("#/Person/NICO@Berkeley.edu") === "person/nico@berkeley.edu", "case-insensitive, lowercased");
+  assert(hashLink("#/wo-sn6-001") === "WO-SN6-001", "record links unchanged");
+  DB.users = [{ email: "oneil@berkeley.edu", name: "Pat O'Neil", role: "member" }];
+  const c = personChip(personRef({ purchaser: "Pat O'Neil" }, "purchaser"));
+  assert(c.includes('data-open="person/oneil%40berkeley.edu"') && c.includes("openPerson(this.dataset.email)"), c);
+  assert(!/onclick="[^"]*O'Neil/.test(c), "no name inside a handler");
+  const ext = personChip({ name: "Shop guy", email: "", kind: "ext" });
+  assert(ext.includes("pchip ext") && !ext.includes("<button"), "Other… is a hollow label, not a link");
 });
 
 /* Nothing below should inherit a splash the tests above left half-dismissed. */

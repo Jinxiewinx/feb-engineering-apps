@@ -213,6 +213,42 @@ console.log("\nbad links degrade, they do not break");
   await page.close();
 }
 
+/* ---------- 7b. a person link ----------
+   #/person/<email> goes through the same wait-for-data door as a record. The
+   roster is its own snapshot, so the delayed case is the one that matters, and
+   the record regex would read this as "PERSON" and drop it if the person
+   branch did not run first. */
+console.log("\na person link, arriving before the roster does");
+{
+  const { page, errs } = await boot({ hash: "#/person/arivera%40berkeley.edu", delayMs: 500 });
+  const before = await page.evaluate(() => history.length);
+  await page.waitForFunction(() => window.__fbReleased === true);
+  await page.waitForFunction(() => view.tab === "people" && view.mode === "detail", null, { timeout: 8000 }).catch(() => {});
+  const v = await page.evaluate(() => ({ tab: view.tab, mode: view.mode, id: view.id, hash: location.hash,
+    len: history.length, name: !!document.querySelector(".phead h2") && document.querySelector(".phead h2").textContent }));
+  eq(v.tab, "people", "lands on People");
+  eq(v.mode, "detail", "on the person page");
+  eq(v.id, "arivera@berkeley.edu", "for the right person, lowercased and decoded");
+  ok(/Ana Rivera/.test(v.name || ""), "and it shows their name", v.name);
+  eq(v.hash, "#/person/arivera%40berkeley.edu", "the address bar keeps the person link");
+  eq(v.len, before, "without growing browser history");
+  eq(errs.length, 0, "no page errors", errs.join(" | "));
+  // A chip click goes to the same page and rewrites the URL the same way.
+  const w = await page.evaluate(() => { setTab("budget"); openPerson("dchen@berkeley.edu"); return { id: view.id, hash: location.hash }; });
+  eq(w.hash, "#/person/dchen%40berkeley.edu", "openPerson writes the person link");
+  await page.close();
+}
+console.log("\na person link for somebody the app has never heard of");
+{
+  const { page } = await boot({ hash: "#/person/nobody%40nowhere.edu", delayMs: 0 });
+  await page.waitForFunction(() => view.q === "nobody@nowhere.edu", null, { timeout: 12000 }).catch(() => {});
+  const v = await page.evaluate(() => ({ tab: view.tab, mode: view.mode, q: view.q }));
+  eq(v.tab, "people", "lands on People");
+  eq(v.mode, "list", "on the list, not an empty page");
+  eq(v.q, "nobody@nowhere.edu", "with the address in the search box");
+  await page.close();
+}
+
 /* ---------- 8. the prefix map matches fb.js ---------- */
 console.log("\nID_TO_COLL stays in step with fb.js");
 {
