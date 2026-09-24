@@ -10765,8 +10765,12 @@ await t("engineer fields suggest only the qualified, stamp the email sidecar, an
   ];
   DB.parts = [{ id: "P-TR", partName: "TR", layupType: "MOLD INFUSION", moldEngineer: "", manufacturingEngineer: "" }];
   view = { ...view, tab: "parts", mode: "detail", id: "P-TR", edit: true };
-  const html = engFld("parts", DB.parts[0], "Mold Engineer", "moldEngineer");
-  assert(html.includes('<option value="Nick Jepsen">') && !html.includes("Sander"), "datalist is the qualified list: " + html);
+  // The picker leads with the qualified and holds everyone else behind one row.
+  engFld("parts", DB.parts[0], "Mold Engineer", "moldEngineer");
+  pfOpen("eng-parts-P-TR-moldEngineer");
+  const list = pfListHtml("eng-parts-P-TR-moldEngineer");
+  assert(list.includes("Nick Jepsen") && !list.includes("Sander") && list.includes("1 not Mold design-trained"), "the qualified list first: " + list);
+  pfClose("eng-parts-P-TR-moldEngineer");
   calls.length = 0;
   setEngineer("parts", "P-TR", "moldEngineer", "Nick Jepsen");
   assert(DB.parts[0].moldEngineerEmail === "nick@b.edu", "a roster match stamps the sidecar");
@@ -12348,6 +12352,153 @@ await t("person links: hash round-trips, chips carry the email outside onclick",
   assert(!/onclick="[^"]*O'Neil/.test(c), "no name inside a handler");
   const ext = personChip({ name: "Shop guy", email: "", kind: "ext" });
   assert(ext.includes("pchip ext") && !ext.includes("<button"), "Other… is a hollow label, not a link");
+});
+
+console.log("person picker (chip + popover):");
+/* A key event the handlers can call preventDefault/stopPropagation on. */
+const pfEv = (key) => ({ key, preventDefault() {}, stopPropagation() {} });
+function pfBudgetSetup(rec) {
+  signInAsLead();
+  DB.users = [
+    { email: "ana@berkeley.edu", name: "Ana Rivera", role: "member" },
+    { email: "oneil@berkeley.edu", name: "Pat O'Neil", role: "member" },
+  ];
+  DB.budget = [Object.assign({ id: "BUY-PF", item: "peel ply", cost: "12" }, rec || {})];
+  view = { ...view, tab: "budget", mode: "detail", id: "BUY-PF", edit: true };
+  render();
+  return "buy-BUY-PF-purchaser";
+}
+const pfPatches = () => calls.filter(c => c[0] === "patch" && c[1] === "budget");
+await t("picking a person writes one patch with purchaser and purchaserEmail", () => {
+  const id = pfBudgetSetup();
+  assert(main.innerHTML.includes('id="pf-btn-' + id + '"') && main.innerHTML.includes("Choose someone"), "the empty field is a chooser");
+  pfOpen(id);
+  calls.length = 0;
+  const i = pfOptions(id).findIndex(o => o.t === "person" && o.u.email === "ana@berkeley.edu");
+  pfPick(id, i);
+  const w = pfPatches();
+  assert(w.length === 1 && w[0][3].includes("purchaser") && w[0][3].includes("purchaserEmail"), "one write: " + JSON.stringify(w));
+  assert(DB.budget[0].purchaser === "Ana Rivera" && DB.budget[0].purchaserEmail === "ana@berkeley.edu");
+  assert(!PF_STATE[id].open, "and it closes");
+});
+await t("Other… writes ext, and a typo plus Enter writes nothing", () => {
+  const id = pfBudgetSetup();
+  pfOpen(id);
+  pfInput(id, { value: "Shop guy", selectionStart: 8, selectionEnd: 8 });
+  const opts = pfOptions(id);
+  assert(!opts.some(o => o.t === "person") && opts[opts.length - 1].t === "ext", "only the Use row: " + JSON.stringify(opts));
+  calls.length = 0;
+  pfKey(pfEv("Enter"), id);
+  assert(pfPatches().length === 0 && PF_STATE[id].open, "nothing highlighted, nothing written");
+  pfPick(id, opts.findIndex(o => o.t === "ext"));
+  assert(DB.budget[0].purchaser === "Shop guy" && DB.budget[0].purchaserEmail === "ext", JSON.stringify(DB.budget[0]));
+  // An exact roster name never offers itself as somebody not on the app.
+  pfOpen(id);
+  pfInput(id, { value: "ana rivera" });
+  assert(!pfOptions(id).some(o => o.t === "ext"), "exact name, no Use row");
+  pfClose(id);
+});
+await t("Clear empties both keys, and is only offered when there is something to clear", () => {
+  const id = pfBudgetSetup({ purchaser: "Ana Rivera", purchaserEmail: "ana@berkeley.edu" });
+  assert(main.innerHTML.includes("Ana Rivera") && !main.innerHTML.includes("Choose someone"), "the chip shows the current person");
+  pfOpen(id);
+  const i = pfOptions(id).findIndex(o => o.t === "clear");
+  assert(i >= 0, "a Clear row");
+  pfPick(id, i);
+  assert(DB.budget[0].purchaser === "" && DB.budget[0].purchaserEmail === "", JSON.stringify(DB.budget[0]));
+  render(); pfOpen(id);
+  assert(!pfOptions(id).some(o => o.t === "clear"), "nothing to clear now");
+  pfClose(id);
+});
+await t("keyboard: Down opens from the chip, Down/Up move, Enter picks, Escape closes without a change", () => {
+  const id = pfBudgetSetup();
+  let btnFocused = 0;
+  el("pf-btn-" + id).focus = () => { btnFocused++; };
+  pfBtnKey(pfEv("ArrowDown"), id);
+  assert(PF_STATE[id].open && PF_STATE[id].hi === -1, "opens with nothing preselected");
+  pfKey(pfEv("ArrowDown"), id); pfKey(pfEv("ArrowDown"), id); pfKey(pfEv("ArrowUp"), id);
+  assert(PF_STATE[id].hi === 0, "hi " + PF_STATE[id].hi);
+  pfKey(pfEv("ArrowUp"), id);
+  assert(PF_STATE[id].hi === pfOptions(id).length - 1, "Up from the top wraps");
+  pfKey(pfEv("ArrowDown"), id);
+  calls.length = 0;
+  pfKey(pfEv("Escape"), id);
+  assert(!PF_STATE[id].open && pfPatches().length === 0 && btnFocused === 1, "closed, unchanged, focus back on the chip");
+  pfBtnKey(pfEv("ArrowDown"), id);
+  pfInput(id, { value: "pat" });
+  assert(PF_STATE[id].hi === 0, "typing highlights the best match");
+  pfKey(pfEv("Enter"), id);
+  assert(DB.budget[0].purchaserEmail === "oneil@berkeley.edu", "Enter picks: " + JSON.stringify(DB.budget[0]));
+  el("pf-btn-" + id).focus = () => {};
+});
+await t("search matches name, email and initials", () => {
+  const id = pfBudgetSetup();
+  pfOpen(id);
+  const who = q => { pfInput(id, { value: q }); return pfOptions(id).filter(o => o.t === "person").map(o => o.u.email).join(","); };
+  assert(who("rivera") === "ana@berkeley.edu", "last name");
+  assert(who("oneil@") === "oneil@berkeley.edu", "email");
+  assert(who("po") === "oneil@berkeley.edu", "initials: " + who("po"));
+  pfClose(id);
+});
+await t("training filter: the trained first, everyone else behind one row and tagged", () => {
+  signInAsLead();
+  DB.users = [
+    { email: "nick@b.edu", name: "Nick Jepsen", role: "member", trainings: { moldDesign: { by: "s", at: "" } } },
+    { email: "sander@b.edu", name: "Sander Green", role: "member" },
+  ];
+  DB.parts = [{ id: "P-PF", partName: "PF", layupType: "MOLD INFUSION", moldEngineer: "", manufacturingEngineer: "" }];
+  view = { ...view, tab: "parts", mode: "detail", id: "P-PF", edit: true };
+  render();
+  const id = "eng-parts-P-PF-moldEngineer";
+  assert(main.innerHTML.includes('id="pf-btn-' + id + '"'), "the engineer field is the picker in edit mode");
+  pfOpen(id);
+  let opts = pfOptions(id);
+  assert(opts.length === 2 && opts[0].u.email === "nick@b.edu" && opts[1].t === "more" && opts[1].n === 1, JSON.stringify(opts));
+  pfPick(id, 1);
+  opts = pfOptions(id);
+  assert(PF_STATE[id].open && opts[1].t === "person" && opts[1].untrained, "Show everyone reveals, list stays open");
+  assert(pfListHtml(id).includes("not Mold design-trained"), "the revealed are tagged");
+  pfClose(id); pfOpen(id);
+  pfInput(id, { value: "sand" });
+  opts = pfOptions(id);
+  assert(opts[0].u.email === "sander@b.edu" && opts[0].untrained, "a typed name searches everyone");
+  calls.length = 0;
+  pfKey(pfEv("Enter"), id);
+  assert(DB.parts[0].moldEngineerEmail === "sander@b.edu", "and an untrained pick still saves");
+  assert(main.innerHTML.includes("not Mold design-trained"), "wearing the warning");
+  view = { ...view, edit: false };
+});
+await t("an open picker survives a snapshot render with its query, highlight and caret", () => {
+  const id = pfBudgetSetup();
+  pfOpen(id);
+  pfInput(id, { value: "an", selectionStart: 2, selectionEnd: 2 });
+  pfKey(pfEv("ArrowDown"), id);
+  const hi = PF_STATE[id].hi;
+  const q = el("pf-q-" + id);
+  let sel = null;
+  q.value = "ana"; q.selectionStart = 1; q.selectionEnd = 1;
+  q.setSelectionRange = (a, b) => { sel = [a, b]; };
+  activeEl = q;
+  render();                                   // a Firestore snapshot lands
+  activeEl = null;
+  assert(PF_STATE[id].open && PF_STATE[id].q === "ana" && PF_STATE[id].hi === hi, JSON.stringify(PF_STATE[id]));
+  assert(main.innerHTML.includes('id="pf-q-' + id + '"') && main.innerHTML.includes('value="ana"'), "the popover is in the repaint");
+  assert(sel && sel[0] === 1 && sel[1] === 1, "caret put back: " + JSON.stringify(sel));
+  q.setSelectionRange = () => {};
+  view = { ...view, edit: false }; render();
+  assert(!PF_STATE[id].open, "leaving edit mode closes it");
+});
+await t("no name or email inside any handler, apostrophe included", () => {
+  const id = pfBudgetSetup({ purchaser: "Pat O'Neil", purchaserEmail: "oneil@berkeley.edu" });
+  pfOpen(id);
+  pfInput(id, { value: "O'Ne" });
+  const html = main.innerHTML + pfBody(id);
+  const handlers = html.match(/\son\w+="[^"]*"/g) || [];
+  assert(handlers.length > 3, "handlers found");
+  const bad = handlers.filter(h => /O'Ne|oneil|ana@|Rivera/i.test(h));
+  assert(!bad.length, "leaked into a handler: " + bad.join(" | "));
+  pfClose(id);
+  view = { ...view, edit: false };
 });
 
 /* Nothing below should inherit a splash the tests above left half-dismissed. */

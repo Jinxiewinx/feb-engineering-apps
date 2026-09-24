@@ -1741,6 +1741,16 @@ cmd-click opens it in a new tab like any record link. A name with a dashed
 outline and no face is somebody not on the app, or an old typed name nobody
 has linked yet.
 
+In edit mode the purchaser and both engineer fields are pickers. The field
+shows the same chip read mode does, with a caret; press it and a list of people
+opens under it with a search box on top (name, email or initials). For an
+engineer field the people who hold the matching training come first, and
+everyone else sits behind one "Show everyone" row, tagged "not X-trained" when
+shown. Typing searches everybody. To name someone who is not on the app, type
+their name and pick the `Use "…"` row at the bottom; Enter alone will not pick
+it, so a typo does not become a person. Clear empties the field. Arrow keys
+move, Enter picks, Escape closes without a change.
+
 ## Files, photos, and watchers
 
 Uploads (avatars, project files, comment images) live in Firebase Storage, which

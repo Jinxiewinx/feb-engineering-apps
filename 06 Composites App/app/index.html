@@ -1061,6 +1061,51 @@
   .picker .opt:hover { background: var(--hover); }
   .picker .opt.sel { background: var(--accent-soft); }
 
+  /* ---- single-person field (personField in core.js) ----
+     The chip read mode shows, inside one full-width button the height of an
+     input so it lines up with the fields beside it. The popover reuses the
+     .opt row of the multi-select picker above, grown to a real touch row,
+     so the two pickers read as one family. */
+  .pfield { position: relative; }
+  .pf-btn { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 35px; padding: 3px 8px 3px 4px;
+    text-align: left; font-weight: 400; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+  .pf-btn:hover { background: var(--surface); border-color: var(--border-2); }
+  .pf-btn:focus-visible, .pf-btn[aria-expanded="true"] { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .pf-btn .pchip, .pf-btn .pchip.ext { cursor: inherit; min-width: 0; }
+  .pf-btn .pchip:hover { border-color: var(--line); }
+  .pf-empty { color: var(--faint); padding-left: 6px; }
+  .pf-caret { margin-left: auto; display: inline-flex; flex: none; color: var(--muted); }
+  .pf-caret svg { transition: transform var(--t-fast) var(--ease); }
+  .pf-btn[aria-expanded="true"] .pf-caret svg { transform: rotate(180deg); }
+  .pf-warn { margin-top: 3px; }
+  .pf-pop { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; width: max(100%, 290px); max-width: calc(100vw - 32px);
+    background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--r-md); box-shadow: var(--shadow-lg); padding: 4px; }
+  .pf-pop.right { left: auto; right: 0; }
+  .pf-pop.up { top: auto; bottom: calc(100% + 4px); }
+  .pf-search { display: flex; align-items: center; gap: 7px; padding: 0 8px; margin: 0 -4px; border-bottom: 1px solid var(--line); color: var(--muted); }
+  .pfield .pf-pop input.pf-q { flex: 1; min-width: 0; width: auto; border: none; background: transparent; box-shadow: none; padding: 9px 0; color: var(--ink); }
+  .pfield .pf-pop input.pf-q:focus { outline: none; box-shadow: none; }
+  .pf-list { max-height: 300px; overflow-y: auto; overscroll-behavior: contain; padding-top: 4px; }
+  .pf-pop .opt { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 5px 8px; border-radius: var(--radius); cursor: pointer; font-size: 13.5px; }
+  .pf-pop .opt:hover { background: var(--hover); }
+  .pf-pop .opt.hi { background: var(--accent-soft); }
+  .pf-pop .opt.pf-sep { margin-top: 5px; box-shadow: 0 -3px 0 -2px var(--line); }
+  .pf-pop .opt.untrained .avatar { opacity: .6; }
+  .pf-nm { display: flex; flex-direction: column; flex: 1; min-width: 0; line-height: 1.25; }
+  .pf-nm > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pf-sub { font-size: 11.5px; color: var(--muted); }
+  .pfield.compact .pf-sub { display: none; }
+  .pf-tag { color: var(--amber); }
+  .pf-cur { flex: none; display: inline-flex; color: var(--accent); }
+  .pf-ico { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%;
+    border: 1px dashed var(--border-2); color: var(--muted); }
+  .pf-more .pf-nm > span:first-child { color: var(--accent); font-weight: 500; }
+  .pf-clear { color: var(--muted); }
+  .pf-grp { padding: 6px 8px 3px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .pf-note { padding: 8px 8px 6px; font-size: 12px; color: var(--muted); }
+  .pf-foot { padding: 7px 8px 4px; margin: 4px -4px 0; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+  .pf-foot:empty { display: none; }
+
   /* ---- topbar icons + search + notifications ---- */
   .icon-btn { display: inline-flex; align-items: center; justify-content: center; border: none; background: none; padding: 7px; position: relative; cursor: pointer; color: var(--muted); border-radius: 7px; transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
   .icon-btn:hover { background: var(--hover); color: var(--ink); }
@@ -3609,6 +3654,11 @@
     .task-row input[type=checkbox] { width: 24px; height: 24px; }
     .task-row { min-height: 44px; }
     .picker .opt { padding: 9px 10px; }
+    /* A gloved thumb: every row of the person popover, and the field itself. */
+    .pf-pop .opt { min-height: 48px; }
+    .pf-btn { min-height: 44px; }
+    .pf-btn .pchip { min-height: 0; }
+    .pfield .pf-pop input.pf-q { font-size: 16px; min-height: 44px; padding: 0; }
   }
 
   @media print {

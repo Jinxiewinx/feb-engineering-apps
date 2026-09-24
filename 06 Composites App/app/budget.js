@@ -591,7 +591,8 @@ function renderBuyDetail() {
     ${(() => { const gw = buyGoalWarning(b); return gw ? `<p class="warn">${esc(gw)}</p>` : ""; })()}
     <h3>Details</h3>
     <div class="grid">
-      ${buyFld(b, "Item", "item")}${buyFld(b, "Purchaser", "purchaser", null, { roHtml: personChip(personRef(b, "purchaser"), { empty: "—" }) })}${buyFld(b, "Purpose", "purpose", budgetCats().length ? budgetCats().map(c => c.name) : PURPOSE)}
+      ${buyFld(b, "Item", "item")}${E ? personField({ id: `buy-${b.id}-purchaser`, label: "Purchaser", value: personRef(b, "purchaser"), save: "buyPerson", args: ["purchaser"] })
+        : buyFld(b, "Purchaser", "purchaser", null, { roHtml: personChip(personRef(b, "purchaser"), { empty: "—" }) })}${buyFld(b, "Purpose", "purpose", budgetCats().length ? budgetCats().map(c => c.name) : PURPOSE)}
       ${buyFldSel(b, "Order status", "status", BUY_STATUS, buyStatus(b))}${buyFldSel(b, "Reimbursement", "reimb", REIMB_STATUS, reimbStatus(b))}
       ${buyFld(b, "Cost ($)", "cost")}${buyFld(b, "Date ordered", "dateOrdered")}
       ${buyFld(b, "Source / vendor", "source")}

@@ -188,9 +188,9 @@ function processForLayupType(t, fallback) {
 
 /* ---------- engineer fields ----------
    One field renderer for both parts and work orders. The name string stays
-   authoritative (20+ read sites, travellers, reports — none change); the input
-   gains a datalist of people who hold the relevant training, and picking or
-   typing a roster name also sets the *Email sidecar so the face is exact.
+   authoritative (20+ read sites, travellers, reports — none change); edit mode
+   is a personField picker that lists people who hold the relevant training
+   first, and a pick writes the *Email sidecar with it so the face is exact.
    Unqualified or off-roster names still save — assignment is planning, the
    buy-off is the enforced record — they just carry a quiet warning. */
 function recProcess(rec) {
@@ -214,13 +214,13 @@ function engFld(coll, rec, label, key) {
   const v = rec[key] ?? "";
   const warn = engWarnHtml(rec, key);
   if (!view.edit) return `<div class="f"><label>${label}</label><div class="ro">${personChip(personRef(rec, key), { empty: esc(v) || "—" })}${warn}</div></div>`;
-  const tr = engTrainingFor(rec, key);
-  const dl = `dl-${coll}-${key}`;
-  const q = tr ? qualifiedFor(tr) : usersSorted();
-  return `<div class="f"><label>${label}</label>
-    <input list="${dl}" value="${esc(v)}" onchange="setEngineer('${coll}','${esc(rec.id)}','${key}',this.value)">
-    <datalist id="${dl}">${q.map(u => `<option value="${esc(u.name || u.email)}">`).join("")}</datalist>
-    ${warn}</div>`;
+  // A pick from the roster, trained people first. setEngineer (typed text)
+  // stays for imports and the tests that drive it.
+  return personField({
+    id: `eng-${coll}-${rec.id}-${key}`, label, value: personRef(rec, key),
+    save: "setEngineerRef", args: [coll, rec.id, key], training: engTrainingFor(rec, key),
+    after: warn ? `<div class="pf-warn">${warn}</div>` : "",
+  });
 }
 function setEngineer(coll, id, key, val) {
   const rec = recById(coll, id);
