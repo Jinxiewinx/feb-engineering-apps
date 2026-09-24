@@ -7740,6 +7740,7 @@ await t("Add here births a located record; Confirm contents stamps the walk", as
   invConfirmContents("BIN-SN6-002");
   const b = shopById("items", "BIN-SN6-002");
   assert(b.walkedAt && b.walkedBy, "walk stamped: " + b.walkedAt + " by " + b.walkedBy);
+  assert(b.walkedByEmail === myEmail().toLowerCase(), "and linked to whoever walked it: " + b.walkedByEmail);
 });
 
 await t("old items/lots links and scans land on Inventory", () => {
