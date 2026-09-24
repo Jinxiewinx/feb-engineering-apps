@@ -105,3 +105,33 @@ timer.
 Under 768 px the Viewer drops its side panel and the two-report views and
 opens one report, picked from a select. Side-by-side comparison on a phone
 screen is not worth building for; opening a report to read a plot is.
+
+## 9. Each browser keeps the reports it has opened, keyed by hash (2026-09-24)
+
+Opening a report used to download the whole PDF (5 to 20 MB) and re-read
+every page every time, including every saved view and every shared link.
+`cache.js` keeps the bytes in the Cache API and the index (pages, panels,
+text, measured margins) in IndexedDB, keyed by the report's sha256, and the
+Firestore SDK keeps the library listing in IndexedDB too.
+
+- **Keyed by hash, so nothing is ever invalidated.** A record's file never
+  changes (a changed report is a new upload with a new hash), so a cached
+  copy cannot be stale. The index key also carries `INDEX_VERSION`: bump it
+  when `indexer.js` or the margin pass changes what they produce, or every
+  browser keeps serving the old index.
+- **Local only.** Nothing large goes into Firestore (#3 stands); the cache is
+  one person's browser, capped at 1 GB of PDFs, least recently used first.
+- **Fails soft.** A private window or blocked storage means every call
+  returns nothing and the app downloads as before.
+- **Not a service worker.** A worker would also cache the app shell, and
+  then a deploy would not reach people until the worker updated, which
+  breaks "live matches the pushed commit". The shell stays `no-cache`.
+
+## 10. Popovers, not the browser's dialogs (2026-09-24)
+
+`prompt()` and `confirm()` froze the page (the note asked after an upload
+held up every file queued behind it) and made the ⋯ menu a text box asking
+you to type "rename", "note" or "delete". `menu.js` has an anchored menu, a
+one-line field and a confirm, and the smoke test fails if any native dialog
+opens. Delete is undoable for six seconds instead of confirmed twice.
+

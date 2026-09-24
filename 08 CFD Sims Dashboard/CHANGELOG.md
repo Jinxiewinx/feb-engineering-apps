@@ -7,6 +7,41 @@ relearn navigation, Minor for a new capability, Patch for fixes and copy.
 
 ---
 
+## cfd-v0.4.0 — 2026-09-24
+
+Faster everywhere, and no more browser dialogs. Same layout.
+
+- **Zoom is smooth and ends sharp.** A pinch or ⌘/Ctrl-scroll scales the
+  page on the graphics card while your fingers move and redraws once they
+  stop. Pages no longer stay blurry after a zoom. `+`, `−` and `0` zoom too.
+- **A report you have opened before opens instantly.** This browser keeps
+  it, so reopening it, a saved view or a link downloads nothing. Two
+  reports load side by side instead of one after the other, with a
+  percentage while they download and read.
+- **Compare from the Dashboard.** Tick two cards, press Compare. A filter
+  box over the cards, and `/` to reach it.
+- **The ⋯ menu is a menu.** Rename, note and delete in a small popover
+  instead of typing a word into a dialog. Delete can be undone for a few
+  seconds.
+- **Uploading does not stop you.** The upload starts while the report is
+  being read, the note is asked on its row in the Open list, and a second
+  file does not wait for the first one's note.
+- Overlay: dragging the swipe divider and the amplify slider no longer
+  stutter. `?` shows every keyboard shortcut.
+
+Measured with `npm run perf` (median of 3, 800 ms simulated download,
+retina):
+
+| | 0.3.1 | 0.4.0 |
+|---|---|---|
+| Pinch over two reports | 5 fps, 12.4 s blocked | 60 fps, 0.15 s blocked |
+| First page, one report | 2.5 s | 2.1 s |
+| First page, two reports | 4.9 s | 2.7 s |
+| Reopening a report | 2.5 s | 0.5 s |
+| Difference slider, 30 moves | 431 ms blocked | 0 ms |
+
+---
+
 ## cfd-v0.3.1 — 2026-09-03
 
 - The splash waits for Continue once its lamps are lit, as in the composites

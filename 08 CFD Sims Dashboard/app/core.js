@@ -35,7 +35,7 @@ import { $, el, esc, toast, fmtMB, shortDate } from "./util.js";
 export { $, el, esc, toast };
 
 /* Bumped by hand at release time; tags are cfd-vX.Y.Z (see README). */
-export const APP_VERSION = "0.3.1";
+export const APP_VERSION = "0.4.0";
 
 /* ---------- boot splash ----------
    index.html paints it before this module (and pdf.js behind it) has even

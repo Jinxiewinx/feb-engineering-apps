@@ -16,7 +16,10 @@ drag and L/D, two trend charts by design point, the team's saved views, and
 a card per report with a thumbnail of its `stat-car-0` contour (or the first
 contour it has, named under the picture), when it was uploaded, who ran it,
 a note, and its numbers. Open on a card puts that report in the **Viewer**
-alongside whatever is already open.
+alongside whatever is already open. Tick two or more cards and **Compare in
+Viewer** opens them all at once; the filter box over the cards (or `/`)
+narrows them by name, note or DP. A card's ⋯ renames it, edits its note, or
+deletes it; a delete can be undone for six seconds from the toast.
 
 In the Viewer, Pages scroll together, Panels puts the same named plot from
 every report side by side, Overlay lays one over another (blend, swipe, or
@@ -26,12 +29,22 @@ plot and the overlay, as a named view on the Dashboard for everyone.
 
 To add a report, drop a Fluent PDF onto the window or press Open PDFs. It
 opens immediately and, with the checkbox on, uploads to the library for
-everyone: the force numbers are read off the report's Report Definitions
-page, a thumbnail is rendered from the open PDF, and a one-line note is
-asked for (skippable, editable later from the card's ⋯). The same file
-uploaded twice is recognised by its hash and not stored again. Reports
-uploaded before the Dashboard existed catch up the first time anyone opens
-them.
+everyone while it is being read: the force numbers are read off the
+report's Report Definitions page, a thumbnail is rendered from the open PDF,
+and a one-line note is asked for on the report's row in the Open list
+(skippable, editable later from the card's ⋯). The same file uploaded twice
+is recognised by its hash and not stored again. Reports uploaded before the
+Dashboard existed catch up the first time anyone opens them.
+
+**Opening is fast the second time.** This browser keeps each report it has
+opened, and the index read from it, keyed by the file's hash (`cache.js`,
+DECISIONS #9), so reopening a report, a saved view or a colleague's link
+downloads and re-reads nothing. Reports asked for together load together,
+each showing "downloading N%" then "reading N%" in the Open list. Resting
+the pointer on a card starts fetching it.
+
+**Zoom** with ⌘/Ctrl + scroll, a trackpad pinch, or `+` `−` `0`. `?` lists
+every key.
 
 The address bar carries what you have open, the tab, the plot and the
 overlay. Copy it and send it: the link is the comparison.
@@ -52,12 +65,12 @@ Check; neither needs a login.
 
 | Path | What it is |
 |---|---|
-| `app/` | The app. `core.js` routes between Dashboard and Viewer and holds the state; `shell.js` is the composites-style icon rail, topbar and lightbox (always dark, no toggles); `dashboard.js` and `chart.js` the landing page; `extract.js` reads numbers out of a report's text; `library.js` is the only file that talks to Firebase; the rest are the viewer's views ported from `07`. `vendor/` is pdf.js. `ds/` is copied from `05 Design System/` and a test keeps it byte-identical |
+| `app/` | The app. `core.js` routes between Dashboard and Viewer and holds the state; `shell.js` is the composites-style icon rail, topbar and lightbox (always dark, no toggles); `dashboard.js` and `chart.js` the landing page; `extract.js` reads numbers out of a report's text; `library.js` is the only file that talks to Firebase; `cache.js` is this browser's copy of reports and indexes; `menu.js` the popovers (menus, one-line fields, confirms) that stand in for `prompt()`; `render.js` rasterises page ranges; the rest are the viewer's views ported from `07`. `vendor/` is pdf.js. `ds/` is copied from `05 Design System/` and a test keeps it byte-identical |
 | `firebase.json`, `.firebaserc` | Pins `feb-cfd`. Hosting root `app/`. Emulator ports offset from the composites app's so both can run |
 | `firestore.rules` | `reports` and `views` are open with fixed record shapes; a report's dp, results, meta and thumb may be written by any opener (backfill). The other collections keep the composites roster model, unused until something needs sign-in |
 | `storage.rules` | `reports/<id>/report.pdf` (PDF, under 60 MB) and `reports/<id>/thumb.png` (PNG, under 2 MB): public read and write. Other trees keep their roster gating |
 | `cors.json` | The bucket's CORS policy. Applied by hand with gsutil, never by `firebase deploy` |
-| `test/` | `test_indexer.mjs` (the PDF indexer and the number extraction against the real DP_22 fixture), `test_viewer_smoke.mjs` (Playwright, library stubbed: Dashboard, viewer, URL and saved-view round trips; `SHOTS=<dir>` saves screenshots), `test_library_emu.mjs` (the real library against the emulators: upload, numbers, thumbnail, backfill, views) |
+| `test/` | `test_indexer.mjs` (the PDF indexer and the number extraction against the real DP_22 fixture), `test_viewer_smoke.mjs` (Playwright, library stubbed by `lib_stub.mjs`: Dashboard, viewer, URL and saved-view round trips, menus, compare, the cache; `SHOTS=<dir>` saves screenshots), `test_library_emu.mjs` (the real library against the emulators: upload, numbers, thumbnail, backfill, views), `test_perf.mjs` (timings, see below) |
 | `tools/` | Rules tests, the design-system byte check, and the pdf.js vendoring script |
 | `CHANGELOG.md` | Released versions, `cfd-vX.Y.Z` |
 
@@ -71,7 +84,16 @@ npm test            # ds check, rules, indexer, browser smoke, emulator round tr
 npm run emulators   # auth, Firestore, storage, hosting, with the UI on :4001
 npm run serve       # the app on :8792; on localhost it talks to the emulators
 npm run deploy      # hosting only, to feb-cfd.web.app
+npm run perf        # timings: open, reopen, pinch frames, slider (RUNS=3 for a median)
 ```
+
+`npm run perf` prints numbers rather than passing or failing on them (a CI
+box and a laptop differ by 3x); it fails only if a page is left soft after
+a pinch or the page errors. Run it before and after anything that touches
+`render.js`, `pages.js` or the loading path, and put both numbers in the
+commit. In a sandbox that cannot reach gstatic.com, the emulator suite can
+load the Firebase SDK from an unpacked `firebase@12.16.0` npm package:
+`FIREBASE_SDK_DIR=<dir>/package npm run test:library`.
 
 Playwright is not a dependency of the repo; the browser suites skip with a
 message when it is missing (see `SETUP.md` at the root).

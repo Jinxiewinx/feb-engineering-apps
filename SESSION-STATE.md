@@ -20,6 +20,12 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**cfd-v0.4.0 is tagged and pushed but NOT deployed (2026-09-24).** The cloud
+session that cut it has no Firebase login and its network blocks
+feb-cfd.web.app. From `08 CFD Sims Dashboard/`: `npm run deploy`, then
+`curl -s https://feb-cfd.web.app/core.js | grep APP_VERSION` must say 0.4.0.
+Hosting only; no rules changed. Delete this entry once live.
+
 **Person fields, in progress (2026-09-24).** Plan:
 `~/.claude/plans/for-the-composites-app-tender-wave.md`. Typed "who" fields
 become roster picks stored as `<key>` + `<key>Email` (email / `ext` / unset).
