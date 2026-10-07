@@ -57,3 +57,8 @@ ds-bundle
 
 # Built add-in packages. The zip lives on a GitHub Release, not in git.
 dist/
+
+# Claude Code mods in .claude/skills/: the engine lays its API types and a
+# tsconfig beside each one at every load. Generated per machine, never edited.
+.claude/skills/*/.claude-plugin/types/
+.claude/skills/*/tsconfig.json

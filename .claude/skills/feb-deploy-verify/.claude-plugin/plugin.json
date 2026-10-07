@@ -1,0 +1,1 @@
+{ "name": "feb-deploy-verify", "version": "0.1.0", "description": "After a hosting deploy of the composites app, fetches the changed files off feb-composites.web.app and checks they match the commit." }

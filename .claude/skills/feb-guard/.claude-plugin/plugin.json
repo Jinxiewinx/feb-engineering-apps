@@ -1,0 +1,1 @@
+{ "name": "feb-guard", "version": "0.1.0", "description": "Enforces the SN6 Resources repo rules: hosting-only deploys from a pushed tree, releases only through release.mjs, no force-push to main, HTTPS remote, no hand-edited versions." }

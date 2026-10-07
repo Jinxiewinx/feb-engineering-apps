@@ -20,6 +20,11 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**Guardrail mods (2026-10-06).** `feb-guard` and `feb-deploy-verify` in
+`.claude/skills/` (README, "Claude Code guardrails"). Unit tests pass; the
+pushed-tree check and the live fetch have not yet run against a real deploy,
+so watch the first one.
+
 **Person fields (2026-09-24), shipped as v6.2.0.**
 Plan: `~/.claude/plans/for-the-composites-app-tender-wave.md`. Typed "who"
 fields are roster picks stored as `<key>` + `<key>Email` (email / `ext` /

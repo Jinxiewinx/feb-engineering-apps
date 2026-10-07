@@ -219,3 +219,27 @@ screenshots in this and the other READMEs.
 One quirk worth knowing: the git root is this folder rather than `06 Composites App/`,
 because the scripts in `tools/` resolve their paths relative to here.
 `firebase deploy` still has to run from inside `06 Composites App/`.
+
+## Claude Code guardrails
+
+Two Claude Code mods live in `.claude/skills/` and load in every Claude session
+opened on this repo. They turn rules from `CLAUDE.md` into checks instead of
+things a session has to remember.
+
+**`feb-guard`** refuses, before it runs: a bare `firebase deploy`; `--only` with
+anything but hosting (Simon typing "allow rules deploy" or "allow functions
+deploy" lifts that for one turn); a hosting deploy while `06 Composites App/`
+is dirty or has unpushed commits; `gh release create/upload/edit/delete` and
+`addin-v*` tags, since `tools/release.mjs` is the only release path; `sed -i`
+or an Edit/Write that changes `APP_VERSION`, `ADDIN_VERSION` or the add-in
+manifest version; a force-push to main; and an SSH remote.
+
+**`feb-deploy-verify`** runs after a hosting deploy that reports success. It
+fetches `core.js` and the last commit's changed text files off
+feb-composites.web.app, compares them byte for byte with the commit, and tells
+the session plainly when they differ. Deploys made inside `release.mjs` are not
+seen by either mod; the script verifies those itself.
+
+Their tests run with `claude plugin test .claude/skills/feb-guard` (and the
+same for `feb-deploy-verify`). The `claude` on PATH has to be a build that knows
+the `plugin test` command.
