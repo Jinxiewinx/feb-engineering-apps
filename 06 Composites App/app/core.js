@@ -32,11 +32,11 @@ var APP_VERSION = "6.5.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Paul is a proper chat now. He sits beside the page on a laptop, so tapping a source opens it next to the conversation. On a phone, the round Paul button in the corner takes you back to the same chat.",
-  "While he works you can watch what he's doing (\"Opening WO-SN6-003\", \"Reading CS-006\") and his thinking as it comes. Sources get their own list under each answer.",
-  "On any record's page Paul knows what you're looking at, so \"is this ready for layup?\" means that mold. ⌘K search can hand your question to Paul too.",
-  "✨ buttons now show a bar at the bottom while they run: what they're doing, how many seconds, and how it ended. Errors stay up until you close them.",
-  "Leads: ⋯ → Give Paul a picture. It stays in the team's private storage.",
+  "Paul now knows the whole app: R&D studies, coupon results, R&D parts and runs, people and their trainings, the resin systems and our cure holds, materials, restock rules, the season and the budget goals.",
+  "Ask him \"how many\" and he counts the way the dashboard and the R&D tab do. Old shelved project tickets are gone from his view.",
+  "When the app doesn't have the answer to a general composites question, Paul can search the web. That part is labelled \"From the web\" and every page it came from is listed. Tap one to open it.",
+  "He never uses the web for anything about our own parts, people, schedule, cure holds or ratios. Those come from the app or he says he couldn't find them.",
+  "Tap a person in Paul's sources to open their page, or a resin system to open its datasheet.",
 ];
 
 
