@@ -818,10 +818,13 @@ lines** button when they don't. Whether a line's contents ever reached a shelf
 shows in Inventory's Incoming strip. The budget CSV exports both cost and the
 line sum, so a mismatch survives into the spreadsheet.
 
-With a receipt photo attached, **✨ Fill from receipt** reads it into proposed
-lines. Parsing only ever prefills the same editable grid: every cell stays
-fixable, existing lines are never touched without a confirm, and if the service
-is down the button says so and the manual editor carries on.
+With a receipt attached (a photo, or the PDF invoice an online order emails
+you), **✨ Fill from receipt** reads it into proposed lines and fills an empty
+vendor field. Parsing only ever prefills the same editable grid: every cell
+stays fixable, existing lines are never touched without a confirm, and if the
+service is down the button says so and the manual editor carries on. When the
+receipt prints a grand total and the lines miss it by more than tax would
+explain (15%), the toast says so, since a dropped line is the usual misread.
 
 People is the team roster with photos, roles, and each person's live assignments
 across parts, projects and work orders. Leads can set roles, and trainings are

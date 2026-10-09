@@ -20,6 +20,23 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**Receipts on Claude Haiku 5.5 (2026-10-08): code pushed, NOT live, NOT
+released.** Plan: `~/.claude/plans/now-that-there-is-cozy-sloth.md`.
+`parseReceipt` now uses `@anthropic-ai/sdk` (pinned 0.128.0, the newest at
+least two weeks old), `claude-haiku-5-5`, effort low, a JSON schema, a 50/day
+cap in `aiUsage/`, and reads PDFs as well as photos. `test_functions.mjs` covers
+it with stubs and is in the release gate. It has never made a real model call:
+there was no local key. Waiting on Simon, in order: (1) Blaze plan on
+feb-composites (the Cloud Functions API is disabled, `functions:list` 403s);
+(2) he runs `firebase functions:secrets:set ANTHROPIC_API_KEY` himself;
+(3) "allow functions deploy" and "allow rules deploy", because `storage.rules`
+now allows `application/pdf` under `budget/`. **Hosting is deliberately not
+deployed**: the new picker offers PDFs, and live storage rules would refuse
+them until the rules deploy. Ship all three together, then
+`node tools/release.mjs 6.3.0` and a live ✨ on one photo and one PDF.
+Phase 2 (packing slip → receiving, jug label → lot fields, matKey
+suggestions) is in the plan and not started.
+
 **Guardrail mods (2026-10-06).** `feb-guard` and `feb-deploy-verify` in
 `.claude/skills/` (README, "Claude Code guardrails"). Unit tests pass; the
 pushed-tree check and the live fetch have not yet run against a real deploy,

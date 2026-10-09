@@ -107,9 +107,10 @@ Twelve tabs, grouped in the sidebar by who is asking:
 - **Schedule:** the season as a station-by-week grid, or the week by day,
   subteam and person.
 - **Budget:** purchases on two tracks, the goods (Submitted, Purchased,
-  Arrived) and the money (Submitted, Approved, Reimbursed), with a receipt-scan
-  button on phones and a Charged to field for spend that belongs to another
-  team's budget.
+  Arrived) and the money (Submitted, Approved, Reimbursed). A receipt photo or
+  PDF invoice reads itself into line items (Claude Haiku 5.5, through the app's
+  one Cloud Function), and a Charged to field covers spend that belongs to
+  another team's budget.
 - **Documents:** the 25 datasheets, member uploads, and pinned Google Docs in
   one filterable shelf.
 - **Reports:** CSV exports, the printable Monday status board, and the bulk

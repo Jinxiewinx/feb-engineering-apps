@@ -728,10 +728,25 @@ the one place that forgot it produced a duplicate nobody could see.
 
 `✨ Fill from receipt` is the app's one Cloud Function (`functions/index.js`,
 `parseReceipt`): the client sends the storage path, the function checks the
-caller against the roster, downloads the image, asks a Haiku-class Claude model
-for the line items, and returns them. The Anthropic API key lives in a Functions
-secret, server-side only — a key readable by the roster would be an open spend
-faucet, which is why the client-side option lost.
+caller against the roster, downloads the photo or PDF, asks Claude Haiku 5.5 at
+low effort for the line items, and returns them. The Anthropic API key lives in
+a Functions secret, server-side only — a key readable by the roster would be an
+open spend faucet, which is why the client-side option lost.
+
+The model answers through a JSON schema (structured output), so there is no
+regex fishing for JSON in prose. A refusal, a truncated answer, a rate limit and
+a network failure each come back as their own callable error with a message
+written for the toast; the client shows those as-is and anything else as "the
+manual grid still works". Each person gets 50 reads a UTC day, counted in
+`aiUsage/{email}_{day}`, which has no match in `firestore.rules` and so is
+invisible to clients. At roughly 2k tokens a read the cap is a ceiling on a
+stuck loop, not a ration.
+
+Two rules for anything else that wants a model call. It gets its own callable
+with its own prompt, schema and Storage prefix, sharing `callHaiku()` and
+`requireRoster()`; there is never a general "ask Claude" endpoint, because that
+would let any roster member spend the key on anything. And the answer only ever
+prefills a grid a person then edits and saves.
 
 Functions deploy separately (`firebase deploy --only functions`, after
 `firebase functions:secrets:set ANTHROPIC_API_KEY`) and never ride along on a
