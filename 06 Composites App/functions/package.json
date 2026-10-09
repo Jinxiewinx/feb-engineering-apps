@@ -2,7 +2,7 @@
   "name": "feb-composites-functions",
   "description": "Cloud Functions for the FEB composites app. One function: parseReceipt (Claude Haiku 5.5).",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "index.js",
   "dependencies": {

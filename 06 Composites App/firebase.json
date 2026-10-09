@@ -2,7 +2,7 @@
   "functions": {
     "//": "The repo's one backend: parseReceipt (receipt photo or PDF -> proposed budget line items, via Claude Haiku 5.5). Deployed SEPARATELY from hosting — `firebase deploy --only functions` — and never as a rider on a hosting deploy; the hosting-only standing authorization does not cover it. Needs the ANTHROPIC_API_KEY secret set once via `firebase functions:secrets:set ANTHROPIC_API_KEY`.",
     "source": "functions",
-    "runtime": "nodejs20"
+    "runtime": "nodejs22"
   },
   "hosting": {
     "public": "app",
