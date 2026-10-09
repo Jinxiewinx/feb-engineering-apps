@@ -364,7 +364,7 @@
     height: 100vh; position: sticky; top: 0; background: var(--surface); border-left: 1px solid var(--line); z-index: 30; }
   .paul-head { display: flex; align-items: center; gap: 10px; padding: calc(10px + var(--sa-t, 0px)) 12px 10px; border-bottom: 1px solid var(--line); }
   .paul-title { display: flex; flex-direction: column; flex: 1; line-height: 1.2; }
-  .paul-thread { flex: 1; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .paul-thread { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; }
   .paul-msg { display: flex; gap: 8px; align-items: flex-start; }
   .paul-me { justify-content: flex-end; }
   .paul-me .paul-bubble { background: var(--brand-ink); color: #fff; border-radius: var(--r-lg) var(--r-lg) 4px var(--r-lg); max-width: 85%; }
@@ -377,6 +377,10 @@
   .paul-gen .pill { margin-bottom: 4px; }
   .paul-cite { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 4px; margin: 0 1px;
     border-radius: var(--r-md); border: 0; background: var(--accent-soft); color: var(--accent); font: inherit; font-size: 10.5px; font-weight: 700; vertical-align: 2px; cursor: pointer; }
+  /* The inline numbers sit in a line of text, so they stay text-sized even
+     where touch screens give every button a 40px minimum; the Sources list
+     right below is the thumb-sized way to the same place. */
+  .paul-bubble .paul-cite { min-height: 0; min-width: 17px; height: 17px; line-height: 17px; }
   .paul-sources { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--card); }
   .paul-sources-h { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding: 7px 10px 3px; }
   .paul-src { display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left; padding: 7px 10px; border: 0; border-top: 1px solid var(--line);
@@ -396,7 +400,7 @@
   .paul-about:empty { display: none; }
   .paul-aboutchip .link { margin-left: 4px; }
   .paul-inputrow { display: flex; gap: 8px; align-items: flex-end; }
-  .paul-inputrow textarea { flex: 1; resize: none; min-height: 40px; max-height: 140px; border-radius: 12px; }
+  .paul-inputrow textarea { flex: 1; resize: none; min-height: 40px; max-height: 140px; border-radius: 12px; font-size: 16px; }
   .paul-send { flex: none; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
   .paul-fab { position: fixed; right: calc(16px + var(--sa-r, 0px)); bottom: calc(16px + var(--sa-b, 0px)); z-index: 40; width: 52px; height: 52px; padding: 0;
     border-radius: 50%; border: 2px solid var(--gold); background: var(--surface); box-shadow: var(--shadow-lg); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
@@ -3389,8 +3393,13 @@
   @media (max-width: 900px) {
     /* Ask Paul on a phone: the whole screen, over the app. A source steps it
        aside (paulOpenSource) and the floating button brings it back. */
-    body.paul-open .paul-panel { position: fixed; inset: 0; width: auto; height: auto; flex: none; z-index: 60;
+    body.paul-open .paul-panel { position: fixed; left: 0; right: 0; top: var(--paul-top, 0px); bottom: auto;
+      height: var(--paul-h, 100%); width: auto; flex: none; z-index: 60;
       padding-left: var(--sa-l, 0px); padding-right: var(--sa-r, 0px); border-left: 0; }
+    /* Nothing behind the sheet scrolls, and with the keyboard up the home
+       indicator is under the keyboard, so its padding goes. */
+    body.paul-open { overflow: hidden; }
+    body.paul-kb .paul-compose { padding-bottom: 8px; }
     .rxhead { grid-template-columns: 1fr; }
     .hamburger { display: inline-flex; align-items: center; }
     nav.sidebar {

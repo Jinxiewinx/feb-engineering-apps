@@ -83,6 +83,7 @@ Rendered in headless Chromium (need Playwright):
 | `test_detailui.mjs` | The same, but with records open and their fields full: detail pages plus six overlay states at 320/393/430/1440. |
 | `test_drawings.mjs` | Mold drawing sheets: renders each one and checks it is readable. No label crossed by a line, nothing under 5.5pt, nothing off the sheet. |
 | `test_print_mobile.mjs` | The printable documents on a phone: fit, reachable controls, the two-page traveler cap. |
+| `test_paul_mobile.mjs` | Ask Paul on an iPhone-sized screen with the keyboard up, both kinds: Android (the page shrinks, real in Chromium) and iOS (only the visual viewport shrinks and pans; simulated with Safari's numbers, installed before the app loads). Measures in what you can see: header, text box, send button and the latest message on screen, the page behind not scrolled, sending keeps the same focused text box so the keyboard stays up, 16px text so Safari doesn't zoom, inline source numbers text-sized. `--shots` writes PNGs. |
 | `test_safearea.mjs` | The notch, the Dynamic Island, the home indicator, at real iPhone inset values. |
 | `test_labels.mjs` | The label sheets, down to the pixels: each QR is rasterized and its dark-pixel fraction checked, because a blank SVG passes every DOM assertion. Also measures a roll page: `test_label_roll.mjs` proves the JS and the CSS agree, this proves a browser agrees with them. |
 | `test_sanitize.mjs` | The comment sanitizer, running the real vendored DOMPurify. Never assert allowlist policy anywhere else; nothing else can see it. |

@@ -805,6 +805,12 @@ to names. Documents are `functions/corpus.json`, built from `app/docs/` by
   third column of `#app` on a wide screen (340px under 1200px), a full-screen
   sheet on a phone that steps aside on a source tap, with a floating button
   back. The thread is in `sessionStorage`, per tab.
+- **On a phone the sheet follows the visual viewport** (`paulViewport`,
+  `--paul-top` / `--paul-h`), because iOS shrinks and pans only the visual
+  viewport for the keyboard and pushed Paul's header off the top. The text box
+  is built once and never rebuilt (rebuilding dropped the keyboard on every
+  send); the page behind is locked; the thread snaps to its last message on
+  every viewport change. `tools/test_paul_mobile.mjs` simulates both phones.
 - **What it shows while working is true.** The function streams
   (`res.sendChunk`, read by `fb.callStream`) one line per tool call, built from
   the tool's own input, plus the model's summarized thinking. Nothing is

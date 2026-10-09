@@ -137,6 +137,8 @@ function paulMount() {
   if (typeof document === "undefined" || !document.body) return;
   const open = !!PAUL.open && aiOn();
   document.body.classList.toggle("paul-open", open);
+  if (typeof window.__paulBindVV === "function") window.__paulBindVV();
+  paulViewport();
   /* On a laptop under 1400px, Paul's column plus the full sidebar squeezed a
      record page to a sliver (seen on the molds split). While he is open the
      sidebar takes its icon rail; the person's own rail setting (railOn, in
@@ -188,29 +190,89 @@ function paulAboutHtml() {
     ? `<button class="link tny" onclick="PAUL.aboutOff=false;paulSync()">Ask about ${esc(view.id)}</button>` : "";
 }
 
-function paulRender() {
-  const el = document.getElementById && document.getElementById("paul");
-  if (!el) return;
-  PAUL_PHOTO_SHOWN = (window.AI_CFG && window.AI_CFG.paulPhoto) || "";
-  el.innerHTML = `
-    <div class="paul-head ${PAUL.busy ? "paul-busy" : ""}">
+/* The text box is built once and then left alone. Rebuilding it (as every
+   render used to) took focus away mid-conversation, and on a phone losing
+   focus drops the keyboard: every question sent closed it (Simon,
+   2026-10-09, "broken on mobile with the keyboard"). So a render redraws the
+   header, the thread and the "looking at" chip, and only flips the send
+   button; the box keeps its focus, its caret and whatever is typed in it. */
+function paulHeadHtml() {
+  return `<div class="paul-head ${PAUL.busy ? "paul-busy" : ""}">
       ${paulAvatar(36)}
       <div class="paul-title"><b>Paul</b><span class="muted tny">${PAUL.busy ? "working it out…" : "composites help"}</span></div>
       ${PAUL.turns.length ? `<button class="sm" onclick="paulClear()" title="Start a new conversation">New chat</button>` : ""}
       <button class="icon-btn" aria-label="Close Paul" onclick="closePaul()">${icon("x", 18)}</button>
-    </div>
-    <div class="paul-thread" id="paul-thread">
-      ${PAUL.turns.length ? PAUL.turns.map((t, i) => paulTurnHtml(t, i)).join("") : paulEmptyHtml()}
-    </div>
+    </div>`;
+}
+function paulRender() {
+  const el = document.getElementById && document.getElementById("paul");
+  if (!el) return;
+  PAUL_PHOTO_SHOWN = (window.AI_CFG && window.AI_CFG.paulPhoto) || "";
+  const thread = PAUL.turns.length ? PAUL.turns.map((t, i) => paulTurnHtml(t, i)).join("") : paulEmptyHtml();
+  const box = document.getElementById("paul-q");
+  const built = !!(box && el.contains && el.contains(box) && document.getElementById("paul-headwrap"));
+  if (built) {
+    document.getElementById("paul-headwrap").innerHTML = paulHeadHtml();
+    document.getElementById("paul-thread").innerHTML = thread;
+    const about = document.getElementById("paul-about");
+    if (about) about.innerHTML = paulAboutHtml();
+    const send = el.querySelector && el.querySelector(".paul-send");
+    if (send) send.disabled = !!PAUL.busy;
+  } else {
+    el.innerHTML = `
+    <div id="paul-headwrap">${paulHeadHtml()}</div>
+    <div class="paul-thread" id="paul-thread">${thread}</div>
     <div class="paul-compose">
       <div id="paul-about" class="paul-about">${paulAboutHtml()}</div>
       <div class="paul-inputrow">
-        <textarea id="paul-q" rows="1" maxlength="1000" placeholder="Ask Paul…" aria-label="Ask Paul"
-          oninput="PAUL.draft=this.value;paulGrow(this)" onkeydown="paulKey(event)" ${PAUL.busy ? "disabled" : ""}>${esc(PAUL.draft)}</textarea>
+        <textarea id="paul-q" rows="1" maxlength="1000" placeholder="Ask Paul…" aria-label="Ask Paul" enterkeyhint="send"
+          oninput="PAUL.draft=this.value;paulGrow(this)" onkeydown="paulKey(event)" onfocus="paulViewport()">${esc(PAUL.draft)}</textarea>
         <button class="primary paul-send" aria-label="Send" onclick="paulAsk()" ${PAUL.busy ? "disabled" : ""}>${icon("chevronRight", 18)}</button>
       </div>
     </div>`;
+  }
   paulScroll();
+}
+
+/* ---------- the phone keyboard ----------
+   On a phone the sheet is fixed to the screen, and a keyboard does two
+   different things depending on the phone. Android shrinks the page, which
+   CSS handles. iOS leaves the page full height, shrinks only the VISUAL
+   viewport and pans it up to show the text box, which pushed Paul's header
+   off the top. So on a narrow screen the sheet is sized and placed to the
+   visual viewport (--paul-top / --paul-h), it drops the home-indicator
+   padding while the keyboard is up (.paul-kb), and the thread snaps back to
+   its latest message. tools/test_paul_mobile.mjs simulates both phones. */
+function paulViewport() {
+  const el = document.getElementById && document.getElementById("paul");
+  if (!el || !el.style) return;
+  const narrow = typeof isNarrowViewport === "function" && isNarrowViewport();
+  const vv = window.visualViewport;
+  if (!PAUL.open || !narrow || !vv) {
+    el.style.removeProperty && (el.style.removeProperty("--paul-top"), el.style.removeProperty("--paul-h"));
+    if (document.body) document.body.classList.remove("paul-kb");
+    return;
+  }
+  el.style.setProperty("--paul-top", Math.round(vv.offsetTop || 0) + "px");
+  el.style.setProperty("--paul-h", Math.round(vv.height) + "px");
+  const kb = (window.innerHeight || vv.height) - vv.height > 120 || vv.height < (window.screen && screen.height ? screen.height * 0.75 : 0);
+  if (document.body) document.body.classList.toggle("paul-kb", !!kb && document.activeElement === document.getElementById("paul-q"));
+  paulScroll();
+}
+if (typeof window !== "undefined" && window.addEventListener) {
+  window.addEventListener("resize", () => { if (PAUL.open) paulViewport(); });
+  /* Bound at first use, not at load: a test (and an iOS quirk or two) can
+     swap visualViewport out after the page has started. */
+  let bound = null;
+  const bindVV = () => {
+    const vv = window.visualViewport;
+    if (!vv || vv === bound || !vv.addEventListener) return;
+    bound = vv;
+    vv.addEventListener("resize", () => { if (PAUL.open) paulViewport(); });
+    vv.addEventListener("scroll", () => { if (PAUL.open) paulViewport(); });
+  };
+  bindVV();
+  window.__paulBindVV = bindVV;
 }
 function paulGrow(ta) {
   if (!ta || !ta.style) return;
@@ -330,6 +392,8 @@ async function paulAsk() {
   const turn = { q, about, pending: true, steps: [], thinking: "" };
   PAUL.turns.push(turn);
   PAUL.draft = ""; PAUL.busy = true;
+  const box = document.getElementById && document.getElementById("paul-q");
+  if (box) { box.value = ""; paulGrow(box); }
   if (!PAUL.open) PAUL.open = true;
   paulMount(); paulRender();
   const onChunk = (c) => {

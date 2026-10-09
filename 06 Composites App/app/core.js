@@ -32,11 +32,11 @@ var APP_VERSION = "6.6.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Paul now knows the whole app: R&D studies, coupon results, R&D parts and runs, people and their trainings, the resin systems and our cure holds, materials, restock rules, the season and the budget goals.",
-  "Ask him \"how many\" and he counts the way the dashboard and the R&D tab do. Old shelved project tickets are gone from his view.",
-  "When the app doesn't have the answer to a general composites question, Paul can search the web. That part is labelled \"From the web\" and every page it came from is listed. Tap one to open it.",
-  "He never uses the web for anything about our own parts, people, schedule, cure holds or ratios. Those come from the app or he says he couldn't find them.",
-  "Tap a person in Paul's sources to open their page, or a resin system to open its datasheet.",
+  "Paul on your phone: the keyboard no longer pushes his header off the top of the screen.",
+  "The keyboard stays up after you send, so you can ask a follow-up straight away.",
+  "The latest answer stays in view right above the box while you type.",
+  "The page behind Paul doesn't scroll around under him any more.",
+  "The little source numbers in his answers are back to text size on phones.",
 ];
 
 
