@@ -20,7 +20,7 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
-**Receipts on Claude Haiku 5.5, shipped as v6.3.0 (2026-10-09).** Plan:
+**Receipts on Claude Haiku 5.5, shipped as v6.3.0 (2026-10-09); v6.3.1 adds an Other files box per purchase.** Plan:
 `~/.claude/plans/now-that-there-is-cozy-sloth.md`. `parseReceipt` is live on
 Node 22 with secret version 2 (version 1 was a 31-char non-key and 401'd; a
 deploy pins the secret version, so a new key needs a functions redeploy).
