@@ -32,11 +32,11 @@ var APP_VERSION = "6.4.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Ask Paul: tap the speech bubble at the top and ask anything about our composites work. Where's a mold, what's blocking a run, what CS-006 says, what gloves for XCR. Every fact has a number you can tap to see where it came from.",
-  "Paul only knows what's in the app and our documents. If he can't find it he says so, and anything from general knowledge is labelled. He's our in-joke, not the real Paul or Easy Composites.",
-  "Receiving desk: ✨ From packing slip turns a photo of the slip into rows. Check the class, shelf and count on each before you save.",
-  "Resin or hardener lot: ✨ Read label photographs the jug and offers the lot number and expiry. Tick what's right, press Apply. Dates read this way are marked \"AI read\" until someone types over them.",
-  "Leads: ⋯ has a switch that turns every AI button off, with this month's AI spend beside it.",
+  "Paul is a proper chat now. He sits beside the page on a laptop, so tapping a source opens it next to the conversation. On a phone, the round Paul button in the corner takes you back to the same chat.",
+  "While he works you can watch what he's doing (\"Opening WO-SN6-003\", \"Reading CS-006\") and his thinking as it comes. Sources get their own list under each answer.",
+  "On any record's page Paul knows what you're looking at, so \"is this ready for layup?\" means that mold. ⌘K search can hand your question to Paul too.",
+  "✨ buttons now show a bar at the bottom while they run: what they're doing, how many seconds, and how it ended. Errors stay up until you close them.",
+  "Leads: ⋯ → Give Paul a picture. It stays in the team's private storage.",
 ];
 
 
