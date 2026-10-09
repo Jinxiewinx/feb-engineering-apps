@@ -20,32 +20,19 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
-**AI features round 2 (2026-10-09), IN PROGRESS.** Plan:
-`~/.claude/plans/now-that-there-is-cozy-sloth.md` (rewritten for this round).
-Order: groundwork → Phase A (packing slip, container label, v6.4.0) → Phase B
-("Ask FEB" chat with read-only tools, v6.5.0). Budget: Simon's Max plan gives
-$100/month API credit; functions refuse at $80 (`MONTHLY_BUDGET_USD`).
-- [x] Groundwork committed: `config/ai` off switch (lead, ⋯ menu, with month
-  spend), `requireAiOn`, per-job daily caps (`photo` 50, `ask` 30),
-  `recordSpend` into `aiUsage/month_*` and `config/ai.spend_*`. NOT deployed:
-  functions deploy needs Simon's "allow functions deploy" each time.
-- [x] Phase A committed: `parsePackingSlip` (receiving desk ✨, photo
-  uploaded to `receiving/rx-*/` and deleted after) and `readContainerLabel`
-  (lot page ✨ Read label, confirm sheet, matKey enum from MATERIALS). New
-  expirySource "vendor label (AI read)", cleared when a person edits the date.
-  `storage.rules` gained `receiving/{batch}/{file}`. NOT deployed: needs
-  "allow functions deploy" + "allow rules deploy" (storage), then a live test
-  on a real slip and a real jug, then `release.mjs 6.4.0`.
-- [x] Phase B committed as **Ask Paul** (Simon's name; team joke about Easy
-  Composites' Paul, persona is the name only). `askPaul` + `functions/context.js`
-  + `functions/corpus.json` (`tools/build_ai_corpus.mjs`, release gate checks
-  freshness) + `app/paul.js` (topbar speech bubble). Haiku 5.5 at MEDIUM per
-  Simon; general knowledge allowed under a fixed label. Eval is
-  `tools/eval_askpaul.js`, run in the live app signed in (bar 13/15).
-- NEXT: Simon's "allow functions deploy" + "allow rules deploy" (storage:
-  receiving/), deploy, live-check slip/label/Paul, run the eval, then ONE
-  release `release.mjs 6.4.0` for both phases (plan said 6.4/6.5; shipping
-  together since neither is live yet).
+**AI round 2 shipped as v6.4.0 (2026-10-09).** Plan:
+`~/.claude/plans/now-that-there-is-cozy-sloth.md`. Live and verified:
+Ask Paul (topbar bubble; `askPaul` + `functions/context.js` + `corpus.json`,
+Haiku 5.5 medium, eval 14/15 then the miss fixed), ✨ packing slip (receiving
+desk), ✨ read label (lot page, `expirySource` "vendor label (AI read)"), the
+lead's AI switch with month spend, per-job caps, $80/month ceiling. Real cost
+so far: $0.03 for the whole day of testing; Paul ~$0.0015 a question.
+- Not yet tried on a REAL slip or jug photo, only synthetic ones.
+- Re-run `tools/eval_askpaul.js` in the live app after any change to
+  PAUL_SYSTEM or the tools. After adding/changing a document:
+  `build_ai_corpus.mjs`, commit, deploy functions (release.mjs refuses a
+  stale corpus but does not deploy functions).
+- "Announce this release" (lead press) not done for 6.3.x or 6.4.0.
 
 **Receipts on Claude Haiku 5.5, shipped as v6.3.0 (2026-10-09); v6.3.1 adds an Other files box per purchase.** Plan:
 `~/.claude/plans/now-that-there-is-cozy-sloth.md`. `parseReceipt` is live on
