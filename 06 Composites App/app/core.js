@@ -3709,7 +3709,9 @@ function openMoreMenu() {
       ${/* Lead-only, with the month's spend beside it, so the person who can
             turn it off can also see whether it is worth turning off. */""}
       ${lead ? `<button onclick="closeModal();setAiEnabled(${aiOn() ? "false" : "true"})">✨ AI features: ${aiOn() ? "on, tap to turn off" : "off, tap to turn on"}
-        <span class="muted tny" style="margin-left:auto">$${aiSpendThisMonth().toFixed(2)} of $${AI_MONTHLY_BUDGET} this month</span></button>` : ""}
+        <span class="muted tny" style="margin-left:auto">$${aiSpendThisMonth().toFixed(2)} of $${AI_MONTHLY_BUDGET} this month</span></button>
+      <button onclick="closeModal();setPaulPhoto()">${icon("image", 18)}${window.AI_CFG && window.AI_CFG.paulPhoto ? "Change Paul's picture" : "Give Paul a picture"}</button>
+      ${window.AI_CFG && window.AI_CFG.paulPhoto ? `<button onclick="closeModal();clearPaulPhoto()">${icon("x", 18)}Back to the cartoon Paul</button>` : ""}` : ""}
       <button class="danger" onclick="closeModal();fb.signOut()">${icon("logout", 18)}Sign out</button>`}
     </div>
     <div class="muted tny" style="margin-top:14px;text-align:center">${versionLinks(false)}</div>`);

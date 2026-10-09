@@ -402,7 +402,13 @@
     border-radius: 50%; border: 2px solid var(--gold); background: var(--surface); box-shadow: var(--shadow-lg); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
   .paul-fab[hidden] { display: none; }
   .paul-fab-dot { position: absolute; top: 2px; right: 2px; width: 11px; height: 11px; border-radius: 50%; background: var(--gold); border: 2px solid var(--surface); }
-  /* The avatar. Original cartoon, not a likeness. Only moves while busy. */
+  /* A lead-set picture instead of the cartoon: same size, a circle, the face
+     kept in frame. While busy the frame bobs and a gold ring pulses. */
+  .paul-photo { display: inline-block; flex: none; border-radius: 50%; overflow: hidden; background: var(--gold-bg); }
+  .paul-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 22%; display: block; }
+  .paul-busy .paul-photo { animation: paul-bob 1.1s ease-in-out infinite, paul-ring 1.4s ease-in-out infinite; }
+  @keyframes paul-ring { 0%, 100% { box-shadow: 0 0 0 0 var(--gold); } 50% { box-shadow: 0 0 0 3px var(--gold); } }
+  /* The default avatar: an original cartoon. Only moves while busy. */
   .paul-av-bg { fill: var(--gold-bg, #f6e7b8); }
   .paul-av-skin { fill: #e9b88f; }
   .paul-av-hair { fill: #4a3426; }

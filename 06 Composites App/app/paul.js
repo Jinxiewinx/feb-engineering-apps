@@ -2,9 +2,12 @@
 /* paul.js — "Ask Paul", the chat.
  *
  * THE NAME is a team joke: Paul from Easy Composites as the composites oracle
- * everybody wishes they could ask. The avatar is an original cartoon shop tech
- * (safety glasses, gloves, a mixing cup), deliberately NOT a likeness of the
- * real Paul and carrying no Easy Composites branding. The name is the joke.
+ * everybody wishes they could ask. The default avatar is an original cartoon
+ * shop tech (safety glasses, gloves, a mixing cup). A lead can swap in a
+ * picture from the ⋯ menu (Simon, 2026-10-09: the app is internal and the
+ * joke is understood); that photo is uploaded to the team's Storage, never
+ * committed, because the repo and the hosted files are public. Either way
+ * the model never claims to be him or to speak for Easy Composites.
  *
  * WHAT ANSWERS. askPaul (functions/index.js), which can only read the app's
  * own records and the standards and datasheets the app ships, cites every
@@ -54,6 +57,12 @@ function paulSave() {
    goes round the cup, the glasses catch the light. Reduced motion stills all
    of it through the app's global rule. */
 function paulAvatar(size) {
+  /* A lead can give Paul a picture (⋯ → Paul's picture). It lives in the
+     team's Storage, never in this public repo, and only its address is in
+     config/ai, which guests cannot read. The same motion applies: the frame
+     bobs and a gold ring pulses while he works. */
+  const photo = window.AI_CFG && window.AI_CFG.paulPhoto;
+  if (photo) return `<span class="paul-av paul-photo" style="width:${size}px;height:${size}px"><img src="${esc(photo)}" alt="" draggable="false"></span>`;
   return `<svg class="paul-av" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true">
     <circle cx="32" cy="32" r="31" class="paul-av-bg"/>
     <g class="paul-av-head">
@@ -77,6 +86,35 @@ function paulAvatar(size) {
   </svg>`;
 }
 
+/* Lead-only, from ⋯. The photo is downscaled on the way up (fb.upload), the
+   old one is deleted once the new pointer is saved, and Remove goes back to
+   the cartoon. */
+function setPaulPhoto() {
+  if (!isLead()) { toast("Only a lead can change Paul's picture.", "error"); return; }
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/*";
+  inp.onchange = async () => {
+    const f = inp.files && inp.files[0]; if (!f) return;
+    const old = window.AI_CFG && window.AI_CFG.paulPhotoPath;
+    try {
+      const up = await fb.upload(`paul/${Date.now()}-${(f.name || "paul.jpg").replace(/[^\w.-]+/g, "-")}`, f, { maxDim: 360 });
+      await fb.setConfig("ai", { paulPhoto: up.url, paulPhotoPath: up.path });
+      if (old && old !== up.path) fb.deleteFile(old);
+      toast("Paul has his picture.");
+    } catch (e) { toast("Couldn't set Paul's picture: " + ((e && e.message) || e), "error"); }
+  };
+  inp.click();
+}
+async function clearPaulPhoto() {
+  if (!isLead()) return;
+  const old = window.AI_CFG && window.AI_CFG.paulPhotoPath;
+  try {
+    await fb.setConfig("ai", { paulPhoto: "", paulPhotoPath: "" });
+    if (old) fb.deleteFile(old);
+    toast("Paul is back to the cartoon.");
+  } catch (e) { toast("Couldn't change Paul's picture: " + ((e && e.message) || e), "error"); }
+}
+
 /* ---------- open, close, the floating button ---------- */
 function openPaul(opts) {
   if (!aiOn()) { toast("AI features are switched off by a lead.", "info"); return; }
@@ -96,7 +134,23 @@ function togglePaul() { PAUL.open ? closePaul() : openPaul(); }
    button tracks the AI switch and the "looking at" chip tracks navigation. */
 function paulMount() {
   if (typeof document === "undefined" || !document.body) return;
-  document.body.classList.toggle("paul-open", !!PAUL.open && aiOn());
+  const open = !!PAUL.open && aiOn();
+  document.body.classList.toggle("paul-open", open);
+  /* On a laptop under 1400px, Paul's column plus the full sidebar squeezed a
+     record page to a sliver (seen on the molds split). While he is open the
+     sidebar takes its icon rail; the person's own rail setting (railOn, in
+     localStorage) is never touched, and closing Paul puts back whatever it
+     was. */
+  const de = document.documentElement;
+  if (de && de.classList && typeof railOn === "function") {
+    const w = typeof window !== "undefined" ? window.innerWidth || 0 : 0;
+    const squeeze = open && w > 900 && w < 1400;
+    const want = railOn() || squeeze;
+    if (de.classList.contains("rail") !== want) {
+      de.classList.toggle("rail", want);
+      if (typeof window.dispatchEvent === "function" && typeof Event === "function") window.dispatchEvent(new Event("resize"));
+    }
+  }
   const fab = document.getElementById("paul-fab");
   if (fab) {
     const show = !PAUL.open && aiOn() && PAUL.turns.length > 0;
@@ -105,9 +159,13 @@ function paulMount() {
     if (show) fab.innerHTML = paulAvatar(44) + (PAUL.busy ? `<span class="paul-fab-dot"></span>` : "");
   }
 }
+let PAUL_PHOTO_SHOWN = null;
 function paulSync() {
   if (PAUL.open && !aiOn()) PAUL.open = false;
   paulMount();
+  // A lead just set or removed the picture: redraw the open panel to match.
+  const photo = (window.AI_CFG && window.AI_CFG.paulPhoto) || "";
+  if (PAUL.open && photo !== PAUL_PHOTO_SHOWN && !PAUL.busy) { PAUL_PHOTO_SHOWN = photo; paulRender(); }
   const about = document.getElementById && document.getElementById("paul-about");
   if (about) about.innerHTML = paulAboutHtml();
 }
@@ -132,6 +190,7 @@ function paulAboutHtml() {
 function paulRender() {
   const el = document.getElementById && document.getElementById("paul");
   if (!el) return;
+  PAUL_PHOTO_SHOWN = (window.AI_CFG && window.AI_CFG.paulPhoto) || "";
   el.innerHTML = `
     <div class="paul-head ${PAUL.busy ? "paul-busy" : ""}">
       ${paulAvatar(36)}

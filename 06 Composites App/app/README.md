@@ -1379,8 +1379,14 @@ search also offers to ask Paul whatever you typed.
 
 He only reads; he can't change anything. The conversation stays for the tab
 (it survives a reload, not a new tab). 100 questions a person a day. The name
-is the team's running joke about Paul from Easy Composites; the avatar is an
-original cartoon, not him, and he doesn't speak for them.
+is the team's running joke about Paul from Easy Composites, and he doesn't speak
+for them. The avatar is a cartoon until a lead gives him a picture (⋯ → Give
+Paul a picture). That photo goes to the team's private storage, not into the
+code, because the repo and the app's files are public. ⋯ → Back to the cartoon
+Paul removes it.
+
+On a laptop narrower than 1400px, opening Paul folds the sidebar to its icons
+so the page beside him keeps room to work; closing him puts it back.
 
 ## Scanning
 

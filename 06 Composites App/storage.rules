@@ -155,6 +155,16 @@ service firebase.storage {
         || cadOk(file));
     }
 
+    // paul/{file} — the picture Ask Paul wears, uploaded by a lead from the ⋯
+    // menu. Kept out of the code on purpose: the repo and the hosted app files
+    // are public, and this is a real person's photo for an internal joke. Any
+    // member may write here, but only the pointer in config/ai (lead-write,
+    // roster-read, not readable by guests) decides which file is shown.
+    match /paul/{file} {
+      allow read: if signedIn();
+      allow write: if accountOf() && sizeOk() && request.resource.contentType.matches('image/.*');
+    }
+
     // receiving/{batch}/{file} — a packing slip photographed at the receiving
     // desk, uploaded only so parsePackingSlip can read it and deleted by the
     // desk straight after. No Firestore record points here. Photo or PDF, the

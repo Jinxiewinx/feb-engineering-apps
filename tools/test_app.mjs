@@ -11881,6 +11881,22 @@ await t("Ask Paul: a docked chat, live work shown, sources apart, and the way ba
   assert(/paulAskFromSearch/.test(document.getElementById("gsearch-results").innerHTML), "search offers to ask Paul");
   closeModal();
 
+  // A lead can give Paul a picture; it replaces the cartoon everywhere.
+  assert(/<svg class="paul-av"/.test(paulAvatar(28)), "the cartoon by default");
+  window.AI_CFG = { paulPhoto: 'https://x.test/p.jpg?a="b' };
+  const ph = paulAvatar(28);
+  assert(/class="paul-av paul-photo"/.test(ph) && /&quot;b/.test(ph) && !/"b"/.test(ph), "a set picture is used, its address escaped: " + ph);
+  openMoreMenu();
+  let mm = document.getElementById("modal").innerHTML;
+  assert(/setPaulPhoto\(\)/.test(mm) && /Change Paul's picture/.test(mm) && /clearPaulPhoto\(\)/.test(mm), "a lead can change it or go back to the cartoon");
+  closeModal();
+  fb.roster = { name: "Ana", role: "member" };
+  openMoreMenu();
+  assert(!/setPaulPhoto/.test(document.getElementById("modal").innerHTML), "a member can't");
+  closeModal();
+  signInAsLead();
+  window.AI_CFG = null;
+
   paulClear();
   assert(!PAUL.turns.length, "New chat empties it");
   closePaul();

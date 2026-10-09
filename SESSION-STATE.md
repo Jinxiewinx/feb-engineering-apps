@@ -39,7 +39,9 @@ so far: $0.03 for the whole day of testing; Paul ~$0.0015 a question.
   client `fb.callStream`), original cartoon avatar (not a likeness), record
   awareness (`about`), ⌘K "Ask Paul" row, cap 100/day. Plus the ✨ job bar
   (`aiJob*`, `#ai-status`) for receipt/slip/label. Needs "allow functions
-  deploy" (streaming + about + cap live server-side), then `release.mjs 6.5.0`.
+  deploy" (streaming + about + cap live server-side) AND "allow rules deploy"
+  (storage `paul/` for the lead-set picture), then `release.mjs 6.5.0`.
+  Lead-set Paul picture: ⋯ → Give Paul a picture; never commit his photo.
 
 **Receipts on Claude Haiku 5.5, shipped as v6.3.0 (2026-10-09); v6.3.1 adds an Other files box per purchase.** Plan:
 `~/.claude/plans/now-that-there-is-cozy-sloth.md`. `parseReceipt` is live on

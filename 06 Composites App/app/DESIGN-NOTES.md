@@ -809,8 +809,16 @@ to names. Documents are `functions/corpus.json`, built from `app/docs/` by
   (`res.sendChunk`, read by `fb.callStream`) one line per tool call, built from
   the tool's own input, plus the model's summarized thinking. Nothing is
   animated that isn't happening, apart from the avatar.
-- **The avatar is an original cartoon**, not a likeness of the real Paul and
-  with no Easy Composites branding.
+- **The avatar** is an original cartoon by default. A lead can set a picture
+  (Simon, 2026-10-09: internal app, joke understood), stored under `paul/` in
+  Storage with its address in `config/ai.paulPhoto` (lead-write, roster-read,
+  not guest-readable). It is never committed: the repo and the hosted files
+  are public, and it is a real person's photo. The prompt still says Paul is
+  not a real person and doesn't speak for Easy Composites.
+- **Opening Paul between 900 and 1400px rails the sidebar** (the html.rail
+  class only; the person's own `feb-rail` setting is untouched and restored on
+  close), because his column plus the full sidebar squeezed record pages to a
+  sliver.
 - **The open record rides along** as `about`, id-shaped only, offered as
   context ("I'm looking at X"), never as an instruction.
 - Medium effort (the photo jobs are low): this one reasons over what it found.
