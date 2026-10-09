@@ -38,6 +38,12 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.6.1 — 2026-10-09
+
+- Paul on a phone with the keyboard up: simulated, then fixed
+
+---
+
 ## v6.6.0 — 2026-10-09
 
 - WHATS_NEW for 6.6.0: Paul sees the whole app and can search the web
