@@ -32,11 +32,11 @@ var APP_VERSION = "6.3.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "✨ Fill from receipt works now. Attach the receipt to a purchase, press ✨, and the line items fill themselves in. Check them and fix anything it got wrong.",
-  "Online orders count too: attach the PDF invoice McMaster or Easy Composites emailed you, not just a photo.",
-  "If the lines don't add up to the total printed on the receipt, it tells you, so look for a line it missed.",
-  "On a phone, Add receipt now asks camera, photo library or Files, so you can pick an emailed invoice.",
-  "If reading fails, the grid is still there to type into. Each person gets 50 reads a day.",
+  "A purchase can hold more than its receipt now. Under Receipt there's an Other files box for the quote, the order confirmation, or the PDF invoice.",
+  "Add as many photos and PDFs there as you need. Tap one to open it.",
+  "✨ still reads only the receipt, so put the one you want read in the receipt slot.",
+  "Deleting a purchase sends its receipt and all its other files to the bin together.",
+  "Nothing else changed. If your app still shows 6.3.0 or older, reload.",
 ];
 
 

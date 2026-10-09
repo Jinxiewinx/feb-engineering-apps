@@ -826,6 +826,12 @@ service is down the button says so and the manual editor carries on. When the
 receipt prints a grand total and the lines miss it by more than tax would
 explain (15%), the toast says so, since a dropped line is the usual misread.
 
+Under the receipt, **Other files** holds everything else that belongs with the
+order: the quote it was bought against, the order confirmation, a PDF invoice
+when the receipt slot already has the card slip. Photos and PDFs, as many as
+you like. ✨ reads only the receipt slot, and deleting the purchase takes the
+receipt and all its other files to the bin with it.
+
 People is the team roster with photos, roles, and each person's live assignments
 across parts, projects and work orders. Leads can set roles, and trainings are
 granted here: capsule pills on the list, a bulk "Record training session" modal

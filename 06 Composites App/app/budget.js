@@ -244,11 +244,13 @@ function buysBulkDelete(ids) {
   const buys = (DB.budget || []).filter(b => set.has(b.id));
   if (!buys.length) { toast("Nothing selected.", "info"); return; }
   const what = buys.length === 1 ? (buys[0].item || buys[0].id) : plural(buys.length, "purchase");
-  const receipts = buys.filter(b => b.receiptPath).length;
+  /* The receipt and every other attached file (quotes, order confirmations)
+     live under budget/{id}/ and go with the purchase. */
+  const files = buys.flatMap(b => [b.receiptPath, ...recStoragePaths(b)]).filter(Boolean);
   bulkDeleteRecords({
-    message: `Delete ${what} for everyone?${receipts ? ` ${plural(receipts, "receipt")} go${receipts === 1 ? "es" : ""} with ${buys.length === 1 ? "it" : "them"}.` : ""} Back up first if unsure.`,
+    message: `Delete ${what} for everyone?${files.length ? ` ${plural(files.length, "attached file")} go${files.length === 1 ? "es" : ""} with ${buys.length === 1 ? "it" : "them"}.` : ""} Back up first if unsure.`,
     items: buys.map(b => ({ coll: "budget", id: b.id })),
-    files: buys.map(b => b.receiptPath),
+    files,
     done: `${what} deleted`,
     after: () => { const gone = new Set(buys.map(b => b.id)); DB.budget = (DB.budget || []).filter(b => !gone.has(b.id)); },
   });
@@ -629,6 +631,16 @@ function renderBuyDetail() {
           : { url: b.receiptUrl, name: `receipt-${b.id}.jpg`, type: "image/jpeg" })}</div>`
       : '<span class="muted">No receipt yet.</span>'}
     <div class="no-print" style="margin-top:8px"><button onclick="attachReceipt('${b.id}')">${b.receiptUrl ? "Replace" : "+ Add / scan"} receipt</button></div>
+    ${/* Everything else that belongs with the order: the quote it was bought
+          against, the order confirmation, a packing list, a PDF invoice when
+          the receipt slot already holds the card slip. Same uploader and tile
+          as issue and part files, kept under budget/{id}/ like the receipt so
+          storage.rules (photo or PDF) and delete-with-the-purchase cover it.
+          ✨ reads only the receipt slot, so which file is "the receipt" stays
+          a person's call. */""}
+    <h3>Other files <span class="muted nocaps">quotes, order confirmations, invoices</span></h3>
+    <div class="filegrid">${(b.files || []).map(fileItem).join("") || '<span class="muted">None yet.</span>'}</div>
+    <div class="no-print" style="margin-top:8px"><button onclick="addRecordFiles('budget', '${b.id}', 'budget', 'image/*,application/pdf')">+ Add files</button></div>
     <h3>Notes</h3>
     ${richField("budget", b.id, "notes", {
       plain: true, label: "Notes",

@@ -2539,6 +2539,17 @@ await t("purchase detail shows add-receipt prompt when none, thumbnail when atta
   html = renderBuyDetail();
   assert(html.includes('class="thumb"') && /Replace receipt/.test(html), "receipt attached: shows thumbnail + replace: " + html);
 });
+await t("a purchase holds other files beside the receipt, and a PDF receipt shows as a PDF", () => {
+  view = { ...view, tab: "budget", mode: "detail", id: "B-R2", edit: false };
+  DB.budget.push({ id: "B-R2", item: "fabric", status: "Submitted", receiptUrl: "https://x.test/inv.pdf", receiptPath: "budget/B-R2/123-inv.pdf", files: [] });
+  let html = renderBuyDetail();
+  assert(/data-pdf="https:\/\/x\.test\/inv\.pdf"/.test(html), "a .pdf receipt gets the PDF tile, not an image thumb");
+  assert(/Other files/.test(html) && /None yet/.test(html), "an empty Other files box");
+  assert(html.includes("addRecordFiles('budget', 'B-R2', 'budget', 'image/*,application/pdf')"), "its button uploads photos and PDFs under budget/{id}/");
+  buyById("B-R2").files = [{ id: "F1", name: "quote.pdf", url: "https://x.test/quote.pdf", type: "application/pdf", path: "budget/B-R2/quote.pdf" }];
+  html = renderBuyDetail();
+  assert(html.includes("quote.pdf") && !/None yet/.test(html), "an attached quote shows as a tile");
+});
 await t("deleting a purchase REMEMBERS its receipt rather than removing it", async () => {
   /* It used to delete the file immediately, which was right while a delete was
      final. Now the purchase goes to the bin, so the receipt has to survive it —
@@ -7175,20 +7186,23 @@ await t("every list tab has the same Select… picker, and each delete takes wha
   calls.length = 0; deletePickedBoards(); await confirmProceed();
   assert(idsDeleted("stock").length === 3 && !DB.stock.length, "boards removed: " + JSON.stringify(calls));
 
-  // Purchases, receipts included.
-  DB.budget = [{ id: "B1", item: "resin", receiptPath: "budget/B1/r.jpg", cost: "10" }, { id: "B2", item: "tape", cost: "5" }];
+  // Purchases, receipts and other attached files included.
+  DB.budget = [{ id: "B1", item: "resin", receiptPath: "budget/B1/r.jpg", cost: "10" },
+    { id: "B2", item: "tape", cost: "5", files: [{ id: "F1", name: "quote.pdf", url: "https://x.test/q.pdf", type: "application/pdf", path: "budget/B2/quote.pdf" }] }];
   view = { ...view, tab: "budget", mode: "list", id: null, pick: null, q: "", fStatus: "", fReimb: "", fBudget: "" };
   render();
   assert(main.innerHTML.includes("startPick('budget')"), "Budget offers Select…");
   startPick("budget");
   assert(main.innerHTML.includes('<td class="pickcell">'), "a box column appears on the table");
   pickAll("budget"); calls.length = 0; deletePickedBuys();
-  assert(/1 receipt goes with them/.test(document.getElementById("modal").innerHTML), "the confirm counts the receipts");
+  assert(/2 attached files go with them/.test(document.getElementById("modal").innerHTML), "the confirm counts the receipt and the quote: " + document.getElementById("modal").innerHTML.slice(0, 300));
   await confirmProceed();
   assert(idsDeleted("budget").length === 2 && !DB.budget.length, "both purchases leave the list");
   assert(!filesDeleted().length, "the receipt is kept, not deleted: " + JSON.stringify(filesDeleted()));
   assert(trashedIn("budget").some(b => (b.deletedFiles || []).includes("budget/B1/r.jpg")),
     "its path is on the tombstone instead: " + JSON.stringify(trashedIn("budget").map(b => b.deletedFiles)));
+  assert(trashedIn("budget").some(b => (b.deletedFiles || []).includes("budget/B2/quote.pdf")),
+    "and so is the quote's: " + JSON.stringify(trashedIn("budget").map(b => b.deletedFiles)));
 
   // Documents: uploads only; the bundled guides never get a box.
   DOCS_MANIFEST = [{ title: "Guide", category: "Guides", kind: "html", src: "docs/g.html" }];
