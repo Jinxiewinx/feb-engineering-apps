@@ -87,6 +87,7 @@ Rendered in headless Chromium (need Playwright):
 | `test_labels.mjs` | The label sheets, down to the pixels: each QR is rasterized and its dark-pixel fraction checked, because a blank SVG passes every DOM assertion. Also measures a roll page: `test_label_roll.mjs` proves the JS and the CSS agree, this proves a browser agrees with them. |
 | `test_sanitize.mjs` | The comment sanitizer, running the real vendored DOMPurify. Never assert allowlist policy anywhere else; nothing else can see it. |
 | `test_scan.mjs` | In-app scanning and lot capture. |
+| `test_functions.mjs` | The Cloud Function in `06 Composites App/functions/`, in plain Node with Firebase and the Anthropic client stubbed (the SDK's real error classes are kept). Roster gate, Storage path and file-type refusals, what is sent to the model (Haiku 5.5, low effort, JSON schema), how a refusal, truncation or API error becomes a toast-ready error, and the 50-a-day cap. No key, no network, no cost. |
 | `test_receiving_ui.mjs` | The receiving desk, measured at three widths and both themes with 7 and 40 rows. Needs `serve_populated.mjs` running. An empty grid cannot overflow and cannot be unreadable, so it has to be filled before it is measured; that is what found both of the desk's layout bugs. |
 | `test_q_landing.mjs` | The public `/Q/<ID>` nameplate page, including its offline watchdog. |
 | `test_route.mjs` | Deep links from a scanned code into the signed-in app. |

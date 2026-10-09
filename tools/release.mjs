@@ -289,9 +289,12 @@ act("prepend the CHANGELOG.md section", () => writeFileSync(CHANGELOG, log));
    app that quietly ruin material rather than throwing: guillotine feasibility
    (a nest that packs tightly and cannot be sawn) and the 6in section split. A
    regression inside either would have shipped, because test_app only reaches
-   them through the commit path. */
+   them through the commit path.
+   test_functions joined in October 2026, when parseReceipt first went live. It
+   is the only check on the code that spends the Anthropic key, and it skips
+   loudly rather than failing when functions/node_modules is not installed. */
 const SUITES = ["test_app.mjs", "test_designsystem.mjs", "test_route.mjs", "test_appui.mjs",
-  "test_detailui.mjs", "test_packer.mjs", "test_slicer.mjs"];
+  "test_detailui.mjs", "test_packer.mjs", "test_slicer.mjs", "test_functions.mjs"];
 say("\n  running the suites");
 for (const s of SUITES) {
   const file = join(ROOT, "tools", s);

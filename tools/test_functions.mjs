@@ -1,0 +1,197 @@
+/* test_functions.mjs — the Cloud Functions in 06 Composites App/functions/,
+ * run in plain Node with Firebase and the Anthropic client stubbed.
+ *
+ * WHY STUBS. The real thing needs a deployed function, a secret and a paid
+ * model call, none of which belong in a suite that runs on every release.
+ * What CAN go wrong locally is the part this file checks: who gets in, which
+ * Storage paths and file types are refused, the daily cap, what is sent to the
+ * model, and how its answer (or refusal, or truncation) is turned into lines.
+ * The SDK's real error classes are used, so the instanceof chain in callHaiku()
+ * is exercised for real.
+ *
+ *   node tools/test_functions.mjs
+ */
+
+import { createRequire } from "node:module";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const FN = path.join(here, "..", "06 Composites App", "functions", "index.js");
+const req = createRequire(FN);
+
+if (!existsSync(path.join(path.dirname(FN), "node_modules", "@anthropic-ai", "sdk"))) {
+  console.log("SKIP test_functions: functions/node_modules is missing. Run `npm ci` in 06 Composites App/functions/ to test parseReceipt.");
+  process.exit(0);
+}
+
+let pass = 0, fail = 0;
+const ok = (name, cond, detail = "") => {
+  if (cond) { pass++; console.log("  ok  " + name); }
+  else { fail++; console.log("  FAIL " + name + (detail ? "  — " + detail : "")); }
+};
+
+/* ---------- stubs ---------- */
+class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
+const state = {
+  roster: new Set(["member@berkeley.edu"]),
+  usage: new Map(),
+  files: new Map(),
+  reply: null,      // what messages.create resolves to
+  throwErr: null,   // what messages.create throws
+  sent: [],         // every request body
+};
+
+const RealSdk = req("@anthropic-ai/sdk");
+class FakeAnthropic {
+  constructor() {
+    this.messages = {
+      create: async (body) => {
+        state.sent.push(body);
+        if (state.throwErr) throw state.throwErr;
+        return state.reply;
+      },
+    };
+  }
+}
+for (const k of ["RateLimitError", "APIConnectionError", "APIError"]) FakeAnthropic[k] = RealSdk[k];
+const sdkErr = (cls, status) => Object.assign(Object.create(RealSdk[cls].prototype), { status, message: cls });
+
+const firestore = {
+  doc: (p) => ({
+    _p: p,
+    get: async () => ({ exists: p.startsWith("roster/") ? state.roster.has(p.slice(7)) : state.usage.has(p) }),
+  }),
+  runTransaction: async (fn) => fn({
+    get: async (ref) => ({ exists: state.usage.has(ref._p), data: () => state.usage.get(ref._p) }),
+    set: (ref, v) => state.usage.set(ref._p, { ...(state.usage.get(ref._p) || {}), ...v }),
+  }),
+};
+const admin = {
+  initializeApp() {},
+  firestore: Object.assign(() => firestore, { FieldValue: { serverTimestamp: () => "ts" } }),
+  storage: () => ({
+    bucket: () => ({
+      file: (p) => ({
+        getMetadata: async () => {
+          if (!state.files.has(p)) throw new Error("404");
+          return [state.files.get(p).meta];
+        },
+        download: async () => [Buffer.from("bytes")],
+      }),
+    }),
+  }),
+};
+
+function stub(id, exports) {
+  const resolved = req.resolve(id);
+  req.cache[resolved] = { id: resolved, filename: resolved, loaded: true, exports };
+}
+stub("firebase-functions/v2/https", { onCall: (_opts, handler) => handler, HttpsError });
+stub("firebase-functions/params", { defineSecret: () => ({ value: () => "sk-test" }) });
+stub("firebase-admin", admin);
+stub("@anthropic-ai/sdk", FakeAnthropic);
+
+const { parseReceipt } = req(FN);
+
+const member = { auth: { token: { email: "member@berkeley.edu" } } };
+const call = async (data, who = member) => {
+  try { return { ok: true, out: await parseReceipt({ ...who, data }) }; }
+  catch (e) { return { ok: false, code: e.code, msg: e.message }; }
+};
+const reply = (obj, stop = "end_turn") => ({
+  stop_reason: stop, usage: { input_tokens: 1500, output_tokens: 200 },
+  content: [{ type: "text", text: typeof obj === "string" ? obj : JSON.stringify(obj) }],
+});
+const PHOTO = "budget/abc-123/1700-receipt.jpg";
+const PDF = "budget/abc-123/1700-invoice.pdf";
+state.files.set(PHOTO, { meta: { contentType: "image/jpeg", size: 200000 } });
+state.files.set(PDF, { meta: { contentType: "application/pdf", size: 90000 } });
+state.files.set("budget/abc-123/big.jpg", { meta: { contentType: "image/jpeg", size: 11 * 1024 * 1024 } });
+state.files.set("budget/abc-123/notes.txt", { meta: { contentType: "text/plain", size: 10 } });
+
+/* ---------- gate ---------- */
+console.log("gate");
+let r = await call({ path: PHOTO }, { auth: null });
+ok("signed out is refused", r.code === "unauthenticated", JSON.stringify(r));
+r = await call({ path: PHOTO }, { auth: { token: { email: "stranger@gmail.com" } } });
+ok("off the roster is refused", r.code === "permission-denied", JSON.stringify(r));
+for (const bad of ["documents/x.pdf", "budget/abc/../roster", "budget/a/b/c.jpg", "", "budget/a b/c.jpg"]) {
+  r = await call({ path: bad });
+  ok(`path refused: ${JSON.stringify(bad)}`, r.code === "invalid-argument", JSON.stringify(r));
+}
+r = await call({ path: "budget/abc-123/missing.jpg" });
+ok("missing file is not-found", r.code === "not-found", JSON.stringify(r));
+r = await call({ path: "budget/abc-123/big.jpg" });
+ok("over 10 MiB refused", r.code === "invalid-argument", JSON.stringify(r));
+r = await call({ path: "budget/abc-123/notes.txt" });
+ok("non-image non-PDF refused", r.code === "invalid-argument", JSON.stringify(r));
+ok("nothing sent to the model yet", state.sent.length === 0, String(state.sent.length));
+ok("refusals before the model cost no quota", state.usage.size === 0, String(state.usage.size));
+
+/* ---------- happy path ---------- */
+console.log("parse");
+state.reply = reply({
+  lines: [
+    { desc: "  Peel ply 60in  ", qty: "2 yd", total: "$41.90" },
+    { desc: "", qty: "1", total: "3.00" },
+    { desc: "Shipping", qty: "1", total: "12.5" },
+  ],
+  vendor: "McMaster-Carr",
+  receiptTotal: "$54.40",
+});
+r = await call({ path: PHOTO });
+ok("photo parses", r.ok, JSON.stringify(r));
+ok("blank desc dropped, rest kept", r.out && r.out.lines.length === 2, JSON.stringify(r.out));
+ok("desc trimmed", r.out && r.out.lines[0].desc === "Peel ply 60in");
+ok("qty/total stripped to digits", r.out && r.out.lines[0].qty === "2" && r.out.lines[0].total === "41.90", JSON.stringify(r.out && r.out.lines[0]));
+ok("vendor and total passed", r.out && r.out.vendor === "McMaster-Carr" && r.out.receiptTotal === "54.40");
+const body = state.sent.at(-1);
+ok("model is claude-haiku-5-5", body.model === "claude-haiku-5-5", body.model);
+ok("effort is low", body.output_config && body.output_config.effort === "low");
+ok("structured output schema sent", body.output_config.format.type === "json_schema" && body.output_config.format.schema.additionalProperties === false);
+ok("no thinking param (adaptive default)", !("thinking" in body));
+ok("photo sent as image block", body.messages[0].content[0].type === "image");
+
+r = await call({ path: PDF });
+ok("PDF parses", r.ok, JSON.stringify(r));
+ok("PDF sent as document block", state.sent.at(-1).messages[0].content[0].type === "document");
+
+/* ---------- model outcomes ---------- */
+console.log("model outcomes");
+state.reply = reply("{}", "refusal");
+r = await call({ path: PHOTO });
+ok("refusal -> failed-precondition", r.code === "failed-precondition", JSON.stringify(r));
+state.reply = reply('{"lines":[{"desc":"x"', "max_tokens");
+r = await call({ path: PHOTO });
+ok("max_tokens -> out-of-range", r.code === "out-of-range", JSON.stringify(r));
+state.reply = reply("not json");
+r = await call({ path: PHOTO });
+ok("unparseable answer -> internal", r.code === "internal", JSON.stringify(r));
+state.throwErr = sdkErr("RateLimitError", 429);
+r = await call({ path: PHOTO });
+ok("429 -> resource-exhausted", r.code === "resource-exhausted" && /busy/.test(r.msg), JSON.stringify(r));
+state.throwErr = sdkErr("APIConnectionError", undefined);
+r = await call({ path: PHOTO });
+ok("network -> unavailable", r.code === "unavailable", JSON.stringify(r));
+state.throwErr = sdkErr("APIError", 500);
+r = await call({ path: PHOTO });
+ok("other API error -> internal", r.code === "internal" && /500/.test(r.msg), JSON.stringify(r));
+state.throwErr = null;
+
+/* ---------- daily cap ---------- */
+console.log("daily cap");
+const key = [...state.usage.keys()][0] || "";
+ok("usage doc keyed email_day", /^aiUsage\/member@berkeley\.edu_\d{4}-\d{2}-\d{2}$/.test(key), key);
+state.usage.set(key, { n: 49 });
+state.reply = reply({ lines: [], vendor: "", receiptTotal: "" });
+r = await call({ path: PHOTO });
+ok("50th call allowed", r.ok, JSON.stringify(r));
+const before = state.sent.length;
+r = await call({ path: PHOTO });
+ok("51st call refused", r.code === "resource-exhausted" && /Daily limit/.test(r.msg), JSON.stringify(r));
+ok("refused call never reaches the model", state.sent.length === before);
+
+console.log(`\n${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);

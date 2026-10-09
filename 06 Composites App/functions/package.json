@@ -1,9 +1,12 @@
 {
   "name": "feb-composites-functions",
-  "description": "Cloud Functions for the FEB composites app. One function: parseReceipt.",
-  "engines": { "node": "20" },
+  "description": "Cloud Functions for the FEB composites app. One function: parseReceipt (Claude Haiku 5.5).",
+  "engines": {
+    "node": "20"
+  },
   "main": "index.js",
   "dependencies": {
+    "@anthropic-ai/sdk": "0.128.0",
     "firebase-admin": "^13.0.0",
     "firebase-functions": "^6.0.0"
   },
