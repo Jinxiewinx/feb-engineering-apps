@@ -473,6 +473,17 @@ ok("a web citation becomes a web source with its site", r.ok && r.out.sources.le
 ok("and its marker sits on the sentence it supports", /Twill drapes better \[\[0\]\] and plain weave is stiffer\./.test(r.out.answer) || /Twill drapes better\[\[0\]\] and plain/.test(r.out.answer), r.out.answer);
 ok("a cited page no search returned is dropped", !/evil/.test(JSON.stringify(r.out)));
 ok("web answers are flagged for the client", r.out.web === true);
+state.replies = [{ stop_reason: "end_turn", usage: { input_tokens: 9000, output_tokens: 300 }, content: [
+  { type: "server_tool_use", id: "s2", name: "web_search", input: { query: "fibre volume fraction" } },
+  { type: "web_search_tool_result", tool_use_id: "s2", content: [
+    { type: "web_search_result", url: "https://www.explorecomposites.com/vf", title: "Fibre fraction" },
+    { type: "web_search_result", url: "https://www.sciencedirect.com/x", title: "GFRP study" },
+    { type: "web_search_result", url: "https://unrelated.example/y", title: "Other" }] },
+  { type: "text", text: "From the web, not from the app:\nExplore Composites gives 40-55%, and a ScienceDirect study agrees." },
+]}];
+r = await ask({ question: "vf?" });
+const sites = r.out.sources.map(x => x.site).join(",");
+ok("no citation objects: the pages whose site Paul names are listed", sites === "explorecomposites.com,sciencedirect.com", sites);
 
 // The record the person has open rides along as context, id-shaped only.
 state.replies = [answer("ok")];

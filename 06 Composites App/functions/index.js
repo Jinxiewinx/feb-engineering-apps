@@ -623,6 +623,21 @@ exports.askPaul = onCall(
     }).join("").trim();
     if (!text) throw new HttpsError("internal", "Paul didn't come up with an answer. Try asking it another way.");
     const { answer, sources } = checkCitations(text, seen);
+    /* Haiku doesn't always attach citation objects to web facts (second live
+       run: 9 pages, 0 citations, sites named in the prose). A web part must
+       still say where it came from, so the searched pages whose site Paul
+       names in the answer are listed; failing that, the first three he got. */
+    if (answer.includes(WEB_LINE) && !sources.some((x) => x && x.type === "web")) {
+      const flat = answer.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const pages = [...seen.values()].filter((x) => x && x.type === "web");
+      const bySite = new Map();
+      for (const pg of pages) {
+        const root = String(pg.site || "").split(".")[0].replace(/[^a-z0-9]/g, "");
+        if (root.length > 3 && flat.includes(root) && !bySite.has(pg.site)) bySite.set(pg.site, pg);
+      }
+      const named = [...bySite.values()].slice(0, 5);
+      sources.push(...(named.length ? named : pages.slice(0, 3)));
+    }
     const webPages = [...seen.values()].filter((x) => x && x.type === "web").length;
     const webCites = (msg.content || []).reduce((n, b) => n + ((b.type === "text" && b.citations) ? b.citations.length : 0), 0);
     if (webPages || webCites) console.log(`askPaul web: pages=${webPages} citations=${webCites} kept=${sources.filter((x) => x && x.type === "web").length}`);
