@@ -1083,6 +1083,11 @@ pre-ticked, filled ones say what they'd replace, and nothing is written until
 you press Apply. An expiry applied that way is marked "vendor label (AI read)"
 until somebody types over it.
 
+While any ✨ job runs, a bar at the bottom of the screen says what it is doing
+("Uploading the photo…", "Reading the label…") and for how many seconds, and the
+button shows "Reading…". When it ends the bar says how: a green ✓ that clears
+itself, or an amber ! or red ✕ that stays until you dismiss it.
+
 Every ✨ button disappears when a lead switches AI off (⋯ menu, where leads also
 see the month's AI spend against the $80 ceiling).
 
@@ -1350,21 +1355,32 @@ first-class R&D record — `CPN-SN6-042`, eleven characters, shorter than a mold
 
 ## Ask Paul
 
-The speech-bubble button in the topbar opens **Ask Paul**, a question box for
-anything about the team's composites work: "where is the diffuser mold", "which
-IN2 lots expire this month", "what does CS-006 say about degassing", "what
-gloves for XCR". It looks things up in the app's records and in the standards
-and datasheets the app ships, and puts a numbered chip after every fact; the
-chip opens the record or the PDF it came from, so you can check rather than
-trust. If it can't find something it says so. A general composites question the
-documents don't cover gets a short answer under a "General knowledge, not from
-the app" label, and never for anything FEB-specific (where things are, what's
-blocking, our cure holds and mix ratios; the Resins page is the number the team
-enforces).
+The speech-bubble button in the topbar opens **Paul**, a chat for anything
+about the team's composites work: "where is the diffuser mold", "which IN2 lots
+expire soonest", "what does CS-006 say about the drop test", "what gloves for
+XCR". He looks things up in the app's records and in the standards and
+datasheets the app ships. While he works you see what he's doing ("Opening
+WO-SN6-003", "Reading CS-006, 7.5 Mix and infuse") and his thinking as it comes;
+once he answers, that folds away under "Show how Paul worked it out".
 
-It only reads; it can't change anything. The conversation lives in your tab and
-is gone on reload. 30 questions a person a day. The name is the team's running
-joke about Paul from Easy Composites; it isn't him and doesn't speak for them.
+Each answer has small numbers in the text and a separate **Sources** list
+underneath; tap either to open the record or the PDF. On a laptop Paul sits
+beside the page, so the record opens next to the conversation. On a phone the
+chat steps aside, and the round Paul button in the corner brings the same
+conversation back. If he can't find something he says so. A general composites
+question the documents don't cover gets a short answer under a "General
+knowledge, not from the app" label, never for anything FEB-specific (where
+things are, what's blocking, our cure holds and mix ratios; the Resins page is
+the number the team enforces).
+
+Paul knows which record you have open: on a mold's page, "is this ready for
+layup?" means that mold (the "Looking at" chip; tap × to ask without it). ⌘K
+search also offers to ask Paul whatever you typed.
+
+He only reads; he can't change anything. The conversation stays for the tab
+(it survives a reload, not a new tab). 100 questions a person a day. The name
+is the team's running joke about Paul from Easy Composites; the avatar is an
+original cartoon, not him, and he doesn't speak for them.
 
 ## Scanning
 

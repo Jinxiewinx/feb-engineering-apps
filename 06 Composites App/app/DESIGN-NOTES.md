@@ -760,10 +760,18 @@ kept until a person types over the date. Same discipline as `lotSource` on cure
 references and the datasheet/team split in `resins.js`: a value somebody looked
 at and a value nobody looked at must not be indistinguishable.
 
+**Every ✨ job reports through one bar** (`aiJobStart` / `aiJobPhase` /
+`aiJobDone` / `aiJobWarn` / `aiJobFail` in core.js, painted into `#ai-status`).
+A toast that fades cannot say "still going" for an eight-second read, and Simon
+couldn't tell running from stuck from failed. The bar names the phase and counts
+seconds while it runs; success clears itself, a warning or an error stays until
+dismissed. Buttons ask `aiJobBusy(kind)` to show "Reading…" and to refuse a
+second press.
+
 **Three brakes, all server-side.** `config/ai.enabled` (a lead's switch in the
 ⋯ menu; the client hides every ✨ when it's off, and the functions refuse
 regardless of what a stale screen shows). Per-person daily caps per job (photo
-jobs 50, Ask 30). And a monthly ceiling: every call's real token usage is
+jobs 50, Ask Paul 100). And a monthly ceiling: every call's real token usage is
 priced at Haiku 5.5's rates into `aiUsage/month_<yyyy-mm>`, mirrored to
 `config/ai.spend_<yyyy-mm>` for the ⋯ menu, and everything refuses past $80.
 Simon's Max plan carries $100 a month; the other $20 is headroom.
@@ -793,6 +801,18 @@ to names. Documents are `functions/corpus.json`, built from `app/docs/` by
   fixed label line, never for FEB facts or for numbers a datasheet should give.
 - **The persona is the name.** The prompt says it is not a real person, imitates
   nobody and never speaks for Easy Composites; the sheet says the same.
+- **A panel, not a modal**, so a source can open without losing the chat: a
+  third column of `#app` on a wide screen (340px under 1200px), a full-screen
+  sheet on a phone that steps aside on a source tap, with a floating button
+  back. The thread is in `sessionStorage`, per tab.
+- **What it shows while working is true.** The function streams
+  (`res.sendChunk`, read by `fb.callStream`) one line per tool call, built from
+  the tool's own input, plus the model's summarized thinking. Nothing is
+  animated that isn't happening, apart from the avatar.
+- **The avatar is an original cartoon**, not a likeness of the real Paul and
+  with no Easy Composites branding.
+- **The open record rides along** as `about`, id-shaped only, offered as
+  context ("I'm looking at X"), never as an instruction.
 - Medium effort (the photo jobs are low): this one reasons over what it found.
   At most 4 tool rounds, then a forced answer. Re-run `tools/eval_askpaul.js`
   in the live app whenever the prompt or tools change.

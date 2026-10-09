@@ -414,33 +414,34 @@ function rxPaste(e, rid) {
    and the lot is then stamped "vendor label (AI read)" rather than "vendor
    label", so a date nobody looked at stays distinguishable from one somebody
    typed off the jug. */
-let RX_SLIP_BUSY = false;
 function rxFromSlip() {
-  if (RX_SLIP_BUSY) return;
+  if (aiJobBusy()) return;
   const inp = document.createElement("input");
   inp.type = "file"; inp.accept = "image/*,application/pdf";
   inp.onchange = async () => {
     const f = inp.files && inp.files[0]; if (!f) return;
-    RX_SLIP_BUSY = true;
-    toast("Reading the packing slip…");
+    aiJobStart("slip", "Uploading the packing slip…");
     let up = null;
     try {
       up = await fb.upload(`receiving/rx-${Date.now()}/${f.name || "slip.jpg"}`, f);
+      aiJobPhase("Reading the slip…");
       const out = await fb.call("parsePackingSlip", { path: up.path });
-      rxAddSlipRows(out);
+      const n = rxAddSlipRows(out);
+      if (n) aiJobDone(`${n} line${n === 1 ? "" : "s"} read from the slip. Check the class, the shelf and the count on each.`);
+      else aiJobFail("Couldn't find any lines on that slip. Type them in, or paste from the order email.");
     } catch (e) {
-      toast(aiErrorText(e, "Packing slip reading isn't available right now. Type the lines in, or paste them from the order email."), "error");
+      aiJobFail(aiErrorText(e, "Packing slip reading isn't available right now. Type the lines in, or paste them from the order email."));
     } finally {
       if (up) fb.deleteFile(up.path);
-      RX_SLIP_BUSY = false;
     }
   };
   inp.click();
 }
-/* Split out so the test harness can feed it an answer without a camera. */
+/* Split out so the test harness can feed it an answer without a camera.
+   Returns how many rows it added; the caller reports it. */
 function rxAddSlipRows(out) {
   const got = (out && out.rows) || [];
-  if (!got.length) { toast("Couldn't find any lines on that slip. Type them in, or paste from the order email.", "error"); return 0; }
+  if (!got.length) return 0;
   if (!String(RX.supplier || "").trim() && out.supplier) RX.supplier = out.supplier;
   const made = got.map(g => {
     const row = rxBlankRow({
@@ -456,7 +457,6 @@ function rxAddSlipRows(out) {
   RX.rows = RX.rows.filter(r => String(r.name || "").trim()).concat(made);
   rxDraftSave();
   render();
-  toast(`${made.length} line${made.length === 1 ? "" : "s"} read from the slip. Check the class, the shelf and the count on each.`);
   return made.length;
 }
 
@@ -499,7 +499,7 @@ function renderInvDesk() {
     ${rxGridHtml(cols)}
     <div class="rxfoot no-print">
       <button class="sm" onclick="rxAdd()">+ line</button>
-      ${aiOn() ? `<button class="sm" onclick="rxFromSlip()" title="Photograph the packing slip; its lines become rows you check">✨ From packing slip</button>` : ""}
+      ${aiOn() ? `<button class="sm" onclick="rxFromSlip()" title="Photograph the packing slip; its lines become rows you check" ${aiJobBusy() ? "disabled" : ""}>${aiJobBusy("slip") ? "✨ Reading…" : "✨ From packing slip"}</button>` : ""}
       <span class="kbdhint tny muted nocaps">Enter starts the next line · Ctrl+Enter to review · paste a block from an email</span>
     </div>
   </div>`;

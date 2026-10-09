@@ -2676,7 +2676,7 @@ await t("receipt parsing prefills the same editable grid, and a dead function de
   assert(/Add a receipt first/.test(lastToast), "no receipt, no parse: " + lastToast);
   DB.budget[0].receiptPath = "budget/BUY-RC-1/123-r.jpg";
   await fillLinesFromReceipt("BUY-RC-1");   // fake fb has no .call
-  assert(/manual grid still works/.test(lastToast), "a missing function degrades, never blocks: " + lastToast);
+  assert(AI_JOB && AI_JOB.state === "err" && /manual grid still works/.test(AI_JOB.msg), "a missing function degrades, never blocks, and the bar says so: " + JSON.stringify(AI_JOB));
   assert(DB.budget[0].lines.length === 0, "and nothing was written");
   fb.call = async (name, data) => {
     assert(name === "parseReceipt" && data.path === "budget/BUY-RC-1/123-r.jpg", "called with the storage path");
@@ -2688,30 +2688,52 @@ await t("receipt parsing prefills the same editable grid, and a dead function de
   assert(buyLineEach(b.lines[0]) === 5, "and price like any typed line");
   assert(b.source === "McMaster", "an empty vendor field takes the receipt's word");
   assert(b.cost === "", "cost is still untouched — the explicit button remains the only path");
-  assert(!/add up to/.test(lastToast), "no printed total, no mismatch warning: " + lastToast);
+  assert(AI_JOB.state === "ok" && !/add up to/.test(AI_JOB.msg), "no printed total, no mismatch warning: " + JSON.stringify(AI_JOB));
 
   // The printed grand total checks the read: within 15% (tax) is quiet,
   // a dropped line is called out.
   b.lines = [];
   fb.call = async () => ({ lines: [{ desc: "peel ply", qty: "1", total: "40.00" }], vendor: "", receiptTotal: "43.20" });
   await fillLinesFromReceipt("BUY-RC-1");
-  assert(!/add up to/.test(lastToast), "a tax-sized gap is not flagged: " + lastToast);
+  assert(AI_JOB.state === "ok", "a tax-sized gap is not flagged: " + JSON.stringify(AI_JOB));
   b.lines = [];
   fb.call = async () => ({ lines: [{ desc: "peel ply", qty: "1", total: "40.00" }], vendor: "", receiptTotal: "95.00" });
   await fillLinesFromReceipt("BUY-RC-1");
-  assert(/add up to \$40\.00 but the receipt says \$95\.00/.test(lastToast), "a missing line is flagged: " + lastToast);
+  assert(AI_JOB.state === "warn" && /add up to \$40\.00 but the receipt says \$95\.00/.test(AI_JOB.msg), "a missing line is flagged, and stays up: " + JSON.stringify(AI_JOB));
 
   // The function's own refusals are written for the toast and shown as-is;
   // anything else (not deployed, crashed) gets the generic line.
   b.lines = [];
   fb.call = async () => { throw Object.assign(new Error("Daily limit of 50 reads reached."), { code: "functions/resource-exhausted" }); };
   await fillLinesFromReceipt("BUY-RC-1");
-  assert(/Daily limit/.test(lastToast), "the function's own message reaches the member: " + lastToast);
+  assert(AI_JOB.state === "err" && /Daily limit/.test(AI_JOB.msg), "the function's own message reaches the member: " + JSON.stringify(AI_JOB));
   fb.call = async () => { throw Object.assign(new Error("internal"), { code: "functions/internal" }); };
   await fillLinesFromReceipt("BUY-RC-1");
-  assert(/manual grid still works/.test(lastToast) && !/internal/.test(lastToast), "a bare 'internal' is not shown: " + lastToast);
+  assert(/manual grid still works/.test(AI_JOB.msg) && !/internal/.test(AI_JOB.msg), "a bare 'internal' is not shown: " + JSON.stringify(AI_JOB));
   assert(b.lines.length === 0, "and a failure writes nothing");
   delete fb.call;
+});
+await t("✨ job bar: says what is running and for how long, then how it ended", async () => {
+  aiJobDismiss();
+  assert(aiJobHtml() === "" && !aiJobBusy(), "nothing running, nothing shown");
+  aiJobStart("slip", "Uploading the packing slip…");
+  assert(aiJobBusy() && aiJobBusy("slip") && !aiJobBusy("label"), "busy, and which job");
+  let h = aiJobHtml();
+  assert(/ai-run/.test(h) && /ai-spin/.test(h) && /Uploading the packing slip/.test(h) && /0s/.test(h) && !/Dismiss/.test(h), "a spinner, the phase, the seconds, no dismiss while running: " + h);
+  aiJobPhase("Reading the slip…");
+  assert(/Reading the slip/.test(aiJobHtml()), "phases move on");
+  rxSeedShelves(); rxSetup([{ cls: "CON", name: "" }]);
+  const had = fb.call; fb.call = async () => ({});
+  assert(/disabled>✨ Reading…/.test(renderInvDesk()), "the button shows it is running and can't be pressed twice");
+  aiJobFail("Couldn't reach the model. Try again in a minute.");
+  h = aiJobHtml();
+  assert(!aiJobBusy() && /ai-err/.test(h) && /Couldn't reach the model/.test(h) && /Dismiss/.test(h), "an error stays up with a dismiss: " + h);
+  assert(/✨ From packing slip/.test(renderInvDesk()), "and the button is back");
+  fb.call = had;
+  aiJobDismiss();
+  aiJobStart("label", "x"); aiJobDone("Label read.");
+  assert(/ai-ok/.test(aiJobHtml()) && /Label read/.test(aiJobHtml()), "success says so");
+  aiJobDismiss();
 });
 
 console.log("google documents:");
@@ -11784,56 +11806,86 @@ await t("the AI switch: a lead sees it with the month's spend, and off hides the
   fb.call = had; window.AI_CFG = null;
 });
 
-await t("Ask Paul: gated by the switch, answers escaped, only vouched sources become chips", async () => {
+await t("Ask Paul: a docked chat, live work shown, sources apart, and the way back after a source", async () => {
   signInAsLead();
-  const had = fb.call;
-  delete fb.call;
+  const had = fb.call, hadS = fb.callStream;
+  delete fb.call; delete fb.callStream;
   renderTopbar();
-  assert(!/openPaul\(\)/.test(topbar.innerHTML), "no function client, no button");
-  let sent = null;
-  fb.call = async (name, data) => {
+  assert(!/togglePaul\(\)/.test(topbar.innerHTML), "no function client, no button");
+  let sent = null, live = [];
+  fb.call = async () => ({});
+  fb.callStream = async (name, data, onChunk) => {
     sent = { name, data };
-    return { answer: "The diffuser run is **on hold** [[0]]. <img src=x onerror=alert(1)> See the standard [[1]] and [[7]]. **<b>x</b>**",
+    onChunk({ type: "step", text: 'Searching the app for "diffuser"' });
+    onChunk({ type: "thinking", text: "Checking the work order." });
+    live.push(paulWorkHtml(PAUL.turns.at(-1), true));
+    return { answer: "The diffuser run is **on hold** [[0]]. <img src=x onerror=alert(1)> See the standard [[1]] and [[7]].",
       sources: [{ type: "record", ref: "WO-SN6-003", kind: "work order", title: "Diffuser" },
                 { type: "doc", ref: "CS-006#12", doc: "CS-006", title: "CS-006 Resin Infusion", section: "7.5 Mix and infuse", src: "docs/standards/CS-006.pdf" }] };
   };
   renderTopbar();
-  assert(/openPaul\(\)/.test(topbar.innerHTML), "the topbar offers Ask Paul when AI is on");
+  assert(/togglePaul\(\)/.test(topbar.innerHTML), "the topbar offers Paul when AI is on");
   window.AI_CFG = { enabled: false }; renderTopbar();
-  assert(!/openPaul\(\)/.test(topbar.innerHTML), "and not when a lead switched it off");
+  assert(!/togglePaul\(\)/.test(topbar.innerHTML), "and not when a lead switched it off");
   window.AI_CFG = null;
 
-  PAUL = { turns: [], draft: "", busy: false };
+  PAUL = { turns: [], draft: "", busy: false, open: false, aboutOff: false };
+  view = { ...view, tab: "molds", mode: "detail", id: "MOLD-SN6-010" };
   openPaul();
-  let m = document.getElementById("modal").innerHTML;
-  assert(/Ask Paul/.test(m) && /not Easy Composites/.test(m), "the sheet says what Paul is and isn't");
-  PAUL.draft = "what's blocking the diffuser?";
-  await paulAsk();
-  assert(sent.name === "askPaul" && sent.data.question === "what's blocking the diffuser?" && sent.data.history.length === 0, "the question goes to askPaul");
-  m = document.getElementById("modal").innerHTML;
-  assert(!/<img src=x/.test(m) && /&lt;img/.test(m), "model text is escaped, never markup");
-  assert(/<b>on hold<\/b>/.test(m), "**bold** renders as bold");
-  assert(/<b>&lt;b&gt;x&lt;\/b&gt;<\/b>/.test(m), "and bold around a tag only wraps the escaped text");
-  assert((m.match(/class="chip paul-cite"/g) || []).length === 2, "two vouched sources, two inline chips; [[7]] has no source and no chip");
-  assert(/1 · WO-SN6-003 · Diffuser/.test(m) && /2 · CS-006 Resin Infusion, 7.5 Mix and infuse/.test(m), "sources listed under the answer");
+  const panel = document.getElementById("paul");
+  let h = panel.innerHTML;
+  assert(PAUL.open && /Ask me about molds/.test(h), "opens docked, with a greeting");
+  assert(!/in-joke|not Easy Composites|Answers from this app/.test(h), "the explainer paragraph is gone");
+  assert(/Looking at MOLD-SN6-010/.test(h), "it knows which record is open");
 
-  PAUL.draft = "and who signed the layup?";
+  PAUL.draft = "is this ready for layup?";
   await paulAsk();
-  assert(sent.data.history.length === 1 && !/\[\[/.test(sent.data.history[0].a), "earlier turns go back as plain text, markers stripped");
+  assert(sent.name === "askPaul" && sent.data.about === "MOLD-SN6-010" && sent.data.question === "is this ready for layup?", "the open record rides along: " + JSON.stringify(sent.data));
+  assert(/Searching the app for &quot;diffuser&quot;/.test(live[0]) && /Checking the work order/.test(live[0]), "steps and thinking show while it works");
+  h = panel.innerHTML;
+  assert(/paul-me[\s\S]*is this ready for layup/.test(h) && /paul-him/.test(h), "question on one side, answer on the other");
+  assert(!/<img src=x/.test(h) && /&lt;img/.test(h), "model text is escaped, never markup");
+  assert(/<b>on hold<\/b>/.test(h), "**bold** renders as bold");
+  assert((h.match(/class="paul-cite"/g) || []).length === 2, "two vouched sources, two inline numbers; [[7]] has no source and no number");
+  assert(/class="paul-sources"[\s\S]*WO-SN6-003[\s\S]*CS-006 Resin Infusion/.test(h), "sources sit in their own block under the answer");
+  assert(/Show how Paul worked it out/.test(h), "and the work folds away once answered");
 
+  // On a phone a source steps the sheet aside, and the button brings it back.
+  const narrow = window.matchMedia;
+  window.matchMedia = () => ({ matches: true });
   paulOpenSource(0, 0);
-  assert(view.mode === "detail" && view.id === "WO-SN6-003", "a record chip opens the record");
+  assert(view.mode === "detail" && view.id === "WO-SN6-003", "a source opens its record");
+  assert(!PAUL.open, "the phone sheet steps aside");
+  const fab = document.getElementById("paul-fab");
+  assert(fab && !fab.hidden, "and the floating Paul button is there");
+  openPaul();
+  assert(PAUL.open && PAUL.turns.length === 1 && /on hold/.test(document.getElementById("paul").innerHTML), "which reopens the same conversation");
+  window.matchMedia = () => ({ matches: false });
+  paulOpenSource(0, 0);
+  assert(PAUL.open, "on a wide screen it stays open beside the record");
+  window.matchMedia = narrow;
 
-  fb.call = async () => ({ answer: "Not in the app.\n\nGeneral composites knowledge, not from the app:\nTwill drapes better.", sources: [] });
+  PAUL.draft = "and the next one?"; await paulAsk();
+  assert(sent.data.history.length === 1 && !/\[\[/.test(sent.data.history[0].a), "earlier turns go back as plain text");
+
+  fb.callStream = async () => ({ answer: "Not in the app.\n\nGeneral composites knowledge, not from the app:\nTwill drapes better.", sources: [] });
   PAUL.draft = "twill or plain?"; await paulAsk();
-  assert(/General knowledge, not from the app<\/span>/.test(paulTurnHtml(PAUL.turns.at(-1))), "general knowledge wears its label");
+  assert(/General knowledge, not from the app<\/span>/.test(paulTurnHtml(PAUL.turns.at(-1), 2)), "general knowledge wears its label");
 
-  fb.call = async () => { throw Object.assign(new Error("Daily limit of 30 questions reached. It resets tomorrow."), { code: "functions/resource-exhausted" }); };
+  fb.callStream = async () => { throw Object.assign(new Error("Daily limit of 100 questions reached. It resets tomorrow."), { code: "functions/resource-exhausted" }); };
   PAUL.draft = "one more"; await paulAsk();
-  assert(/Daily limit of 30 questions/.test(paulTurnHtml(PAUL.turns.at(-1))) && !PAUL.busy, "a refusal shows in the thread and frees the box");
+  assert(/Daily limit of 100 questions/.test(paulTurnHtml(PAUL.turns.at(-1), 3)) && !PAUL.busy, "a refusal shows in the thread and frees the box");
+
+  // ⌘K offers Paul.
+  openSearch(); renderSearchResults("how do I degas");
+  assert(/paulAskFromSearch/.test(document.getElementById("gsearch-results").innerHTML), "search offers to ask Paul");
   closeModal();
-  PAUL = { turns: [], draft: "", busy: false };
-  fb.call = had;
+
+  paulClear();
+  assert(!PAUL.turns.length, "New chat empties it");
+  closePaul();
+  PAUL = { turns: [], draft: "", busy: false, open: false, aboutOff: false };
+  fb.call = had; fb.callStream = hadS;
 });
 
 await t("the login screen offers the door, and says what is behind it", () => {

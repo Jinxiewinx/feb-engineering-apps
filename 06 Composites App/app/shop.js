@@ -740,7 +740,7 @@ function renderShopDetail(tab, opts) {
           control for the same field is exactly the drift the stepper removed. */""}
     ${tab !== "molds" && shopNextStage(spec, o) ? `<button class="ib" onclick="quickAdvance('${esc(spec.coll)}','${esc(o.id)}')">${icon("check", 15)} ${esc(shopNextStage(spec, o))}</button>` : ""}
     ${spec.coll === "lots" && shopFieldApplies(spec, c.cls, "expiresOn") && aiOn()
-      ? `<button class="ib" onclick="lotReadLabel('${esc(o.id)}')" title="Photograph the label; the lot number and expiry are offered for you to confirm">✨ Read label</button>` : ""}
+      ? `<button class="ib" onclick="lotReadLabel('${esc(o.id)}')" title="Photograph the label; the lot number and expiry are offered for you to confirm" ${aiJobBusy() ? "disabled" : ""}>${aiJobBusy("label") ? "✨ Reading…" : "✨ Read label"}</button>` : ""}
   </div>
   ${/* The embedded host (the Molds tab) already renders the undo bar above
         the split; a second copy here doubled every write's bar. */""}
@@ -1159,15 +1159,18 @@ function lotReadLabel(id) {
   inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment");
   inp.onchange = async () => {
     const f = inp.files && inp.files[0]; if (!f) return;
-    toast("Reading the label…");
+    aiJobStart("label", "Uploading the photo…");
     let up = null;
     try {
       up = await fb.upload(`lots/${id}/${Date.now()}-label.jpg`, f);
+      aiJobPhase("Reading the label…");
       const mats = (typeof MATERIALS !== "undefined" ? MATERIALS : []).map(m => ({ matKey: m.matKey, label: m.label }));
       const out = await fb.call("readContainerLabel", { path: up.path, materials: mats });
-      lotLabelReview(id, out);
+      const r = lotLabelReview(id, out);
+      if (r === true) aiJobDone("Label read. Tick what's right and press Apply.");
+      else aiJobWarn(r || "Couldn't read a lot number or expiry from that photo.");
     } catch (e) {
-      toast(aiErrorText(e, "Label reading isn't available right now. Type the lot number and expiry in Edit."), "error");
+      aiJobFail(aiErrorText(e, "Label reading isn't available right now. Type the lot number and expiry in Edit."));
     } finally {
       if (up) fb.deleteFile(up.path);
     }
@@ -1177,7 +1180,7 @@ function lotReadLabel(id) {
 const LOT_LABEL_FIELDS = [["vendorLot", "Vendor lot number"], ["expiresOn", "Expires"], ["matKey", "Material"]];
 function lotLabelReview(id, out) {
   const o = shopById("lots", id);
-  if (!o || !out) return;
+  if (!o || !out) return "";
   const fields = {}, pick = {};
   for (const [k] of LOT_LABEL_FIELDS) {
     const v = String(out[k] || "").trim();
@@ -1186,8 +1189,7 @@ function lotLabelReview(id, out) {
     pick[k] = !String(o[k] || "").trim();
   }
   if (!Object.keys(fields).length) {
-    toast(out.name ? `Read "${out.name}", but nothing new for this lot.` : "Couldn't read a lot number or expiry from that photo.", "info");
-    return;
+    return out.name ? `Read "${out.name}", but nothing new for this lot.` : "Couldn't read a lot number or expiry from that photo.";
   }
   LOT_LABEL = { id, fields, pick };
   const show = (k, v) => k === "matKey" && typeof matByKey === "function" && matByKey(v) ? `${matByKey(v).label} (${v})` : v;
@@ -1204,6 +1206,7 @@ function lotLabelReview(id, out) {
       <button onclick="LOT_LABEL=null;closeModal()">Cancel</button>
       <button class="primary" onclick="lotApplyLabel()">Apply</button>
     </div>`);
+  return true;
 }
 function lotApplyLabel() {
   const L = LOT_LABEL; LOT_LABEL = null;

@@ -89,6 +89,56 @@ function aiErrorText(e, fallback) {
   const own = ["resource-exhausted", "failed-precondition", "out-of-range", "invalid-argument", "unavailable", "permission-denied"];
   return own.includes(code) && e.message ? e.message : fallback;
 }
+/* ---------- ✨ job status ----------
+   Simon (2026-10-09): "it's unclear if it's still loading, if it errored, or
+   whatnot". A toast that fades after a few seconds cannot say "still going"
+   for a read that takes eight. So every ✨ job runs through these four calls
+   and one bar (#ai-status) that says, while it runs, which phase it is in and
+   for how many seconds; when it ends, how it ended. Success clears itself;
+   a warning or an error stays until dismissed, because the person may have
+   looked away while it ran. One job at a time is all anyone does, so one bar.
+
+   `kind` lets a button ask aiJobBusy(kind) and show itself as running. */
+let AI_JOB = null;      // { kind, phase, t0, state: "run" | "ok" | "warn" | "err", msg }
+let AI_JOB_TICK = null;
+const aiUnref = t => (t && t.unref && t.unref(), t);   // never hold a test process open
+function aiJobBusy(kind) { return !!(AI_JOB && AI_JOB.state === "run" && (!kind || AI_JOB.kind === kind)); }
+function aiJobStart(kind, phase) {
+  AI_JOB = { kind, phase, t0: Date.now(), state: "run", msg: "" };
+  clearInterval(AI_JOB_TICK);
+  AI_JOB_TICK = aiUnref(setInterval(aiJobPaint, 1000));
+  aiJobPaint(); render();
+}
+function aiJobPhase(phase) { if (AI_JOB && AI_JOB.state === "run") { AI_JOB.phase = phase; aiJobPaint(); } }
+function aiJobEnd(state, msg) {
+  if (!AI_JOB) AI_JOB = { kind: "", t0: Date.now() };
+  AI_JOB.state = state; AI_JOB.msg = msg; AI_JOB.secs = Math.round((Date.now() - AI_JOB.t0) / 1000);
+  clearInterval(AI_JOB_TICK); AI_JOB_TICK = null;
+  const job = AI_JOB;
+  if (state === "ok") aiUnref(setTimeout(() => { if (AI_JOB === job) aiJobDismiss(); }, 6000));
+  aiJobPaint(); render();
+}
+function aiJobDone(msg) { aiJobEnd("ok", msg); }
+function aiJobWarn(msg) { aiJobEnd("warn", msg); }
+function aiJobFail(msg) { aiJobEnd("err", msg); }
+function aiJobDismiss() { AI_JOB = null; aiJobPaint(); }
+function aiJobHtml() {
+  const j = AI_JOB;
+  if (!j) return "";
+  const secs = j.state === "run" ? Math.round((Date.now() - j.t0) / 1000) : j.secs;
+  const mark = j.state === "run" ? `<span class="ai-spin" aria-hidden="true"></span>` : j.state === "ok" ? "✓" : j.state === "warn" ? "!" : "✕";
+  return `<div class="ai-status ai-${j.state}" role="status" aria-live="polite">
+    <span class="ai-mark">${mark}</span>
+    <span class="ai-text">${esc(j.state === "run" ? j.phase : j.msg)}</span>
+    <span class="ai-secs tny">${secs || 0}s</span>
+    ${j.state === "run" ? "" : `<button class="link" aria-label="Dismiss" onclick="aiJobDismiss()">×</button>`}
+  </div>`;
+}
+function aiJobPaint() {
+  const el = typeof document !== "undefined" && document.getElementById && document.getElementById("ai-status");
+  if (el) el.innerHTML = aiJobHtml();
+}
+
 /* Stamped on a lot's expirySource when the date came from a model reading the
    label and no person edited it. Listed in shop.js's select so a person can
    see it and change it. */
@@ -3609,7 +3659,7 @@ function renderTopbar() {
             from a physical object to its record. */""}
       <button class="icon-btn" title="Scan a label" aria-label="Scan a label" onclick="scanToOpen()">${icon("scan", 19)}</button>
       <button class="icon-btn" title="Search (⌘K)" aria-label="Search" onclick="openSearch()">${icon("search", 19)}</button>
-      ${aiOn() ? `<button class="icon-btn" title="Ask Paul" aria-label="Ask Paul" onclick="openPaul()">${icon("message", 19)}</button>` : ""}
+      ${aiOn() ? `<button class="icon-btn" title="Ask Paul" aria-label="Ask Paul" onclick="togglePaul()">${icon("message", 19)}</button>` : ""}
       ${/* No bell for a guest: notifications are per-person and a guest is
             nobody, so the query does not even run. */""}
       ${guest ? "" : `<button class="icon-btn" title="Notifications" aria-label="Notifications" onclick="openNotifs()">${icon("bell", 19)}${unread ? `<span class="badge">${unread}</span>` : ""}</button>`}
@@ -3881,6 +3931,13 @@ function renderSearchResults(q) {
       </div>`).join("")
       + (res.total > res.length ? `<div class="muted tny" style="padding:8px 10px">showing ${res.length} of ${res.total}</div>` : "")
       : `<div class="muted" style="padding:10px">No matches.</div>`;
+  /* Search finds records by name; Paul answers questions. The last row always
+     offers to ask him what was typed, for when the matches aren't the answer. */
+  if (q.trim() && typeof aiOn === "function" && aiOn()) {
+    box.innerHTML += `<div class="gsr"><button class="gsr-go" onclick="paulAskFromSearch(${esc(JSON.stringify(q.trim()))})">
+      <span class="gsr-name">${icon("message", 14)} Ask Paul: “${esc(q.trim())}”</span>
+      <span class="muted tny">answers from the app, the standards and the datasheets</span></button></div>`;
+  }
   window.__searchRes = res;
 }
 
@@ -4308,6 +4365,7 @@ function render() {
   if (typeof syncTicketRailScroll === "function") syncTicketRailScroll();
   syncChromeMetrics();
   pfRestore();
+  if (typeof paulSync === "function") paulSync();
 }
 
 /* Publish the topbar's real height as --topbar-h.

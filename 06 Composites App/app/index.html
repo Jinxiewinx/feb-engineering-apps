@@ -356,16 +356,75 @@
   /* A <button>, so `font: inherit` and the box reset are needed — everything up
      to `cursor` is undoing the app's own button styling, the same way .tl-cell
      does it. Kept visually identical to the old <span>. */
-  /* Ask Paul (paul.js): a question, its answer, the sources it cited. */
-  .paul-thread { display: flex; flex-direction: column; gap: 14px; max-height: 52vh; overflow-y: auto; margin: 10px 0; }
-  .paul-turn { padding-bottom: 12px; border-bottom: 1px solid var(--line); }
-  .paul-turn:last-child { border-bottom: 0; padding-bottom: 0; }
-  .paul-q { font-weight: 600; }
-  .paul-a { margin-top: 4px; line-height: 1.5; }
-  .paul-gen { margin-top: 8px; padding: 8px 10px; border-left: 3px solid var(--line); color: var(--muted); }
-  .paul-srcs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-  .paul-cite { padding: 0 6px; font-size: 11px; vertical-align: 1px; }
-  .paul-ask textarea { width: 100%; resize: vertical; }
+  /* Ask Paul (paul.js). A third column of #app on a wide screen, so a source
+     opens beside the conversation; a full-screen sheet on a phone (the narrow
+     rules are in the block at the end). */
+  .paul-panel { display: none; }
+  body.paul-open .paul-panel { display: flex; flex-direction: column; flex: 0 0 400px; width: 400px;
+    height: 100vh; position: sticky; top: 0; background: var(--surface); border-left: 1px solid var(--line); z-index: 30; }
+  .paul-head { display: flex; align-items: center; gap: 10px; padding: calc(10px + var(--sa-t, 0px)) 12px 10px; border-bottom: 1px solid var(--line); }
+  .paul-title { display: flex; flex-direction: column; flex: 1; line-height: 1.2; }
+  .paul-thread { flex: 1; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .paul-msg { display: flex; gap: 8px; align-items: flex-start; }
+  .paul-me { justify-content: flex-end; }
+  .paul-me .paul-bubble { background: var(--brand-ink); color: #fff; border-radius: var(--r-lg) var(--r-lg) 4px var(--r-lg); max-width: 85%; }
+  .paul-me .paul-meta { opacity: .75; font-size: 11px; margin-top: 2px; }
+  .paul-him .paul-av { flex: none; margin-top: 2px; }
+  .paul-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+  .paul-bubble { padding: 9px 12px; border-radius: var(--r-lg) var(--r-lg) var(--r-lg) 4px; background: var(--card); border: 1px solid var(--line); line-height: 1.5; overflow-wrap: anywhere; }
+  .paul-err { color: var(--muted); }
+  .paul-gen { margin-top: 8px; padding: 6px 0 0 10px; border-left: 3px solid var(--line); color: var(--muted); }
+  .paul-gen .pill { margin-bottom: 4px; }
+  .paul-cite { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 4px; margin: 0 1px;
+    border-radius: var(--r-md); border: 0; background: var(--accent-soft); color: var(--accent); font: inherit; font-size: 10.5px; font-weight: 700; vertical-align: 2px; cursor: pointer; }
+  .paul-sources { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--card); }
+  .paul-sources-h { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); padding: 7px 10px 3px; }
+  .paul-src { display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left; padding: 7px 10px; border: 0; border-top: 1px solid var(--line);
+    background: none; color: var(--ink); font: inherit; font-size: 12.5px; cursor: pointer; }
+  .paul-src:hover { background: var(--hover); }
+  .paul-src-n { flex: none; font-weight: 700; color: var(--accent); min-width: 14px; }
+  .paul-src-t { min-width: 0; overflow-wrap: anywhere; }
+  .paul-work { font-size: 12.5px; color: var(--muted); }
+  .paul-work summary { cursor: pointer; }
+  .paul-steps { display: flex; flex-direction: column; gap: 3px; margin: 4px 0; font-size: 12.5px; color: var(--muted); }
+  .paul-step.now { color: var(--ink); }
+  .paul-think { font-size: 12.5px; color: var(--muted); font-style: italic; white-space: pre-wrap; border-left: 2px solid var(--line); padding-left: 8px; }
+  .paul-empty { margin: auto; text-align: center; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 300px; }
+  .paul-tries { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .paul-compose { border-top: 1px solid var(--line); padding: 8px 10px calc(10px + var(--sa-b, 0px)); }
+  .paul-about { min-height: 0; margin-bottom: 6px; }
+  .paul-about:empty { display: none; }
+  .paul-aboutchip .link { margin-left: 4px; }
+  .paul-inputrow { display: flex; gap: 8px; align-items: flex-end; }
+  .paul-inputrow textarea { flex: 1; resize: none; min-height: 40px; max-height: 140px; border-radius: 12px; }
+  .paul-send { flex: none; width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+  .paul-fab { position: fixed; right: calc(16px + var(--sa-r, 0px)); bottom: calc(16px + var(--sa-b, 0px)); z-index: 40; width: 52px; height: 52px; padding: 0;
+    border-radius: 50%; border: 2px solid var(--gold); background: var(--surface); box-shadow: var(--shadow-lg); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .paul-fab[hidden] { display: none; }
+  .paul-fab-dot { position: absolute; top: 2px; right: 2px; width: 11px; height: 11px; border-radius: 50%; background: var(--gold); border: 2px solid var(--surface); }
+  /* The avatar. Original cartoon, not a likeness. Only moves while busy. */
+  .paul-av-bg { fill: var(--gold-bg, #f6e7b8); }
+  .paul-av-skin { fill: #e9b88f; }
+  .paul-av-hair { fill: #4a3426; }
+  .paul-av-shirt { fill: var(--brand-ink, #0e2a52); }
+  .paul-av-specs rect { fill: rgba(170, 215, 245, .45); stroke: #26323d; stroke-width: 1.6; }
+  .paul-av-specs path, .paul-av-smile { fill: none; stroke: #26323d; stroke-width: 1.6; stroke-linecap: round; }
+  .paul-av-eyes circle { fill: #26323d; }
+  .paul-av-glint { stroke: #fff; stroke-width: 1.4; stroke-linecap: round; opacity: 0; }
+  .paul-av-cupbody { fill: #fff; stroke: #26323d; stroke-width: 1.4; }
+  .paul-av-resin { stroke: var(--gold, #e8b33a); stroke-width: 3; }
+  .paul-av-stick { stroke: #a8743f; stroke-width: 2.2; stroke-linecap: round; transform-origin: 50px 50px; }
+  .paul-av-head, .paul-av-eyes { transform-box: fill-box; transform-origin: center; }
+  .paul-av-eyes { animation: paul-blink 5s infinite; }
+  .paul-busy .paul-av-head { animation: paul-bob 1.1s ease-in-out infinite; }
+  .paul-busy .paul-av-stick { animation: paul-stir .9s linear infinite; }
+  .paul-busy .paul-av-glint { animation: paul-glint 1.8s ease-in-out infinite; }
+  .paul-step.now { animation: paul-pulse 1.4s ease-in-out infinite; }
+  @keyframes paul-bob { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-1.5px) rotate(-4deg); } 70% { transform: translateY(-1px) rotate(4deg); } }
+  @keyframes paul-stir { 0% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } 100% { transform: rotate(-14deg); } }
+  @keyframes paul-glint { 0%, 60%, 100% { opacity: 0; transform: translateX(0); } 75% { opacity: .9; transform: translateX(5px); } }
+  @keyframes paul-blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+  @keyframes paul-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
   .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 5px; font: inherit; font-size: 12px; line-height: 1.5; text-align: left; min-height: 0; background: var(--accent-soft); border: 1px solid var(--accent-soft); color: var(--accent); cursor: pointer; }
   .chip:hover { filter: brightness(.97); }
   /* A person. Linked: avatar + name, a button onto their page. Hollow and
@@ -1221,6 +1280,22 @@
   #toasts { position: fixed; right: max(16px, var(--sa-r)); bottom: max(16px, var(--sa-b)); z-index: 60; display: flex; flex-direction: column; gap: 8px; }
   .toast { padding: 10px 14px; border-radius: var(--radius); color: #fff; font-size: 13.5px; box-shadow: var(--shadow-md); max-width: 340px; opacity: 1; transition: opacity .3s, transform .3s; }
   .toast.hide { opacity: 0; transform: translateY(6px); }
+  /* The ✨ job bar (aiJob* in core.js): what is running and for how long,
+     then how it ended. Bottom centre, clear of the toasts and Paul's button. */
+  #ai-status { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(16px, var(--sa-b)); z-index: 61;
+    width: max-content; max-width: min(520px, calc(100vw - 32px)); }
+  .ai-status { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-md);
+    background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lg); font-size: 13.5px; color: var(--ink); }
+  .ai-status .ai-mark { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-weight: 700; font-size: 12px; }
+  .ai-ok .ai-mark { background: var(--ok-bg); color: var(--ok); }
+  .ai-warn .ai-mark { background: var(--warn-bg); color: var(--amber); }
+  .ai-err .ai-mark { background: var(--bad-bg); color: var(--bad); }
+  .ai-err { border-color: var(--bad-border); }
+  .ai-warn { border-color: var(--warn-border); }
+  .ai-status .ai-text { min-width: 0; }
+  .ai-status .ai-secs { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ai-spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: ai-spin .8s linear infinite; }
+  @keyframes ai-spin { to { transform: rotate(360deg); } }
   .toast.ok { background: var(--ok); } .toast.err { background: var(--bad); } .toast.info { background: var(--blue); }
 
   /* ---- modal ---- */
@@ -3296,7 +3371,20 @@
     table.sub.rxgrid .rxc-x { position: absolute; right: 10px; top: 7px; padding: 0; width: auto; }
   }
 
+  /* A laptop: Paul narrower, so the page beside him keeps its working width,
+     and the ✨ bar centred over the page rather than over his text box. */
+  @media (min-width: 901px) {
+    body.paul-open #ai-status { left: calc(50% - 200px); }
+  }
+  @media (min-width: 901px) and (max-width: 1200px) {
+    body.paul-open .paul-panel { flex-basis: 340px; width: 340px; }
+    body.paul-open #ai-status { left: calc(50% - 170px); }
+  }
   @media (max-width: 900px) {
+    /* Ask Paul on a phone: the whole screen, over the app. A source steps it
+       aside (paulOpenSource) and the floating button brings it back. */
+    body.paul-open .paul-panel { position: fixed; inset: 0; width: auto; height: auto; flex: none; z-index: 60;
+      padding-left: var(--sa-l, 0px); padding-right: var(--sa-r, 0px); border-left: 0; }
     .rxhead { grid-template-columns: 1fr; }
     .hamburger { display: inline-flex; align-items: center; }
     nav.sidebar {
@@ -4177,7 +4265,10 @@
     <header class="topbar" id="topbar"></header>
     <main id="main"><div class="card">Connecting…</div></main>
   </div>
+  <aside id="paul" class="paul-panel no-print" aria-label="Ask Paul"></aside>
 </div>
+<div id="ai-status" class="no-print"></div>
+<button id="paul-fab" class="paul-fab no-print" hidden aria-label="Back to Paul" title="Back to your chat with Paul" onclick="openPaul()"></button>
 <div id="printroot"></div>
 <div id="modal"></div>
 <div id="toasts"></div>

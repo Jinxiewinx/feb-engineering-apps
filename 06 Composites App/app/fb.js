@@ -581,8 +581,9 @@ const fb = {
   async deleteFile(path) { noWrites(); try { await deleteObject(sRef(storage, path)); } catch (e) { /* already gone */ } },
 
   /* ---- callable functions ----
-     The functions SDK loads lazily on first use: exactly one feature calls a
-     function (receipt parsing), so its ~30 KB never rides in the boot path.
+     The functions SDK loads lazily on first use: only the AI features call a
+     function (the ✨ readers and Ask Paul), so its ~30 KB never rides in the
+     boot path.
      Throws to the caller — the UI's job is to degrade to the manual editor,
      not this file's job to pretend it worked. */
   async call(name, data) {
@@ -590,6 +591,16 @@ const fb = {
     const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-functions.js");
     const res = await httpsCallable(getFunctions(app, "us-central1"), name)(data);
     return res.data;
+  },
+  /* The same call, with the function's progress chunks handed to onChunk as
+     they arrive (Ask Paul's thinking and tool steps). Resolves to the final
+     result exactly like call(). */
+  async callStream(name, data, onChunk) {
+    noWrites();
+    const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-functions.js");
+    const { stream, data: result } = await httpsCallable(getFunctions(app, "us-central1"), name).stream(data);
+    for await (const chunk of stream) { try { onChunk && onChunk(chunk); } catch (e) { /* a UI hiccup never drops the answer */ } }
+    return await result;
   },
 
   /* ---- roster ---- */

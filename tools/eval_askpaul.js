@@ -14,7 +14,7 @@
  *
  * The bar from the plan: at least 13 of 15. Costs roughly $0.10-0.20 a run
  * (15 questions at medium effort); re-run it whenever PAUL_SYSTEM or the
- * tools change. Each run uses 15 of the runner's 30 daily questions.
+ * tools change. Each run uses 15 of the runner's 100 daily questions.
  */
 (async () => {
   const pick = (arr, f) => (arr || []).filter(f)[0];
