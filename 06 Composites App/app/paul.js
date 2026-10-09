@@ -53,7 +53,12 @@ function paulAnswerHtml(t) {
     const s = t.sources && t.sources[i];
     return s ? `<button class="chip paul-cite" onclick="paulOpenSource(${PAUL.turns.indexOf(t)},${i})" title="${esc(paulSourceTitle(s))}">${i + 1}</button>` : "";
   };
-  const fmt = (txt) => esc(txt).replace(/\[\[(\d+)\]\]/g, (m, n) => chip(Number(n))).replace(/\n/g, "<br>");
+  /* **bold** is the one bit of markdown Paul uses. It is applied AFTER
+     escaping, to text that can no longer contain a tag, so it can only ever
+     wrap escaped characters in <b>. */
+  const fmt = (txt) => esc(txt)
+    .replace(/\*\*([^*\n]{1,200})\*\*/g, "<b>$1</b>")
+    .replace(/\[\[(\d+)\]\]/g, (m, n) => chip(Number(n))).replace(/\n/g, "<br>");
   const k = t.answer.indexOf(PAUL_GENERAL);
   if (k < 0) return fmt(t.answer);
   const before = t.answer.slice(0, k).trim(), after = t.answer.slice(k + PAUL_GENERAL.length).trim();

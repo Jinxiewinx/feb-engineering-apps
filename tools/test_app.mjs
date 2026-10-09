@@ -11793,7 +11793,7 @@ await t("Ask Paul: gated by the switch, answers escaped, only vouched sources be
   let sent = null;
   fb.call = async (name, data) => {
     sent = { name, data };
-    return { answer: "The diffuser run is on hold [[0]]. <img src=x onerror=alert(1)> See the standard [[1]] and [[7]].",
+    return { answer: "The diffuser run is **on hold** [[0]]. <img src=x onerror=alert(1)> See the standard [[1]] and [[7]]. **<b>x</b>**",
       sources: [{ type: "record", ref: "WO-SN6-003", kind: "work order", title: "Diffuser" },
                 { type: "doc", ref: "CS-006#12", doc: "CS-006", title: "CS-006 Resin Infusion", section: "7.5 Mix and infuse", src: "docs/standards/CS-006.pdf" }] };
   };
@@ -11812,6 +11812,8 @@ await t("Ask Paul: gated by the switch, answers escaped, only vouched sources be
   assert(sent.name === "askPaul" && sent.data.question === "what's blocking the diffuser?" && sent.data.history.length === 0, "the question goes to askPaul");
   m = document.getElementById("modal").innerHTML;
   assert(!/<img src=x/.test(m) && /&lt;img/.test(m), "model text is escaped, never markup");
+  assert(/<b>on hold<\/b>/.test(m), "**bold** renders as bold");
+  assert(/<b>&lt;b&gt;x&lt;\/b&gt;<\/b>/.test(m), "and bold around a tag only wraps the escaped text");
   assert((m.match(/class="chip paul-cite"/g) || []).length === 2, "two vouched sources, two inline chips; [[7]] has no source and no chip");
   assert(/1 · WO-SN6-003 · Diffuser/.test(m) && /2 · CS-006 Resin Infusion, 7.5 Mix and infuse/.test(m), "sources listed under the answer");
 
