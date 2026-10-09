@@ -11692,6 +11692,35 @@ await t("ANNOUNCE IS REACHABLE ON A DESKTOP, not only inside the ⋯ sheet", () 
   assert(!/publishRelease\(\)/.test(topbar.innerHTML), "and neither can a guest");
 });
 
+await t("the AI switch: a lead sees it with the month's spend, and off hides the ✨", async () => {
+  signInAsLead();
+  const had = fb.call; fb.call = async () => ({});
+  const month = new Date().toISOString().slice(0, 7);
+  window.AI_CFG = { ["spend_" + month]: 1.234 };
+  assert(aiOn(), "no switch set means on");
+  openMoreMenu();
+  let m = document.getElementById("modal").innerHTML;
+  assert(/AI features: on, tap to turn off/.test(m), "a lead sees the switch: " + m.slice(0, 200));
+  assert(/\$1\.23 of \$80 this month/.test(m), "with this month's spend against the ceiling");
+  closeModal();
+  DB.budget = [{ id: "B-AI", item: "x", status: "Submitted", receiptUrl: "https://x.test/r.jpg", receiptPath: "budget/B-AI/r.jpg", lines: [] }];
+  view = { ...view, tab: "budget", mode: "detail", id: "B-AI", edit: true };
+  assert(/fillLinesFromReceipt\('B-AI'\)/.test(renderBuyDetail()), "on: the ✨ shows");
+  window.AI_CFG = { enabled: false };
+  assert(!aiOn() && !/fillLinesFromReceipt/.test(renderBuyDetail()), "off: the ✨ is gone");
+  openMoreMenu();
+  assert(/AI features: off, tap to turn on/.test(document.getElementById("modal").innerHTML), "and the switch says so");
+  closeModal();
+  window.AI_CFG = null;
+  fb.roster = { name: "Ana", role: "member" };
+  openMoreMenu();
+  assert(!/AI features/.test(document.getElementById("modal").innerHTML), "a member does not see the switch");
+  closeModal();
+  signInAsGuest();
+  assert(!aiOn(), "a guest never gets AI buttons");
+  fb.call = had; window.AI_CFG = null;
+});
+
 await t("the login screen offers the door, and says what is behind it", () => {
   fb.state = "signedout"; fb.guest = false;
   const html = renderLogin();

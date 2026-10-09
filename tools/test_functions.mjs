@@ -58,19 +58,32 @@ class FakeAnthropic {
 for (const k of ["RateLimitError", "APIConnectionError", "APIError"]) FakeAnthropic[k] = RealSdk[k];
 const sdkErr = (cls, status) => Object.assign(Object.create(RealSdk[cls].prototype), { status, message: cls });
 
+/* One flat document store. Roster docs are answered from state.roster;
+   everything else (aiUsage/*, config/ai) lives in state.docs, and set() with
+   merge understands the increment sentinel the way Firestore does. */
+state.docs = state.usage; // aiUsage day docs, month docs and config/ai share it
+const INC = Symbol("inc");
+const mergeInto = (p, v) => {
+  const cur = { ...(state.docs.get(p) || {}) };
+  for (const [k, x] of Object.entries(v)) cur[k] = x && x[INC] !== undefined ? (Number(cur[k]) || 0) + x[INC] : x;
+  state.docs.set(p, cur);
+};
 const firestore = {
   doc: (p) => ({
     _p: p,
-    get: async () => ({ exists: p.startsWith("roster/") ? state.roster.has(p.slice(7)) : state.usage.has(p) }),
+    get: async () => p.startsWith("roster/")
+      ? { exists: state.roster.has(p.slice(7)) }
+      : { exists: state.docs.has(p), data: () => state.docs.get(p) },
+    set: async (v) => mergeInto(p, v),
   }),
   runTransaction: async (fn) => fn({
-    get: async (ref) => ({ exists: state.usage.has(ref._p), data: () => state.usage.get(ref._p) }),
-    set: (ref, v) => state.usage.set(ref._p, { ...(state.usage.get(ref._p) || {}), ...v }),
+    get: async (ref) => ({ exists: state.docs.has(ref._p), data: () => state.docs.get(ref._p) }),
+    set: (ref, v) => mergeInto(ref._p, v),
   }),
 };
 const admin = {
   initializeApp() {},
-  firestore: Object.assign(() => firestore, { FieldValue: { serverTimestamp: () => "ts" } }),
+  firestore: Object.assign(() => firestore, { FieldValue: { serverTimestamp: () => "ts", increment: (n) => ({ [INC]: n }) } }),
   storage: () => ({
     bucket: () => ({
       file: (p) => ({
@@ -128,7 +141,7 @@ ok("over 10 MiB refused", r.code === "invalid-argument", JSON.stringify(r));
 r = await call({ path: "budget/abc-123/notes.txt" });
 ok("non-image non-PDF refused", r.code === "invalid-argument", JSON.stringify(r));
 ok("nothing sent to the model yet", state.sent.length === 0, String(state.sent.length));
-ok("refusals before the model cost no quota", state.usage.size === 0, String(state.usage.size));
+ok("refusals before the model cost no quota", state.docs.size === 0, String([...state.docs.keys()]));
 
 /* ---------- happy path ---------- */
 console.log("parse");
@@ -182,16 +195,50 @@ state.throwErr = null;
 
 /* ---------- daily cap ---------- */
 console.log("daily cap");
-const key = [...state.usage.keys()][0] || "";
-ok("usage doc keyed email_day", /^aiUsage\/member@berkeley\.edu_\d{4}-\d{2}-\d{2}$/.test(key), key);
-state.usage.set(key, { n: 49 });
+const dayKey = [...state.docs.keys()].find(k => /^aiUsage\/member@/.test(k)) || "";
+ok("usage doc keyed email_day", /^aiUsage\/member@berkeley\.edu_\d{4}-\d{2}-\d{2}$/.test(dayKey), dayKey);
+ok("counted under the photo job", Number(state.docs.get(dayKey).photo) >= 1, JSON.stringify(state.docs.get(dayKey)));
+state.docs.set(dayKey, { photo: 49 });
 state.reply = reply({ lines: [], vendor: "", receiptTotal: "" });
 r = await call({ path: PHOTO });
 ok("50th call allowed", r.ok, JSON.stringify(r));
-const before = state.sent.length;
+let before = state.sent.length;
 r = await call({ path: PHOTO });
-ok("51st call refused", r.code === "resource-exhausted" && /Daily limit/.test(r.msg), JSON.stringify(r));
+ok("51st call refused", r.code === "resource-exhausted" && /Daily limit of 50 reads/.test(r.msg), JSON.stringify(r));
 ok("refused call never reaches the model", state.sent.length === before);
+state.docs.set(dayKey, { photo: 0, ask: 30 });
+r = await call({ path: PHOTO });
+ok("a full Ask count does not block photos", r.ok, JSON.stringify(r));
+
+/* ---------- spend ---------- */
+console.log("monthly spend");
+const monthKey = [...state.docs.keys()].find(k => /^aiUsage\/month_\d{4}-\d{2}$/.test(k)) || "";
+const m = state.docs.get(monthKey) || {};
+ok("month doc tallies real usage", m.calls >= 1 && m.inTok >= 1500 && m.outTok >= 200, JSON.stringify(m));
+const perCall = 1500 * 0.10 / 1e6 + 200 * 0.50 / 1e6;
+ok("dollars at Haiku 5.5 rates", Math.abs(m.usd - m.calls * perCall) < 1e-9, `${m.usd} vs ${m.calls * perCall}`);
+ok("spend mirrored onto config/ai for leads", Math.abs((state.docs.get("config/ai") || {})[`spend_${monthKey.slice(-7)}`] - m.usd) < 1e-9, JSON.stringify(state.docs.get("config/ai")));
+ok("spend split by job", Math.abs(m.by_parseReceipt - m.usd) < 1e-9);
+
+/* ---------- kill switch and budget ---------- */
+console.log("off switch and budget");
+state.docs.set(dayKey, {});
+mergeInto("config/ai", { enabled: false });
+before = state.sent.length;
+r = await call({ path: PHOTO });
+ok("off switch refuses", r.code === "failed-precondition" && /switched off by a lead/.test(r.msg), JSON.stringify(r));
+ok("and nothing reaches the model or the counters", state.sent.length === before && !state.docs.get(dayKey).photo);
+mergeInto("config/ai", { enabled: true });
+r = await call({ path: PHOTO });
+ok("back on, works again", r.ok, JSON.stringify(r));
+state.docs.set(monthKey, { ...state.docs.get(monthKey), usd: 80 });
+before = state.sent.length;
+r = await call({ path: PHOTO });
+ok("$80 in a month refuses", r.code === "resource-exhausted" && /budget for this month/.test(r.msg), JSON.stringify(r));
+ok("before any model call", state.sent.length === before);
+state.docs.set(monthKey, { ...state.docs.get(monthKey), usd: 79.99 });
+r = await call({ path: PHOTO });
+ok("just under still works", r.ok, JSON.stringify(r));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

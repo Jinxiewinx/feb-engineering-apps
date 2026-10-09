@@ -56,6 +56,38 @@ function loadRelease() {
   releaseWatched = true;
   fb.watchConfig("release", d => { window.RELEASE = d; render(); });
 }
+/* ---------- config/ai ----------
+   { enabled, spend_<yyyy-mm> }. `enabled` is a lead's switch for every AI
+   button in the app (a missing doc means on); the spend fields are written by
+   the Cloud Functions as each call lands, so a lead can see the month's cost
+   next to the switch. Watched for the same reason as the release: a lead
+   switching AI off should take the buttons away from screens already open.
+   The functions check the same switch server-side, so a stale screen that
+   still shows a button just gets a polite refusal. */
+window.AI_CFG = null;
+let aiWatched = false;
+function loadAiConfig() {
+  if (aiWatched || !window.fb || fb.state !== "ready" || !fb.watchConfig) return;
+  aiWatched = true;
+  fb.watchConfig("ai", d => { window.AI_CFG = d; render(); });
+}
+const AI_MONTHLY_BUDGET = 80; // mirrors MONTHLY_BUDGET_USD in functions/index.js
+function aiOn() {
+  if (!window.fb || fb.guest || !fb.call) return false;
+  return !(window.AI_CFG && window.AI_CFG.enabled === false);
+}
+function aiSpendThisMonth() {
+  const m = new Date().toISOString().slice(0, 7);
+  return Number(window.AI_CFG && window.AI_CFG["spend_" + m]) || 0;
+}
+async function setAiEnabled(on) {
+  if (!isLead() || !window.fb || !fb.setConfig) return;
+  try {
+    await fb.setConfig("ai", { enabled: !!on });
+    toast(on ? "AI features are on for everyone." : "AI features are off for everyone. The manual grids still work.");
+  } catch (e) { toast("Couldn't change the AI switch: " + ((e && e.message) || e), "error"); }
+}
+
 /* Numeric, field by field. A plain string compare says "4.10.0" < "4.9.0",
    and a plain !== raised the banner on a build NEWER than the last announce:
    v4.2.0 went live before anyone pressed Announce, so config/release still
@@ -141,6 +173,7 @@ window.onFbChange = function () {
   splashAuth();
   loadSeason();
   loadRelease();
+  loadAiConfig();
   if (typeof loadResinOverrides === "function") loadResinOverrides();
   if (typeof loadRestockRules === "function") loadRestockRules();
   if (typeof loadLabelMedia === "function") loadLabelMedia();
@@ -3609,6 +3642,10 @@ function openMoreMenu() {
       : `<button onclick="closeModal();setMyAvatar()">${icon("edit", 18)}Change photo</button>
       <button onclick="closeModal();exportAll()">${icon("download", 18)}Backup database</button>
       ${lead ? `<button onclick="closeModal();document.getElementById('importfile').click()">${icon("upload", 18)}Restore from backup</button>` : ""}
+      ${/* Lead-only, with the month's spend beside it, so the person who can
+            turn it off can also see whether it is worth turning off. */""}
+      ${lead ? `<button onclick="closeModal();setAiEnabled(${aiOn() ? "false" : "true"})">✨ AI features: ${aiOn() ? "on, tap to turn off" : "off, tap to turn on"}
+        <span class="muted tny" style="margin-left:auto">$${aiSpendThisMonth().toFixed(2)} of $${AI_MONTHLY_BUDGET} this month</span></button>` : ""}
       <button class="danger" onclick="closeModal();fb.signOut()">${icon("logout", 18)}Sign out</button>`}
     </div>
     <div class="muted tny" style="margin-top:14px;text-align:center">${versionLinks(false)}</div>`);

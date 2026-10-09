@@ -20,6 +20,17 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**AI features round 2 (2026-10-09), IN PROGRESS.** Plan:
+`~/.claude/plans/now-that-there-is-cozy-sloth.md` (rewritten for this round).
+Order: groundwork → Phase A (packing slip, container label, v6.4.0) → Phase B
+("Ask FEB" chat with read-only tools, v6.5.0). Budget: Simon's Max plan gives
+$100/month API credit; functions refuse at $80 (`MONTHLY_BUDGET_USD`).
+- [x] Groundwork committed: `config/ai` off switch (lead, ⋯ menu, with month
+  spend), `requireAiOn`, per-job daily caps (`photo` 50, `ask` 30),
+  `recordSpend` into `aiUsage/month_*` and `config/ai.spend_*`. NOT deployed:
+  functions deploy needs Simon's "allow functions deploy" each time.
+- [ ] Phase A  - [ ] Phase B
+
 **Receipts on Claude Haiku 5.5, shipped as v6.3.0 (2026-10-09); v6.3.1 adds an Other files box per purchase.** Plan:
 `~/.claude/plans/now-that-there-is-cozy-sloth.md`. `parseReceipt` is live on
 Node 22 with secret version 2 (version 1 was a 31-char non-key and 401'd; a

@@ -420,7 +420,7 @@ function buyLinesHtml(b, E) {
     ${lines.length ? `<table class="sub"><thead><tr><th>Item</th><th>Total $</th><th>Count</th><th>Each</th>${E ? "<th></th>" : ""}</tr></thead><tbody>${rows}</tbody></table>`
       : `<p class="muted">What was actually in the order — one line per thing, total and count, the unit price works itself out.</p>`}
     ${E ? `<button onclick="buyLineAdd()">+ Line</button>
-    ${b.receiptPath ? `<button class="no-print" onclick="fillLinesFromReceipt('${esc(b.id)}')" title="Read the receipt into editable line items">✨ Fill from receipt</button>` : ""}` : ""}`;
+    ${b.receiptPath && aiOn() ? `<button class="no-print" onclick="fillLinesFromReceipt('${esc(b.id)}')" title="Read the receipt into editable line items">✨ Fill from receipt</button>` : ""}` : ""}`;
 }
 
 /* ---------- receipt -> proposed lines ----------
