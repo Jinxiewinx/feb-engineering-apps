@@ -38,6 +38,16 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.5.0 — 2026-10-09
+
+- WHATS_NEW for 6.5.0: Paul as a docked chat, live thinking, the ✨ status bar
+- Paul can wear a picture a lead uploads; Paul open rails the sidebar
+- Paul becomes a docked chat; every ✨ job reports through one status bar
+- askPaul streams what it is doing, knows the open record, 100 a day
+- SESSION-STATE: AI round 2 shipped as v6.4.0
+
+---
+
 ## v6.4.0 — 2026-10-09
 
 - WHATS_NEW for 6.4.0: Ask Paul, packing slips, jug labels, the AI switch
