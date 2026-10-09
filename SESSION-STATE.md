@@ -33,15 +33,12 @@ so far: $0.03 for the whole day of testing; Paul ~$0.0015 a question.
   `build_ai_corpus.mjs`, commit, deploy functions (release.mjs refuses a
   stale corpus but does not deploy functions).
 - "Announce this release" (lead press) not done for 6.3.x or 6.4.0.
-- **Paul chat rework, committed, NOT live (2026-10-09):** docked panel +
-  phone sheet with floating return button, bubbles, separate Sources block,
-  live steps + summarized thinking (askPaul streams via `res.sendChunk`,
-  client `fb.callStream`), original cartoon avatar (not a likeness), record
-  awareness (`about`), ⌘K "Ask Paul" row, cap 100/day. Plus the ✨ job bar
-  (`aiJob*`, `#ai-status`) for receipt/slip/label. Needs "allow functions
-  deploy" (streaming + about + cap live server-side) AND "allow rules deploy"
-  (storage `paul/` for the lead-set picture), then `release.mjs 6.5.0`.
-  Lead-set Paul picture: ⋯ → Give Paul a picture; never commit his photo.
+- **v6.5.0 live (2026-10-09):** Paul as a docked chat (phone sheet + return
+  button), live steps + thinking streamed (`res.sendChunk` / `fb.callStream`),
+  record awareness, ⌘K row, 100/day; the ✨ job bar (`aiJob*`); lead-set
+  Paul picture (⋯, Storage `paul/`, NEVER commit his photo: repo is public);
+  Paul open rails the sidebar at 900-1400px. Picture not uploaded yet (a
+  lead's job).
 
 **Receipts on Claude Haiku 5.5, shipped as v6.3.0 (2026-10-09); v6.3.1 adds an Other files box per purchase.** Plan:
 `~/.claude/plans/now-that-there-is-cozy-sloth.md`. `parseReceipt` is live on
