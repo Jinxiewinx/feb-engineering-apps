@@ -38,6 +38,16 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.6.0 — 2026-10-09
+
+- WHATS_NEW for 6.6.0: Paul sees the whole app and can search the web
+- Paul's web part always lists where it came from
+- Paul's web sources, fixed after the first live run; prefer a cited web answer
+- Paul sees what the app shows, and can search the web (labelled)
+- SESSION-STATE: v6.5.0 shipped (Paul chat, ✨ job bar, Paul's picture)
+
+---
+
 ## v6.5.0 — 2026-10-09
 
 - WHATS_NEW for 6.5.0: Paul as a docked chat, live thinking, the ✨ status bar
