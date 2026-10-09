@@ -32,11 +32,11 @@ var APP_VERSION = "6.2.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Purchaser, engineers, sealed by and laid up by are now picked from the team list instead of typed. Tap the name, choose the person. Someone not on the app? Type their name and pick \"Use\".",
-  "Every name is a link. Tap one to see that person's page: what they're engineering, their open issues, their buy-offs, and what they're still owed.",
-  "Waiting on reimbursement adds up per person now. \"Nico\" and \"Nico R.\" used to be two people splitting one person's money.",
-  "\"My parts\" and \"my runs\" go by who you are, not by your first name, so two Nicks no longer get each other's work.",
-  "Leads: People has an Unlinked view for old typed names. One press links the obvious ones; the rest take a pick each.",
+  "✨ Fill from receipt works now. Attach the receipt to a purchase, press ✨, and the line items fill themselves in. Check them and fix anything it got wrong.",
+  "Online orders count too: attach the PDF invoice McMaster or Easy Composites emailed you, not just a photo.",
+  "If the lines don't add up to the total printed on the receipt, it tells you, so look for a line it missed.",
+  "On a phone, Add receipt now asks camera, photo library or Files, so you can pick an emailed invoice.",
+  "If reading fails, the grid is still there to type into. Each person gets 50 reads a day.",
 ];
 
 
