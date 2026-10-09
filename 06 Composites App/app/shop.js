@@ -215,7 +215,7 @@ const SHOP = {
          editing shelfLifeMonths from silently moving the expiry of every jug
          in the shop. Same discipline resins.js keeps between the datasheet
          hold and the team hold. */
-      ["expirySource", "Expiry from", "select", ["", "vendor label", "shelf-life table"]],
+      ["expirySource", "Expiry from", "select", ["", "vendor label", "vendor label (AI read)", "shelf-life table"]],
       ["emptiedOn", "Emptied", "date"],
       /* Demoted to an override. The reorder decision is now derived from qty
          and the restock rules; this stays for the person who looks at a shelf
@@ -493,6 +493,12 @@ function updShop(tab, key, val) {
   }
   o[key] = val;
   save(spec.coll, o, key);
+  /* A person typing over an expiry the model read has looked at the jug, so
+     the date is theirs now and the AI tag comes off. */
+  if (key === "expiresOn" && o.expirySource === AI_EXPIRY_SOURCE) {
+    o.expirySource = val ? "vendor label" : "";
+    save(spec.coll, o, "expirySource");
+  }
   // Stage and class drive the pill and the available stages, so both need a
   // repaint; everything else is a plain field and does not.
   if (key === "stage" || key === "cls") render();
@@ -733,6 +739,8 @@ function renderShopDetail(tab, opts) {
     ${/* Molds set stage on the stepper in the card below — a second "advance"
           control for the same field is exactly the drift the stepper removed. */""}
     ${tab !== "molds" && shopNextStage(spec, o) ? `<button class="ib" onclick="quickAdvance('${esc(spec.coll)}','${esc(o.id)}')">${icon("check", 15)} ${esc(shopNextStage(spec, o))}</button>` : ""}
+    ${spec.coll === "lots" && shopFieldApplies(spec, c.cls, "expiresOn") && aiOn()
+      ? `<button class="ib" onclick="lotReadLabel('${esc(o.id)}')" title="Photograph the label; the lot number and expiry are offered for you to confirm">✨ Read label</button>` : ""}
   </div>
   ${/* The embedded host (the Molds tab) already renders the undo bar above
         the split; a second copy here doubled every write's bar. */""}
@@ -1129,3 +1137,87 @@ async function backfillPartWorkOrderLinks() {
   toast(`${nWo} work order${nWo === 1 ? "" : "s"} linked across ${todo.length} part${todo.length === 1 ? "" : "s"}.`);
   render();
 }
+
+/* ---------- ✨ read a container label ----------
+   For the jug whose lot number and expiry nobody typed: the EH&S import made
+   fifty of them, and receiving with gloves on makes more. The camera opens,
+   readContainerLabel reads the label, the photo is deleted (it was only
+   input), and a sheet shows what was read beside what the lot holds now.
+   Nothing is written until a person ticks a field and presses Apply.
+
+   A field that is empty on the lot comes pre-ticked; one that already has a
+   value comes unticked and says what it would replace, because the person
+   who typed it off the jug was looking at it and the model was not. The
+   material is a suggestion from the team's own MATERIALS table (sent as an
+   enum, so it cannot be anything else), and an applied expiry is stamped
+   AI_EXPIRY_SOURCE so it never passes for a date somebody read. */
+let LOT_LABEL = null;
+function lotReadLabel(id) {
+  const o = shopById("lots", id);
+  if (!o) return;
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment");
+  inp.onchange = async () => {
+    const f = inp.files && inp.files[0]; if (!f) return;
+    toast("Reading the label…");
+    let up = null;
+    try {
+      up = await fb.upload(`lots/${id}/${Date.now()}-label.jpg`, f);
+      const mats = (typeof MATERIALS !== "undefined" ? MATERIALS : []).map(m => ({ matKey: m.matKey, label: m.label }));
+      const out = await fb.call("readContainerLabel", { path: up.path, materials: mats });
+      lotLabelReview(id, out);
+    } catch (e) {
+      toast(aiErrorText(e, "Label reading isn't available right now. Type the lot number and expiry in Edit."), "error");
+    } finally {
+      if (up) fb.deleteFile(up.path);
+    }
+  };
+  inp.click();
+}
+const LOT_LABEL_FIELDS = [["vendorLot", "Vendor lot number"], ["expiresOn", "Expires"], ["matKey", "Material"]];
+function lotLabelReview(id, out) {
+  const o = shopById("lots", id);
+  if (!o || !out) return;
+  const fields = {}, pick = {};
+  for (const [k] of LOT_LABEL_FIELDS) {
+    const v = String(out[k] || "").trim();
+    if (!v || v === String(o[k] || "")) continue;
+    fields[k] = v;
+    pick[k] = !String(o[k] || "").trim();
+  }
+  if (!Object.keys(fields).length) {
+    toast(out.name ? `Read "${out.name}", but nothing new for this lot.` : "Couldn't read a lot number or expiry from that photo.", "info");
+    return;
+  }
+  LOT_LABEL = { id, fields, pick };
+  const show = (k, v) => k === "matKey" && typeof matByKey === "function" && matByKey(v) ? `${matByKey(v).label} (${v})` : v;
+  openModal(`<h2>From the label</h2>
+    ${out.name ? `<p class="muted">Read as <b>${esc(out.name)}</b>. Tick what to put on ${esc(o.id)}.</p>` : ""}
+    <div>${LOT_LABEL_FIELDS.filter(([k]) => k in fields).map(([k, lab]) => `
+      <label class="chk" style="display:flex;gap:8px;align-items:flex-start;margin:8px 0">
+        <input type="checkbox" ${pick[k] ? "checked" : ""} onchange="LOT_LABEL.pick['${k}']=this.checked">
+        <span><b>${esc(lab)}</b>: ${esc(show(k, fields[k]))}${
+          String(o[k] || "").trim() ? ` <span class="muted tny">replaces ${esc(show(k, o[k]))}</span>` : ""}</span>
+      </label>`).join("")}</div>
+    ${"expiresOn" in fields ? `<p class="muted tny">An expiry applied from here is marked "${esc(AI_EXPIRY_SOURCE)}" until someone edits it.</p>` : ""}
+    <div class="row" style="justify-content:flex-end;gap:8px;margin-top:12px">
+      <button onclick="LOT_LABEL=null;closeModal()">Cancel</button>
+      <button class="primary" onclick="lotApplyLabel()">Apply</button>
+    </div>`);
+}
+function lotApplyLabel() {
+  const L = LOT_LABEL; LOT_LABEL = null;
+  closeModal();
+  const o = L && shopById("lots", L.id);
+  if (!o) return 0;
+  let n = 0;
+  for (const [k] of LOT_LABEL_FIELDS) {
+    if (!(k in L.fields) || !L.pick[k]) continue;
+    o[k] = L.fields[k]; save("lots", o, k); n++;
+    if (k === "expiresOn") { o.expirySource = AI_EXPIRY_SOURCE; save("lots", o, "expirySource"); }
+  }
+  toast(n ? `${n} field${n === 1 ? "" : "s"} set from the label.` : "Nothing applied.", n ? undefined : "info");
+  render();
+  return n;
+}
+

@@ -80,6 +80,19 @@ function aiSpendThisMonth() {
   const m = new Date().toISOString().slice(0, 7);
   return Number(window.AI_CFG && window.AI_CFG["spend_" + m]) || 0;
 }
+/* The function's own refusals (daily limit, budget, switched off, declined,
+   wrong file) carry a message written for a toast; anything else, including a
+   function that is not deployed, gets the caller's fallback line. One place,
+   so every ✨ button words its failures the same way. */
+function aiErrorText(e, fallback) {
+  const code = String(e && e.code || "").replace(/^functions\//, "");
+  const own = ["resource-exhausted", "failed-precondition", "out-of-range", "invalid-argument", "unavailable", "permission-denied"];
+  return own.includes(code) && e.message ? e.message : fallback;
+}
+/* Stamped on a lot's expirySource when the date came from a model reading the
+   label and no person edited it. Listed in shop.js's select so a person can
+   see it and change it. */
+const AI_EXPIRY_SOURCE = "vendor label (AI read)";
 async function setAiEnabled(on) {
   if (!isLead() || !window.fb || !fb.setConfig) return;
   try {

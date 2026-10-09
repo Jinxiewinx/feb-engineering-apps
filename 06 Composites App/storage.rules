@@ -155,6 +155,16 @@ service firebase.storage {
         || cadOk(file));
     }
 
+    // receiving/{batch}/{file} — a packing slip photographed at the receiving
+    // desk, uploaded only so parsePackingSlip can read it and deleted by the
+    // desk straight after. No Firestore record points here. Photo or PDF, the
+    // two types the reader accepts.
+    match /receiving/{batch}/{file} {
+      allow read: if signedIn();
+      allow write: if accountOf() && sizeOk()
+        && request.resource.contentType.matches('(image/.*|application/pdf)');
+    }
+
     // documents/{file} — the Documents-tab library; any signed-in member uploads
     // (its record lands in the roster-gated `documents` Firestore collection).
     match /documents/{file} {

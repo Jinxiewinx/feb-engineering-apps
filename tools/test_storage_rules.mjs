@@ -141,6 +141,7 @@ await denied("unauthenticated write to documents/", null, "documents/x.pdf");
 await denied("unauthenticated write to projects/", null, "projects/P-1/x.pdf");
 await denied("unauthenticated write to avatars/", null, "avatars/someuid");
 await denied("unauthenticated write to budget/", null, "budget/BUY-1/receipt.jpg");
+await denied("unauthenticated write to receiving/", null, "receiving/rx-1/slip.jpg");
 await denied("unauthenticated write to stackplans/", null, "stackplans/STK-1/mesh.stl");
 // Added with the rich composer on parts: there was no parts/ rule at all, and
 // the file ends in "no rule = deny", so a photo in a part comment failed
@@ -177,6 +178,7 @@ await deniedType("a PDF is not an STL (stackplans/)", "stackplans/STK-1/mesh.stl
 await deniedType("nor is anything renderable (stackplans/)", "stackplans/STK-1/x.html", "text/html");
 await deniedType("a receipt is a photo or a PDF, not a Word file (budget/)", "budget/BUY-1/r.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 await deniedType("nor anything renderable (budget/)", "budget/BUY-1/r.html", "text/html");
+await deniedType("a packing slip is a photo or a PDF, nothing renderable (receiving/)", "receiving/rx-1/s.html", "text/html");
 await deniedType("a bare binary needs a CAD name (projects/)", "projects/P-1/notes.txt", "application/octet-stream");
 await deniedType("same on a mold, where datum plans land", "molds/MOLD-SN6-001/notes.txt", "application/octet-stream");
 await deniedType("an avatar must be an image", `avatars/${uid}`, "application/pdf");
@@ -201,6 +203,8 @@ await allowedType("a photo pasted into a lot note", "lots/LOT-SN6-001/photo.jpg"
 await allowedType("a PDF in the document library", "documents/spec.pdf", "application/pdf");
 await allowedType("a receipt photo", "budget/BUY-1/receipt.jpg", "image/jpeg");
 await allowedType("an emailed PDF invoice as the receipt", "budget/BUY-1/invoice.pdf", "application/pdf");
+await allowedType("a packing slip photo at the receiving desk", "receiving/rx-1/slip.jpg", "image/jpeg");
+await allowedType("a packing slip PDF", "receiving/rx-1/slip.pdf", "application/pdf");
 await allowedType("a member's own avatar", `avatars/${uid}`, "image/png");
 
 /* ---------- the trees exist at all ----------
@@ -216,7 +220,7 @@ function hasTree(tree) {
   console.log(`${ok ? "  ok" : "FAIL"}  storage.rules declares ${tree}/`);
 }
 console.log("\nevery tree the app uploads to has a rule:");
-["avatars", "projects", "parts", "molds", "items", "lots", "documents", "budget", "stackplans"].forEach(hasTree);
+["avatars", "projects", "parts", "molds", "items", "lots", "documents", "budget", "stackplans", "receiving"].forEach(hasTree);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -461,13 +461,7 @@ async function fillLinesFromReceipt(id) {
     view.edit = true;
     render();
   } catch (e) {
-    /* The function's own refusals (daily limit, model declined, wrong file
-       type) carry a message written for this toast. Anything else, including
-       the function not being deployed, gets the generic line. */
-    const code = String(e && e.code || "").replace(/^functions\//, "");
-    const own = ["resource-exhausted", "failed-precondition", "out-of-range", "invalid-argument", "unavailable", "permission-denied"];
-    toast(own.includes(code) && e.message ? e.message
-      : "Receipt reading isn't available right now. The manual grid still works.", "error");
+    toast(aiErrorText(e, "Receipt reading isn't available right now. The manual grid still works."), "error");
   } finally {
     RECEIPT_PARSING = false;
   }

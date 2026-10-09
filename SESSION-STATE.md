@@ -29,7 +29,14 @@ $100/month API credit; functions refuse at $80 (`MONTHLY_BUDGET_USD`).
   spend), `requireAiOn`, per-job daily caps (`photo` 50, `ask` 30),
   `recordSpend` into `aiUsage/month_*` and `config/ai.spend_*`. NOT deployed:
   functions deploy needs Simon's "allow functions deploy" each time.
-- [ ] Phase A  - [ ] Phase B
+- [x] Phase A committed: `parsePackingSlip` (receiving desk ✨, photo
+  uploaded to `receiving/rx-*/` and deleted after) and `readContainerLabel`
+  (lot page ✨ Read label, confirm sheet, matKey enum from MATERIALS). New
+  expirySource "vendor label (AI read)", cleared when a person edits the date.
+  `storage.rules` gained `receiving/{batch}/{file}`. NOT deployed: needs
+  "allow functions deploy" + "allow rules deploy" (storage), then a live test
+  on a real slip and a real jug, then `release.mjs 6.4.0`.
+- [ ] Phase B (Ask FEB)
 
 **Receipts on Claude Haiku 5.5, shipped as v6.3.0 (2026-10-09); v6.3.1 adds an Other files box per purchase.** Plan:
 `~/.claude/plans/now-that-there-is-cozy-sloth.md`. `parseReceipt` is live on

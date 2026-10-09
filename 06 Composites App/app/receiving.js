@@ -202,6 +202,7 @@ function rxUpd(rid, key, val) {
   if (key === "bin") RX.defBin = val;          // later rows follow the shelf you just set
   if (key === "supplier") RX.supplier = val;
   if (key === "name" && !r.matKey) rxInferFromName(r);
+  if (key === "expiresOn") r.expiryAi = false;   // a person typed it: it is theirs now
   rxDraftSave();
   const nowCols = rxCols();
   if (hadCols.join() !== nowCols.join()) { renderSoonKeepFocus(); return; }
@@ -400,6 +401,65 @@ function rxPaste(e, rid) {
   return made.length;
 }
 
+/* ---------- ✨ from a packing slip ----------
+   The paste path above, fed by a photo instead of an email. parsePackingSlip
+   reads name, shipped quantity, and the lot and expiry where they are printed;
+   everything the app already knows better (class, matKey, supplier, cost)
+   comes from rxGuessClass and rxInferFromName exactly as for a pasted line, so
+   the model never decides what a material IS. Rows land in the same grid and
+   go through the same review. The photo is only input: it is deleted once
+   read, so no record points at it.
+
+   An expiry the model read carries expiryAi until a person edits that cell,
+   and the lot is then stamped "vendor label (AI read)" rather than "vendor
+   label", so a date nobody looked at stays distinguishable from one somebody
+   typed off the jug. */
+let RX_SLIP_BUSY = false;
+function rxFromSlip() {
+  if (RX_SLIP_BUSY) return;
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/*,application/pdf";
+  inp.onchange = async () => {
+    const f = inp.files && inp.files[0]; if (!f) return;
+    RX_SLIP_BUSY = true;
+    toast("Reading the packing slip…");
+    let up = null;
+    try {
+      up = await fb.upload(`receiving/rx-${Date.now()}/${f.name || "slip.jpg"}`, f);
+      const out = await fb.call("parsePackingSlip", { path: up.path });
+      rxAddSlipRows(out);
+    } catch (e) {
+      toast(aiErrorText(e, "Packing slip reading isn't available right now. Type the lines in, or paste them from the order email."), "error");
+    } finally {
+      if (up) fb.deleteFile(up.path);
+      RX_SLIP_BUSY = false;
+    }
+  };
+  inp.click();
+}
+/* Split out so the test harness can feed it an answer without a camera. */
+function rxAddSlipRows(out) {
+  const got = (out && out.rows) || [];
+  if (!got.length) { toast("Couldn't find any lines on that slip. Type them in, or paste from the order email.", "error"); return 0; }
+  if (!String(RX.supplier || "").trim() && out.supplier) RX.supplier = out.supplier;
+  const made = got.map(g => {
+    const row = rxBlankRow({
+      cls: rxGuessClass(g.name), name: g.name,
+      qty: g.qty && rxQtyNum(g.qty) != null ? String(rxQtyNum(g.qty)) : "1",
+      vendorLot: g.vendorLot || "", expiresOn: g.expiresOn || "", expiryAi: !!g.expiresOn,
+      bin: RX.defBin, supplier: RX.supplier,
+    });
+    rxInferFromName(row);
+    return row;
+  });
+  // Blank rows give way to the slip, same as a paste into an empty sheet.
+  RX.rows = RX.rows.filter(r => String(r.name || "").trim()).concat(made);
+  rxDraftSave();
+  render();
+  toast(`${made.length} line${made.length === 1 ? "" : "s"} read from the slip. Check the class, the shelf and the count on each.`);
+  return made.length;
+}
+
 /* ---------- which columns exist ----------
    Asked of the schema rather than re-derived, because SHOP_FIELDS_BY_CLASS is
    already the one place that answers "does this class have this field" and a
@@ -439,6 +499,7 @@ function renderInvDesk() {
     ${rxGridHtml(cols)}
     <div class="rxfoot no-print">
       <button class="sm" onclick="rxAdd()">+ line</button>
+      ${aiOn() ? `<button class="sm" onclick="rxFromSlip()" title="Photograph the packing slip; its lines become rows you check">✨ From packing slip</button>` : ""}
       <span class="kbdhint tny muted nocaps">Enter starts the next line · Ctrl+Enter to review · paste a block from an email</span>
     </div>
   </div>`;
@@ -905,7 +966,7 @@ async function rxSubmit() {
       if (r.supplier || p.supplier) o.supplier = r.supplier || p.supplier;
       if (r.expiresOn && shopFieldApplies(shopSpec("lots"), c.cls, "expiresOn")) {
         o.expiresOn = r.expiresOn;
-        o.expirySource = "vendor label";
+        o.expirySource = r.expiryAi ? AI_EXPIRY_SOURCE : "vendor label";
       }
       if (cost != null) { o.unitCost = cost; o.costUnit = "ea"; }
       if (!rxIsTracked(r.cls) && count !== "") { o.count = Number(count); o.countedAt = today0; }

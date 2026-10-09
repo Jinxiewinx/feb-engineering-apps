@@ -748,6 +748,26 @@ with its own prompt, schema and Storage prefix, sharing `callHaiku()` and
 would let any roster member spend the key on anything. And the answer only ever
 prefills a grid a person then edits and saves.
 
+Three callables follow that rule today: `parseReceipt`, `parsePackingSlip`
+(receiving desk) and `readContainerLabel` (lot page). The photo jobs share
+`photoJob()`. The label reader's material answer is an enum built from the
+team's own `MATERIALS` keys, so it can name one of them or none and nothing
+else. Everything the app already knows better than a photo (class, matKey from
+the alias table, supplier, cost) stays with `rxInferFromName`.
+
+**A model-read expiry is its own `expirySource`**, "vendor label (AI read)",
+kept until a person types over the date. Same discipline as `lotSource` on cure
+references and the datasheet/team split in `resins.js`: a value somebody looked
+at and a value nobody looked at must not be indistinguishable.
+
+**Three brakes, all server-side.** `config/ai.enabled` (a lead's switch in the
+⋯ menu; the client hides every ✨ when it's off, and the functions refuse
+regardless of what a stale screen shows). Per-person daily caps per job (photo
+jobs 50, Ask 30). And a monthly ceiling: every call's real token usage is
+priced at Haiku 5.5's rates into `aiUsage/month_<yyyy-mm>`, mirrored to
+`config/ai.spend_<yyyy-mm>` for the ⋯ menu, and everything refuses past $80.
+Simon's Max plan carries $100 a month; the other $20 is headroom.
+
 Functions deploy separately (`firebase deploy --only functions`, after
 `firebase functions:secrets:set ANTHROPIC_API_KEY`) and never ride along on a
 hosting deploy.

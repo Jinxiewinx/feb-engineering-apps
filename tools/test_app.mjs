@@ -8580,6 +8580,69 @@ await t("a pasted block becomes rows instead of landing in one cell", () => {
   assert(RX.rows.every(r => r.bin === "BIN-SN6-001"), "all landing on the working shelf");
 });
 
+await t("✨ packing slip: rows land in the grid, the app decides what each material is", async () => {
+  rxSeedShelves();
+  rxSetup([{ cls: "CON", name: "", qty: "1" }], { defBin: "BIN-SN6-002" });
+  const had = fb.call; fb.call = async () => ({});
+  assert(/rxFromSlip\(\)/.test(renderInvDesk()), "the button shows when AI is on");
+  window.AI_CFG = { enabled: false };
+  assert(!/rxFromSlip/.test(renderInvDesk()), "and is gone when a lead switched AI off");
+  window.AI_CFG = null; fb.call = had;
+
+  const n = rxAddSlipRows({ supplier: "Easy Composites", rows: [
+    { name: "IN2 Infusion Resin", qty: "2", vendorLot: "EC24-0917", expiresOn: "2027-09-17" },
+    { name: "Blue tack tape", qty: "6", vendorLot: "", expiresOn: "" },
+  ]});
+  assert(n === 2 && RX.rows.length === 2, "the blank row gives way to the slip's two lines");
+  const [resin, tape] = RX.rows;
+  assert(resin.cls === "RSN:resin" && resin.matKey === "IN2", "class and matKey come from the app's own tables: " + JSON.stringify(resin));
+  assert(resin.vendorLot === "EC24-0917" && resin.expiresOn === "2027-09-17" && resin.expiryAi === true, "the lot and expiry read off the slip, marked as read");
+  assert(!tape.expiryAi && tape.cls === "CON" && tape.qty === "6", "no printed expiry, no mark");
+  assert(RX.supplier === "Easy Composites" && resin.bin === "BIN-SN6-002", "supplier fills a blank header; rows land on the working shelf");
+
+  await rxCommitAll();
+  const lot = (DB.lots || []).find(o => o.vendorLot === "EC24-0917");
+  assert(lot && lot.expirySource === AI_EXPIRY_SOURCE, "an unedited model-read expiry is stamped as such: " + JSON.stringify(lot));
+
+  rxSetup([{ cls: "CON", name: "" }]);
+  rxAddSlipRows({ rows: [{ name: "AT30 Slow Hardener", qty: "1", vendorLot: "L9", expiresOn: "2027-01-01" }] });
+  rxUpd(RX.rows[0].rid, "expiresOn", "2027-02-01");
+  assert(RX.rows[0].expiryAi === false, "typing the date makes it the person's");
+  await rxCommitAll();
+  const typed = (DB.lots || []).find(o => o.vendorLot === "L9");
+  assert(typed && typed.expirySource === "vendor label", "and it is stamped as an ordinary vendor label: " + JSON.stringify(typed));
+
+  rxSetup([{ cls: "CON", name: "" }]);
+  assert(rxAddSlipRows({ rows: [] }) === 0 && RX.rows.length === 1, "an empty read changes nothing");
+});
+
+await t("✨ read label: a sheet offers the fields, blanks pre-ticked, nothing written until Apply", () => {
+  seedInventory();
+  DB.lots = [{ id: "RSN-SN6-090", cls: "RSN", name: "IN2 Epoxy", stage: "Sealed", vendorLot: "OLD-1", expiresOn: "", matKey: "" }];
+  view = { ...view, tab: "inventory", invView: "lots", mode: "detail", id: "RSN-SN6-090", edit: false };
+  const had = fb.call; fb.call = async () => ({});
+  assert(/lotReadLabel\('RSN-SN6-090'\)/.test(renderShopDetail("lots", { embedded: true })), "a resin lot offers ✨ Read label");
+  DB.lots.push({ id: "FAB-SN6-090", cls: "FAB", name: "twill", stage: "Sealed" });
+  view.id = "FAB-SN6-090";
+  assert(!/lotReadLabel/.test(renderShopDetail("lots", { embedded: true })), "dry fabric has no expiry, so no button");
+  view.id = "RSN-SN6-090"; fb.call = had;
+
+  lotLabelReview("RSN-SN6-090", { name: "IN2 Epoxy Infusion Resin", vendorLot: "EC24-0917", expiresOn: "2027-09-17", matKey: "IN2" });
+  const m = document.getElementById("modal").innerHTML;
+  assert(/replaces OLD-1/.test(m), "an existing lot number says what it would replace");
+  assert(LOT_LABEL.pick.expiresOn && LOT_LABEL.pick.matKey && !LOT_LABEL.pick.vendorLot, "blank fields pre-ticked, a filled one is not: " + JSON.stringify(LOT_LABEL.pick));
+  const o = recById("lots", "RSN-SN6-090");
+  assert(o.expiresOn === "" && o.vendorLot === "OLD-1", "nothing written yet");
+  const n = lotApplyLabel();
+  assert(n === 2 && o.expiresOn === "2027-09-17" && o.matKey === "IN2" && o.vendorLot === "OLD-1", "Apply writes only what is ticked");
+  assert(o.expirySource === AI_EXPIRY_SOURCE, "and marks the expiry as model-read");
+  updShop("lots", "expiresOn", "2027-10-01");
+  assert(o.expirySource === "vendor label", "until a person types over it");
+
+  lotLabelReview("RSN-SN6-090", { name: "IN2", vendorLot: "OLD-1", expiresOn: "", matKey: "IN2" });
+  assert(!LOT_LABEL || LOT_LABEL.id !== "RSN-SN6-090" || !Object.keys(LOT_LABEL.fields).length, "nothing new means no sheet");
+});
+
 await t("pasting a single word is left to the browser", () => {
   rxSeedShelves();
   rxSetup([{ cls: "CON", name: "", qty: "1" }]);

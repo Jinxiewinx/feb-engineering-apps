@@ -1070,6 +1070,22 @@ consumable. A paste from an order email becomes rows you then correct by typing
 — a prefill, never a mode. "Arrived" on an Incoming line seeds the *whole*
 order.
 
+**✨ From packing slip** does the same from a photo or PDF of the slip in the
+box: one row per shipped line, with the vendor lot and expiry where the slip
+prints them. What each thing *is* (class, material, supplier, cost) still comes
+from the app's own tables, exactly as for a pasted line. An expiry the model
+read is saved as "vendor label (AI read)" unless you edit the date first. The
+photo is deleted once it's read.
+
+On a resin, hardener or consumable lot's page, **✨ Read label** photographs the
+jug and offers its lot number, expiry and material in a sheet. Empty fields come
+pre-ticked, filled ones say what they'd replace, and nothing is written until
+you press Apply. An expiry applied that way is marked "vendor label (AI read)"
+until somebody types over it.
+
+Every ✨ button disappears when a lead switches AI off (⋯ menu, where leads also
+see the month's AI spend against the $80 ceiling).
+
 Resin, hardener and consumable rows also take an **EH&S tag** — the UC barcode
 sticker that campus EH&S puts on every chemical container for the RSS Chemicals
 inventory. Chemicals have to wear the university's sticker, and one sticker per

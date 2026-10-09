@@ -250,3 +250,120 @@ exports.parseReceipt = onCall(
     };
   }
 );
+
+/* ---------------- photo jobs: packing slip, container label ----------------
+ * Same shape as parseReceipt: a Storage path the client just uploaded, one
+ * fixed prompt and schema, a sanitised answer that only ever prefills
+ * something a person reviews. The client deletes the photo afterwards; it was
+ * only ever input. */
+
+const isoDate = (v) => {
+  const m = String(v || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return "";
+  const d = new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00Z`);
+  return isNaN(d) || d.toISOString().slice(0, 10) !== m[0] ? "" : m[0];
+};
+const text = (v, n) => String(v == null ? "" : v).trim().slice(0, n);
+
+async function photoJob(req, { pathRe, pathMsg, label, schema, prompt, maxTokens }) {
+  const email = await requireRoster(req);
+  await requireAiOn();
+  const path = String((req.data && req.data.path) || "");
+  if (!pathRe.test(path)) throw new HttpsError("invalid-argument", pathMsg);
+  const block = await storageBlock(path);
+  await chargeDaily(email, "photo");
+  return callHaiku({ label, schema, maxTokens, content: [block, { type: "text", text: prompt }] });
+}
+
+const SLIP_SCHEMA = {
+  type: "object",
+  properties: {
+    supplier: { type: "string", description: "Who shipped it, empty if not shown" },
+    rows: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "What the item is, as printed, shortened to what a person would call it" },
+          qty: { type: "string", description: "Quantity shipped (not ordered or backordered), digits only, 1 if not shown" },
+          vendorLot: { type: "string", description: "Lot or batch number printed for this line, empty if none" },
+          expiresOn: { type: "string", description: "Expiry date for this line as YYYY-MM-DD, empty if none" },
+        },
+        required: ["name", "qty", "vendorLot", "expiresOn"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["supplier", "rows"],
+  additionalProperties: false,
+};
+const SLIP_PROMPT =
+  "Read this packing slip or delivery note. One entry in rows per shipped line item. " +
+  "Use the shipped quantity, not ordered or backordered; skip lines with nothing shipped. " +
+  "Only fill vendorLot and expiresOn when they are printed for that line. " +
+  "If a value is unreadable, use an empty string rather than guessing.";
+
+exports.parsePackingSlip = onCall(
+  { secrets: [ANTHROPIC_API_KEY], region: "us-central1", timeoutSeconds: 60, memory: "512MiB" },
+  async (req) => {
+    const parsed = await photoJob(req, {
+      // receiving/{batch}/{file}: the desk uploads here, reads, and deletes.
+      pathRe: /^receiving\/[A-Za-z0-9-]+\/[^/]+$/, pathMsg: "Not a receiving upload path.",
+      label: "parsePackingSlip", schema: SLIP_SCHEMA, prompt: SLIP_PROMPT, maxTokens: 3072,
+    });
+    const rows = (Array.isArray(parsed.rows) ? parsed.rows : []).slice(0, 60).map((r) => ({
+      name: text(r.name, 200),
+      qty: digits(r.qty, 8),
+      vendorLot: text(r.vendorLot, 60),
+      expiresOn: isoDate(r.expiresOn),
+    })).filter((r) => r.name);
+    return { supplier: text(parsed.supplier, 100), rows };
+  }
+);
+
+/* The material is a suggestion from the team's own table, never a free
+ * string: the client sends the keys it knows (materials.js MATERIALS), they
+ * become an enum in the schema, and "" means none of them. The keys are
+ * client-supplied, so they are checked hard before they reach a prompt. */
+const LABEL_PROMPT =
+  "Read this container label (resin, hardener, adhesive or other shop chemical). " +
+  "name: the product as printed. vendorLot: the lot or batch number. expiresOn: the expiry or use-by date as YYYY-MM-DD; " +
+  "if only a manufacture date and shelf life are printed, leave it empty. " +
+  "matKey: the one material from the list that this container is, or empty if it is none of them or you are unsure. " +
+  "If a value is unreadable, use an empty string rather than guessing.";
+
+exports.readContainerLabel = onCall(
+  { secrets: [ANTHROPIC_API_KEY], region: "us-central1", timeoutSeconds: 60, memory: "512MiB" },
+  async (req) => {
+    const mats = (Array.isArray(req.data && req.data.materials) ? req.data.materials : [])
+      .slice(0, 100)
+      .map((m) => ({ key: text(m && m.matKey, 40), label: text(m && m.label, 80) }))
+      .filter((m) => /^[A-Z0-9][A-Z0-9-]*$/.test(m.key));
+    const keys = [...new Set(mats.map((m) => m.key))];
+    const schema = {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        vendorLot: { type: "string" },
+        expiresOn: { type: "string" },
+        matKey: { type: "string", enum: ["", ...keys] },
+      },
+      required: ["name", "vendorLot", "expiresOn", "matKey"],
+      additionalProperties: false,
+    };
+    const list = mats.map((m) => `${m.key}: ${m.label.replace(/[^\w\s%'#.,()/-]/g, "")}`).join("\n");
+    const parsed = await photoJob(req, {
+      // lots/{id}/{file}: the lot page uploads here, reads, and deletes.
+      pathRe: /^lots\/[A-Za-z0-9-]+\/[^/]+$/, pathMsg: "Not a lot upload path.",
+      label: "readContainerLabel", schema, maxTokens: 1024,
+      prompt: LABEL_PROMPT + (list ? "\n\nMaterials:\n" + list : ""),
+    });
+    return {
+      name: text(parsed.name, 200),
+      vendorLot: text(parsed.vendorLot, 60),
+      expiresOn: isoDate(parsed.expiresOn),
+      matKey: keys.includes(parsed.matKey) ? parsed.matKey : "",
+    };
+  }
+);
+
