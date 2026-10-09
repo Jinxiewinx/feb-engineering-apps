@@ -309,6 +309,7 @@ const SLIP_PROMPT =
   "Read this packing slip or delivery note. One entry in rows per shipped line item. " +
   "Use the shipped quantity, not ordered or backordered; skip lines with nothing shipped. " +
   "Only fill vendorLot and expiresOn when they are printed for that line. " +
+  "An expiry printed as month and year only (09/2027, SEP 2027) means the last day of that month. " +
   "If a value is unreadable, use an empty string rather than guessing.";
 
 exports.parsePackingSlip = onCall(
@@ -336,7 +337,7 @@ exports.parsePackingSlip = onCall(
 const LABEL_PROMPT =
   "Read this container label (resin, hardener, adhesive or other shop chemical). " +
   "name: the product as printed. vendorLot: the lot or batch number. expiresOn: the expiry or use-by date as YYYY-MM-DD; " +
-  "if only a manufacture date and shelf life are printed, leave it empty. " +
+  "a month and year only (09/2027) means the last day of that month; if only a manufacture date and shelf life are printed, leave it empty. " +
   "matKey: the one material from the list that this container is, or empty if it is none of them or you are unsure. " +
   "If a value is unreadable, use an empty string rather than guessing.";
 
@@ -420,7 +421,7 @@ Be brief and plain: a few sentences or a short list, no headings. People read th
 const PAUL_TOOLS = [
   {
     name: "search_records",
-    description: "Keyword search over the team's records in the app. Returns up to 12 matches with ref, kind, title and a snippet. Use part numbers, ids, material names, people's first names or plain words.",
+    description: "Keyword search over the team's records in the app. Returns up to 20 matches with ref, kind, title and a snippet. Use part numbers, ids, material names, people's first names or plain words.",
     input_schema: {
       type: "object",
       properties: {

@@ -351,6 +351,7 @@ const results = calls[1].messages.at(-1).content;
 ok("both tool calls answered in one user message", results.length === 2 && results.every(x => x.type === "tool_result"));
 const allTool = JSON.stringify(calls.map(b => b.messages));
 ok("records found by keyword", /WO-SN6-003/.test(results[0].content));
+ok("a search snippet leads with the fields list questions ask about", /status: OnHold/.test(results[0].content), results[0].content.slice(0, 300));
 ok("binned records never reach Paul", !/WO-SN6-099/.test(allTool));
 ok("email addresses never reach Paul", !/@berkeley\.edu|x@y\.com/.test(allTool));
 ok("only team collections are read, never roster or config", state.collsRead.length && state.collsRead.every(c => !/roster|config|aiUsage|notifications|pub|tracker|meta/.test(c)), state.collsRead.join());

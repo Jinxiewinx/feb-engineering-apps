@@ -75,6 +75,16 @@ function inline(o, depth) {
   return bits.join("; ").slice(0, 700) || flatten(o, depth).join("; ").slice(0, 400);
 }
 
+/* The fields a "which ones / where / when" question is usually about. They
+ * lead a search snippet, so a list question can be answered from the search
+ * results without opening every record (the first live run had to open lots
+ * one at a time to find their expiry dates). */
+const KEY_FIELDS = ["stage", "status", "location", "expiresOn", "matKey", "qty", "count", "partName", "source", "dateOrdered", "receivedOn", "moldRef"];
+function keyLine(r) {
+  return KEY_FIELDS.filter((k) => r[k] != null && r[k] !== "" && typeof r[k] !== "object")
+    .map((k) => `${k}: ${plain(r[k]).slice(0, 60)}`).join(" · ");
+}
+
 function titleOf(r) { for (const k of TITLE_KEYS) if (r[k]) return plain(r[k]).slice(0, 120); return ""; }
 
 async function loadRecords(db) {
@@ -86,7 +96,7 @@ async function loadRecords(db) {
       const r = { id: d.id, ...d.data() };
       if (r.deleted) return;
       const body = flatten(r).join("\n");
-      out.push({ id: r.id, coll, kind: KIND[coll], title: titleOf(r), body, hay: (r.id + " " + titleOf(r) + " " + body).toLowerCase() });
+      out.push({ id: r.id, coll, kind: KIND[coll], title: titleOf(r), key: keyLine(r), body, hay: (r.id + " " + titleOf(r) + " " + body).toLowerCase() });
     });
   });
   return out;
@@ -108,7 +118,7 @@ function score(hay, head, ts) {
   return s;
 }
 
-function searchRecords(records, query, kinds, limit = 12) {
+function searchRecords(records, query, kinds, limit = 20) {
   const ts = terms(query);
   const want = Array.isArray(kinds) && kinds.length ? new Set(kinds) : null;
   return records
@@ -117,7 +127,7 @@ function searchRecords(records, query, kinds, limit = 12) {
     .filter((x) => x.s > 0)
     .sort((a, b) => b.s - a.s)
     .slice(0, limit)
-    .map(({ r }) => ({ ref: r.id, kind: r.kind, title: r.title, snippet: r.body.replace(/\n/g, " · ").slice(0, 220) }));
+    .map(({ r }) => ({ ref: r.id, kind: r.kind, title: r.title, snippet: (r.key || r.body.replace(/\n/g, " · ")).slice(0, 240) }));
 }
 
 function getRecord(records, id) {
