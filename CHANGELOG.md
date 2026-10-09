@@ -38,6 +38,13 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.3.1 — 2026-10-08
+
+- Purchases hold other files beside the receipt
+- SESSION-STATE: receipts shipped as v6.3.0
+
+---
+
 ## v6.3.0 — 2026-10-08
 
 - WHATS_NEW for 6.3.0: receipts read themselves, PDFs too
