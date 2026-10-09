@@ -2662,7 +2662,7 @@ await t("receipt parsing prefills the same editable grid, and a dead function de
     cost: "", dateOrdered: "2026-08-19", source: "", receiptUrl: "", receiptPath: "", lines: [] }];
   view = { ...view, tab: "budget", mode: "detail", id: "BUY-RC-1", edit: true };
   await fillLinesFromReceipt("BUY-RC-1");
-  assert(/receipt photo first/.test(lastToast), "no photo, no parse: " + lastToast);
+  assert(/Add a receipt first/.test(lastToast), "no receipt, no parse: " + lastToast);
   DB.budget[0].receiptPath = "budget/BUY-RC-1/123-r.jpg";
   await fillLinesFromReceipt("BUY-RC-1");   // fake fb has no .call
   assert(/manual grid still works/.test(lastToast), "a missing function degrades, never blocks: " + lastToast);
@@ -2677,6 +2677,29 @@ await t("receipt parsing prefills the same editable grid, and a dead function de
   assert(buyLineEach(b.lines[0]) === 5, "and price like any typed line");
   assert(b.source === "McMaster", "an empty vendor field takes the receipt's word");
   assert(b.cost === "", "cost is still untouched — the explicit button remains the only path");
+  assert(!/add up to/.test(lastToast), "no printed total, no mismatch warning: " + lastToast);
+
+  // The printed grand total checks the read: within 15% (tax) is quiet,
+  // a dropped line is called out.
+  b.lines = [];
+  fb.call = async () => ({ lines: [{ desc: "peel ply", qty: "1", total: "40.00" }], vendor: "", receiptTotal: "43.20" });
+  await fillLinesFromReceipt("BUY-RC-1");
+  assert(!/add up to/.test(lastToast), "a tax-sized gap is not flagged: " + lastToast);
+  b.lines = [];
+  fb.call = async () => ({ lines: [{ desc: "peel ply", qty: "1", total: "40.00" }], vendor: "", receiptTotal: "95.00" });
+  await fillLinesFromReceipt("BUY-RC-1");
+  assert(/add up to \$40\.00 but the receipt says \$95\.00/.test(lastToast), "a missing line is flagged: " + lastToast);
+
+  // The function's own refusals are written for the toast and shown as-is;
+  // anything else (not deployed, crashed) gets the generic line.
+  b.lines = [];
+  fb.call = async () => { throw Object.assign(new Error("Daily limit of 50 reads reached."), { code: "functions/resource-exhausted" }); };
+  await fillLinesFromReceipt("BUY-RC-1");
+  assert(/Daily limit/.test(lastToast), "the function's own message reaches the member: " + lastToast);
+  fb.call = async () => { throw Object.assign(new Error("internal"), { code: "functions/internal" }); };
+  await fillLinesFromReceipt("BUY-RC-1");
+  assert(/manual grid still works/.test(lastToast) && !/internal/.test(lastToast), "a bare 'internal' is not shown: " + lastToast);
+  assert(b.lines.length === 0, "and a failure writes nothing");
   delete fb.call;
 });
 

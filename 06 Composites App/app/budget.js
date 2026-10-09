@@ -254,13 +254,16 @@ function buysBulkDelete(ids) {
   });
 }
 function deletePickedBuys() { buysBulkDelete(pickedIds("budget")); }
-// "Scan" on mobile is just this input opening the camera directly via the
-// capture attribute — no OCR, no new JS for that part. Reuses fb.upload()
-// (already downscales images client-side) exactly like ticket/document files.
+// A photo or a PDF. Online orders (McMaster, Easy Composites) arrive as an
+// emailed PDF invoice, and that is most purchases, so the picker takes both.
+// That is also why there is no capture attribute any more: on a phone it
+// opened the camera with no way to pick a file. Without it the phone offers
+// Take Photo, Photo Library and Files, one tap more for a paper receipt.
+// Reuses fb.upload() (downscales images client-side) like ticket/document files.
 function attachReceipt(id) {
   const b = buyById(id);
   const inp = document.createElement("input");
-  inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment");
+  inp.type = "file"; inp.accept = "image/*,application/pdf";
   inp.onchange = async () => {
     const f = inp.files[0]; if (!f) return;
     try {
@@ -415,7 +418,7 @@ function buyLinesHtml(b, E) {
     ${lines.length ? `<table class="sub"><thead><tr><th>Item</th><th>Total $</th><th>Count</th><th>Each</th>${E ? "<th></th>" : ""}</tr></thead><tbody>${rows}</tbody></table>`
       : `<p class="muted">What was actually in the order — one line per thing, total and count, the unit price works itself out.</p>`}
     ${E ? `<button onclick="buyLineAdd()">+ Line</button>
-    ${b.receiptPath ? `<button class="no-print" onclick="fillLinesFromReceipt('${esc(b.id)}')" title="Read the receipt photo into editable line items">✨ Fill from receipt</button>` : ""}` : ""}`;
+    ${b.receiptPath ? `<button class="no-print" onclick="fillLinesFromReceipt('${esc(b.id)}')" title="Read the receipt into editable line items">✨ Fill from receipt</button>` : ""}` : ""}`;
 }
 
 /* ---------- receipt -> proposed lines ----------
@@ -428,7 +431,7 @@ let RECEIPT_PARSING = false;
 async function fillLinesFromReceipt(id) {
   const b = buyById(id);
   if (!b || RECEIPT_PARSING) return;
-  if (!b.receiptPath) { toast("Add a receipt photo first — the ✨ reads that.", "error"); return; }
+  if (!b.receiptPath) { toast("Add a receipt first. The ✨ reads that.", "error"); return; }
   if (buyLines(b).length) {
     const go = await confirmAsync("This purchase already has line items. Add what the receipt says underneath them?", { ok: "Add lines", danger: false });
     if (!go) return;
@@ -440,15 +443,29 @@ async function fillLinesFromReceipt(id) {
     const lines = (out && out.lines || []).map(l => ({
       lineId: bomLineId(), desc: l.desc || "", qty: l.qty || "1", total: l.total || "", lotRefs: [], receivedOn: "",
     }));
-    if (!lines.length) { toast("Couldn't find line items on that photo — type them in, it's five cells.", "error"); return; }
+    if (!lines.length) { toast("Couldn't find line items on that receipt. Type them in, it's five cells.", "error"); return; }
     b.lines = [...buyLines(b), ...lines];
     saveField("budget", b, "lines", arr => [...(arr || []), ...lines]);
     if (out.vendor && !String(b.source || "").trim()) { b.source = out.vendor; saveBuy(b, "source"); }
-    toast(`${lines.length} line${lines.length === 1 ? "" : "s"} read from the receipt — every cell is editable.`);
+    /* The commonest misread is a dropped or doubled line, and the printed
+       grand total catches it. The grand total usually includes tax and the
+       lines don't, so only a gap over 15% is flagged. */
+    const sum = lines.reduce((t, l) => t + (Number(l.total) || 0), 0);
+    const printed = Number(out.receiptTotal) || 0;
+    const off = printed && Math.abs(sum - printed) > printed * 0.15;
+    toast(`${lines.length} line${lines.length === 1 ? "" : "s"} read from the receipt. Every cell is editable.` +
+      (off ? ` They add up to $${sum.toFixed(2)} but the receipt says $${printed.toFixed(2)}, so check for a missing line.` : ""),
+      off ? "info" : undefined);
     view.edit = true;
     render();
   } catch (e) {
-    toast("Receipt parsing isn't available (" + (e && e.message || "no function") + ") — the manual grid still works.", "error");
+    /* The function's own refusals (daily limit, model declined, wrong file
+       type) carry a message written for this toast. Anything else, including
+       the function not being deployed, gets the generic line. */
+    const code = String(e && e.code || "").replace(/^functions\//, "");
+    const own = ["resource-exhausted", "failed-precondition", "out-of-range", "invalid-argument", "unavailable", "permission-denied"];
+    toast(own.includes(code) && e.message ? e.message
+      : "Receipt reading isn't available right now. The manual grid still works.", "error");
   } finally {
     RECEIPT_PARSING = false;
   }
@@ -602,11 +619,14 @@ function renderBuyDetail() {
     ${buyLinesHtml(b, E)}
     <h3>Receipt</h3>
     ${/* Through the shared tile, so a receipt opens in the viewer like every
-          other photo instead of being a thumbnail you can only download. A
-          receipt is always an image — attachReceipt() only accepts one, and
-          storage.rules allows nothing else under budget/. */""}
+          other file instead of being a thumbnail you can only download. A
+          receipt is a photo or a PDF (attachReceipt() and storage.rules allow
+          those two); the path's extension says which, since the record only
+          stores the path and the URL. */""}
     ${b.receiptUrl
-      ? `<div class="filegrid">${fileItem({ url: b.receiptUrl, name: `receipt-${b.id}.jpg`, type: "image/jpeg" })}</div>`
+      ? `<div class="filegrid">${fileItem(/\.pdf$/i.test(b.receiptPath || "")
+          ? { url: b.receiptUrl, name: `receipt-${b.id}.pdf`, type: "application/pdf" }
+          : { url: b.receiptUrl, name: `receipt-${b.id}.jpg`, type: "image/jpeg" })}</div>`
       : '<span class="muted">No receipt yet.</span>'}
     <div class="no-print" style="margin-top:8px"><button onclick="attachReceipt('${b.id}')">${b.receiptUrl ? "Replace" : "+ Add / scan"} receipt</button></div>
     <h3>Notes</h3>

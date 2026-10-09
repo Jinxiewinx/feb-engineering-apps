@@ -175,7 +175,8 @@ await denied("authed write to bucket root", token, "rootfile.pdf");
 console.log("\nstorage content types — the wrong type is refused on an allowed path:");
 await deniedType("a PDF is not an STL (stackplans/)", "stackplans/STK-1/mesh.stl", "application/pdf");
 await deniedType("nor is anything renderable (stackplans/)", "stackplans/STK-1/x.html", "text/html");
-await deniedType("a receipt must be an image, not a PDF (budget/)", "budget/BUY-1/r.pdf", "application/pdf");
+await deniedType("a receipt is a photo or a PDF, not a Word file (budget/)", "budget/BUY-1/r.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+await deniedType("nor anything renderable (budget/)", "budget/BUY-1/r.html", "text/html");
 await deniedType("a bare binary needs a CAD name (projects/)", "projects/P-1/notes.txt", "application/octet-stream");
 await deniedType("same on a mold, where datum plans land", "molds/MOLD-SN6-001/notes.txt", "application/octet-stream");
 await deniedType("an avatar must be an image", `avatars/${uid}`, "application/pdf");
@@ -199,6 +200,7 @@ await allowedType("a photo pasted into an item note", "items/ITEM-SN6-001/photo.
 await allowedType("a photo pasted into a lot note", "lots/LOT-SN6-001/photo.jpg", "image/jpeg");
 await allowedType("a PDF in the document library", "documents/spec.pdf", "application/pdf");
 await allowedType("a receipt photo", "budget/BUY-1/receipt.jpg", "image/jpeg");
+await allowedType("an emailed PDF invoice as the receipt", "budget/BUY-1/invoice.pdf", "application/pdf");
 await allowedType("a member's own avatar", `avatars/${uid}`, "image/png");
 
 /* ---------- the trees exist at all ----------

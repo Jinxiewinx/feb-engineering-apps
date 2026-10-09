@@ -163,13 +163,14 @@ service firebase.storage {
         && request.resource.contentType.matches('(image/.*|application/pdf|application/msword|application/vnd.openxmlformats-officedocument.*|text/.*)');
     }
 
-    // budget/{purchaseId}/{file} — a receipt photo attached to a purchase; the
-    // record lands in the roster-gated `budget` Firestore collection. A
-    // receipt is always a photo (unlike documents/projects, no PDF/doc types).
+    // budget/{purchaseId}/{file} — a receipt attached to a purchase; the
+    // record lands in the roster-gated `budget` Firestore collection. A photo
+    // or a PDF, since online orders arrive as emailed PDF invoices. No other
+    // document types: parseReceipt reads only these two.
     match /budget/{purchaseId}/{file} {
       allow read: if signedIn();
       allow write: if accountOf() && sizeOk()
-        && request.resource.contentType.matches('image/.*');
+        && request.resource.contentType.matches('(image/.*|application/pdf)');
     }
 
     // stackplans/{planId}/mesh.stl — the mold mesh behind the Stock tab's 3D
