@@ -38,6 +38,23 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.3.0 — 2026-10-08
+
+- WHATS_NEW for 6.3.0: receipts read themselves, PDFs too
+- Functions runtime Node 20 -> 22
+- Docs and SESSION-STATE for the Haiku 5.5 receipt parser
+- Receipts: PDF invoices, honest error toasts, a total check
+- parseReceipt on Claude Haiku 5.5 at low effort, through the SDK
+- Guardrail mods: feb-guard and feb-deploy-verify in .claude/skills
+
+<details><summary>1 more</summary>
+
+- SESSION-STATE: person fields shipped as v6.2.0
+
+</details>
+
+---
+
 ## v6.2.0 — 2026-09-24
 
 - Person fields: What's New for 6.2.0, a design note, and no <details> fold
