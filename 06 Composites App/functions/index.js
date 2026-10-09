@@ -422,10 +422,10 @@ How to answer:
 1. Use the tools first. Search the app's records (work orders, parts, molds, material lots, shelves, tooling boards, stack plans, purchases, issues, schedule and weekly plans, R&D studies, coupons, R&D parts and R&D runs, people and their trainings, and the reference tables: resin systems with the team's cure holds, materials with mix ratios and shelf life, restock rules, the season and the budget goals) and its documents (FEB's CS standards and the material datasheets) for anything the question touches. For any "how many", "which are" or status-overview question, call app_overview first: it counts the way the app's dashboard and R&D tab do. Open the most relevant ones before answering. For any "how do I" or "what's the rule" question, always search the documents as well as the records: the team's procedures live in the CS standards. If the question starts by saying which record the person is looking at, open that record first; "this", "it" and "here" mean that record.
 2. After every fact that came from a tool, put its ref in square brackets exactly as the tool gave it, for example [WO-SN6-003] or [CS-006#12]. Never write a ref the tools did not give you.
 3. FEB-specific facts (where something is, its status or stage, who signed what, what is blocking, the team's cure holds, mix ratios, expiry dates, costs) come only from tools. If the tools don't have it, say plainly that you couldn't find it in the app.
-4. If the question is general composites knowledge that the app's documents don't cover, you may answer from general knowledge. Start that part with the line "${GENERAL_LINE}" and keep it short. Never use general knowledge for a number that should come from a datasheet or the team's standards (cure times, temperatures, ratios, pot life, shelf life); point to the datasheet instead.
+4. If the question is general composites knowledge that the app's documents don't cover: when it needs a number, a figure or a specific recommendation, search the web for a source (rule 9) rather than answering from memory. Plain explanations may come from general knowledge: start that part with the line "${GENERAL_LINE}" and keep it short. Never use general knowledge for a number that should come from a datasheet or the team's standards (cure times, temperatures, ratios, pot life, shelf life); point to the datasheet instead.
 5. For cure holds, the resin system's team hold (a RESIN: record) is the number the team enforces, and it is longer than the datasheet on purpose; give both and say which is which. Mix ratios come from the MAT: record or the datasheet.
 8. Records labelled "R&D" are trials, not season deliverables; "SN5 archive" and "archived" are history and "season SNx" is another season. Say so whenever you use one. R&D means studies, coupons, R&D parts and R&D runs together.
-9. Web search is a last resort, for general composites questions the app and its documents don't answer. Never use it for anything about FEB's own parts, molds, people, schedule, cure holds or ratios. Put everything that came from the web after the line "${WEB_LINE}" and keep the web's citations on those facts.
+9. Web search is a last resort, for general composites questions the app and its documents don't answer. Never use it for anything about FEB's own parts, molds, people, schedule, cure holds or ratios. Put everything that came from the web after the line "${WEB_LINE}" and keep the web's citations on those facts. Say it in your own words; never paste a page's text, and name the site in the sentence ("Easy Composites' IN2 page says…").
 6. You can only read. Never say you changed, created, moved or signed anything.
 7. If the question is not about composites or the team's work, say in one sentence that you only help with FEB composites.
 
@@ -571,7 +571,13 @@ exports.askPaul = onCall(
        checked like any other source. Searches show as steps as they happen. */
     const onBlock = (b) => {
       if (b.type === "server_tool_use" && b.name === "web_search") send({ type: "step", text: stepText("web_search", b.input) });
-      if (b.type === "web_search_tool_result" && Array.isArray(b.content)) {
+    };
+    /* Collected from each finished response, not from stream events: the
+       first live run showed the search step but no web sources, because the
+       result blocks never reached the stream listener. */
+    const collectWeb = (content) => {
+      for (const b of content || []) {
+        if (b.type !== "web_search_tool_result" || !Array.isArray(b.content)) continue;
         for (const w of b.content) {
           if (w && w.url) seen.set(w.url, { type: "web", ref: w.url, title: String(w.title || "").slice(0, 160), site: (() => { try { return new URL(w.url).hostname.replace(/^www\./, ""); } catch (e) { return ""; } })() });
         }
@@ -593,6 +599,7 @@ exports.askPaul = onCall(
       if (msg.stop_reason === "refusal") {
         throw new HttpsError("failed-precondition", "Paul won't answer that one.");
       }
+      collectWeb(msg.content);
       // A long web search can pause the turn; hand it back to carry on.
       if (msg.stop_reason === "pause_turn" && !last) { messages.push({ role: "assistant", content: msg.content }); continue; }
       if (msg.stop_reason !== "tool_use" || last) break;
@@ -616,6 +623,9 @@ exports.askPaul = onCall(
     }).join("").trim();
     if (!text) throw new HttpsError("internal", "Paul didn't come up with an answer. Try asking it another way.");
     const { answer, sources } = checkCitations(text, seen);
+    const webPages = [...seen.values()].filter((x) => x && x.type === "web").length;
+    const webCites = (msg.content || []).reduce((n, b) => n + ((b.type === "text" && b.citations) ? b.citations.length : 0), 0);
+    if (webPages || webCites) console.log(`askPaul web: pages=${webPages} citations=${webCites} kept=${sources.filter((x) => x && x.type === "web").length}`);
     return { answer, sources: sources.filter(Boolean), general: answer.includes(GENERAL_LINE), web: answer.includes(WEB_LINE) };
   }
 );
