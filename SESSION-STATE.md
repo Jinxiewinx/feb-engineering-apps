@@ -39,6 +39,11 @@ so far: $0.03 for the whole day of testing; Paul ~$0.0015 a question.
   Paul picture (⋯, Storage `paul/`, NEVER commit his photo: repo is public);
   Paul open rails the sidebar at 900-1400px. Picture not uploaded yet (a
   lead's job).
+- **Paul sees the whole app + web search, committed, NOT live:** shelved
+  projects out, R&D parts/runs in, people/resins/materials/restock/season/
+  budget goals in, `app_overview` counts, web search (labelled, cited, 3 max).
+  Needs "allow functions deploy", then a live check that web_search works on
+  Haiku 5.5 for this org, then a release.
 
 **Receipts on Claude Haiku 5.5, shipped as v6.3.0 (2026-10-09); v6.3.1 adds an Other files box per purchase.** Plan:
 `~/.claude/plans/now-that-there-is-cozy-sloth.md`. `parseReceipt` is live on

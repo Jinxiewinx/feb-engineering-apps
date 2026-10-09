@@ -142,7 +142,7 @@ async function storageBlock(path) {
  * toast can show, and the call's real usage logged and added to the month.
  * Every model call in this file goes through here, so the budget sees all of
  * them. */
-async function modelCall(body, label, onThinking) {
+async function modelCall(body, label, onThinking, onBlock) {
   const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value(), maxRetries: 1, timeout: 45_000 });
   let msg;
   try {
@@ -151,6 +151,7 @@ async function modelCall(body, label, onThinking) {
       // the caller still gets one finished message.
       const stream = client.messages.stream({ model: MODEL, ...body });
       stream.on("thinking", (delta) => { try { onThinking(delta); } catch (e) { /* a dropped chunk is fine */ } });
+      if (onBlock) stream.on("contentBlock", (b) => { try { onBlock(b); } catch (e) { /* same */ } });
       msg = await stream.finalMessage();
     } else {
       msg = await client.messages.create({ model: MODEL, ...body });
@@ -412,15 +413,19 @@ const ctx = require("./context.js");
 const PAUL_EFFORT = "medium";
 const PAUL_MAX_TOOL_ROUNDS = 4;
 const GENERAL_LINE = "General composites knowledge, not from the app:";
+const WEB_LINE = "From the web, not from the app:";
+const WEB_SEARCH = { type: "web_search_20250305", name: "web_search", max_uses: 3 };
 
 const PAUL_SYSTEM = `You are "Paul", the composites helper inside FEB Composites, the app Formula Electric at Berkeley's composites team uses to run its shop. The name is a team in-joke about the ideal composites expert. You are not a real person: never claim to be one, never imitate anyone, and never speak for Easy Composites or any other company.
 
 How to answer:
-1. Use the tools first. Search the app's records (work orders, parts, molds, material lots, shelves, tooling boards, stack plans, purchases, issues, schedule, R&D) and its documents (FEB's CS standards and the material datasheets) for anything the question touches. Open the most relevant ones before answering. For any "how do I" or "what's the rule" question, always search the documents as well as the records: the team's procedures live in the CS standards. If the question starts by saying which record the person is looking at, open that record first; "this", "it" and "here" mean that record.
+1. Use the tools first. Search the app's records (work orders, parts, molds, material lots, shelves, tooling boards, stack plans, purchases, issues, schedule and weekly plans, R&D studies, coupons, R&D parts and R&D runs, people and their trainings, and the reference tables: resin systems with the team's cure holds, materials with mix ratios and shelf life, restock rules, the season and the budget goals) and its documents (FEB's CS standards and the material datasheets) for anything the question touches. For any "how many", "which are" or status-overview question, call app_overview first: it counts the way the app's dashboard and R&D tab do. Open the most relevant ones before answering. For any "how do I" or "what's the rule" question, always search the documents as well as the records: the team's procedures live in the CS standards. If the question starts by saying which record the person is looking at, open that record first; "this", "it" and "here" mean that record.
 2. After every fact that came from a tool, put its ref in square brackets exactly as the tool gave it, for example [WO-SN6-003] or [CS-006#12]. Never write a ref the tools did not give you.
 3. FEB-specific facts (where something is, its status or stage, who signed what, what is blocking, the team's cure holds, mix ratios, expiry dates, costs) come only from tools. If the tools don't have it, say plainly that you couldn't find it in the app.
 4. If the question is general composites knowledge that the app's documents don't cover, you may answer from general knowledge. Start that part with the line "${GENERAL_LINE}" and keep it short. Never use general knowledge for a number that should come from a datasheet or the team's standards (cure times, temperatures, ratios, pot life, shelf life); point to the datasheet instead.
-5. For cure holds and mix ratios, quote the source and add that the Resins page in the app holds the number the team enforces.
+5. For cure holds, the resin system's team hold (a RESIN: record) is the number the team enforces, and it is longer than the datasheet on purpose; give both and say which is which. Mix ratios come from the MAT: record or the datasheet.
+8. Records labelled "R&D" are trials, not season deliverables; "SN5 archive" and "archived" are history and "season SNx" is another season. Say so whenever you use one. R&D means studies, coupons, R&D parts and R&D runs together.
+9. Web search is a last resort, for general composites questions the app and its documents don't answer. Never use it for anything about FEB's own parts, molds, people, schedule, cure holds or ratios. Put everything that came from the web after the line "${WEB_LINE}" and keep the web's citations on those facts.
 6. You can only read. Never say you changed, created, moved or signed anything.
 7. If the question is not about composites or the team's work, say in one sentence that you only help with FEB composites.
 
@@ -434,11 +439,16 @@ const PAUL_TOOLS = [
       type: "object",
       properties: {
         query: { type: "string", description: "Keywords" },
-        kinds: { type: "array", items: { type: "string", enum: ctx.COLLS }, description: "Optional: limit to these collections" },
+        kinds: { type: "array", items: { type: "string", enum: ctx.KINDS }, description: "Optional: limit to these kinds. rnd includes R&D parts and runs; people is the roster with trainings; reference is resin systems, materials, restock rules, season and budget goals." },
       },
       required: ["query"],
       additionalProperties: false,
     },
+  },
+  {
+    name: "app_overview",
+    description: "The app's own counts right now: R&D studies by status, coupons by status, R&D parts and runs, work orders by status, late work orders, open issues, molds by stage, lots past or near expiry, purchases by status, days to competition. Use for any how-many or overview question.",
+    input_schema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "get_record",
@@ -459,17 +469,22 @@ const PAUL_TOOLS = [
 
 /* Runs one tool. `seen` collects every ref a tool handed back this question:
  * the citation check below accepts those and nothing else. */
-function runTool(name, input, records, seen) {
+function runTool(name, input, ctxData, seen) {
   const i = input || {};
+  const records = ctxData.records;
+  if (name === "app_overview") {
+    seen.set("OVERVIEW", { type: "record", ref: "OVERVIEW", kind: "app overview", title: "The app's counts right now" });
+    return ctxData.overview;
+  }
   if (name === "search_records") {
     const hits = ctx.searchRecords(records, i.query, i.kinds);
-    hits.forEach((h) => seen.set(h.ref, { type: "record", ref: h.ref, kind: h.kind, title: h.title }));
+    hits.forEach((h) => seen.set(h.ref, { type: "record", ref: h.ref, kind: h.kind, title: h.title, ...(h.src ? { src: h.src } : {}) }));
     return hits.length ? hits : { result: "No matching records." };
   }
   if (name === "get_record") {
     const r = ctx.getRecord(records, i.ref);
     if (!r) return { result: `No record ${String(i.ref || "").slice(0, 40)}.` };
-    seen.set(r.ref, { type: "record", ref: r.ref, kind: r.kind, title: r.title });
+    seen.set(r.ref, { type: "record", ref: r.ref, kind: r.kind, title: r.title, ...(r.src ? { src: r.src } : {}) });
     return r;
   }
   if (name === "search_docs") {
@@ -491,6 +506,8 @@ function runTool(name, input, records, seen) {
 function stepText(name, input) {
   const q = String((input && (input.query || input.ref)) || "").replace(/\s+/g, " ").slice(0, 60);
   if (name === "search_records") return `Searching the app for "${q}"`;
+  if (name === "app_overview") return "Counting things up the way the dashboard does";
+  if (name === "web_search") return `Searching the web for "${q}"`;
   if (name === "get_record") return `Opening ${q}`;
   if (name === "search_docs") return `Searching the standards and datasheets for "${q}"`;
   if (name === "read_doc_section") {
@@ -505,13 +522,17 @@ function stepText(name, input) {
 function checkCitations(text, seen) {
   const sources = [], index = new Map();
   const lower = new Map([...seen.keys()].map((k) => [k.toLowerCase(), k]));
+  const mark = (ref) => {
+    if (!index.has(ref)) { index.set(ref, sources.length); sources.push(seen.get(ref)); }
+    return `[[${index.get(ref)}]]`;
+  };
+  // Web citations arrive as ⟦url⟧ markers the server itself added from the
+  // API's citation objects; only a page a search actually returned is kept.
+  text = text.replace(/⟦([^⟧\s]{1,600})⟧/g, (m, url) => (seen.has(url) ? mark(url) : ""));
   const out = text.replace(/\s?\[([^\[\]\n]{2,60})\]/g, (m, inner) => {
     const refs = inner.split(/[,;]\s*/).map((x) => lower.get(x.trim().toLowerCase())).filter(Boolean);
     if (!refs.length) return "";
-    return " " + refs.map((ref) => {
-      if (!index.has(ref)) { index.set(ref, sources.length); sources.push(seen.get(ref)); }
-      return `[[${index.get(ref)}]]`;
-    }).join("");
+    return " " + refs.map(mark).join("");
   });
   return { answer: out.trim(), sources };
 }
@@ -544,24 +565,36 @@ exports.askPaul = onCall(
     const prefix = /^[A-Z]{1,6}-[A-Z0-9-]{1,30}$/.test(about) ? `(I'm looking at ${about} in the app.)\n` : "";
     const messages = [...history, { role: "user", content: prefix + q }];
 
-    const records = await ctx.loadRecords(admin.firestore());
+    const ctxData = await ctx.loadRecords(admin.firestore());
     const seen = new Map();
+    /* Web pages the built-in search returned, so their citations can be
+       checked like any other source. Searches show as steps as they happen. */
+    const onBlock = (b) => {
+      if (b.type === "server_tool_use" && b.name === "web_search") send({ type: "step", text: stepText("web_search", b.input) });
+      if (b.type === "web_search_tool_result" && Array.isArray(b.content)) {
+        for (const w of b.content) {
+          if (w && w.url) seen.set(w.url, { type: "web", ref: w.url, title: String(w.title || "").slice(0, 160), site: (() => { try { return new URL(w.url).hostname.replace(/^www\./, ""); } catch (e) { return ""; } })() });
+        }
+      }
+    };
     let msg;
     for (let round = 0; ; round++) {
       const last = round >= PAUL_MAX_TOOL_ROUNDS;
       msg = await modelCall({
         max_tokens: 8000,
         system: PAUL_SYSTEM,
-        tools: PAUL_TOOLS,
+        tools: [...PAUL_TOOLS, WEB_SEARCH],
         // Past the round limit the model must answer with what it has.
         tool_choice: { type: last ? "none" : "auto" },
         thinking: { type: "adaptive", display: "summarized" },
         output_config: { effort: PAUL_EFFORT },
         messages,
-      }, "askPaul", (delta) => send({ type: "thinking", text: delta }));
+      }, "askPaul", (delta) => send({ type: "thinking", text: delta }), onBlock);
       if (msg.stop_reason === "refusal") {
         throw new HttpsError("failed-precondition", "Paul won't answer that one.");
       }
+      // A long web search can pause the turn; hand it back to carry on.
+      if (msg.stop_reason === "pause_turn" && !last) { messages.push({ role: "assistant", content: msg.content }); continue; }
       if (msg.stop_reason !== "tool_use" || last) break;
       // The assistant turn goes back unchanged (thinking blocks included), then
       // every tool result in one user message.
@@ -570,14 +603,19 @@ exports.askPaul = onCall(
       uses.forEach((b) => send({ type: "step", text: stepText(b.name, b.input) }));
       const results = uses.map((b) => ({
         type: "tool_result", tool_use_id: b.id,
-        content: JSON.stringify(runTool(b.name, b.input, records, seen)).slice(0, 20000),
+        content: JSON.stringify(runTool(b.name, b.input, ctxData, seen)).slice(0, 20000),
       }));
       messages.push({ role: "user", content: results });
     }
 
-    const text = (msg.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+    /* Text blocks carry the web search's citations as objects; each becomes a
+       ⟦url⟧ marker right after the sentence it supports. */
+    const text = (msg.content || []).filter((b) => b.type === "text").map((b) => {
+      const urls = [...new Set((b.citations || []).map((c) => c && c.url).filter(Boolean))];
+      return b.text + urls.map((u) => `⟦${u}⟧`).join("");
+    }).join("").trim();
     if (!text) throw new HttpsError("internal", "Paul didn't come up with an answer. Try asking it another way.");
     const { answer, sources } = checkCitations(text, seen);
-    return { answer, sources: sources.filter(Boolean), general: answer.includes(GENERAL_LINE), generalLine: GENERAL_LINE };
+    return { answer, sources: sources.filter(Boolean), general: answer.includes(GENERAL_LINE), web: answer.includes(WEB_LINE) };
   }
 );

@@ -1373,6 +1373,21 @@ knowledge, not from the app" label, never for anything FEB-specific (where
 things are, what's blocking, our cure holds and mix ratios; the Resins page is
 the number the team enforces).
 
+Paul sees what the app shows: parts, work orders, molds, lots, shelves,
+boards, plans, purchases, issues, the schedule and weekly plans, all of R&D
+(studies, coupons with their results, R&D parts and R&D runs), people with
+their roles and trainings, and the reference tables (resin systems with the
+team's cure holds, materials, restock rules, the season, the budget goals). He
+labels R&D, the SN5 archive and archived records as such, and the shelved
+project tracker and anything in the bin don't exist for him. For "how many"
+questions he counts the way the dashboard and the R&D tab do.
+
+When the app and its documents don't have the answer to a general composites
+question, he can search the web (up to three searches a question). Anything
+from the web sits under a "From the web, not from the app" label with the
+pages it came from in the sources list, and he never uses the web for anything
+about our own parts, people, schedule, cure holds or ratios.
+
 Paul knows which record you have open: on a mold's page, "is this ready for
 layup?" means that mold (the "Looking at" chip; tap × to ask without it). ⌘K
 search also offers to ask Paul whatever you typed.

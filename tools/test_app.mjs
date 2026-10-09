@@ -11876,6 +11876,20 @@ await t("Ask Paul: a docked chat, live work shown, sources apart, and the way ba
   PAUL.draft = "one more"; await paulAsk();
   assert(/Daily limit of 100 questions/.test(paulTurnHtml(PAUL.turns.at(-1), 3)) && !PAUL.busy, "a refusal shows in the thread and frees the box");
 
+  // Web sources are labelled and open outside; app reference sources route in.
+  const opened = []; const hadOpen = window.open; window.open = (u) => opened.push(u);
+  fb.callStream = async () => ({ answer: "Yours is due [[0]].\n\nFrom the web, not from the app:\nTwill drapes better [[1]].",
+    sources: [{ type: "record", ref: "PERSON:Nick", kind: "person", title: "Nick" },
+              { type: "web", ref: "https://www.example.org/twill", site: "example.org", title: "Twill drape" }] });
+  PAUL.draft = "web?"; await paulAsk();
+  const wt = PAUL.turns.length - 1, wh = paulTurnHtml(PAUL.turns[wt], wt);
+  assert(/From the web, not from the app<\/span>/.test(wh), "web content wears its own pill");
+  assert(/<b>example.org<\/b>[\s\S]*Twill drape[\s\S]*web</.test(wh), "the web source names its site");
+  assert(/<b>Nick<\/b>/.test(wh) && !/PERSON:/.test(wh), "a person reads as their name");
+  paulOpenSource(wt, 1);
+  assert(opened[0] === "https://www.example.org/twill" && PAUL.open, "a web source opens outside and the chat stays");
+  window.open = hadOpen;
+
   // ⌘K offers Paul.
   openSearch(); renderSearchResults("how do I degas");
   assert(/paulAskFromSearch/.test(document.getElementById("gsearch-results").innerHTML), "search offers to ask Paul");

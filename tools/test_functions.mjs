@@ -42,6 +42,7 @@ const state = {
   replies: null,    // or a queue of them, one per call (askPaul's tool loop)
   colls: {},        // collection name -> records, for askPaul's loadRecords
   collsRead: [],    // which collections were ever read
+  docsRead: [],     // which single documents were ever read
   throwErr: null,   // what messages.create throws
   sent: [],         // every request body
 };
@@ -65,7 +66,10 @@ class FakeAnthropic {
           on(ev, fn) { (ls[ev] = ls[ev] || []).push(fn); return this; },
           async finalMessage() {
             const m = await p;
-            for (const b of (m && m.content) || []) if (b.type === "thinking" && b.thinking) (ls.thinking || []).forEach(f => f(b.thinking, b.thinking));
+            for (const b of (m && m.content) || []) {
+              if (b.type === "thinking" && b.thinking) (ls.thinking || []).forEach(f => f(b.thinking, b.thinking));
+              (ls.contentBlock || []).forEach(f => f(b));
+            }
             return m;
           },
         };
@@ -96,7 +100,7 @@ const firestore = {
   }),
   doc: (p) => ({
     _p: p,
-    get: async () => p.startsWith("roster/")
+    get: async () => (state.docsRead.push(p), p.startsWith("roster/"))
       ? { exists: state.roster.has(p.slice(7)) }
       : { exists: state.docs.has(p), data: () => state.docs.get(p) },
     set: async (v) => mergeInto(p, v),
@@ -367,7 +371,7 @@ ok("with summarized thinking, so there is something to show", calls.every(b => b
 ok("the thinking streams to the client as it comes", chunks.filter(c => c.type === "thinking").length === 2 && chunks[0].text === "Checking the work orders first.", JSON.stringify(chunks.slice(0, 3)));
 const steps = chunks.filter(c => c.type === "step").map(c => c.text);
 ok("each tool call is announced in plain words", JSON.stringify(steps) === JSON.stringify(['Searching the app for "diffuser"', 'Searching the standards and datasheets for "peel ply"', "Opening WO-SN6-003"]), JSON.stringify(steps));
-ok("with the four read-only tools", JSON.stringify(calls[0].tools.map(t => t.name)) === JSON.stringify(["search_records", "get_record", "search_docs", "read_doc_section"]));
+ok("with the five read-only tools and a capped web search", JSON.stringify(calls[0].tools.map(t => t.name)) === JSON.stringify(["search_records", "app_overview", "get_record", "search_docs", "read_doc_section", "web_search"]) && calls[0].tools.at(-1).type === "web_search_20250305" && calls[0].tools.at(-1).max_uses === 3, JSON.stringify(calls[0].tools.map(t => t.name)));
 ok("the assistant turn goes back unchanged, thinking block included", calls[1].messages.at(-2).role === "assistant" && calls[1].messages.at(-2).content[0].type === "thinking");
 const results = calls[1].messages.at(-1).content;
 ok("both tool calls answered in one user message", results.length === 2 && results.every(x => x.type === "tool_result"));
@@ -376,7 +380,8 @@ ok("records found by keyword", /WO-SN6-003/.test(results[0].content));
 ok("a search snippet leads with the fields list questions ask about", /status: OnHold/.test(results[0].content), results[0].content.slice(0, 300));
 ok("binned records never reach Paul", !/WO-SN6-099/.test(allTool));
 ok("email addresses never reach Paul", !/@berkeley\.edu|x@y\.com/.test(allTool));
-ok("only team collections are read, never roster or config", state.collsRead.length && state.collsRead.every(c => !/roster|config|aiUsage|notifications|pub|tracker|meta/.test(c)), state.collsRead.join());
+ok("team collections and the roster are read, nothing else", state.collsRead.length && state.collsRead.every(c => !/config|aiUsage|notifications|pub|tracker|meta/.test(c)), state.collsRead.join());
+ok("never the Slack webhook or the tracker token", !state.docsRead.some(d => /config\/(slack|tracker)/.test(d)), state.docsRead.join());
 ok("html is flattened", /Waiting on peel ply/.test(JSON.stringify(calls[2].messages)));
 ok("a retrieved ref becomes a source", r.out.sources.length >= 1 && r.out.sources[0].ref === "WO-SN6-003" && r.out.sources[0].type === "record", JSON.stringify(r.out.sources));
 ok("and its marker points at it", /hold waiting on peel ply \[\[0\]\]/.test(r.out.answer), r.out.answer);
@@ -416,6 +421,58 @@ const hist = Array.from({ length: 9 }, (_, i) => ({ q: "q" + i, a: "a" + i }));
 r = await ask({ question: "and now?", history: hist });
 const hm = state.sent.at(-1).messages;
 ok("history capped at six turns, then the question", hm.length === 13 && hm[0].content === "q3" && hm.at(-1).content === "and now?", hm.length + " " + hm[0].content);
+
+/* ---------- what Paul sees matches what the app shows ---------- */
+console.log("paul sees the app");
+state.colls = {
+  parts: [{ id: "P-SN6-001", partName: "Diffuser" }, { id: "P-SN6-090", partName: "Tensile panel", rnd: true },
+          { id: "P-SN5-004", partName: "Old nosecone", retro: true }],
+  workOrders: [{ id: "WO-SN6-090", partId: "P-SN6-090", partName: "Tensile panel", status: "InWork" },
+               { id: "WO-SN6-001", partId: "P-SN6-001", partName: "Diffuser", status: "Released", dueDate: "2020-01-01" }],
+  projects: [{ id: "PROJ-SN6-006", title: "Prepreg Feasibility Study", status: "Backlog" },
+             { id: "PROJ-SN6-020", kind: "issue", title: "Dry spot on diffuser", status: "Active", workOrderId: "WO-SN6-001" }],
+  rnd: [{ id: "RDS-SN6-001", cls: "RDS", name: "Twill vs UD tensile", status: "Active", cols: [{ cid: "c1", name: "UTS", unit: "MPa", role: "result" }] },
+        { id: "CPN-SN6-001", cls: "CPN", study: "RDS-SN6-001", label: "C01", status: "Tested", vals: { c1: "512" } },
+        { id: "CPN-SN6-002", cls: "CPN", study: "RDS-SN6-001", label: "C02", status: "Planned", vals: {} }],
+  lots: [{ id: "RSN-SN6-001", name: "IN2", expiresOn: "2020-01-01" }],
+  roster: [{ id: "nick@berkeley.edu", name: "Nick", role: "lead", trainings: { infusion: { by: "x" } } }],
+};
+mergeInto("config/resins", { "IN2-AT30-SLOW": { febHoldH: 60, febBy: "Nick, 2026-10-01" } });
+mergeInto("config/season", { code: "SN6", compDate: "2027-06-15" });
+let seenTool = {};
+state.replies = (body) => {
+  const last = body.messages.at(-1);
+  if (!Array.isArray(last.content)) return toolUse([["app_overview", {}], ["search_records", { query: "tensile", kinds: ["rnd"] }], ["search_records", { query: "prepreg feasibility" }], ["get_record", { ref: "CPN-SN6-001" }], ["get_record", { ref: "RESIN:IN2-AT30-SLOW" }], ["search_records", { query: "nick infusion", kinds: ["people"] }]]);
+  last.content.forEach((x, k) => { seenTool[k] = x.content; });
+  return answer("ok [OVERVIEW]");
+};
+r = await ask({ question: "how many r&d tests do we have?" });
+const ov = JSON.parse(seenTool[0]);
+ok("the overview counts R&D the way the R&D tab does", ov["R&D"]["studies (top level, not archived) by status"].Active === 1 && ov["R&D"]["coupons by status"].Tested === 1 && ov["R&D"]["coupons by status"].Planned === 1 && ov["R&D"]["R&D parts"] === 1 && ov["R&D"]["R&D runs (work orders)"] === 1, JSON.stringify(ov["R&D"]));
+ok("season counts leave out R&D and the SN5 archive", ov["season parts (not R&D, not archived)"] === 1 && JSON.stringify(ov["work orders (not R&D, not archived) by status"]) === '{"Released":1}', JSON.stringify(ov));
+ok("late work orders, open issues and expired lots", ov["late work orders"].ids === "WO-SN6-001" && ov["open issues"].ids === "PROJ-SN6-020" && ov["lots past expiry"].ids === "RSN-SN6-001", JSON.stringify(ov));
+ok("an R&D search finds the R&D part and run, not just the rnd collection", /P-SN6-090/.test(seenTool[1]) && /WO-SN6-090/.test(seenTool[1]) && /R&D part/.test(seenTool[1]), seenTool[1]);
+ok("shelved project tickets are invisible; issues aren't", !/PROJ-SN6-006/.test(JSON.stringify(seenTool)) && /PROJ-SN6-020/.test(seenTool[0]), seenTool[2]);
+ok("a coupon's numbers are named by its study's columns", /UTS \(MPa\) \[result\]: 512/.test(seenTool[3]), seenTool[3]);
+ok("a resin system shows the lead's override, and the datasheet beside it", /team hold before demould \(hours, enforced\): 60/.test(seenTool[4]) && /datasheet hold/.test(seenTool[4]) && /Nick, 2026-10-01/.test(seenTool[4]), seenTool[4]);
+ok("people come with role and trainings, never an email", /PERSON:Nick/.test(seenTool[5]) && /Resin infusion/.test(seenTool[5]) && !/@/.test(seenTool[5]), seenTool[5]);
+ok("the overview is a citable source", r.out.sources[0] && r.out.sources[0].ref === "OVERVIEW", JSON.stringify(r.out.sources));
+ok("the R&D label is on the record text", /labels: R&D/.test(seenTool[1]) || /\[R&D\]/.test(seenTool[1]), seenTool[1]);
+
+/* ---------- the web ---------- */
+console.log("paul and the web");
+state.replies = [{ stop_reason: "end_turn", usage: { input_tokens: 9000, output_tokens: 300 }, content: [
+  { type: "server_tool_use", id: "s1", name: "web_search", input: { query: "twill drape curvature" } },
+  { type: "web_search_tool_result", tool_use_id: "s1", content: [{ type: "web_search_result", url: "https://www.example.org/twill", title: "Twill drape" }] },
+  { type: "text", text: "From the web, not from the app:\nTwill drapes better", citations: [{ type: "web_search_result_location", url: "https://www.example.org/twill", title: "Twill drape", cited_text: "x" }] },
+  { type: "text", text: " and plain weave is stiffer.", citations: [{ type: "web_search_result_location", url: "https://evil.example/never-returned", title: "x", cited_text: "y" }] },
+]}];
+r = await ask({ question: "twill or plain on a curve?" });
+ok("a web search is announced as a step", chunks.some(c => c.type === "step" && c.text === 'Searching the web for "twill drape curvature"'), JSON.stringify(chunks));
+ok("a web citation becomes a web source with its site", r.ok && r.out.sources.length === 1 && r.out.sources[0].type === "web" && r.out.sources[0].site === "example.org" && r.out.sources[0].ref === "https://www.example.org/twill", JSON.stringify(r.out && r.out.sources));
+ok("and its marker sits on the sentence it supports", /Twill drapes better \[\[0\]\] and plain weave is stiffer\./.test(r.out.answer) || /Twill drapes better\[\[0\]\] and plain/.test(r.out.answer), r.out.answer);
+ok("a cited page no search returned is dropped", !/evil/.test(JSON.stringify(r.out)));
+ok("web answers are flagged for the client", r.out.web === true);
 
 // The record the person has open rides along as context, id-shaped only.
 state.replies = [answer("ok")];

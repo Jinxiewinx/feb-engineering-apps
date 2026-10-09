@@ -1,7 +1,8 @@
 /* build_ai_corpus.mjs — the documents "Ask Paul" can read, as plain-text
  * sections, written to 06 Composites App/functions/corpus.json.
  *
- * WHAT GOES IN. Only documents the app ships in docs/: the CS standards
+ * WHAT GOES IN. The app's reference tables (see `facts` below), and only
+ * documents the app ships in docs/: the CS standards
  * (docs/standards/CS-*.md, split at their headings) and the datasheets
  * (docs/datasheets/*.pdf, through pdftotext, split by page). The standards are
  * unlisted in the Documents tab but still served, so a source chip can open
@@ -21,6 +22,7 @@
 
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import vm from "node:vm";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -87,7 +89,25 @@ for (const f of readdirSync(dsDir).filter(f => f.endsWith(".pdf")).sort()) {
   raw.split("\f").forEach((page, i) => add(doc, title, src, `page ${i + 1}`, page));
 }
 
-const json = JSON.stringify({ note: "Built by tools/build_ai_corpus.mjs from app/docs. Do not edit by hand.", sections }, null, 0) + "\n";
+/* The app's own reference tables, which live as constants in the browser
+   code: resin systems and their team holds, the materials table, the restock
+   rules, the trainings catalogue. Copied out here (the literal only, evaluated
+   in an empty sandbox) so Paul reads the same numbers the app enforces;
+   askPaul folds the leads' config/* overrides over them at question time. */
+function literal(file, name) {
+  const src = readFileSync(path.join(APP, "app", file), "utf8");
+  const m = src.match(new RegExp(`^const ${name} = ([\\[{][\\s\\S]*?^[\\]}]);`, "m"));
+  if (!m) throw new Error(`${name} not found in ${file}`);
+  return vm.runInNewContext("(" + m[1] + ")", Object.create(null), { timeout: 1000 });
+}
+const facts = {
+  resins: literal("resins.js", "RESINS"),
+  materials: literal("materials.js", "MATERIALS"),
+  restock: literal("inventory.js", "RESTOCK_SEED"),
+  trainings: literal("workorders.js", "TRAININGS"),
+};
+
+const json = JSON.stringify({ note: "Built by tools/build_ai_corpus.mjs from app/docs and the app's reference tables. Do not edit by hand.", sections, facts }, null, 0) + "\n";
 if (process.argv.includes("--check")) {
   const same = existsSync(OUT) && readFileSync(OUT, "utf8") === json;
   console.log(same ? "corpus.json is current" : "corpus.json is STALE: run node tools/build_ai_corpus.mjs");
@@ -95,4 +115,5 @@ if (process.argv.includes("--check")) {
 }
 writeFileSync(OUT, json);
 const docs = new Set(sections.map(s => s.doc));
+console.log(`facts: ${facts.resins.length} resin systems, ${facts.materials.length} materials, ${facts.restock.length} restock rules, ${Object.keys(facts.trainings).length} trainings`);
 console.log(`${sections.length} sections from ${docs.size} documents, ${(json.length / 1024).toFixed(0)} KB -> ${path.relative(process.cwd(), OUT)}`);

@@ -819,6 +819,22 @@ to names. Documents are `functions/corpus.json`, built from `app/docs/` by
   class only; the person's own `feb-rail` setting is untouched and restored on
   close), because his column plus the full sidebar squeezed record pages to a
   sliver.
+- **What Paul sees mirrors what the app shows** (`loadRecords` in
+  context.js). Shelved project tickets (`projects` without `kind: "issue"`)
+  and the bin are left out; R&D is the `rnd` collection plus `rnd:true` parts
+  and their runs, labelled R&D; retro, archived and other seasons keep their
+  labels. People come from the roster as name, role and training names, never
+  email. The app's code tables (RESINS, MATERIALS, RESTOCK_SEED, TRAININGS)
+  are copied into `corpus.json` by `build_ai_corpus.mjs` and the leads'
+  `config/*` overrides are folded over them per question. `app_overview`
+  counts the way the dashboard and the R&D tab do. Never read:
+  `config/slack`, `config/tracker`, aiUsage, notifications, pub, meta.
+- **Web search** (Simon asked, 2026-10-09) is the built-in `web_search` tool,
+  three uses a question, a last resort for general composites questions and
+  never for FEB facts. Its citations arrive as objects on the text; the
+  server turns them into markers and keeps only pages a search returned, the
+  answer carries the "From the web, not from the app:" line, and the client
+  shows those sources with their site name and opens them in a new tab.
 - **The open record rides along** as `about`, id-shaped only, offered as
   context ("I'm looking at X"), never as an instruction.
 - Medium effort (the photo jobs are low): this one reasons over what it found.

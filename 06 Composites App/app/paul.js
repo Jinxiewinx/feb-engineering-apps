@@ -32,6 +32,7 @@
  */
 
 const PAUL_GENERAL = "General composites knowledge, not from the app:";
+const PAUL_WEB = "From the web, not from the app:";
 const PAUL_STORE = "feb-paul:thread";
 let PAUL = paulLoad();
 
@@ -268,14 +269,32 @@ function paulAnswerHtml(t, i) {
     .replace(/\*\*([^*\n]{1,200})\*\*/g, "<b>$1</b>")
     .replace(/\s?\[\[(\d+)\]\]/g, (m, n) => cite(Number(n)))
     .replace(/\n/g, "<br>");
+  /* Anything not from the app sits under its own pill: general knowledge, or
+     the web (with the pages it came from in the sources list). The server's
+     fixed label lines mark where each part starts. */
+  const marks = [[PAUL_GENERAL, "General knowledge, not from the app"], [PAUL_WEB, "From the web, not from the app"]];
   const a = String(t.answer || "");
-  const k = a.indexOf(PAUL_GENERAL);
-  if (k < 0) return fmt(a);
-  const before = a.slice(0, k).trim(), after = a.slice(k + PAUL_GENERAL.length).trim();
-  return `${before ? fmt(before) : ""}<div class="paul-gen"><span class="pill">General knowledge, not from the app</span><div>${fmt(after)}</div></div>`;
+  const cuts = marks.map(([line, pill]) => ({ at: a.indexOf(line), line, pill })).filter(c => c.at >= 0).sort((x, y) => x.at - y.at);
+  if (!cuts.length) return fmt(a);
+  let html = cuts[0].at > 0 ? fmt(a.slice(0, cuts[0].at).trim()) : "";
+  cuts.forEach((c, n) => {
+    const end = n + 1 < cuts.length ? cuts[n + 1].at : a.length;
+    html += `<div class="paul-gen"><span class="pill">${c.pill}</span><div>${fmt(a.slice(c.at + c.line.length, end).trim())}</div></div>`;
+  });
+  return html;
 }
 function paulSourceTitle(s) {
-  return s.type === "doc" ? `${s.title}, ${s.section}` : `${s.ref}${s.title ? " · " + s.title : ""}`;
+  if (s.type === "doc") return `${s.title}, ${s.section}`;
+  if (s.type === "web") return `${s.site || "web"} · ${s.title || s.ref}`;
+  return `${paulRefLabel(s.ref)}${s.title && s.title !== paulRefLabel(s.ref) ? " · " + s.title : ""}`;
+}
+/* Reference refs read better without their prefix: "Nick", not PERSON:Nick. */
+function paulRefLabel(ref) {
+  const r = String(ref || "");
+  if (r === "OVERVIEW") return "Dashboard counts";
+  if (r === "SEASON") return "Season";
+  if (r === "BUDGET-GOALS") return "Budget goals";
+  return r.replace(/^(PERSON|RESIN|MAT|RESTOCK):/, "");
 }
 function paulSourcesHtml(t, i) {
   const src = t.sources || [];
@@ -284,9 +303,11 @@ function paulSourcesHtml(t, i) {
     <div class="paul-sources-h">Sources</div>
     ${src.map((s, n) => `<button class="paul-src" onclick="paulOpenSource(${i},${n})">
       <span class="paul-src-n">${n + 1}</span>
-      <span class="paul-src-t">${s.type === "doc"
+      <span class="paul-src-t">${s.type === "web"
+        ? `${icon("externalLink", 13)} <b>${esc(s.site || "web")}</b><span class="muted"> · ${esc(s.title || s.ref)}</span><span class="muted tny"> web</span>`
+        : s.type === "doc"
         ? `${icon("file", 13)} ${esc(s.title)}<span class="muted"> · ${esc(s.section)}</span>`
-        : `<b>${esc(s.ref)}</b>${s.title ? `<span class="muted"> · ${esc(s.title)}</span>` : ""}${s.kind && !String(s.title || "").toLowerCase().includes(s.kind) ? `<span class="muted tny"> ${esc(s.kind)}</span>` : ""}`}</span>
+        : `<b>${esc(paulRefLabel(s.ref))}</b>${s.title && s.title !== paulRefLabel(s.ref) ? `<span class="muted"> · ${esc(s.title)}</span>` : ""}${s.kind && !String(s.title || "").toLowerCase().includes(s.kind) ? `<span class="muted tny"> ${esc(s.kind)}</span>` : ""}`}</span>
     </button>`).join("")}
   </div>`;
 }
@@ -347,7 +368,24 @@ function paulAskFromSearch(q) {
 function paulOpenSource(ti, si) {
   const t = PAUL.turns[ti], s = t && t.sources && t.sources[si];
   if (!s) return;
+  /* A web page opens in a new browser tab and the chat stays exactly where
+     it is; everything else is inside the app. */
+  if (s.type === "web") { if (/^https?:\/\//i.test(s.ref)) window.open(s.ref, "_blank", "noopener,noreferrer"); return; }
   if (typeof isNarrowViewport === "function" && isNarrowViewport()) closePaul();
+  const ref = String(s.ref || "");
+  if (ref.startsWith("PERSON:")) {
+    const name = ref.slice(7).toLowerCase();
+    const u = (DB.users || []).find(x => String(x.name || "").toLowerCase() === name);
+    if (u && typeof openPerson === "function") openPerson(u.email); else setTab("people");
+    return;
+  }
+  if ((ref.startsWith("RESIN:") || ref.startsWith("MAT:")) && s.src) {
+    if (typeof openFilePreview === "function") openFilePreview(s.src, s.title || ref);
+    return;
+  }
+  const page = ref.startsWith("RESTOCK:") || ref.startsWith("MAT:") ? "inventory"
+    : ref === "SEASON" ? "season" : ref === "BUDGET-GOALS" ? "budget" : ref === "OVERVIEW" ? "dashboard" : ref.startsWith("RESIN:") ? "workorders" : "";
+  if (page) { setTab(page); return; }
   if (s.type === "doc") {
     if (typeof openFilePreview === "function") openFilePreview(s.src, `${s.title}, ${s.section}`);
     else window.open(s.src, "_blank", "noopener");
