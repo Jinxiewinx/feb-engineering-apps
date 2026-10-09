@@ -768,6 +768,35 @@ priced at Haiku 5.5's rates into `aiUsage/month_<yyyy-mm>`, mirrored to
 `config/ai.spend_<yyyy-mm>` for the ⋯ menu, and everything refuses past $80.
 Simon's Max plan carries $100 a month; the other $20 is headroom.
 
+**Ask Paul** (`askPaul`, `functions/context.js`, `app/paul.js`) is the one that
+comes closest to the "general endpoint" the rule forbids, and stays on the right
+side of it because the *server* decides what it can see. Four read-only tools
+(search and open records; search and read doc sections) over the team
+collections a member can already read, never roster, config, aiUsage,
+notifications, pub, tracker or meta, with binned records skipped and emails cut
+to names. Documents are `functions/corpus.json`, built from `app/docs/` by
+`tools/build_ai_corpus.mjs`, so it can only quote what the app ships.
+
+- **Why tools, not the whole lot in the prompt.** Standards plus datasheets plus
+  live data is ~150k tokens and growing; past 100k Haiku 5.5's input price goes
+  from $0.10 to $0.50 a million, so every question would cost ~$0.07 and the
+  worst month would blow the budget. With tools a question is 2–3 calls of
+  5–15k tokens, about a cent at medium effort.
+- **Why keyword search, not embeddings.** People ask about ids and lot codes,
+  which keyword search is good at; a few thousand records and ~450 sections
+  score in milliseconds; there is no index to keep in sync.
+- **Citations are checked, not trusted.** Every ref a tool returned is
+  collected; a `[ref]` in the answer that no tool returned is deleted before the
+  answer leaves the function. The client escapes the text and turns only the
+  server's `[[n]]` markers into chips.
+- **General knowledge** (Simon asked for it, 2026-10-09) is allowed only under a
+  fixed label line, never for FEB facts or for numbers a datasheet should give.
+- **The persona is the name.** The prompt says it is not a real person, imitates
+  nobody and never speaks for Easy Composites; the sheet says the same.
+- Medium effort (the photo jobs are low): this one reasons over what it found.
+  At most 4 tool rounds, then a forced answer. Re-run `tools/eval_askpaul.js`
+  in the live app whenever the prompt or tools change.
+
 Functions deploy separately (`firebase deploy --only functions`, after
 `firebase functions:secrets:set ANTHROPIC_API_KEY`) and never ride along on a
 hosting deploy.

@@ -3609,6 +3609,7 @@ function renderTopbar() {
             from a physical object to its record. */""}
       <button class="icon-btn" title="Scan a label" aria-label="Scan a label" onclick="scanToOpen()">${icon("scan", 19)}</button>
       <button class="icon-btn" title="Search (⌘K)" aria-label="Search" onclick="openSearch()">${icon("search", 19)}</button>
+      ${aiOn() ? `<button class="icon-btn" title="Ask Paul" aria-label="Ask Paul" onclick="openPaul()">${icon("message", 19)}</button>` : ""}
       ${/* No bell for a guest: notifications are per-person and a guest is
             nobody, so the query does not even run. */""}
       ${guest ? "" : `<button class="icon-btn" title="Notifications" aria-label="Notifications" onclick="openNotifs()">${icon("bell", 19)}${unread ? `<span class="badge">${unread}</span>` : ""}</button>`}

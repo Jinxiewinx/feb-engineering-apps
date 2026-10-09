@@ -113,6 +113,14 @@ Twelve tabs, grouped in the sidebar by who is asking:
   another team's budget.
 - **Documents:** the 25 datasheets, member uploads, and pinned Google Docs in
   one filterable shelf.
+- **Ask Paul:** a question box in the topbar that answers from the app's own
+  records, the CS standards and the datasheets, with a source chip for every
+  fact (Claude Haiku 5.5, read-only). Named after the team's running joke about
+  Easy Composites' Paul; it isn't him or them.
+- **AI, on every ✨:** receipts, packing slips and resin jug labels read
+  themselves into the grid you'd otherwise type, and you check before anything
+  saves. A lead can switch all of it off from ⋯, and it stops itself at $80 a
+  month.
 - **Reports:** CSV exports, the printable Monday status board, and the bulk
   label builder.
 - **People:** the roster, roles and trainings. Trainings gate work: a tagged

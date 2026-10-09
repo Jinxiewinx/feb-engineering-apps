@@ -87,7 +87,7 @@ Rendered in headless Chromium (need Playwright):
 | `test_labels.mjs` | The label sheets, down to the pixels: each QR is rasterized and its dark-pixel fraction checked, because a blank SVG passes every DOM assertion. Also measures a roll page: `test_label_roll.mjs` proves the JS and the CSS agree, this proves a browser agrees with them. |
 | `test_sanitize.mjs` | The comment sanitizer, running the real vendored DOMPurify. Never assert allowlist policy anywhere else; nothing else can see it. |
 | `test_scan.mjs` | In-app scanning and lot capture. |
-| `test_functions.mjs` | The Cloud Function in `06 Composites App/functions/`, in plain Node with Firebase and the Anthropic client stubbed (the SDK's real error classes are kept). Roster gate, Storage path and file-type refusals, what is sent to the model (Haiku 5.5, low effort, JSON schema), how a refusal, truncation or API error becomes a toast-ready error, and the 50-a-day cap. No key, no network, no cost. |
+| `test_functions.mjs` | The Cloud Functions in `06 Composites App/functions/`, in plain Node with Firebase and the Anthropic client stubbed (the SDK's real error classes are kept). For the photo jobs: roster gate, Storage path and file-type refusals, what is sent to the model, sanitising, the matKey enum. For Ask Paul: a scripted tool loop, what never reaches the model (binned records, emails, roster/config), the citation check, the 4-round cap. For all: the lead's off switch, per-job daily caps and the $80 monthly ceiling. No key, no network, no cost. |
 | `test_receiving_ui.mjs` | The receiving desk, measured at three widths and both themes with 7 and 40 rows. Needs `serve_populated.mjs` running. An empty grid cannot overflow and cannot be unreadable, so it has to be filled before it is measured; that is what found both of the desk's layout bugs. |
 | `test_q_landing.mjs` | The public `/Q/<ID>` nameplate page, including its offline watchdog. |
 | `test_route.mjs` | Deep links from a scanned code into the signed-in app. |
@@ -122,6 +122,8 @@ string to `cmd.exe` and the quotes arrive as part of the filename.
 |---|---|
 | `build_docx.py` | Renders the markdown sources in `02 CS Standards/src/` and `01 Pain Points.../src/` into FEB-styled .docx. No per-document mode; everything churns, commit all of it. |
 | `gen_docs_manifest.py` | Bundles datasheets, standards and printables into `06 Composites App/app/docs/` and writes the manifest the Documents tab reads. Run it after adding a datasheet or rebuilding a standard. |
+| `build_ai_corpus.mjs` | Turns the standards and datasheets in `app/docs/` into `functions/corpus.json`, the sections Ask Paul can search (pdftotext for the PDFs). Run it after `gen_docs_manifest.py`, then deploy functions. `--check` exits 1 when stale, and `release.mjs` refuses to ship a stale one. |
+| `eval_askpaul.js` | Not a Node script: runs in the live app, signed in, from the browser console. Asks Ask Paul ~15 questions built from today's real records plus fixed standards/datasheet questions, and reports which cited the right source. Bar: 13 of 15. Costs about $0.10–0.20 a run. |
 | `check_traceability.py` | Audits the pain-point-to-standard mapping and every csRef in the retro work orders. Run after any standards change. |
 | `gen_retro_wos.py` | Regenerates the 26 retro SN5 work orders from the Master Tracker extract. Only needed if the source data was wrong. |
 | `gen_sn5_seeds.py` | The other SN5 archives (parts, schedule, stock) from the same sources. |

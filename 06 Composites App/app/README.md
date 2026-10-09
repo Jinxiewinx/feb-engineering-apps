@@ -1348,6 +1348,24 @@ was a substring of a panel (`PNL-SN6-006-C03`, fifteen characters) it was one
 over the QR budget and coupon labels were text-only. A coupon is now a
 first-class R&D record — `CPN-SN6-042`, eleven characters, shorter than a mold.
 
+## Ask Paul
+
+The speech-bubble button in the topbar opens **Ask Paul**, a question box for
+anything about the team's composites work: "where is the diffuser mold", "which
+IN2 lots expire this month", "what does CS-006 say about degassing", "what
+gloves for XCR". It looks things up in the app's records and in the standards
+and datasheets the app ships, and puts a numbered chip after every fact; the
+chip opens the record or the PDF it came from, so you can check rather than
+trust. If it can't find something it says so. A general composites question the
+documents don't cover gets a short answer under a "General knowledge, not from
+the app" label, and never for anything FEB-specific (where things are, what's
+blocking, our cure holds and mix ratios; the Resins page is the number the team
+enforces).
+
+It only reads; it can't change anything. The conversation lives in your tab and
+is gone on reload. 30 questions a person a day. The name is the team's running
+joke about Paul from Easy Composites; it isn't him and doesn't speak for them.
+
 ## Scanning
 
 ![The public nameplate: what a phone camera opens, signed out](../design/scan-mockup-20260825.png)

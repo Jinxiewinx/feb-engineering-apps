@@ -356,6 +356,16 @@
   /* A <button>, so `font: inherit` and the box reset are needed — everything up
      to `cursor` is undoing the app's own button styling, the same way .tl-cell
      does it. Kept visually identical to the old <span>. */
+  /* Ask Paul (paul.js): a question, its answer, the sources it cited. */
+  .paul-thread { display: flex; flex-direction: column; gap: 14px; max-height: 52vh; overflow-y: auto; margin: 10px 0; }
+  .paul-turn { padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .paul-turn:last-child { border-bottom: 0; padding-bottom: 0; }
+  .paul-q { font-weight: 600; }
+  .paul-a { margin-top: 4px; line-height: 1.5; }
+  .paul-gen { margin-top: 8px; padding: 8px 10px; border-left: 3px solid var(--line); color: var(--muted); }
+  .paul-srcs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .paul-cite { padding: 0 6px; font-size: 11px; vertical-align: 1px; }
+  .paul-ask textarea { width: 100%; resize: vertical; }
   .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 5px; font: inherit; font-size: 12px; line-height: 1.5; text-align: left; min-height: 0; background: var(--accent-soft); border: 1px solid var(--accent-soft); color: var(--accent); cursor: pointer; }
   .chip:hover { filter: brightness(.97); }
   /* A person. Linked: avatar + name, a button onto their page. Hollow and
@@ -4226,6 +4236,7 @@
 <script src="print.js"></script>
 <script src="labels.js"></script>
 <script src="tracker.js"></script>
+<script src="paul.js"></script>
 <script type="module" src="fb.js"></script>
 <script>render(); if (typeof fusionBridgeInit === "function") fusionBridgeInit();</script>
 </body>

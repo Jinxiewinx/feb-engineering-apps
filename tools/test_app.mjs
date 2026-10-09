@@ -11784,6 +11784,56 @@ await t("the AI switch: a lead sees it with the month's spend, and off hides the
   fb.call = had; window.AI_CFG = null;
 });
 
+await t("Ask Paul: gated by the switch, answers escaped, only vouched sources become chips", async () => {
+  signInAsLead();
+  const had = fb.call;
+  delete fb.call;
+  renderTopbar();
+  assert(!/openPaul\(\)/.test(topbar.innerHTML), "no function client, no button");
+  let sent = null;
+  fb.call = async (name, data) => {
+    sent = { name, data };
+    return { answer: "The diffuser run is on hold [[0]]. <img src=x onerror=alert(1)> See the standard [[1]] and [[7]].",
+      sources: [{ type: "record", ref: "WO-SN6-003", kind: "work order", title: "Diffuser" },
+                { type: "doc", ref: "CS-006#12", doc: "CS-006", title: "CS-006 Resin Infusion", section: "7.5 Mix and infuse", src: "docs/standards/CS-006.pdf" }] };
+  };
+  renderTopbar();
+  assert(/openPaul\(\)/.test(topbar.innerHTML), "the topbar offers Ask Paul when AI is on");
+  window.AI_CFG = { enabled: false }; renderTopbar();
+  assert(!/openPaul\(\)/.test(topbar.innerHTML), "and not when a lead switched it off");
+  window.AI_CFG = null;
+
+  PAUL = { turns: [], draft: "", busy: false };
+  openPaul();
+  let m = document.getElementById("modal").innerHTML;
+  assert(/Ask Paul/.test(m) && /not Easy Composites/.test(m), "the sheet says what Paul is and isn't");
+  PAUL.draft = "what's blocking the diffuser?";
+  await paulAsk();
+  assert(sent.name === "askPaul" && sent.data.question === "what's blocking the diffuser?" && sent.data.history.length === 0, "the question goes to askPaul");
+  m = document.getElementById("modal").innerHTML;
+  assert(!/<img src=x/.test(m) && /&lt;img/.test(m), "model text is escaped, never markup");
+  assert((m.match(/class="chip paul-cite"/g) || []).length === 2, "two vouched sources, two inline chips; [[7]] has no source and no chip");
+  assert(/1 · WO-SN6-003 · Diffuser/.test(m) && /2 · CS-006 Resin Infusion, 7.5 Mix and infuse/.test(m), "sources listed under the answer");
+
+  PAUL.draft = "and who signed the layup?";
+  await paulAsk();
+  assert(sent.data.history.length === 1 && !/\[\[/.test(sent.data.history[0].a), "earlier turns go back as plain text, markers stripped");
+
+  paulOpenSource(0, 0);
+  assert(view.mode === "detail" && view.id === "WO-SN6-003", "a record chip opens the record");
+
+  fb.call = async () => ({ answer: "Not in the app.\n\nGeneral composites knowledge, not from the app:\nTwill drapes better.", sources: [] });
+  PAUL.draft = "twill or plain?"; await paulAsk();
+  assert(/General knowledge, not from the app<\/span>/.test(paulTurnHtml(PAUL.turns.at(-1))), "general knowledge wears its label");
+
+  fb.call = async () => { throw Object.assign(new Error("Daily limit of 30 questions reached. It resets tomorrow."), { code: "functions/resource-exhausted" }); };
+  PAUL.draft = "one more"; await paulAsk();
+  assert(/Daily limit of 30 questions/.test(paulTurnHtml(PAUL.turns.at(-1))) && !PAUL.busy, "a refusal shows in the thread and frees the box");
+  closeModal();
+  PAUL = { turns: [], draft: "", busy: false };
+  fb.call = had;
+});
+
 await t("the login screen offers the door, and says what is behind it", () => {
   fb.state = "signedout"; fb.guest = false;
   const html = renderLogin();

@@ -310,6 +310,23 @@ for (const s of SUITES) {
   }
 }
 
+/* Ask Paul reads functions/corpus.json, built from the standards and
+   datasheets in app/docs. A document changed without a rebuild means Paul
+   quotes the old text while the chip opens the new PDF, so a stale corpus
+   stops the release the same way a red suite does. (The corpus ships with
+   the functions, which deploy separately; this keeps the repo honest.) */
+{
+  const corpus = join(ROOT, "tools", "build_ai_corpus.mjs");
+  if (existsSync(corpus)) {
+    try {
+      execFileSync(process.execPath, [corpus, "--check"], { cwd: ROOT, encoding: "utf8" });
+      say("    ✓ Ask Paul's document corpus is current");
+    } catch (e) {
+      die("functions/corpus.json is stale: run node tools/build_ai_corpus.mjs, commit it, deploy functions. Not shipping.");
+    }
+  }
+}
+
 /* ---- 7. commit, tag, push ---------------------------------------------- */
 const msg = `Release v${version}\n\n` + subjects.map(l => `- ${l}`).join("\n") + "\n";
 act("commit, tag and push", () => {
