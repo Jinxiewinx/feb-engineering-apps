@@ -32,11 +32,11 @@ var APP_VERSION = "6.3.1";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "A purchase can hold more than its receipt now. Under Receipt there's an Other files box for the quote, the order confirmation, or the PDF invoice.",
-  "Add as many photos and PDFs there as you need. Tap one to open it.",
-  "✨ still reads only the receipt, so put the one you want read in the receipt slot.",
-  "Deleting a purchase sends its receipt and all its other files to the bin together.",
-  "Nothing else changed. If your app still shows 6.3.0 or older, reload.",
+  "Ask Paul: tap the speech bubble at the top and ask anything about our composites work. Where's a mold, what's blocking a run, what CS-006 says, what gloves for XCR. Every fact has a number you can tap to see where it came from.",
+  "Paul only knows what's in the app and our documents. If he can't find it he says so, and anything from general knowledge is labelled. He's our in-joke, not the real Paul or Easy Composites.",
+  "Receiving desk: ✨ From packing slip turns a photo of the slip into rows. Check the class, shelf and count on each before you save.",
+  "Resin or hardener lot: ✨ Read label photographs the jug and offers the lot number and expiry. Tick what's right, press Apply. Dates read this way are marked \"AI read\" until someone types over them.",
+  "Leads: ⋯ has a switch that turns every AI button off, with this month's AI spend beside it.",
 ];
 
 
