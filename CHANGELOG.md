@@ -38,6 +38,24 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.4.0 — 2026-10-09
+
+- WHATS_NEW for 6.4.0: Ask Paul, packing slips, jug labels, the AI switch
+- Ask Paul: search the standards for how-to questions; render **bold**
+- Ask Paul and the slip reader, after the first live run
+- Ask Paul, client side: the topbar question box, plus docs and the eval
+- Ask Paul, server side: a read-only tool loop over app records and docs
+- Photo -> rows: packing slips at the receiving desk, labels on the lot page
+
+<details><summary>2 more</summary>
+
+- AI groundwork: a lead's off switch, per-job caps, an $80 monthly ceiling
+- SESSION-STATE: note v6.3.1 (Other files on purchases)
+
+</details>
+
+---
+
 ## v6.3.1 — 2026-10-08
 
 - Purchases hold other files beside the receipt
