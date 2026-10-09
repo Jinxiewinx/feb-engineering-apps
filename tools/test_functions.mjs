@@ -39,6 +39,9 @@ const state = {
   usage: new Map(),
   files: new Map(),
   reply: null,      // what messages.create resolves to
+  replies: null,    // or a queue of them, one per call (askPaul's tool loop)
+  colls: {},        // collection name -> records, for askPaul's loadRecords
+  collsRead: [],    // which collections were ever read
   throwErr: null,   // what messages.create throws
   sent: [],         // every request body
 };
@@ -48,8 +51,9 @@ class FakeAnthropic {
   constructor() {
     this.messages = {
       create: async (body) => {
-        state.sent.push(body);
+        state.sent.push(JSON.parse(JSON.stringify(body)));  // a snapshot: the loop keeps appending to messages
         if (state.throwErr) throw state.throwErr;
+        if (state.replies) return typeof state.replies === "function" ? state.replies(body) : state.replies.shift();
         return state.reply;
       },
     };
@@ -69,6 +73,12 @@ const mergeInto = (p, v) => {
   state.docs.set(p, cur);
 };
 const firestore = {
+  collection: (name) => ({
+    get: async () => {
+      state.collsRead.push(name);
+      return { forEach: (fn) => (state.colls[name] || []).forEach((r) => fn({ id: r.id, data: () => ({ ...r }) })) };
+    },
+  }),
   doc: (p) => ({
     _p: p,
     get: async () => p.startsWith("roster/")
@@ -106,7 +116,7 @@ stub("firebase-functions/params", { defineSecret: () => ({ value: () => "sk-test
 stub("firebase-admin", admin);
 stub("@anthropic-ai/sdk", FakeAnthropic);
 
-const { parseReceipt, parsePackingSlip, readContainerLabel } = req(FN);
+const { parseReceipt, parsePackingSlip, readContainerLabel, askPaul } = req(FN);
 
 const member = { auth: { token: { email: "member@berkeley.edu" } } };
 const call = async (data, who = member) => {
@@ -297,6 +307,107 @@ r = await slip({ path: SLIP });
 const r2 = await lab({ path: LABEL, materials: MATS });
 ok("the off switch covers the new jobs too", r.code === "failed-precondition" && r2.code === "failed-precondition");
 mergeInto("config/ai", { enabled: true });
+
+/* ---------- askPaul ---------- */
+console.log("ask paul");
+state.docs.set(dayKey, {}); state.docs.set(monthKey, {}); state.docs.delete("config/ai");
+state.colls = {
+  workOrders: [
+    { id: "WO-SN6-003", partName: "Diffuser", status: "OnHold", purchaserEmail: "x@y.com",
+      steps: [{ title: "Layup", status: "done", buyoff: { name: "Nick", at: "2026-09-01", email: "nick@berkeley.edu" } }],
+      notes: "<p>Waiting on <b>peel ply</b> from nick@berkeley.edu</p>" },
+    { id: "WO-SN6-099", partName: "Diffuser old", deleted: true },
+  ],
+  lots: [{ id: "RSN-SN6-001", name: "IN2 resin", matKey: "IN2", expiresOn: "2026-11-01", location: "BIN-SN6-002" }],
+};
+const ask = async (data, who = member) => {
+  try { return { ok: true, out: await askPaul({ ...who, data }) }; }
+  catch (e) { return { ok: false, code: e.code, msg: e.message }; }
+};
+const toolUse = (calls) => ({ stop_reason: "tool_use", usage: { input_tokens: 3000, output_tokens: 150 },
+  content: [{ type: "thinking", thinking: "", signature: "sig" }, ...calls.map((c, i) => ({ type: "tool_use", id: "tu" + i + Math.random(), name: c[0], input: c[1] }))] });
+const answer = (t) => ({ stop_reason: "end_turn", usage: { input_tokens: 4000, output_tokens: 200 }, content: [{ type: "text", text: t }] });
+
+r = await ask({ question: "  " });
+ok("an empty question is refused", r.code === "invalid-argument", JSON.stringify(r));
+r = await ask({ question: "x".repeat(1001) });
+ok("an over-long question is refused", r.code === "invalid-argument", JSON.stringify(r));
+
+const sentBefore = state.sent.length;
+state.collsRead = [];
+state.replies = [
+  toolUse([["search_records", { query: "diffuser" }], ["search_docs", { query: "peel ply" }]]),
+  toolUse([["get_record", { ref: "WO-SN6-003" }]]),
+  answer("The diffuser run is on hold waiting on peel ply [WO-SN6-003]. Nick signed the layup [WO-SN6-003, WO-SN6-099]. See [CS-999#1] and [FAKE-1] and the peel ply sheet [" + "PLACEHOLDER" + "]."),
+];
+r = await ask({ question: "What's blocking the diffuser?" });
+ok("a question gets an answer", r.ok, JSON.stringify(r));
+const calls = state.sent.slice(sentBefore);
+ok("three model calls: search, open, answer", calls.length === 3, String(calls.length));
+ok("Paul runs Haiku 5.5 at medium effort", calls.every(b => b.model === "claude-haiku-5-5" && b.output_config.effort === "medium"));
+ok("with the four read-only tools", JSON.stringify(calls[0].tools.map(t => t.name)) === JSON.stringify(["search_records", "get_record", "search_docs", "read_doc_section"]));
+ok("the assistant turn goes back unchanged, thinking block included", calls[1].messages.at(-2).role === "assistant" && calls[1].messages.at(-2).content[0].type === "thinking");
+const results = calls[1].messages.at(-1).content;
+ok("both tool calls answered in one user message", results.length === 2 && results.every(x => x.type === "tool_result"));
+const allTool = JSON.stringify(calls.map(b => b.messages));
+ok("records found by keyword", /WO-SN6-003/.test(results[0].content));
+ok("binned records never reach Paul", !/WO-SN6-099/.test(allTool));
+ok("email addresses never reach Paul", !/@berkeley\.edu|x@y\.com/.test(allTool));
+ok("only team collections are read, never roster or config", state.collsRead.length && state.collsRead.every(c => !/roster|config|aiUsage|notifications|pub|tracker|meta/.test(c)), state.collsRead.join());
+ok("html is flattened", /Waiting on peel ply/.test(JSON.stringify(calls[2].messages)));
+ok("a retrieved ref becomes a source", r.out.sources.length >= 1 && r.out.sources[0].ref === "WO-SN6-003" && r.out.sources[0].type === "record", JSON.stringify(r.out.sources));
+ok("and its marker points at it", /hold waiting on peel ply \[\[0\]\]/.test(r.out.answer), r.out.answer);
+ok("a binned id in a list is dropped, the real one kept", /signed the layup \[\[0\]\]\./.test(r.out.answer), r.out.answer);
+ok("refs nobody retrieved are removed, not linked", !/CS-999|FAKE-1|PLACEHOLDER/.test(r.out.answer) && r.out.sources.every(x => x && !/CS-999|FAKE/.test(x.ref)), r.out.answer);
+ok("not flagged general", r.out.general === false);
+ok("an Ask is counted under ask, not photo", Number(state.docs.get(dayKey).ask) === 1 && !state.docs.get(dayKey).photo, JSON.stringify(state.docs.get(dayKey)));
+ok("each loop call is billed", (state.docs.get(monthKey) || {}).calls === 3);
+
+// A doc ref that WAS retrieved survives as a doc source with its PDF.
+state.replies = null;
+let docRef = "";
+state.replies = (body) => {
+  const last = body.messages.at(-1);
+  if (!Array.isArray(last.content)) return toolUse([["search_docs", { query: "degassing resin infusion" }]]);
+  docRef = JSON.parse(last.content[0].content)[0].ref;
+  return answer(`Degas before infusing [${docRef}].`);
+};
+r = await ask({ question: "Do I degas IN2?" });
+ok("a retrieved doc section becomes a doc source with a link", r.ok && r.out.sources[0] && r.out.sources[0].type === "doc" && /^docs\//.test(r.out.sources[0].src), JSON.stringify(r.out && r.out.sources));
+
+// General knowledge is labelled.
+state.replies = [answer("General composites knowledge, not from the app:\nTwill drapes better than plain weave.")];
+r = await ask({ question: "twill or plain weave for a curved part?" });
+ok("general knowledge is flagged for the client", r.ok && r.out.general === true && r.out.sources.length === 0, JSON.stringify(r.out));
+
+// The loop is bounded.
+const n0 = state.sent.length;
+state.replies = (body) => body.tool_choice.type === "none" ? answer("Here's what I found.") : toolUse([["search_records", { query: "x" }]]);
+r = await ask({ question: "loop forever" });
+const loop = state.sent.slice(n0);
+ok("at most 4 tool rounds, then a forced answer", r.ok && loop.length === 5 && loop.at(-1).tool_choice.type === "none" && loop.slice(0, 4).every(b => b.tool_choice.type === "auto"), loop.map(b => b.tool_choice.type).join());
+
+// History is capped and plain.
+state.replies = [answer("ok")];
+const hist = Array.from({ length: 9 }, (_, i) => ({ q: "q" + i, a: "a" + i }));
+r = await ask({ question: "and now?", history: hist });
+const hm = state.sent.at(-1).messages;
+ok("history capped at six turns, then the question", hm.length === 13 && hm[0].content === "q3" && hm.at(-1).content === "and now?", hm.length + " " + hm[0].content);
+
+state.replies = [{ stop_reason: "refusal", usage: {}, content: [] }];
+r = await ask({ question: "something" });
+ok("a refusal is a clean error", r.code === "failed-precondition", JSON.stringify(r));
+
+state.docs.set(dayKey, { ask: 30 });
+const n1 = state.sent.length;
+r = await ask({ question: "one more" });
+ok("the 31st question is refused before any model call", r.code === "resource-exhausted" && /30 questions/.test(r.msg) && state.sent.length === n1, JSON.stringify(r));
+mergeInto("config/ai", { enabled: false });
+state.docs.set(dayKey, {});
+r = await ask({ question: "hello" });
+ok("the off switch covers Paul", r.code === "failed-precondition" && /switched off/.test(r.msg));
+mergeInto("config/ai", { enabled: true });
+state.replies = null;
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

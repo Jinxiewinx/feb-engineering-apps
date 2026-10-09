@@ -138,18 +138,15 @@ async function storageBlock(path) {
   return isImage ? { type: "image", source } : { type: "document", source };
 }
 
-/* One structured-output call to Haiku. Returns the parsed object or throws an
- * HttpsError whose message the client can put straight in a toast. */
-async function callHaiku({ content, schema, maxTokens = 2048, label }) {
+/* One request to the model, with the SDK's errors turned into HttpsErrors a
+ * toast can show, and the call's real usage logged and added to the month.
+ * Every model call in this file goes through here, so the budget sees all of
+ * them. */
+async function modelCall(body, label) {
   const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value(), maxRetries: 1, timeout: 45_000 });
   let msg;
   try {
-    msg = await client.messages.create({
-      model: MODEL,
-      max_tokens: maxTokens,
-      output_config: { effort: EFFORT, format: { type: "json_schema", schema } },
-      messages: [{ role: "user", content }],
-    });
+    msg = await client.messages.create({ model: MODEL, ...body });
   } catch (e) {
     // Most specific first. APIConnectionError is a subclass of APIError in
     // the JS SDK, so it has to be checked before it.
@@ -169,6 +166,17 @@ async function callHaiku({ content, schema, maxTokens = 2048, label }) {
   const u = msg.usage || {};
   console.log(`${label}: in=${u.input_tokens} out=${u.output_tokens} stop=${msg.stop_reason}`);
   await recordSpend(u, label);
+  return msg;
+}
+
+/* One structured-output call to Haiku. Returns the parsed object or throws an
+ * HttpsError whose message the client can put straight in a toast. */
+async function callHaiku({ content, schema, maxTokens = 2048, label }) {
+  const msg = await modelCall({
+    max_tokens: maxTokens,
+    output_config: { effort: EFFORT, format: { type: "json_schema", schema } },
+    messages: [{ role: "user", content }],
+  }, label);
 
   if (msg.stop_reason === "refusal") {
     throw new HttpsError("failed-precondition", "The model declined to read this file. Type the lines in.");
@@ -367,3 +375,173 @@ exports.readContainerLabel = onCall(
   }
 );
 
+
+/* ---------------- askPaul: questions about the team's composites work ----------------
+ * "Paul" is a team in-joke (the Easy Composites presenter as the ideal
+ * composites oracle). The name is the whole joke: the model never claims to
+ * be him, never imitates him, and never speaks for Easy Composites.
+ *
+ * WHY THIS IS NOT THE "GENERAL ENDPOINT" THE RULE FORBIDS. The server decides
+ * what Paul can see: four read-only tools over context.js (app records and
+ * the shipped standards/datasheets), nothing else. It writes nothing. The
+ * system prompt keeps it to FEB composites, and the daily cap and monthly
+ * ceiling bound the spend whatever is typed.
+ *
+ * CITATIONS ARE CHECKED, NOT TRUSTED. Paul writes [ref] after a fact. Every
+ * ref the tools returned this question is collected; a [ref] in the answer
+ * that is not in that set is removed before the answer leaves the function,
+ * so a made-up id can never become a link that looks like evidence.
+ *
+ * GENERAL KNOWLEDGE (Simon, 2026-10-09: "beef up who is talking ... queries
+ * not just about the app"). Allowed for general composites questions the
+ * documents don't cover, under a fixed label line the client styles, with no
+ * chips. Never for FEB-specific facts or for numbers a datasheet should give.
+ *
+ * Medium effort, unlike the photo jobs: this one reasons over what it found.
+ */
+const ctx = require("./context.js");
+const PAUL_EFFORT = "medium";
+const PAUL_MAX_TOOL_ROUNDS = 4;
+const GENERAL_LINE = "General composites knowledge, not from the app:";
+
+const PAUL_SYSTEM = `You are "Paul", the composites helper inside FEB Composites, the app Formula Electric at Berkeley's composites team uses to run its shop. The name is a team in-joke about the ideal composites expert. You are not a real person: never claim to be one, never imitate anyone, and never speak for Easy Composites or any other company.
+
+How to answer:
+1. Use the tools first. Search the app's records (work orders, parts, molds, material lots, shelves, tooling boards, stack plans, purchases, issues, schedule, R&D) and its documents (FEB's CS standards and the material datasheets) for anything the question touches. Open the most relevant ones before answering.
+2. After every fact that came from a tool, put its ref in square brackets exactly as the tool gave it, for example [WO-SN6-003] or [CS-006#12]. Never write a ref the tools did not give you.
+3. FEB-specific facts (where something is, its status or stage, who signed what, what is blocking, the team's cure holds, mix ratios, expiry dates, costs) come only from tools. If the tools don't have it, say plainly that you couldn't find it in the app.
+4. If the question is general composites knowledge that the app's documents don't cover, you may answer from general knowledge. Start that part with the line "${GENERAL_LINE}" and keep it short. Never use general knowledge for a number that should come from a datasheet or the team's standards (cure times, temperatures, ratios, pot life, shelf life); point to the datasheet instead.
+5. For cure holds and mix ratios, quote the source and add that the Resins page in the app holds the number the team enforces.
+6. You can only read. Never say you changed, created, moved or signed anything.
+7. If the question is not about composites or the team's work, say in one sentence that you only help with FEB composites.
+
+Be brief and plain: a few sentences or a short list, no headings. People read this on a phone at the layup table.`;
+
+const PAUL_TOOLS = [
+  {
+    name: "search_records",
+    description: "Keyword search over the team's records in the app. Returns up to 12 matches with ref, kind, title and a snippet. Use part numbers, ids, material names, people's first names or plain words.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Keywords" },
+        kinds: { type: "array", items: { type: "string", enum: ctx.COLLS }, description: "Optional: limit to these collections" },
+      },
+      required: ["query"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "get_record",
+    description: "Open one record by its ref (id) and read all of it: steps, buy-offs, notes, locations, dates.",
+    input_schema: { type: "object", properties: { ref: { type: "string" } }, required: ["ref"], additionalProperties: false },
+  },
+  {
+    name: "search_docs",
+    description: "Keyword search over FEB's CS standards and the material datasheets (technical and safety data sheets) shipped in the app. Returns up to 6 sections with ref, document title, section and a snippet.",
+    input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"], additionalProperties: false },
+  },
+  {
+    name: "read_doc_section",
+    description: "Read one document section in full by its ref, e.g. CS-006#12.",
+    input_schema: { type: "object", properties: { ref: { type: "string" } }, required: ["ref"], additionalProperties: false },
+  },
+];
+
+/* Runs one tool. `seen` collects every ref a tool handed back this question:
+ * the citation check below accepts those and nothing else. */
+function runTool(name, input, records, seen) {
+  const i = input || {};
+  if (name === "search_records") {
+    const hits = ctx.searchRecords(records, i.query, i.kinds);
+    hits.forEach((h) => seen.set(h.ref, { type: "record", ref: h.ref, kind: h.kind, title: h.title }));
+    return hits.length ? hits : { result: "No matching records." };
+  }
+  if (name === "get_record") {
+    const r = ctx.getRecord(records, i.ref);
+    if (!r) return { result: `No record ${String(i.ref || "").slice(0, 40)}.` };
+    seen.set(r.ref, { type: "record", ref: r.ref, kind: r.kind, title: r.title });
+    return r;
+  }
+  if (name === "search_docs") {
+    const hits = ctx.searchDocs(i.query);
+    hits.forEach((h) => seen.set(h.ref, ctx.docSource(h.ref)));
+    return hits.length ? hits : { result: "No matching document sections." };
+  }
+  if (name === "read_doc_section") {
+    const s = ctx.readDocSection(i.ref);
+    if (!s) return { result: `No section ${String(i.ref || "").slice(0, 40)}.` };
+    seen.set(s.ref, ctx.docSource(s.ref));
+    return s;
+  }
+  return { result: "Unknown tool." };
+}
+
+/* Brackets in the answer become numbered markers [[n]] pointing into
+ * `sources`; a bracket naming anything the tools did not return is removed. */
+function checkCitations(text, seen) {
+  const sources = [], index = new Map();
+  const lower = new Map([...seen.keys()].map((k) => [k.toLowerCase(), k]));
+  const out = text.replace(/\s?\[([^\[\]\n]{2,60})\]/g, (m, inner) => {
+    const refs = inner.split(/[,;]\s*/).map((x) => lower.get(x.trim().toLowerCase())).filter(Boolean);
+    if (!refs.length) return "";
+    return " " + refs.map((ref) => {
+      if (!index.has(ref)) { index.set(ref, sources.length); sources.push(seen.get(ref)); }
+      return `[[${index.get(ref)}]]`;
+    }).join("");
+  });
+  return { answer: out.trim(), sources };
+}
+
+exports.askPaul = onCall(
+  { secrets: [ANTHROPIC_API_KEY], region: "us-central1", timeoutSeconds: 120, memory: "512MiB" },
+  async (req) => {
+    const email = await requireRoster(req);
+    await requireAiOn();
+    const q = String((req.data && req.data.question) || "").trim();
+    if (!q) throw new HttpsError("invalid-argument", "Ask Paul something.");
+    if (q.length > 1000) throw new HttpsError("invalid-argument", "That's a long one. Keep it under 1,000 characters.");
+    await chargeDaily(email, "ask");
+
+    // Earlier turns from this tab, as plain text (no thinking blocks, no tool
+    // traffic), capped at six. The client keeps them; nothing is stored here.
+    const history = (Array.isArray(req.data.history) ? req.data.history : []).slice(-6).flatMap((t) => {
+      const hq = String((t && t.q) || "").slice(0, 1000).trim(), ha = String((t && t.a) || "").slice(0, 3000).trim();
+      return hq && ha ? [{ role: "user", content: hq }, { role: "assistant", content: ha }] : [];
+    });
+    const messages = [...history, { role: "user", content: q }];
+
+    const records = await ctx.loadRecords(admin.firestore());
+    const seen = new Map();
+    let msg;
+    for (let round = 0; ; round++) {
+      const last = round >= PAUL_MAX_TOOL_ROUNDS;
+      msg = await modelCall({
+        max_tokens: 8000,
+        system: PAUL_SYSTEM,
+        tools: PAUL_TOOLS,
+        // Past the round limit the model must answer with what it has.
+        tool_choice: { type: last ? "none" : "auto" },
+        output_config: { effort: PAUL_EFFORT },
+        messages,
+      }, "askPaul");
+      if (msg.stop_reason === "refusal") {
+        throw new HttpsError("failed-precondition", "Paul won't answer that one.");
+      }
+      if (msg.stop_reason !== "tool_use" || last) break;
+      // The assistant turn goes back unchanged (thinking blocks included), then
+      // every tool result in one user message.
+      messages.push({ role: "assistant", content: msg.content });
+      const results = msg.content.filter((b) => b.type === "tool_use").map((b) => ({
+        type: "tool_result", tool_use_id: b.id,
+        content: JSON.stringify(runTool(b.name, b.input, records, seen)).slice(0, 20000),
+      }));
+      messages.push({ role: "user", content: results });
+    }
+
+    const text = (msg.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+    if (!text) throw new HttpsError("internal", "Paul didn't come up with an answer. Try asking it another way.");
+    const { answer, sources } = checkCitations(text, seen);
+    return { answer, sources: sources.filter(Boolean), general: answer.includes(GENERAL_LINE), generalLine: GENERAL_LINE };
+  }
+);
