@@ -44,7 +44,7 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024; // storage.rules sizeOk() caps uploads 
 // Per person per UTC day, per kind of job. Normal use is a handful; these are
 // a ceiling on a stuck loop or a leaked session, not a ration. The photo jobs
 // (receipt, packing slip, container label) share one count.
-const DAILY_CAPS = { photo: 50, ask: 30 };
+const DAILY_CAPS = { photo: 50, ask: 100 };
 
 // The team's monthly ceiling. Simon's Max plan carries $100 a month of API
 // credit; refusing at $80 leaves room for calls already in flight and for
@@ -142,11 +142,19 @@ async function storageBlock(path) {
  * toast can show, and the call's real usage logged and added to the month.
  * Every model call in this file goes through here, so the budget sees all of
  * them. */
-async function modelCall(body, label) {
+async function modelCall(body, label, onThinking) {
   const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value(), maxRetries: 1, timeout: 45_000 });
   let msg;
   try {
-    msg = await client.messages.create({ model: MODEL, ...body });
+    if (onThinking) {
+      // Streamed only so the thinking summary can be passed on as it arrives;
+      // the caller still gets one finished message.
+      const stream = client.messages.stream({ model: MODEL, ...body });
+      stream.on("thinking", (delta) => { try { onThinking(delta); } catch (e) { /* a dropped chunk is fine */ } });
+      msg = await stream.finalMessage();
+    } else {
+      msg = await client.messages.create({ model: MODEL, ...body });
+    }
   } catch (e) {
     // Most specific first. APIConnectionError is a subclass of APIError in
     // the JS SDK, so it has to be checked before it.
@@ -408,7 +416,7 @@ const GENERAL_LINE = "General composites knowledge, not from the app:";
 const PAUL_SYSTEM = `You are "Paul", the composites helper inside FEB Composites, the app Formula Electric at Berkeley's composites team uses to run its shop. The name is a team in-joke about the ideal composites expert. You are not a real person: never claim to be one, never imitate anyone, and never speak for Easy Composites or any other company.
 
 How to answer:
-1. Use the tools first. Search the app's records (work orders, parts, molds, material lots, shelves, tooling boards, stack plans, purchases, issues, schedule, R&D) and its documents (FEB's CS standards and the material datasheets) for anything the question touches. Open the most relevant ones before answering. For any "how do I" or "what's the rule" question, always search the documents as well as the records: the team's procedures live in the CS standards.
+1. Use the tools first. Search the app's records (work orders, parts, molds, material lots, shelves, tooling boards, stack plans, purchases, issues, schedule, R&D) and its documents (FEB's CS standards and the material datasheets) for anything the question touches. Open the most relevant ones before answering. For any "how do I" or "what's the rule" question, always search the documents as well as the records: the team's procedures live in the CS standards. If the question starts by saying which record the person is looking at, open that record first; "this", "it" and "here" mean that record.
 2. After every fact that came from a tool, put its ref in square brackets exactly as the tool gave it, for example [WO-SN6-003] or [CS-006#12]. Never write a ref the tools did not give you.
 3. FEB-specific facts (where something is, its status or stage, who signed what, what is blocking, the team's cure holds, mix ratios, expiry dates, costs) come only from tools. If the tools don't have it, say plainly that you couldn't find it in the app.
 4. If the question is general composites knowledge that the app's documents don't cover, you may answer from general knowledge. Start that part with the line "${GENERAL_LINE}" and keep it short. Never use general knowledge for a number that should come from a datasheet or the team's standards (cure times, temperatures, ratios, pot life, shelf life); point to the datasheet instead.
@@ -478,6 +486,20 @@ function runTool(name, input, records, seen) {
   return { result: "Unknown tool." };
 }
 
+/* What the person sees while Paul works: one plain line per tool call, built
+ * here from the tool's own input so it is always true to what is happening. */
+function stepText(name, input) {
+  const q = String((input && (input.query || input.ref)) || "").replace(/\s+/g, " ").slice(0, 60);
+  if (name === "search_records") return `Searching the app for "${q}"`;
+  if (name === "get_record") return `Opening ${q}`;
+  if (name === "search_docs") return `Searching the standards and datasheets for "${q}"`;
+  if (name === "read_doc_section") {
+    const s = ctx.readDocSection(q);
+    return s ? `Reading ${s.doc}, ${s.section}` : `Reading ${q}`;
+  }
+  return "Looking something up";
+}
+
 /* Brackets in the answer become numbered markers [[n]] pointing into
  * `sources`; a bracket naming anything the tools did not return is removed. */
 function checkCitations(text, seen) {
@@ -496,7 +518,12 @@ function checkCitations(text, seen) {
 
 exports.askPaul = onCall(
   { secrets: [ANTHROPIC_API_KEY], region: "us-central1", timeoutSeconds: 120, memory: "512MiB" },
-  async (req) => {
+  async (req, res) => {
+    /* Progress goes to a client that asked for a stream (paul.js does); a
+     * plain call gets the same answer with no chunks. sendChunk is a no-op
+     * when the caller isn't streaming, and a failed chunk never fails the
+     * answer. */
+    const send = (chunk) => { if (res && res.sendChunk) res.sendChunk(chunk).catch(() => {}); };
     const email = await requireRoster(req);
     await requireAiOn();
     const q = String((req.data && req.data.question) || "").trim();
@@ -510,7 +537,12 @@ exports.askPaul = onCall(
       const hq = String((t && t.q) || "").slice(0, 1000).trim(), ha = String((t && t.a) || "").slice(0, 3000).trim();
       return hq && ha ? [{ role: "user", content: hq }, { role: "assistant", content: ha }] : [];
     });
-    const messages = [...history, { role: "user", content: q }];
+    /* The record the person has open, when they asked from a record page.
+     * Only an id-shaped string gets through, and it is offered as context,
+     * not as an instruction: Paul still has to open it with get_record. */
+    const about = String((req.data && req.data.about) || "").trim().toUpperCase();
+    const prefix = /^[A-Z]{1,6}-[A-Z0-9-]{1,30}$/.test(about) ? `(I'm looking at ${about} in the app.)\n` : "";
+    const messages = [...history, { role: "user", content: prefix + q }];
 
     const records = await ctx.loadRecords(admin.firestore());
     const seen = new Map();
@@ -523,9 +555,10 @@ exports.askPaul = onCall(
         tools: PAUL_TOOLS,
         // Past the round limit the model must answer with what it has.
         tool_choice: { type: last ? "none" : "auto" },
+        thinking: { type: "adaptive", display: "summarized" },
         output_config: { effort: PAUL_EFFORT },
         messages,
-      }, "askPaul");
+      }, "askPaul", (delta) => send({ type: "thinking", text: delta }));
       if (msg.stop_reason === "refusal") {
         throw new HttpsError("failed-precondition", "Paul won't answer that one.");
       }
@@ -533,7 +566,9 @@ exports.askPaul = onCall(
       // The assistant turn goes back unchanged (thinking blocks included), then
       // every tool result in one user message.
       messages.push({ role: "assistant", content: msg.content });
-      const results = msg.content.filter((b) => b.type === "tool_use").map((b) => ({
+      const uses = msg.content.filter((b) => b.type === "tool_use");
+      uses.forEach((b) => send({ type: "step", text: stepText(b.name, b.input) }));
+      const results = uses.map((b) => ({
         type: "tool_result", tool_use_id: b.id,
         content: JSON.stringify(runTool(b.name, b.input, records, seen)).slice(0, 20000),
       }));
