@@ -135,6 +135,26 @@ service cloud.firestore {
        creation by both create paths, so this is always checkable. */
     match /rnd/{id}        { allow read: if reader(); allow create, update: if onRoster(); allow delete: if isLead() || mine(); }
 
+    /* Paul's saved conversations and memory notes (2026-10-10). PRIVATE TO
+       THE OWNER: Simon chose that a lead can't read them either, so members
+       ask half-formed questions without anyone reading over their shoulder.
+       askPaul and paulRemember (Admin SDK) create and append; a client can
+       only read its own, rename a chat, prune its own notes, and delete.
+       So nobody can write an answer into a chat that Paul never gave. */
+    function me(email) {
+      return onRoster() && request.auth.token.email == email;
+    }
+    match /paulUsers/{email} {
+      allow read, delete: if me(email);
+      allow update: if me(email)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notes', 'updatedAt']);
+      match /chats/{chatId} {
+        allow read, delete: if me(email);
+        allow update: if me(email)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title']);
+      }
+    }
+
     // Notifications: any member can create one (for a teammate); you can only
     // read/update/delete notifications addressed to YOU (a lead can prune any).
     // The app subscribes with where('to','==', myEmail), which matches the read rule.

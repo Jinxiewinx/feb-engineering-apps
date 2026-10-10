@@ -171,11 +171,13 @@ async function loadRecords(db) {
   const facts = loadFacts();
   const trainName = { ...facts.trainings };
   for (const [id, t] of Object.entries(trainCfg || {})) if (t && t.name) trainName[id] = t.name;
+  const people = new Map();   // email -> { name, role, trainings }, for personalContext only
   roster.forEach((d) => {
     const u = d.data() || {};
     const name = String(u.name || d.id.split("@")[0]);
     const r = { id: "PERSON:" + name, name, role: u.showAs || u.role || "member",
       trainings: Object.keys(u.trainings || {}).map((t) => trainName[t] || t) };
+    people.set(String(d.id).toLowerCase(), { name: r.name, role: r.role, trainings: r.trainings });
     out.push({ id: r.id, coll: "people", kind: "person", title: name, key: `role: ${r.role}${r.trainings.length ? " · trained: " + r.trainings.join(", ") : ""}`,
       body: flatten(r).join("\n"), hay: (name + " person " + r.role + " " + r.trainings.join(" ")).toLowerCase() });
   });
@@ -213,7 +215,7 @@ async function loadRecords(db) {
       { categories: (budget.categories || []).map((x) => `${x.name}: $${x.goal}`), base: budget.total && budget.total.base, contingency: budget.total && budget.total.contingency });
   }
 
-  return { records: out, overview: overview(raw, woIsRnd, season, code) };
+  return { records: out, overview: overview(raw, woIsRnd, season, code), raw, people };
 }
 
 /* The dashboard's numbers, worked out the way the app works them out, for
@@ -316,4 +318,28 @@ function docSource(ref) {
 }
 
 const KINDS = [...COLLS, "people", "reference"];
-module.exports = { COLLS, KINDS, KIND, overview, loadRecords, searchRecords, getRecord, searchDocs, readDocSection, docSource, flatten, plain, terms };
+/* "About the person asking" (2026-10-10, Simon: "use personal context").
+ * Who they are and what is theirs right now, from the person fields
+ * (<key>Email, see PERSON_FIELDS in app/core.js). Names and record ids only:
+ * the email picks the rows here and never reaches the model. */
+function personalContext(ctxData, email) {
+  const e = String(email || "").toLowerCase();
+  const me = ctxData.people && ctxData.people.get(e);
+  if (!me) return "";
+  const raw = ctxData.raw || {};
+  const isMine = (r, keys) => keys.some((k) => String(r[k + "Email"] || "").toLowerCase() === e);
+  const eng = ["moldEngineer", "manufacturingEngineer"];
+  const live = (r) => !r.retro && !r.archived;
+  const wos = (raw.workOrders || []).filter((w) => live(w) && isMine(w, eng) && !/^(Complete|Cancelled)$/.test(w.status || ""));
+  const parts = (raw.parts || []).filter((p) => live(p) && isMine(p, eng));
+  const buys = (raw.budget || []).filter((b) => isMine(b, ["purchaser"]) && !/^Reimbursed$/.test(b.status || ""));
+  const line = (r) => `${r.id} ${titleOf(r)}${r.status ? " (" + r.status + ")" : ""}${r.dueDate ? " due " + r.dueDate : ""}`;
+  const out = [`Name: ${me.name}. Role: ${me.role}.`];
+  if (me.trainings.length) out.push(`Trained for: ${me.trainings.join(", ")}.`);
+  if (wos.length) out.push(`Their open work orders (engineer on): ${wos.slice(0, 10).map(line).join("; ")}.`);
+  if (parts.length) out.push(`Parts they engineer: ${parts.slice(0, 10).map(line).join("; ")}.`);
+  if (buys.length) out.push(`Their purchases not yet reimbursed: ${buys.slice(0, 5).map(line).join("; ")}.`);
+  return out.join("\n");
+}
+
+module.exports = { COLLS, KINDS, KIND, overview, loadRecords, searchRecords, getRecord, searchDocs, readDocSection, docSource, flatten, plain, terms, personalContext };

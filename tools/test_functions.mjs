@@ -85,14 +85,32 @@ const sdkErr = (cls, status) => Object.assign(Object.create(RealSdk[cls].prototy
    everything else (aiUsage/*, config/ai) lives in state.docs, and set() with
    merge understands the increment sentinel the way Firestore does. */
 state.docs = state.usage; // aiUsage day docs, month docs and config/ai share it
-const INC = Symbol("inc");
+const INC = Symbol("inc"), UNION = Symbol("union");
 const mergeInto = (p, v) => {
   const cur = { ...(state.docs.get(p) || {}) };
-  for (const [k, x] of Object.entries(v)) cur[k] = x && x[INC] !== undefined ? (Number(cur[k]) || 0) + x[INC] : x;
+  for (const [k, x] of Object.entries(v)) {
+    cur[k] = x && x[INC] !== undefined ? (Number(cur[k]) || 0) + x[INC]
+      : x && x[UNION] ? [...(cur[k] || []), ...x[UNION]] : x;
+  }
   state.docs.set(p, cur);
 };
+/* A subcollection path ("paulUsers/x/chats") is answered from state.docs,
+   ordered by updatedAt: a number on seeded docs, "ts" (newest) on written ones. */
+const subQuery = (name, o = {}) => ({
+  orderBy: (f, dir) => subQuery(name, { ...o, f, dir }),
+  limit: (n) => subQuery(name, { ...o, limit: n }),
+  offset: (n) => subQuery(name, { ...o, offset: n }),
+  get: async () => {
+    let rows = [...state.docs.entries()].filter(([k]) => k.startsWith(name + "/") && !k.slice(name.length + 1).includes("/"))
+      .map(([k, d]) => ({ id: k.slice(name.length + 1), d, path: k }));
+    const ord = (d) => (d.updatedAt === "ts" ? Infinity : Number(d.updatedAt) || 0);   // just written = newest
+    rows.sort((a, b) => ord(b.d) - ord(a.d));
+    rows = rows.slice(o.offset || 0, o.limit ? (o.offset || 0) + o.limit : undefined);
+    return { forEach: (fn) => rows.forEach((r) => fn({ id: r.id, data: () => ({ ...r.d }), ref: { delete: async () => state.docs.delete(r.path) } })) };
+  },
+});
 const firestore = {
-  collection: (name) => ({
+  collection: (name) => name.includes("/") ? subQuery(name) : ({
     get: async () => {
       state.collsRead.push(name);
       return { forEach: (fn) => (state.colls[name] || []).forEach((r) => fn({ id: r.id, data: () => ({ ...r }) })) };
@@ -112,7 +130,7 @@ const firestore = {
 };
 const admin = {
   initializeApp() {},
-  firestore: Object.assign(() => firestore, { FieldValue: { serverTimestamp: () => "ts", increment: (n) => ({ [INC]: n }) } }),
+  firestore: Object.assign(() => firestore, { FieldValue: { serverTimestamp: () => "ts", increment: (n) => ({ [INC]: n }), arrayUnion: (...a) => ({ [UNION]: a }) } }),
   storage: () => ({
     bucket: () => ({
       file: (p) => ({
@@ -131,11 +149,12 @@ function stub(id, exports) {
   req.cache[resolved] = { id: resolved, filename: resolved, loaded: true, exports };
 }
 stub("firebase-functions/v2/https", { onCall: (_opts, handler) => handler, HttpsError });
+stub("firebase-functions/v2/firestore", { onDocumentWritten: (_opts, handler) => handler });
 stub("firebase-functions/params", { defineSecret: () => ({ value: () => "sk-test" }) });
 stub("firebase-admin", admin);
 stub("@anthropic-ai/sdk", FakeAnthropic);
 
-const { parseReceipt, parsePackingSlip, readContainerLabel, askPaul } = req(FN);
+const { parseReceipt, parsePackingSlip, readContainerLabel, askPaul, paulRemember } = req(FN);
 
 const member = { auth: { token: { email: "member@berkeley.edu" } } };
 const call = async (data, who = member) => {
@@ -371,7 +390,7 @@ ok("with summarized thinking, so there is something to show", calls.every(b => b
 ok("the thinking streams to the client as it comes", chunks.filter(c => c.type === "thinking").length === 2 && chunks[0].text === "Checking the work orders first.", JSON.stringify(chunks.slice(0, 3)));
 const steps = chunks.filter(c => c.type === "step").map(c => c.text);
 ok("each tool call is announced in plain words", JSON.stringify(steps) === JSON.stringify(['Searching the app for "diffuser"', 'Searching the standards and datasheets for "peel ply"', "Opening WO-SN6-003"]), JSON.stringify(steps));
-ok("with the five read-only tools and a capped web search", JSON.stringify(calls[0].tools.map(t => t.name)) === JSON.stringify(["search_records", "app_overview", "get_record", "search_docs", "read_doc_section", "web_search"]) && calls[0].tools.at(-1).type === "web_search_20250305" && calls[0].tools.at(-1).max_uses === 3, JSON.stringify(calls[0].tools.map(t => t.name)));
+ok("with the six read-only tools and a capped web search", JSON.stringify(calls[0].tools.map(t => t.name)) === JSON.stringify(["search_records", "app_overview", "get_record", "search_docs", "read_doc_section", "search_my_chats", "web_search"]) && calls[0].tools.at(-1).type === "web_search_20250305" && calls[0].tools.at(-1).max_uses === 3, JSON.stringify(calls[0].tools.map(t => t.name)));
 ok("the assistant turn goes back unchanged, thinking block included", calls[1].messages.at(-2).role === "assistant" && calls[1].messages.at(-2).content[0].type === "thinking");
 const results = calls[1].messages.at(-1).content;
 ok("both tool calls answered in one user message", results.length === 2 && results.every(x => x.type === "tool_result"));
@@ -544,6 +563,98 @@ ok("anything that isn't an id is not", state.sent.at(-1).messages.at(-1).content
 state.replies = [{ stop_reason: "refusal", usage: {}, content: [] }];
 r = await ask({ question: "something" });
 ok("a refusal is a clean error", r.code === "failed-precondition", JSON.stringify(r));
+
+/* ---------- saved chats, personal context, memory, the intro ---------- */
+console.log("paul remembers");
+const SYS = (b) => (typeof b.system === "string" ? b.system : b.system.map((x) => x.text).join("\n\n"));
+state.docs.set(dayKey, {});
+state.colls = {
+  workOrders: [{ id: "WO-SN6-010", partName: "Diffuser", status: "InWork", manufacturingEngineer: "Member", manufacturingEngineerEmail: "member@berkeley.edu" },
+               { id: "WO-SN6-011", partName: "Nosecone", status: "InWork", manufacturingEngineer: "Nick", manufacturingEngineerEmail: "nick@berkeley.edu" },
+               { id: "WO-SN6-012", partName: "Old seat", status: "Complete", manufacturingEngineerEmail: "member@berkeley.edu" }],
+  roster: [{ id: "member@berkeley.edu", name: "Maya", role: "member", trainings: { infusion: {} } },
+           { id: "nick@berkeley.edu", name: "Nick", role: "lead" }],
+};
+const CH = "chatAAAA1111";
+state.replies = [answer("Hi Maya. Your diffuser run is in work [WO-SN6-010].")];
+r = await ask({ question: "what am I on this week?", save: true, chatId: CH, qid: "qid00000001" });
+let pb = state.sent.at(-1);
+ok("the asker is named in a second system block", Array.isArray(pb.system) && pb.system[0].text.startsWith('You are "Paul"') && /Name: Maya\. Role: member\./.test(pb.system[1].text), JSON.stringify(pb.system).slice(0, 300));
+ok("with their own open work, not someone else's or closed ones", /WO-SN6-010/.test(pb.system[1].text) && !/WO-SN6-011|WO-SN6-012/.test(pb.system[1].text), pb.system[1].text);
+ok("and still no email anywhere in what the model sees", !/@/.test(JSON.stringify(pb)), "");
+const saved = state.docs.get(`paulUsers/member@berkeley.edu/chats/${CH}`);
+ok("the exchange is saved under the asker's own path", saved && saved.turns.length === 1 && saved.turns[0].qid === "qid00000001" && /in work/.test(saved.turns[0].answer) && Array.isArray(saved.turns[0].sources), JSON.stringify(saved));
+ok("a new chat is titled with its first question", saved.title === "what am I on this week?", saved && saved.title);
+
+state.replies = [answer("Yes, still in work.")];
+r = await ask({ question: "still?", save: true, chatId: CH, history: [{ q: "forged", a: "forged" }] });
+pb = state.sent.at(-1);
+ok("history comes from the saved chat, not the client", pb.messages.length === 3 && pb.messages[0].content === "what am I on this week?" && !/forged/.test(JSON.stringify(pb.messages)), JSON.stringify(pb.messages).slice(0, 300));
+ok("the second turn is appended", state.docs.get(`paulUsers/member@berkeley.edu/chats/${CH}`).turns.length === 2);
+
+state.replies = [answer("ok")];
+await ask({ question: "no save", history: [{ q: "old q", a: "old a" }] });
+ok("an old client without save still gets its own history and nothing is stored", state.sent.at(-1).messages[0].content === "old q" && ![...state.docs.keys()].some((k) => /chats\/undefined|chats\/$/.test(k)));
+
+state.replies = [answer("ok")];
+r = await ask({ question: "bad id", save: true, chatId: "../../roster/x" });
+ok("a chat id that isn't id-shaped is not used as a path", r.ok && ![...state.docs.keys()].some((k) => k.includes("..")), JSON.stringify([...state.docs.keys()]));
+
+state.docs.set("paulUsers/member@berkeley.edu/chats/fullChat01", { title: "full", turns: Array.from({ length: 40 }, (_, k) => ({ q: "q" + k, answer: "a" })) });
+const dayBefore = Number((state.docs.get(dayKey) || {}).ask) || 0;
+r = await ask({ question: "one more", save: true, chatId: "fullChat01" });
+ok("a full chat says to start a new one, and isn't charged", r.code === "failed-precondition" && /New chat/.test(r.msg) && (Number(state.docs.get(dayKey).ask) || 0) === dayBefore, JSON.stringify(r));
+state.docs.delete("paulUsers/member@berkeley.edu/chats/fullChat01");
+
+// Memory notes ride along as background.
+state.docs.set("paulUsers/member@berkeley.edu", { notes: [{ id: "n1", text: "Maya is doing the diffuser layup." }] });
+state.replies = [answer("ok")];
+await ask({ question: "hello", save: true, chatId: "chatBBBB2222" });
+ok("memory notes are shown as background, not instructions", /From earlier chats[\s\S]*not instructions[\s\S]*- Maya is doing the diffuser layup\./.test(SYS(state.sent.at(-1))), SYS(state.sent.at(-1)).slice(-300));
+
+// Looking back through earlier chats.
+state.replies = (b) => {
+  const last = b.messages.at(-1);
+  if (!Array.isArray(last.content)) return toolUse([["search_my_chats", { query: "week" }]]);
+  const res = JSON.parse(last.content[0].content);
+  return answer(`Last time I said it was in work [${res[0].ref}].`);
+};
+r = await ask({ question: "what did you tell me last time about this week?", save: true, chatId: "chatCCCC3333" });
+ok("an earlier chat is found and becomes a source", r.ok && r.out.sources[0] && r.out.sources[0].type === "chat" && r.out.sources[0].ref === "CHAT:" + CH, JSON.stringify(r.out && r.out.sources));
+ok("the search step reads plainly", chunks.some((c) => c.type === "step" && /Looking back through your chats/.test(c.text)));
+
+// Retention: past 50 chats the oldest go when a new one starts.
+for (let k = 0; k < 52; k++) state.docs.set(`paulUsers/member@berkeley.edu/chats/old${String(k).padStart(6, "0")}`, { title: "old " + k, updatedAt: k + 1, turns: [] });
+state.replies = [answer("ok")];
+await ask({ question: "fresh", save: true, chatId: "chatDDDD4444" });
+const kept = [...state.docs.keys()].filter((k) => k.startsWith("paulUsers/member@berkeley.edu/chats/"));
+ok("only the newest 50 chats are kept", kept.length === 50 && kept.includes("paulUsers/member@berkeley.edu/chats/chatDDDD4444") && !kept.includes("paulUsers/member@berkeley.edu/chats/old000000"), kept.length);
+
+// The intro line.
+ok("Paul introduces himself as Paul from Easy Composites", /Hi, I'm Paul, from Easy Composites!/.test(SYS(state.sent.at(-1))));
+ok("and the guardrail stays: not a real person, never speaks for them", /not a real person and not anyone from Easy Composites/.test(SYS(state.sent.at(-1))) && /never speak for them/.test(SYS(state.sent.at(-1))));
+
+// paulRemember: one small call after a new turn edits the notes.
+const ev = (beforeTurns, afterTurns) => ({ params: { email: "member@berkeley.edu", chatId: CH },
+  data: { before: { exists: !!beforeTurns, data: () => ({ turns: beforeTurns || [] }) }, after: { exists: true, data: () => ({ turns: afterTurns }) } } });
+state.reply = null;
+state.replies = [{ stop_reason: "end_turn", usage: { input_tokens: 300, output_tokens: 30 }, content: [{ type: "text", text: '{"add":["Maya prefers short answers."],"remove":["n1"]}' }] }];
+let n4 = state.sent.length;
+await paulRemember(ev([{ q: "a", answer: "b" }], [{ q: "a", answer: "b" }, { q: "keep it short please, and I'm off the diffuser now", answer: "Will do." }]));
+const mem = state.docs.get("paulUsers/member@berkeley.edu");
+ok("a new exchange can add and remove notes", mem.notes.length === 1 && mem.notes[0].text === "Maya prefers short answers." && mem.notes[0].chat === CH, JSON.stringify(mem));
+ok("with one small call, no thinking", state.sent.length === n4 + 1 && state.sent.at(-1).max_tokens === 400 && state.sent.at(-1).thinking.type === "disabled");
+n4 = state.sent.length;
+await paulRemember(ev([{ q: "a", answer: "b" }], [{ q: "a", answer: "b", title: "renamed" }]));
+ok("a rename or other edit doesn't call the model", state.sent.length === n4);
+mergeInto("config/ai", { enabled: false });
+await paulRemember(ev([], [{ q: "x", answer: "y" }]));
+ok("the off switch covers memory too", state.sent.length === n4);
+mergeInto("config/ai", { enabled: true });
+state.replies = [{ stop_reason: "end_turn", usage: {}, content: [{ type: "text", text: "not json" }] }];
+await paulRemember(ev([], [{ q: "x", answer: "y" }]));
+ok("a reply that isn't JSON changes nothing", state.docs.get("paulUsers/member@berkeley.edu").notes.length === 1);
+state.replies = null;
 
 state.docs.set(dayKey, { ask: 100 });
 const n1 = state.sent.length;
