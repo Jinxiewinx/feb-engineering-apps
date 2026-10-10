@@ -17,8 +17,17 @@
  * should be able to go back to that chat"). It is a third column of #app on a
  * wide screen, so a source opens in the page beside the conversation. On a
  * phone it is a full-screen sheet that steps aside when a source opens, and
- * the floating Paul button brings the same conversation back. The thread is
- * kept in sessionStorage, so it survives a reload of the tab and nothing else.
+ * the floating Paul button brings the same conversation back.
+ *
+ * CONVERSATIONS ARE KEPT (2026-10-10, Simon: "make Paul remember
+ * conversations ... keep conversations in app"). Each chat lives in
+ * Firestore at paulUsers/{email}/chats/{chatId}, private to its owner, and
+ * askPaul appends to it, so Chats shows them on any device. The id is made
+ * here, before the first question, and the open chat is watched: if a phone
+ * drops the stream mid-answer, the answer still lands and shows up when the
+ * snapshot does. sessionStorage only caches the open thread for a fast
+ * reload. paulRemember keeps a few notes about the person, which they see
+ * and can delete under "What Paul remembers".
  *
  * WHAT YOU SEE WHILE IT WORKS is true: one line per tool call as the function
  * makes it ("Opening WO-SN6-003"), and the model's own thinking summary as it
@@ -34,22 +43,129 @@
 const PAUL_GENERAL = "General composites knowledge, not from the app:";
 const PAUL_WEB = "From the web, not from the app:";
 const PAUL_STORE = "feb-paul:thread";
+const PAUL_INTRO = "Hi, I'm Paul, from Easy Composites!";
 let PAUL = paulLoad();
 
 function paulLoad() {
-  const fresh = { turns: [], draft: "", busy: false, open: false, aboutOff: false };
+  const fresh = { turns: [], draft: "", busy: false, open: false, aboutOff: false, chatId: "", view: "chat", chats: null, notes: null };
   try {
     const saved = JSON.parse(sessionStorage.getItem(PAUL_STORE) || "null");
     if (saved && Array.isArray(saved.turns)) fresh.turns = saved.turns.filter(t => t && t.q && (t.answer || t.error));
+    if (saved && typeof saved.chatId === "string") fresh.chatId = saved.chatId;
   } catch (e) { /* private window, blocked storage: start empty */ }
   return fresh;
 }
 function paulSave() {
   try {
     const turns = PAUL.turns.filter(t => !t.pending).slice(-20)
-      .map(t => ({ q: t.q, about: t.about, answer: t.answer, sources: t.sources, error: t.error, steps: t.steps, thinking: t.thinking }));
-    sessionStorage.setItem(PAUL_STORE, JSON.stringify({ turns }));
+      .map(t => ({ q: t.q, qid: t.qid, about: t.about, answer: t.answer, sources: t.sources, error: t.error, steps: t.steps, thinking: t.thinking }));
+    sessionStorage.setItem(PAUL_STORE, JSON.stringify({ chatId: PAUL.chatId || "", turns }));
   } catch (e) { /* not worth a toast */ }
+}
+function paulNewId() {
+  const a = new Uint8Array(10);
+  (window.crypto || globalThis.crypto).getRandomValues(a);
+  return Array.from(a, b => b.toString(36).padStart(2, "0")).join("").slice(0, 16);
+}
+
+/* ---------- saved chats ----------
+   One listener on the open chat. Its turns are merged into PAUL.turns by
+   qid, in place, so an answer that arrives by snapshot (the stream dropped,
+   or the chat was continued on another device) fills the same turn the
+   person is looking at. Turns still pending or errored here that the doc
+   doesn't have yet stay at the end. */
+let PAUL_WATCH = { id: "", off: null };
+function paulWatch() {
+  // Watched while the panel is open, and while an answer is still owed to a
+  // turn whose stream dropped (the phone sheet may be stepped aside).
+  const owed = PAUL.turns.some(t => t.pending || t.recovering);
+  const id = (PAUL.open || owed) && PAUL.chatId && window.fb && fb.paulChatWatch && fb.user ? PAUL.chatId : "";
+  if (id === PAUL_WATCH.id) return;
+  if (PAUL_WATCH.off) PAUL_WATCH.off();
+  PAUL_WATCH = { id, off: id ? fb.paulChatWatch(id, d => paulMerge(id, d)) : null };
+}
+function paulMerge(id, d) {
+  if (id !== PAUL.chatId || !d || !Array.isArray(d.turns)) return;
+  const byQid = new Map(PAUL.turns.filter(t => t.qid).map(t => [t.qid, t]));
+  const inDoc = new Set();
+  const merged = d.turns.map(x => {
+    if (x.qid) inDoc.add(x.qid);
+    const t = x.qid && byQid.get(x.qid);
+    if (!t) return { q: x.q, qid: x.qid, about: x.about, answer: x.answer, sources: x.sources || [] };
+    if (!t.answer || t.error) Object.assign(t, { answer: x.answer, sources: x.sources || [], error: "", recovering: false });
+    return t;
+  });
+  const rest = PAUL.turns.filter(t => !(t.qid && inDoc.has(t.qid)));
+  const before = JSON.stringify(PAUL.turns.map(t => [t.qid, !!t.answer, !!t.error]));
+  PAUL.turns = [...merged, ...rest];
+  if (JSON.stringify(PAUL.turns.map(t => [t.qid, !!t.answer, !!t.error])) !== before) { paulSave(); paulMount(); paulRender(); }
+}
+let PAUL_LIST_OFF = null, PAUL_MEM_OFF = null;
+function paulShowChats(on) {
+  PAUL.view = on ? "list" : "chat";
+  if (on && window.fb && fb.paulChatsWatch && !PAUL_LIST_OFF) {
+    PAUL_LIST_OFF = fb.paulChatsWatch(list => { PAUL.chats = list; if (PAUL.view === "list") paulRender(); });
+    PAUL_MEM_OFF = fb.paulMemoryWatch(notes => { PAUL.notes = notes; if (PAUL.view === "list") paulRender(); });
+  }
+  if (!on) {
+    if (PAUL_LIST_OFF) PAUL_LIST_OFF(); if (PAUL_MEM_OFF) PAUL_MEM_OFF();
+    PAUL_LIST_OFF = PAUL_MEM_OFF = null;
+  }
+  paulRender();
+  if (!on) paulFocus();
+}
+function paulOpenChat(id) {
+  const c = (PAUL.chats || []).find(x => x.id === id);
+  if (PAUL.busy) return;
+  PAUL.chatId = id;
+  PAUL.turns = c && Array.isArray(c.turns) ? c.turns.map(x => ({ q: x.q, qid: x.qid, about: x.about, answer: x.answer, sources: x.sources || [] })) : [];
+  paulSave();
+  paulShowChats(false);
+  if (!PAUL.open) openPaul();
+  paulWatch();
+}
+async function paulDeleteChat(id) {
+  const ok = await confirmAsync("Delete this chat? It can't be brought back.", { ok: "Delete", danger: true });
+  if (!ok) return;
+  try { await fb.paulChatDelete(id); } catch (e) { toast("Couldn't delete that chat. " + (e.message || ""), "error"); return; }
+  if (id === PAUL.chatId) { PAUL.chatId = ""; PAUL.turns = []; paulSave(); }
+  PAUL.chats = (PAUL.chats || []).filter(x => x.id !== id);
+  paulRender();
+}
+async function paulForget(noteId) {
+  const all = PAUL.notes || [];
+  if (noteId === "*" && !(await confirmAsync("Forget everything Paul remembers about you?", { ok: "Forget all", danger: true }))) return;
+  const next = noteId === "*" ? [] : all.filter(n => n.id !== noteId);
+  try { await fb.paulNotesSet(next); PAUL.notes = next; paulRender(); }
+  catch (e) { toast("Couldn't change Paul's notes. " + (e.message || ""), "error"); }
+}
+function paulWhen(v) {
+  const d = v && typeof v.toDate === "function" ? v.toDate() : v ? new Date(v) : null;
+  if (!d || isNaN(d)) return "";
+  const days = Math.floor((Date.now() - d.getTime()) / 864e5);
+  return days < 1 ? "today" : days < 2 ? "yesterday" : days < 7 ? days + " days ago" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+function paulChatsHtml() {
+  const notes = PAUL.notes, chats = PAUL.chats;
+  return `<div class="paul-list">
+    <div class="paul-list-h">What Paul remembers</div>
+    ${notes == null ? `<div class="muted tny">Loading…</div>`
+      : notes.length ? `<ul class="paul-notes">${notes.map(n => `<li><span>${esc(n.text)}</span>
+          <button class="icon-btn" aria-label="Forget this" title="Forget this" onclick="paulForget(${esc(JSON.stringify(n.id))})">${icon("x", 14)}</button></li>`).join("")}</ul>
+          <button class="link tny" onclick="paulForget('*')">Forget everything</button>`
+      : `<div class="muted tny">Nothing yet. Paul picks up things worth keeping as you chat (what you're working on, how you like answers), and you can delete any of them here.</div>`}
+    <div class="paul-list-h">Your chats</div>
+    ${chats == null ? `<div class="muted tny">Loading…</div>`
+      : chats.length ? chats.map(c => `<div class="paul-chatrow ${c.id === PAUL.chatId ? "on" : ""}">
+          <button class="paul-chatopen" onclick="paulOpenChat(${esc(JSON.stringify(c.id))})">
+            <span class="paul-chat-t">${esc(c.title || "Chat")}</span>
+            <span class="muted tny">${esc(paulWhen(c.updatedAt))} · ${(c.turns || []).length} ${(c.turns || []).length === 1 ? "question" : "questions"}</span>
+          </button>
+          <button class="icon-btn" aria-label="Delete chat" title="Delete chat" onclick="paulDeleteChat(${esc(JSON.stringify(c.id))})">${icon("trash", 15)}</button>
+        </div>`).join("")
+      : `<div class="muted tny">No saved chats yet.</div>`}
+    <p class="muted tny paul-private">Your chats and these notes are private to you. Leads can't read them.</p>
+  </div>`;
 }
 
 /* ---------- the avatar ----------
@@ -139,6 +255,7 @@ function paulMount() {
   document.body.classList.toggle("paul-open", open);
   if (typeof window.__paulBindVV === "function") window.__paulBindVV();
   paulViewport();
+  paulWatch();
   /* On a laptop under 1400px, Paul's column plus the full sidebar squeezed a
      record page to a sliver (seen on the molds split). While he is open the
      sidebar takes its icon rail; the person's own rail setting (railOn, in
@@ -200,7 +317,9 @@ function paulHeadHtml() {
   return `<div class="paul-head ${PAUL.busy ? "paul-busy" : ""}">
       ${paulAvatar(36)}
       <div class="paul-title"><b>Paul</b><span class="muted tny">${PAUL.busy ? "working it out…" : "composites help"}</span></div>
-      ${PAUL.turns.length ? `<button class="sm" onclick="paulClear()" title="Start a new conversation">New chat</button>` : ""}
+      ${PAUL.view === "list" ? `<button class="sm" onclick="paulShowChats(false)">Back</button>`
+        : `<button class="sm" onclick="paulShowChats(true)" title="Your saved chats and what Paul remembers">Chats</button>`}
+      ${PAUL.turns.length || PAUL.view === "list" ? `<button class="sm" onclick="paulClear()" title="Start a new conversation">New chat</button>` : ""}
       <button class="icon-btn" aria-label="Close Paul" onclick="closePaul()">${icon("x", 18)}</button>
     </div>`;
 }
@@ -208,7 +327,8 @@ function paulRender() {
   const el = document.getElementById && document.getElementById("paul");
   if (!el) return;
   PAUL_PHOTO_SHOWN = (window.AI_CFG && window.AI_CFG.paulPhoto) || "";
-  const thread = PAUL.turns.length ? PAUL.turns.map((t, i) => paulTurnHtml(t, i)).join("") : paulEmptyHtml();
+  paulWatch();
+  const thread = PAUL.view === "list" ? paulChatsHtml() : PAUL.turns.length ? PAUL.turns.map((t, i) => paulTurnHtml(t, i)).join("") : paulEmptyHtml();
   const box = document.getElementById("paul-q");
   const built = !!(box && el.contains && el.contains(box) && document.getElementById("paul-headwrap"));
   if (built) {
@@ -218,11 +338,13 @@ function paulRender() {
     if (about) about.innerHTML = paulAboutHtml();
     const send = el.querySelector && el.querySelector(".paul-send");
     if (send) send.disabled = !!PAUL.busy;
+    const compose = el.querySelector && el.querySelector(".paul-compose");
+    if (compose) compose.hidden = PAUL.view === "list";
   } else {
     el.innerHTML = `
     <div id="paul-headwrap">${paulHeadHtml()}</div>
     <div class="paul-thread" id="paul-thread">${thread}</div>
-    <div class="paul-compose">
+    <div class="paul-compose" ${PAUL.view === "list" ? "hidden" : ""}>
       <div id="paul-about" class="paul-about">${paulAboutHtml()}</div>
       <div class="paul-inputrow">
         <textarea id="paul-q" rows="1" maxlength="4000" placeholder="Ask Paul…" aria-label="Ask Paul" enterkeyhint="send"
@@ -280,6 +402,7 @@ function paulGrow(ta) {
   ta.style.height = Math.min(ta.scrollHeight || 0, 140) + "px";
 }
 function paulScroll() {
+  if (PAUL.view === "list") return;
   const th = document.getElementById && document.getElementById("paul-thread");
   if (th) th.scrollTop = th.scrollHeight || 0;
 }
@@ -288,7 +411,8 @@ function paulEmptyHtml() {
   const tries = ["Where is the diffuser mold?", "Which IN2 lots expire soonest?", "What does CS-006 say about the drop test?", "What gloves for XCR?"];
   return `<div class="paul-empty">
     ${paulAvatar(72)}
-    <p>Ask me about molds, parts, work orders, lots, the standards or the datasheets.</p>
+    <p><b>${esc(PAUL_INTRO)}</b></p>
+    <p>Ask me about molds, parts, work orders, lots, the standards or the datasheets. I remember our chats, and you can find them under Chats.</p>
     <div class="paul-tries">${tries.map(q => `<button class="chip" onclick="PAUL.draft=${esc(JSON.stringify(q))};paulAsk()">${esc(q)}</button>`).join("")}</div>
   </div>`;
 }
@@ -348,6 +472,7 @@ function paulAnswerHtml(t, i) {
 }
 function paulSourceTitle(s) {
   if (s.type === "doc") return `${s.title}, ${s.section}`;
+  if (s.type === "chat") return `Earlier chat · ${s.title || ""}`;
   if (s.type === "web") return `${s.site || "web"} · ${s.title || s.ref}`;
   return `${paulRefLabel(s.ref)}${s.title && s.title !== paulRefLabel(s.ref) ? " · " + s.title : ""}`;
 }
@@ -370,6 +495,8 @@ function paulSourcesHtml(t, i) {
         ? `${icon("externalLink", 13)} <b>${esc(s.site || "web")}</b><span class="muted"> · ${esc(s.title || s.ref)}</span><span class="muted tny"> web</span>`
         : s.type === "doc"
         ? `${icon("file", 13)} ${esc(s.title)}<span class="muted"> · ${esc(s.section)}</span>`
+        : s.type === "chat"
+        ? `${icon("message", 13)} ${esc(s.title || "Earlier chat")}<span class="muted tny"> earlier chat</span>`
         : `<b>${esc(paulRefLabel(s.ref))}</b>${s.title && s.title !== paulRefLabel(s.ref) ? `<span class="muted"> · ${esc(s.title)}</span>` : ""}${s.kind && !String(s.title || "").toLowerCase().includes(s.kind) ? `<span class="muted tny"> ${esc(s.kind)}</span>` : ""}`}</span>
     </button>`).join("")}
   </div>`;
@@ -390,7 +517,10 @@ async function paulAsk() {
   const history = PAUL.turns.filter(t => t.answer).slice(-6)
     .map(t => ({ q: t.q, a: String(t.answer).replace(/\s?\[\[\d+\]\]/g, "").trim() }));
   const about = paulAbout();
-  const turn = { q, about, pending: true, steps: [], thinking: "" };
+  if (!PAUL.chatId) PAUL.chatId = paulNewId();
+  const chatId = PAUL.chatId;
+  const turn = { q, qid: paulNewId(), about, pending: true, steps: [], thinking: "" };
+  PAUL.view = "chat";
   PAUL.turns.push(turn);
   PAUL.draft = ""; PAUL.busy = true;
   const box = document.getElementById && document.getElementById("paul-q");
@@ -404,12 +534,17 @@ async function paulAsk() {
     paulLive(turn);
   };
   try {
-    const data = { question: q, history, about };
+    const data = { question: q, history, about, save: true, chatId, qid: turn.qid };
     const out = fb.callStream ? await fb.callStream("askPaul", data, onChunk, PAUL_CALL_OPTS) : await fb.call("askPaul", data, PAUL_CALL_OPTS);
     turn.answer = String((out && out.answer) || "");
     turn.sources = (out && out.sources) || [];
   } catch (e) {
+    if (turn.answer) return;   // the saved chat already delivered it
     turn.error = paulErrorText(e);
+    /* The question reached the server; its answer may still land in the
+       saved chat. The watch on the chat fills this turn in if it does. */
+    turn.recovering = /Lost the connection|too long/.test(turn.error);
+    if (turn.recovering) turn.error += " If Paul finishes anyway, his answer will appear here.";
   } finally {
     turn.pending = false; PAUL.busy = false;
     paulSave(); paulMount(); paulRender(); paulFocus();
@@ -439,7 +574,7 @@ function paulRetry(i) {
   return paulAsk();
 }
 function paulClear() {
-  PAUL = { ...PAUL, turns: [], draft: "", busy: false };
+  PAUL = { ...PAUL, turns: [], draft: "", busy: false, chatId: "", view: "chat" };
   paulSave(); paulMount(); paulRender(); paulFocus();
 }
 /* From ⌘K: the search box's text becomes the question. */
@@ -459,6 +594,14 @@ function paulOpenSource(ti, si) {
   /* A web page opens in a new browser tab and the chat stays exactly where
      it is; everything else is inside the app. */
   if (s.type === "web") { if (/^https?:\/\//i.test(s.ref)) window.open(s.ref, "_blank", "noopener,noreferrer"); return; }
+  if (s.type === "chat" || String(s.ref || "").startsWith("CHAT:")) {
+    const id = String(s.ref).slice(5);
+    if (window.fb && fb.paulChatWatch && !(PAUL.chats || []).some(c => c.id === id)) {
+      // Not in the list yet: open it and let the watch fill it in.
+      PAUL.chatId = id; PAUL.turns = []; paulSave(); paulShowChats(false);
+    } else paulOpenChat(id);
+    return;
+  }
   if (typeof isNarrowViewport === "function" && isNarrowViewport()) closePaul();
   const ref = String(s.ref || "");
   if (ref.startsWith("PERSON:")) {

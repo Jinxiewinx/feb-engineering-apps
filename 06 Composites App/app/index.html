@@ -374,6 +374,15 @@
   .paul-bubble { padding: 9px 12px; border-radius: var(--r-lg) var(--r-lg) var(--r-lg) 4px; background: var(--card); border: 1px solid var(--line); line-height: 1.5; overflow-wrap: anywhere; }
   .paul-err { color: var(--muted); }
   .paul-retry { align-self: flex-start; }
+  .paul-list { display: flex; flex-direction: column; gap: 8px; }
+  .paul-list-h { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+  .paul-notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .paul-notes li { display: flex; gap: 6px; align-items: center; justify-content: space-between; padding: 6px 4px 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+  .paul-chatrow { display: flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  .paul-chatrow.on { border-color: var(--accent); }
+  .paul-chatopen { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 8px 10px; border: 0; background: none; color: inherit; cursor: pointer; }
+  .paul-chat-t { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .paul-private { margin-top: 8px; }
   .paul-gen { margin-top: 8px; padding: 6px 0 0 10px; border-left: 3px solid var(--line); color: var(--muted); }
   .paul-gen .pill { margin-bottom: 4px; }
   .paul-cite { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 4px; margin: 0 1px;

@@ -116,8 +116,13 @@ Twelve tabs, grouped in the sidebar by who is asking:
 - **Ask Paul:** a question box in the topbar that answers from the app's own
   records, the CS standards and the datasheets, with a source chip for every
   fact (Claude Haiku 5.5, read-only). Named after the team's running joke about
-  Easy Composites' Paul; it isn't him or them. A question that fails says why
-  and offers Try again, and doesn't count against the day's 100.
+  Easy Composites' Paul, so he introduces himself with "Hi, I'm Paul, from
+  Easy Composites!"; it's a catchphrase, and he isn't him or them. Chats are
+  saved and follow you to any device, Paul knows who's asking and what's
+  theirs, and he keeps a few notes about you that you can see and delete
+  under Chats. Chats and notes are private to their owner; leads can't read
+  them. A question that fails says why and offers Try again, and doesn't
+  count against the day's 100.
 - **AI, on every ✨:** receipts, packing slips and resin jug labels read
   themselves into the grid you'd otherwise type, and you check before anything
   saves. A lead can switch all of it off from ⋯, and it stops itself at $80 a

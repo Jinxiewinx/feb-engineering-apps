@@ -204,6 +204,23 @@ const trGrant = { trainings: { mapValue: { fields: { infusion: { mapValue: { fie
 await expect(403, "member", "PATCH", "/roster/member@feb.test", trGrant, ["trainings.infusion"]); // self-grant blocked
 await expect(200, "lead", "PATCH", "/roster/member@feb.test", trGrant, ["trainings.infusion"]);   // a lead grants
 
+console.log("Paul's saved chats and memory (owner only, not even a lead):");
+const notesF = { notes: { arrayValue: { values: [{ mapValue: { fields: { id: S("n1"), text: S("Doing the diffuser.") } } }] } } };
+await expect(200, "owner", "PATCH", "/paulUsers/member@feb.test", notesF);
+await expect(200, "owner", "PATCH", "/paulUsers/member@feb.test/chats/chat0001", { title: S("first"), turns: { arrayValue: { values: [] } } });
+await expect(200, "member", "GET", "/paulUsers/member@feb.test");
+await expect(200, "member", "GET", "/paulUsers/member@feb.test/chats/chat0001");
+await expect(403, "lead", "GET", "/paulUsers/member@feb.test");                 // a lead can't read them
+await expect(403, "lead", "GET", "/paulUsers/member@feb.test/chats/chat0001");
+await expect(403, "rando", "GET", "/paulUsers/rando@feb.test/chats/chat0001");  // off the roster: nothing, even "your own"
+await expect(200, "member", "PATCH", "/paulUsers/member@feb.test", { notes: { arrayValue: { values: [] } } }, ["notes"]);   // forget
+await expect(403, "member", "PATCH", "/paulUsers/member@feb.test", { other: S("x") }, ["other"]);
+await expect(200, "member", "PATCH", "/paulUsers/member@feb.test/chats/chat0001", { title: S("renamed") }, ["title"]);
+await expect(403, "member", "PATCH", "/paulUsers/member@feb.test/chats/chat0001", { turns: { arrayValue: { values: [{ mapValue: { fields: { q: S("x"), answer: S("forged") } } }] } } }, ["turns"]);  // can't put words in Paul's mouth
+await expect(403, "member", "PATCH", "/paulUsers/member@feb.test/chats/chat0002", { title: S("new"), turns: { arrayValue: { values: [] } } });  // can't create one
+await expect(403, "lead", "DELETE", "/paulUsers/member@feb.test/chats/chat0001");
+await expect(200, "member", "DELETE", "/paulUsers/member@feb.test/chats/chat0001");
+
 console.log("lead:");
 await expect(200, "lead", "PATCH", "/roster/new@feb.test", { name: S("New"), role: S("member") });
 await expect(200, "lead", "DELETE", "/roster/new@feb.test");

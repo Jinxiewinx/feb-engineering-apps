@@ -11897,6 +11897,66 @@ await t("Ask Paul: a docked chat, live work shown, sources apart, and the way ba
   await paulRetry(ri);
   assert(PAUL.turns.length === before && PAUL.turns.at(-1).q === "on the train" && PAUL.turns.at(-1).answer === "Back now.", "Try again asks the same question in place of the failed turn");
 
+  // Saved chats (2026-10-10): every question names its chat and itself.
+  const hadUser = fb.user;
+  fb.user = { email: "maya@berkeley.edu" };
+  let watched = null, watchCb = null, unwatched = 0;
+  fb.paulChatWatch = (id, cb) => { watched = id; watchCb = cb; return () => { unwatched++; }; };
+  paulClear();
+  assert(/Hi, I&#39;m Paul, from Easy Composites!|Hi, I'm Paul, from Easy Composites!/.test(document.getElementById("paul").innerHTML), "the empty chat opens with the catchphrase");
+  let sentData = null;
+  fb.callStream = async (n, d) => { sentData = d; return { answer: "On it.", sources: [] }; };
+  PAUL.draft = "first"; await paulAsk();
+  const cid = PAUL.chatId;
+  assert(sentData.save === true && /^[a-z0-9]{16}$/.test(sentData.chatId) && sentData.chatId === cid && /^[a-z0-9]{16}$/.test(sentData.qid), "a question carries save, its chat id and its own id: " + JSON.stringify(sentData));
+  PAUL.draft = "second"; await paulAsk();
+  assert(sentData.chatId === cid && sentData.qid !== PAUL.turns[0].qid, "the same chat, a new question id");
+  assert(watched === cid, "the open chat is watched");
+
+  // The stream drops on a phone; the answer lands in the saved chat anyway.
+  fail("unknown", "network error"); PAUL.draft = "on the bus"; await paulAsk();
+  const lost = PAUL.turns.at(-1);
+  assert(lost.recovering && /Lost the connection/.test(lost.error) && /will appear here/.test(lost.error), "a dropped stream says the answer may still come");
+  watchCb({ turns: [
+    { qid: PAUL.turns[0].qid, q: "first", answer: "On it.", sources: [] },
+    { qid: PAUL.turns[1].qid, q: "second", answer: "On it.", sources: [] },
+    { qid: lost.qid, q: "on the bus", answer: "Here it is after all.", sources: [] }] });
+  assert(PAUL.turns.length === 3 && PAUL.turns[2] === lost && lost.answer === "Here it is after all." && !lost.error && !lost.recovering, "the saved answer fills the same turn: " + JSON.stringify(PAUL.turns.map(t => [t.q, t.answer, t.error])));
+  watchCb({ turns: [{ qid: "elsewhere1", q: "from my laptop", answer: "Laptop answer.", sources: [] }, ...PAUL.turns.map(t => ({ qid: t.qid, q: t.q, answer: t.answer, sources: [] }))] });
+  assert(PAUL.turns[0].q === "from my laptop" && PAUL.turns.length === 4, "a turn asked on another device shows up too");
+
+  // Chats: the list, what Paul remembers, forgetting, deleting, reopening.
+  let chatsCb = null, memCb = null, notesSet = null, deleted = null;
+  fb.paulChatsWatch = (cb) => { chatsCb = cb; return () => {}; };
+  fb.paulMemoryWatch = (cb) => { memCb = cb; return () => {}; };
+  fb.paulNotesSet = async (n) => { notesSet = n; };
+  fb.paulChatDelete = async (id) => { deleted = id; };
+  paulShowChats(true);
+  chatsCb([{ id: cid, title: "first", updatedAt: new Date().toISOString(), turns: [{}, {}, {}] },
+           { id: "otherchat0000001", title: "Peel ply on the diffuser", updatedAt: "2026-09-01T00:00:00Z", turns: [{ qid: "o1", q: "peel ply?", answer: "Yes.", sources: [] }] }]);
+  memCb([{ id: "n1", text: "Maya is doing the diffuser layup." }, { id: "n2", text: "Maya likes short answers." }]);
+  const lh = document.getElementById("paul").innerHTML;
+  assert(/What Paul remembers/.test(lh) && /diffuser layup/.test(lh) && /Peel ply on the diffuser/.test(lh) && /today · 3 questions/.test(lh), "Chats lists the notes and the conversations");
+  assert(/private to you/.test(lh), "and says they're private");
+  assert(PAUL.view === "list" && /paulShowChats\(false\)/.test(lh), "the list has a way back to the chat");
+  await paulForget("n1");
+  assert(JSON.stringify(notesSet) === JSON.stringify([{ id: "n2", text: "Maya likes short answers." }]), "a note can be forgotten: " + JSON.stringify(notesSet));
+  paulOpenChat("otherchat0000001");
+  assert(PAUL.chatId === "otherchat0000001" && PAUL.turns[0].answer === "Yes." && PAUL.view === "chat" && watched === "otherchat0000001", "a saved chat reopens with its turns, and is watched");
+  const hadConfirm = window.confirmAsync; window.confirmAsync = async () => true;
+  globalThis.confirmAsync = window.confirmAsync;
+  await paulDeleteChat("otherchat0000001");
+  assert(deleted === "otherchat0000001" && !PAUL.chatId && !PAUL.turns.length, "deleting the open chat empties it");
+  window.confirmAsync = hadConfirm; globalThis.confirmAsync = hadConfirm;
+
+  // An earlier chat cited as a source opens that chat.
+  PAUL.chats = [{ id: cid, title: "first", turns: [{ qid: "z", q: "first", answer: "On it.", sources: [] }] }];
+  PAUL.turns = [{ q: "what did you say?", qid: "y", answer: "I said [[0]].", sources: [{ type: "chat", ref: "CHAT:" + cid, title: "first" }] }];
+  assert(/earlier chat/.test(paulTurnHtml(PAUL.turns[0], 0)), "a chat source reads as an earlier chat");
+  paulOpenSource(0, 0);
+  assert(PAUL.chatId === cid && PAUL.turns[0].q === "first", "and opens it");
+  fb.user = hadUser; paulClear();
+
   // Web sources are labelled and open outside; app reference sources route in.
   const opened = []; const hadOpen = window.open; window.open = (u) => opened.push(u);
   fb.callStream = async () => ({ answer: "Yours is due [[0]].\n\nFrom the web, not from the app:\nTwill drapes better [[1]].",

@@ -19,7 +19,7 @@ import {
   initializeFirestore, persistentLocalCache, persistentSingleTabManager,
   connectFirestoreEmulator, collection, doc, onSnapshot, setDoc, updateDoc,
   deleteDoc, getDoc, getDocs, runTransaction, serverTimestamp, writeBatch, arrayUnion,
-  query, where, deleteField,
+  query, where, deleteField, orderBy, limit,
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 import {
   getStorage, connectStorageEmulator, ref as sRef, uploadBytes, getDownloadURL, deleteObject,
@@ -679,6 +679,30 @@ const fb = {
   watchConfig(key, cb) {
     return onSnapshot(doc(db, "config", key), s => cb(s.exists() ? s.data() : null),
       () => { /* a config the roster can't read is not worth a console error */ });
+  },
+  /* ---- Paul's saved chats and memory notes ----
+     paulUsers/{email}: { notes: [{id, text, at, chat}] }, and under it
+     chats/{chatId}: { title, createdAt, updatedAt, turns[] }. Private to the
+     owner by firestore.rules (a lead can't read them). askPaul and
+     paulRemember write them; from here a person only reads, prunes notes
+     and deletes. */
+  paulChatsWatch(cb) {
+    if (!fb.user || !fb.user.email) return () => {};
+    return onSnapshot(query(collection(db, "paulUsers", fb.user.email, "chats"), orderBy("updatedAt", "desc"), limit(50)),
+      snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))), () => cb([]));
+  },
+  paulChatWatch(id, cb) {
+    if (!fb.user || !fb.user.email) return () => {};
+    return onSnapshot(doc(db, "paulUsers", fb.user.email, "chats", id), s => cb(s.exists() ? s.data() : null), () => {});
+  },
+  async paulChatDelete(id) { noWrites(); await deleteDoc(doc(db, "paulUsers", fb.user.email, "chats", id)); },
+  paulMemoryWatch(cb) {
+    if (!fb.user || !fb.user.email) return () => {};
+    return onSnapshot(doc(db, "paulUsers", fb.user.email), s => cb((s.exists() && s.data().notes) || []), () => cb([]));
+  },
+  async paulNotesSet(notes) {
+    noWrites();
+    await updateDoc(doc(db, "paulUsers", fb.user.email), { notes, updatedAt: serverTimestamp() });
   },
   async setConfig(key, data) {
     noWrites();

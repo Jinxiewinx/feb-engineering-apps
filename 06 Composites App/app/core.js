@@ -32,11 +32,11 @@ var APP_VERSION = "6.6.2";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Long questions to Paul get an answer now, instead of \"Paul isn't available\".",
-  "He can look up more things before answering, and if he runs short of time he answers with what he found.",
-  "When something does go wrong, he says what it was (too slow, lost signal, the model busy).",
-  "A failed question has a Try again button, and it doesn't count against your 100 a day.",
-  "Questions can be up to 4,000 characters, so paste the whole layup note if you need to.",
+  "Paul keeps your chats now. Tap Chats in his panel to pick up an old conversation on any device.",
+  "He knows who's asking: your name, your trainings and the work orders you're engineer on.",
+  "He remembers a few things about you between chats. See them under Chats, and delete any you don't want kept.",
+  "Your chats and his notes are private to you. Leads can't read them.",
+  "If your phone loses signal mid-answer, Paul's reply still shows up when you're back. And yes: \"Hi, I'm Paul, from Easy Composites!\"",
 ];
 
 
