@@ -38,6 +38,12 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.6.2 — 2026-10-10
+
+- Paul: long questions get an answer instead of "isn't available"
+
+---
+
 ## v6.6.1 — 2026-10-09
 
 - Paul on a phone with the keyboard up: simulated, then fixed
