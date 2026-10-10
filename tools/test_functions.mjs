@@ -352,8 +352,8 @@ const answer = (t) => ({ stop_reason: "end_turn", usage: { input_tokens: 4000, o
 
 r = await ask({ question: "  " });
 ok("an empty question is refused", r.code === "invalid-argument", JSON.stringify(r));
-r = await ask({ question: "x".repeat(1001) });
-ok("an over-long question is refused", r.code === "invalid-argument", JSON.stringify(r));
+r = await ask({ question: "x".repeat(4001) });
+ok("an over-long question is refused", r.code === "invalid-argument" && /4,000/.test(r.msg), JSON.stringify(r));
 
 const sentBefore = state.sent.length;
 state.collsRead = [];
@@ -413,7 +413,55 @@ const n0 = state.sent.length;
 state.replies = (body) => body.tool_choice.type === "none" ? answer("Here's what I found.") : toolUse([["search_records", { query: "x" }]]);
 r = await ask({ question: "loop forever" });
 const loop = state.sent.slice(n0);
-ok("at most 4 tool rounds, then a forced answer", r.ok && loop.length === 5 && loop.at(-1).tool_choice.type === "none" && loop.slice(0, 4).every(b => b.tool_choice.type === "auto"), loop.map(b => b.tool_choice.type).join());
+ok("at most 6 tool rounds, then a forced answer", r.ok && loop.length === 7 && loop.at(-1).tool_choice.type === "none" && loop.slice(0, 6).every(b => b.tool_choice.type === "auto"), loop.map(b => b.tool_choice.type).join());
+ok("the forced round is told in words to answer", /last lookup/.test(JSON.stringify(loop.at(-1).messages.at(-1))), JSON.stringify(loop.at(-1).messages.at(-1)).slice(-200));
+ok("old tool results are stubbed on a long run", /earlier result, already used/.test(JSON.stringify(loop.at(-1).messages)) && /"content":"\[\{|No matching/.test(JSON.stringify(loop.at(-1).messages.at(-1))), "");
+
+// 2026-10-10: the forced last round came back empty and the person saw
+// "Paul isn't available". Now a fresh rescue call answers from what was found.
+const n2 = state.sent.length;
+const empty = { stop_reason: "end_turn", usage: { input_tokens: 12022, output_tokens: 1 }, content: [{ type: "thinking", thinking: "", signature: "s" }] };
+state.replies = (body) => {
+  if (!body.tools) return answer("The diffuser is on hold [WO-SN6-003].");
+  return body.tool_choice.type === "none" ? empty : toolUse([["get_record", { ref: "WO-SN6-003" }]]);
+};
+state.colls = { workOrders: [{ id: "WO-SN6-003", partName: "Diffuser", status: "OnHold" }] };
+state.docs.set(dayKey, {});
+r = await ask({ question: "a long sprawling question ".repeat(60) });
+const res = state.sent.slice(n2);
+ok("an empty last round is rescued with an answer", r.ok && /on hold \[\[0\]\]/.test(r.out.answer) && r.out.sources[0].ref === "WO-SN6-003", JSON.stringify(r).slice(0, 300));
+ok("the rescue is a fresh call with no tools and no thinking, carrying the lookups", !res.at(-1).tools && res.at(-1).thinking.type === "disabled" && /WO-SN6-003/.test(res.at(-1).messages.at(-1).content), JSON.stringify(res.at(-1)).slice(0, 300));
+ok("and the person sees it happening", chunks.some(c => c.type === "step" && /Pulling the answer together/.test(c.text)));
+ok("a 1,500-character question is fine", r.ok);
+
+// max_tokens with nothing written is rescued the same way.
+state.replies = [{ stop_reason: "max_tokens", usage: { input_tokens: 5000, output_tokens: 8000 }, content: [{ type: "thinking", thinking: "long", signature: "s" }] }, answer("Short answer.")];
+r = await ask({ question: "think hard" });
+ok("a max_tokens stop with no text is rescued", r.ok && r.out.answer === "Short answer.", JSON.stringify(r));
+
+// Both empty: a real message, not the catch-all, and the day's count given back.
+state.docs.set(dayKey, {});
+state.replies = (body) => empty;
+r = await ask({ question: "nothing comes back" });
+ok("two empty replies give a message the client shows", r.code === "unavailable" && /smaller parts/.test(r.msg), JSON.stringify(r));
+ok("a failed question doesn't use up one of the day's questions", Number(state.docs.get(dayKey).ask) === 0, JSON.stringify(state.docs.get(dayKey)));
+
+// Past the time budget the next round is the last one.
+const realNow = Date.now; let fake = realNow();
+Date.now = () => fake;
+const n3 = state.sent.length;
+state.replies = (body) => { fake += 40000; return body.tool_choice.type === "none" ? answer("Out of time, here's what I have.") : toolUse([["search_records", { query: "x" }]]); };
+r = await ask({ question: "slow" });
+Date.now = realNow;
+const slow = state.sent.slice(n3);
+ok("past the time budget the next round must answer", r.ok && slow.length === 3 && slow.at(-1).tool_choice.type === "none", slow.map(b => b.tool_choice && b.tool_choice.type).join());
+
+// A model error refunds too, and keeps its own message.
+state.docs.set(dayKey, {});
+state.throwErr = sdkErr("APIError", 400); state.replies = null;
+r = await ask({ question: "boom" });
+state.throwErr = null;
+ok("a model error is refunded and says what failed", r.code === "internal" && /Model call failed \(400\)/.test(r.msg) && Number(state.docs.get(dayKey).ask) === 0, JSON.stringify(r) + JSON.stringify(state.docs.get(dayKey)));
 
 // History is capped and plain.
 state.replies = [answer("ok")];

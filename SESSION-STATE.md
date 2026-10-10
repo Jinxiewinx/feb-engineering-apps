@@ -20,6 +20,17 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**Paul round 3 (2026-10-10).** Plan: `~/.claude/plans/i-have-paul-tested-misty-otter.md`.
+Phase A (reliability) ships as v6.6.2: the "isn't available" errors were an
+empty forced last round on long questions (log `in=12022 out=1`), shown
+through the client's catch-all. Now 6 rounds + 75s budget + a fresh rescue
+call, readable errors, Try again, refunds on failure, 4,000-char questions,
+`askPaul fail:` log line. Phases B (chats saved in Firestore
+`paulUsers/{email}/chats`, owner-only), C (personal context + auto memory
+notes via `paulRemember` trigger) and D ("Hi, I'm Paul, from Easy
+Composites!" catchphrase only, guardrail kept) are v6.7.0, not started.
+Simon chose: chats private to owner, auto notes visible/deletable, catchphrase only.
+
 **AI round 2 shipped as v6.4.0 (2026-10-09).** Plan:
 `~/.claude/plans/now-that-there-is-cozy-sloth.md`. Live and verified:
 Ask Paul (topbar bubble; `askPaul` + `functions/context.js` + `corpus.json`,

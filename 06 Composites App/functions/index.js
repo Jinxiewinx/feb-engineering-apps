@@ -142,8 +142,8 @@ async function storageBlock(path) {
  * toast can show, and the call's real usage logged and added to the month.
  * Every model call in this file goes through here, so the budget sees all of
  * them. */
-async function modelCall(body, label, onThinking, onBlock) {
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value(), maxRetries: 1, timeout: 45_000 });
+async function modelCall(body, label, onThinking, onBlock, opts = {}) {
+  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value(), maxRetries: 1, timeout: opts.timeout || 45_000 });
   let msg;
   try {
     if (onThinking) {
@@ -411,7 +411,15 @@ exports.readContainerLabel = onCall(
  */
 const ctx = require("./context.js");
 const PAUL_EFFORT = "medium";
-const PAUL_MAX_TOOL_ROUNDS = 4;
+/* Six rounds, not four: on 2026-10-10 a long question used all four, the
+ * forced last round came back with one output token, and the person saw
+ * "Paul isn't available". Long questions need more lookups. The time budget
+ * below is the real bound: past it, the next round must answer. */
+const PAUL_MAX_TOOL_ROUNDS = 6;
+const PAUL_TIME_BUDGET_MS = 75_000;   // of a 180s function; leaves room for a slow last call and the rescue
+const PAUL_CALL_TIMEOUT_MS = 40_000;
+const PAUL_MAX_QUESTION = 4000;
+const PAUL_LAST_NUDGE = "That was your last lookup. Answer now with what you found, and say plainly what you couldn't find.";
 const GENERAL_LINE = "General composites knowledge, not from the app:";
 const WEB_LINE = "From the web, not from the app:";
 const WEB_SEARCH = { type: "web_search_20250305", name: "web_search", max_uses: 3 };
@@ -537,8 +545,28 @@ function checkCitations(text, seen) {
   return { answer: out.trim(), sources };
 }
 
+/* The forced last round gets told so in words, not only by tool_choice:
+ * without it Haiku sometimes ends the turn with nothing to say. */
+function paulNudge(messages) {
+  const lastMsg = messages[messages.length - 1];
+  if (lastMsg && lastMsg.role === "user" && Array.isArray(lastMsg.content)) lastMsg.content.push({ type: "text", text: PAUL_LAST_NUDGE });
+  else messages.push({ role: "user", content: PAUL_LAST_NUDGE });
+}
+/* Tool results older than the two latest rounds have already been read; on a
+ * long run their bodies are swapped for a stub so the prompt stops growing. */
+function paulCompact(messages) {
+  const idx = messages.map((m, i) => (m.role === "user" && Array.isArray(m.content) && m.content.some((b) => b.type === "tool_result") ? i : -1)).filter((i) => i >= 0);
+  for (const i of idx.slice(0, -2)) {
+    messages[i].content = messages[i].content.map((b) => (b.type === "tool_result" ? { ...b, content: "(earlier result, already used)" } : b));
+  }
+}
+const paulText = (m) => (m.content || []).filter((b) => b.type === "text").map((b) => {
+  const urls = [...new Set((b.citations || []).map((c) => c && c.url).filter(Boolean))];
+  return b.text + urls.map((u) => `⟦${u}⟧`).join("");
+}).join("").trim();
+
 exports.askPaul = onCall(
-  { secrets: [ANTHROPIC_API_KEY], region: "us-central1", timeoutSeconds: 120, memory: "512MiB" },
+  { secrets: [ANTHROPIC_API_KEY], region: "us-central1", timeoutSeconds: 180, memory: "512MiB" },
   async (req, res) => {
     /* Progress goes to a client that asked for a stream (paul.js does); a
      * plain call gets the same answer with no chunks. sendChunk is a no-op
@@ -549,8 +577,11 @@ exports.askPaul = onCall(
     await requireAiOn();
     const q = String((req.data && req.data.question) || "").trim();
     if (!q) throw new HttpsError("invalid-argument", "Ask Paul something.");
-    if (q.length > 1000) throw new HttpsError("invalid-argument", "That's a long one. Keep it under 1,000 characters.");
+    if (q.length > PAUL_MAX_QUESTION) throw new HttpsError("invalid-argument", "That's a long one. Keep it under 4,000 characters.");
     await chargeDaily(email, "ask");
+    const t0 = Date.now();
+    let rounds = 0, inTok = 0;
+    try {
 
     // Earlier turns from this tab, as plain text (no thinking blocks, no tool
     // traffic), capped at six. The client keeps them; nothing is stored here.
@@ -584,8 +615,12 @@ exports.askPaul = onCall(
       }
     };
     let msg;
+    const found = [];   // tool results as text, for the rescue call
     for (let round = 0; ; round++) {
-      const last = round >= PAUL_MAX_TOOL_ROUNDS;
+      rounds = round + 1;
+      const last = round >= PAUL_MAX_TOOL_ROUNDS || Date.now() - t0 > PAUL_TIME_BUDGET_MS;
+      if (last && round > 0) paulNudge(messages);
+      if (round >= 3) paulCompact(messages);
       msg = await modelCall({
         max_tokens: 8000,
         system: PAUL_SYSTEM,
@@ -595,7 +630,8 @@ exports.askPaul = onCall(
         thinking: { type: "adaptive", display: "summarized" },
         output_config: { effort: PAUL_EFFORT },
         messages,
-      }, "askPaul", (delta) => send({ type: "thinking", text: delta }), onBlock);
+      }, "askPaul", (delta) => send({ type: "thinking", text: delta }), onBlock, { timeout: PAUL_CALL_TIMEOUT_MS });
+      inTok = Number((msg.usage || {}).input_tokens) || inTok;
       if (msg.stop_reason === "refusal") {
         throw new HttpsError("failed-precondition", "Paul won't answer that one.");
       }
@@ -610,18 +646,32 @@ exports.askPaul = onCall(
       uses.forEach((b) => send({ type: "step", text: stepText(b.name, b.input) }));
       const results = uses.map((b) => ({
         type: "tool_result", tool_use_id: b.id,
-        content: JSON.stringify(runTool(b.name, b.input, ctxData, seen)).slice(0, 20000),
+        content: JSON.stringify(runTool(b.name, b.input, ctxData, seen)).slice(0, 12000),
       }));
+      results.forEach((x) => found.push(x.content.slice(0, 4000)));
       messages.push({ role: "user", content: results });
     }
 
     /* Text blocks carry the web search's citations as objects; each becomes a
        ⟦url⟧ marker right after the sentence it supports. */
-    const text = (msg.content || []).filter((b) => b.type === "text").map((b) => {
-      const urls = [...new Set((b.citations || []).map((c) => c && c.url).filter(Boolean))];
-      return b.text + urls.map((u) => `⟦${u}⟧`).join("");
-    }).join("").trim();
-    if (!text) throw new HttpsError("internal", "Paul didn't come up with an answer. Try asking it another way.");
+    let text = paulText(msg);
+    if (!text) {
+      /* An empty last round (the 2026-10-10 failure) or a max_tokens stop with
+         nothing written. One more call, built fresh: the question and what
+         the lookups found, as plain text, no tools and no thinking. A fresh
+         message list is valid whatever state the loop stopped in, which a
+         continuation with thinking switched off mid-turn is not. */
+      send({ type: "step", text: "Pulling the answer together" });
+      msg = await modelCall({
+        max_tokens: 1500,
+        system: PAUL_SYSTEM,
+        thinking: { type: "disabled" },
+        messages: [...history, { role: "user", content: `${prefix}${q}\n\nWhat your lookups found (refs are inside):\n${found.join("\n").slice(-15000) || "(nothing)"}\n\n${PAUL_LAST_NUDGE}` }],
+      }, "askPaul rescue", null, null, { timeout: PAUL_CALL_TIMEOUT_MS });
+      rounds++;
+      text = paulText(msg);
+    }
+    if (!text) throw new HttpsError("unavailable", "Paul couldn't put an answer together for that one. Try asking it in smaller parts.");
     const { answer, sources } = checkCitations(text, seen);
     /* Haiku doesn't always attach citation objects to web facts (second live
        run: 9 pages, 0 citations, sites named in the prose). A web part must
@@ -642,5 +692,16 @@ exports.askPaul = onCall(
     const webCites = (msg.content || []).reduce((n, b) => n + ((b.type === "text" && b.citations) ? b.citations.length : 0), 0);
     if (webPages || webCites) console.log(`askPaul web: pages=${webPages} citations=${webCites} kept=${sources.filter((x) => x && x.type === "web").length}`);
     return { answer, sources: sources.filter(Boolean), general: answer.includes(GENERAL_LINE), web: answer.includes(WEB_LINE) };
+    } catch (e) {
+      /* A question that failed on our side doesn't use up one of the day's
+         100, and the log line says enough to diagnose it next time. */
+      console.error(`askPaul fail: code=${e.code || "?"} rounds=${rounds} elapsedMs=${Date.now() - t0} inTok=${inTok} msg=${String(e.message || e).slice(0, 200)}`);
+      if (!(e.code === "failed-precondition")) {
+        const day = new Date().toISOString().slice(0, 10);
+        await admin.firestore().doc(`aiUsage/${email}_${day}`).set({ ask: admin.firestore.FieldValue.increment(-1) }, { merge: true }).catch(() => {});
+      }
+      if (e instanceof HttpsError) throw e;
+      throw new HttpsError("internal", "Paul hit an error on the server. Try again.");
+    }
   }
 );

@@ -586,19 +586,19 @@ const fb = {
      boot path.
      Throws to the caller — the UI's job is to degrade to the manual editor,
      not this file's job to pretend it worked. */
-  async call(name, data) {
+  async call(name, data, opts) {
     noWrites();
     const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-functions.js");
-    const res = await httpsCallable(getFunctions(app, "us-central1"), name)(data);
+    const res = await httpsCallable(getFunctions(app, "us-central1"), name, opts)(data);
     return res.data;
   },
   /* The same call, with the function's progress chunks handed to onChunk as
      they arrive (Ask Paul's thinking and tool steps). Resolves to the final
      result exactly like call(). */
-  async callStream(name, data, onChunk) {
+  async callStream(name, data, onChunk, opts) {
     noWrites();
     const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-functions.js");
-    const { stream, data: result } = await httpsCallable(getFunctions(app, "us-central1"), name).stream(data);
+    const { stream, data: result } = await httpsCallable(getFunctions(app, "us-central1"), name, opts).stream(data, opts);
     for await (const chunk of stream) { try { onChunk && onChunk(chunk); } catch (e) { /* a UI hiccup never drops the answer */ } }
     return await result;
   },

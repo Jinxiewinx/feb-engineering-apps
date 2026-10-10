@@ -32,11 +32,11 @@ var APP_VERSION = "6.6.1";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Paul on your phone: the keyboard no longer pushes his header off the top of the screen.",
-  "The keyboard stays up after you send, so you can ask a follow-up straight away.",
-  "The latest answer stays in view right above the box while you type.",
-  "The page behind Paul doesn't scroll around under him any more.",
-  "The little source numbers in his answers are back to text size on phones.",
+  "Long questions to Paul get an answer now, instead of \"Paul isn't available\".",
+  "He can look up more things before answering, and if he runs short of time he answers with what he found.",
+  "When something does go wrong, he says what it was (too slow, lost signal, the model busy).",
+  "A failed question has a Try again button, and it doesn't count against your 100 a day.",
+  "Questions can be up to 4,000 characters, so paste the whole layup note if you need to.",
 ];
 
 

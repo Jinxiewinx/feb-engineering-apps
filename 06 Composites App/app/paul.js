@@ -225,7 +225,7 @@ function paulRender() {
     <div class="paul-compose">
       <div id="paul-about" class="paul-about">${paulAboutHtml()}</div>
       <div class="paul-inputrow">
-        <textarea id="paul-q" rows="1" maxlength="1000" placeholder="Ask Paul…" aria-label="Ask Paul" enterkeyhint="send"
+        <textarea id="paul-q" rows="1" maxlength="4000" placeholder="Ask Paul…" aria-label="Ask Paul" enterkeyhint="send"
           oninput="PAUL.draft=this.value;paulGrow(this)" onkeydown="paulKey(event)" onfocus="paulViewport()">${esc(PAUL.draft)}</textarea>
         <button class="primary paul-send" aria-label="Send" onclick="paulAsk()" ${PAUL.busy ? "disabled" : ""}>${icon("chevronRight", 18)}</button>
       </div>
@@ -303,7 +303,8 @@ function paulTurnHtml(t, i) {
 }
 function paulReplyHtml(t, i) {
   if (t.pending) return paulWorkHtml(t, true);
-  if (t.error) return `<div class="paul-bubble paul-err">${esc(t.error)}</div>`;
+  if (t.error) return `<div class="paul-bubble paul-err">${esc(t.error)}</div>
+    <button class="sm paul-retry" onclick="paulRetry(${i})">Try again</button>`;
   const worked = (t.steps && t.steps.length) || t.thinking;
   return `${worked ? `<details class="paul-work"><summary>Show how Paul worked it out</summary>${paulWorkHtml(t, false)}</details>` : ""}
     <div class="paul-bubble">${paulAnswerHtml(t, i)}</div>
@@ -404,15 +405,38 @@ async function paulAsk() {
   };
   try {
     const data = { question: q, history, about };
-    const out = fb.callStream ? await fb.callStream("askPaul", data, onChunk) : await fb.call("askPaul", data);
+    const out = fb.callStream ? await fb.callStream("askPaul", data, onChunk, PAUL_CALL_OPTS) : await fb.call("askPaul", data, PAUL_CALL_OPTS);
     turn.answer = String((out && out.answer) || "");
     turn.sources = (out && out.sources) || [];
   } catch (e) {
-    turn.error = aiErrorText(e, "Paul isn't available right now. Try again in a minute.");
+    turn.error = paulErrorText(e);
   } finally {
     turn.pending = false; PAUL.busy = false;
     paulSave(); paulMount(); paulRender(); paulFocus();
   }
+}
+/* The function may take up to 180s; the SDK's own default (70s) would give
+   up first and call a slow answer an error. */
+const PAUL_CALL_OPTS = { timeout: 190000 };
+/* Every failure used to read "Paul isn't available", whatever it was, so the
+   one real cause (an empty last round on long questions, 2026-10-10) looked
+   like an outage. Each code now says what happened. */
+function paulErrorText(e) {
+  const code = String(e && e.code || "").replace(/^functions\//, "");
+  if (code === "deadline-exceeded") return "That one took Paul too long. Try asking it in two parts.";
+  if (code === "internal" && e.message && e.message !== "internal" && e.message !== "INTERNAL") return e.message;
+  if (["cancelled", "unknown", "unavailable"].includes(code) && !(e && e.message && /paul|model/i.test(e.message))) {
+    return "Lost the connection before Paul finished. Check your signal and try again.";
+  }
+  return aiErrorText(e, "Paul isn't available right now. Try again in a minute.");
+}
+/* An errored turn asks again: the failed turn goes, its question comes back. */
+function paulRetry(i) {
+  const t = PAUL.turns[i];
+  if (!t || PAUL.busy) return;
+  PAUL.turns.splice(i, 1);
+  PAUL.draft = t.q;
+  return paulAsk();
 }
 function paulClear() {
   PAUL = { ...PAUL, turns: [], draft: "", busy: false };

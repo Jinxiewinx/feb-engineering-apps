@@ -11876,6 +11876,27 @@ await t("Ask Paul: a docked chat, live work shown, sources apart, and the way ba
   PAUL.draft = "one more"; await paulAsk();
   assert(/Daily limit of 100 questions/.test(paulTurnHtml(PAUL.turns.at(-1), 3)) && !PAUL.busy, "a refusal shows in the thread and frees the box");
 
+  // 2026-10-10: every failure read "Paul isn't available". Each says what it was now.
+  const fail = (code, msg) => { fb.callStream = async () => { throw Object.assign(new Error(msg || code), { code: "functions/" + code }); }; };
+  let callOpts = null;
+  fb.callStream = async (n, d, cb, o) => { callOpts = o; return { answer: "ok", sources: [] }; };
+  PAUL.draft = "slow one"; await paulAsk();
+  assert(callOpts && callOpts.timeout >= 180000, "the client waits longer than the function can run: " + JSON.stringify(callOpts));
+  fail("deadline-exceeded"); PAUL.draft = "too slow"; await paulAsk();
+  assert(/too long/.test(PAUL.turns.at(-1).error), "a timeout says so: " + PAUL.turns.at(-1).error);
+  fail("internal", "Model call failed (529)."); PAUL.draft = "busy"; await paulAsk();
+  assert(PAUL.turns.at(-1).error === "Model call failed (529).", "a server error shows its own message");
+  fail("unavailable", "Paul couldn't put an answer together for that one. Try asking it in smaller parts."); PAUL.draft = "empty"; await paulAsk();
+  assert(/smaller parts/.test(PAUL.turns.at(-1).error), "an empty answer says to split it up");
+  fail("unknown", "network error"); PAUL.draft = "on the train"; await paulAsk();
+  assert(/Lost the connection/.test(PAUL.turns.at(-1).error), "a dropped connection says so");
+  const ri = PAUL.turns.length - 1;
+  assert(/paulRetry\(/.test(paulTurnHtml(PAUL.turns[ri], ri)), "an errored turn offers Try again");
+  fb.callStream = async () => ({ answer: "Back now.", sources: [] });
+  const before = PAUL.turns.length;
+  await paulRetry(ri);
+  assert(PAUL.turns.length === before && PAUL.turns.at(-1).q === "on the train" && PAUL.turns.at(-1).answer === "Back now.", "Try again asks the same question in place of the failed turn");
+
   // Web sources are labelled and open outside; app reference sources route in.
   const opened = []; const hadOpen = window.open; window.open = (u) => opened.push(u);
   fb.callStream = async () => ({ answer: "Yours is due [[0]].\n\nFrom the web, not from the app:\nTwill drapes better [[1]].",
