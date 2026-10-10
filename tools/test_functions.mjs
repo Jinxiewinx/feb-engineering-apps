@@ -656,6 +656,51 @@ await paulRemember(ev([], [{ q: "x", answer: "y" }]));
 ok("a reply that isn't JSON changes nothing", state.docs.get("paulUsers/member@berkeley.edu").notes.length === 1);
 state.replies = null;
 
+/* ---------- Steve, from Fibreglast ---------- */
+console.log("steve");
+state.docs.set(dayKey, {});
+state.docs.delete("paulUsers/member@berkeley.edu");
+let fgRef = "";
+state.replies = (b) => {
+  const last = b.messages.at(-1);
+  if (!Array.isArray(last.content)) return toolUse([["search_fibreglast", { query: "sealant tape" }]]);
+  const hits = JSON.parse(last.content[0].content);
+  fgRef = hits[0].ref;
+  return answer(`Easy fix: more tape. Grab the [${fgRef}] for $${hits[0].price} last I checked, and the [FG:made-up-thing] too. Mix it 100:30 and cure 8 hours at 60°C, trust me.\nAsk Paul for the boring version.`);
+};
+const ns = state.sent.length;
+r = await ask({ question: "my bag leaks, what's the IN2 ratio?", agent: "steve", save: true, chatId: "steveChat001" });
+const sc = state.sent.slice(ns);
+ok("Steve gets his own prompt with the catchphrase", /Hi, I'm Steve, from Fibreglast!/.test(SYS(sc[0])) && !/You are "Paul"/.test(SYS(sc[0])), SYS(sc[0]).slice(0, 120));
+ok("and the no-number rule, and the joke isn't on the store", /NEVER give a number for a mix ratio/.test(SYS(sc[0])) && /Never disparage Fibreglast/.test(SYS(sc[0])));
+ok("low effort, thinking off", sc.every((b) => b.output_config.effort === "low" && b.thinking.type === "disabled"));
+ok("records, docs, his chats and the store; no web search", JSON.stringify(sc[0].tools.map((t) => t.name)) === JSON.stringify(["search_records", "app_overview", "get_record", "search_docs", "read_doc_section", "search_my_chats", "search_fibreglast"]), JSON.stringify(sc[0].tools.map((t) => t.name)));
+ok("the store search is announced", chunks.some((c) => c.type === "step" && c.text === 'Browsing the Fibreglast store for "sealant tape"'));
+ok("a real product becomes a source with its store link", r.ok && r.out.sources[0].type === "product" && r.out.sources[0].ref === fgRef && /^https:\/\/www\.fibreglast\.com\/products\/[a-z0-9-]+$/.test(r.out.sources[0].url) && r.out.sources[0].checked, JSON.stringify(r.out && r.out.sources));
+ok("a product he made up is dropped", !/made-up-thing/.test(JSON.stringify(r.out)) && r.out.sources.length === 1);
+ok("the price stays, the numbers go", /\$\d/.test(r.out.answer) && !/100:30|8 hours|60°C/.test(r.out.answer) && /Steve tried to give you a number here/.test(r.out.answer), r.out.answer);
+ok("line breaks survive the guard", /\nAsk Paul for the boring version\./.test(r.out.answer), r.out.answer);
+ok("the reply says who answered", r.out.agent === "steve");
+const steveChat = state.docs.get("paulUsers/member@berkeley.edu/chats/steveChat001");
+ok("his chat is saved and marked as his", steveChat && steveChat.agent === "steve" && steveChat.turns.length === 1, JSON.stringify(steveChat).slice(0, 200));
+ok("and counts against the same daily questions", Number(state.docs.get(dayKey).ask) === 1);
+state.replies = (b) => answer(b.tools.some((t) => t.name === "search_fibreglast") ? "steve" : "paul");
+r = await ask({ question: "who answers?", agent: "nobody" });
+ok("anything but steve is Paul", r.out.answer === "paul" && r.out.agent === "paul");
+state.replies = null;
+let n5 = state.sent.length;
+await paulRemember({ params: { email: "member@berkeley.edu", chatId: "steveChat001" },
+  data: { before: { exists: true, data: () => ({ agent: "steve", turns: [] }) }, after: { exists: true, data: () => ({ agent: "steve", turns: [{ q: "remember I love tape", answer: "Buy more." }] }) } } });
+ok("Steve's chats don't feed Paul's notes", state.sent.length === n5 && !state.docs.has("paulUsers/member@berkeley.edu"));
+
+// The catalog snapshot: one Shopify product in, one row out, no network.
+const { toRow } = await import("./build_steve_catalog.mjs");
+const row = toRow({ handle: "yellow-sealant-tape", title: " Yellow Sealant Tape ", product_type: "Supplies & Tools", tags: ["promo-true", "vacuum-bagging", "non-promo"],
+  body_html: "<p>Tacky&nbsp;tape &amp; more</p>", variants: [{ price: "18.20", available: false }, { price: "9.75", available: true }, { price: "0.00" }] });
+ok("a catalog row keeps what Steve needs and drops Shopify's promo tags", JSON.stringify(row) === JSON.stringify({ handle: "yellow-sealant-tape", title: "Yellow Sealant Tape", type: "Supplies & Tools", tags: ["vacuum-bagging"], price: 9.75, available: true, blurb: "Tacky tape & more" }), JSON.stringify(row));
+const shipped = req(path.join(path.dirname(FN), "steve_catalog.json"));
+ok("the shipped catalog is real and dated", shipped.products.length > 400 && /^\d{4}-\d{2}-\d{2}$/.test(shipped.fetchedAt) && shipped.store === "https://www.fibreglast.com");
+
 state.docs.set(dayKey, { ask: 100 });
 const n1 = state.sent.length;
 r = await ask({ question: "one more" });

@@ -291,6 +291,31 @@ function getRecord(records, id) {
   return { ref: r.id, kind: r.kind, title: r.title, text: r.body.slice(0, 6000), ...(r.src ? { src: r.src } : {}) };
 }
 
+/* Steve's shelf: the Fibreglast catalog snapshot (tools/build_steve_catalog.mjs).
+ * Same scoring as the records; the URL is built from the handle, never taken
+ * from the model. */
+let CATALOG = null;
+function catalog() {
+  if (!CATALOG) {
+    const f = require("./steve_catalog.json");
+    CATALOG = { store: f.store, fetchedAt: f.fetchedAt, items: f.products.map((p) => ({ ...p,
+      hay: (p.title + " " + p.type + " " + p.tags.join(" ") + " " + p.handle.replace(/-/g, " ") + " " + p.blurb).toLowerCase() })) };
+  }
+  return CATALOG;
+}
+function searchCatalog(query, limit = 6) {
+  const ts = terms(query);
+  const c = catalog();
+  if (!ts.length) return [];
+  return c.items
+    .map((p) => ({ p, s: score(p.hay, p.title.toLowerCase(), ts) + (p.available ? 0.5 : 0) }))
+    .filter((x) => x.s > 0.5)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, limit)
+    .map(({ p }) => ({ ref: "FG:" + p.handle, title: p.title, type: p.type || undefined, price: p.price, in_stock: p.available,
+      url: `${c.store}/products/${p.handle}`, blurb: p.blurb }));
+}
+
 let CORPUS = null, CORPUS_FILE = null;
 function corpusFile() { return CORPUS_FILE || (CORPUS_FILE = require("./corpus.json")); }
 function corpus() {
@@ -342,4 +367,4 @@ function personalContext(ctxData, email) {
   return out.join("\n");
 }
 
-module.exports = { COLLS, KINDS, KIND, overview, loadRecords, searchRecords, getRecord, searchDocs, readDocSection, docSource, flatten, plain, terms, personalContext };
+module.exports = { COLLS, KINDS, KIND, overview, loadRecords, searchRecords, getRecord, searchDocs, readDocSection, docSource, flatten, plain, terms, personalContext, searchCatalog, catalog };
