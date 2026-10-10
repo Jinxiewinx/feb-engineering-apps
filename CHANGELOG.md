@@ -38,6 +38,13 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.7.0 — 2026-10-10
+
+- Paul client: saved chats, Chats view, what Paul remembers, the intro
+- Paul server: saved chats, personal context, memory notes, the EC intro
+
+---
+
 ## v6.6.2 — 2026-10-10
 
 - Paul: long questions get an answer instead of "isn't available"
