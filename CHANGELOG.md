@@ -38,6 +38,14 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.8.0 — 2026-10-10
+
+- Define .steve-av so the design-system check passes
+- Steve, from Fibreglast: client half (switch, label, Ask Paul instead)
+- Steve, from Fibreglast: server half (the always-wrong second agent)
+
+---
+
 ## v6.7.0 — 2026-10-10
 
 - Paul client: saved chats, Chats view, what Paul remembers, the intro
