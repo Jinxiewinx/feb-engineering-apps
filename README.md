@@ -123,6 +123,13 @@ Twelve tabs, grouped in the sidebar by who is asking:
   under Chats. Chats and notes are private to their owner; leads can't read
   them. A question that fails says why and offers Try again, and doesn't
   count against the day's 100.
+- **Steve, from Fibreglast:** the other joke, behind a Paul | Steve switch in
+  the same panel. Steve is always a bit wrong and always has a Fibreglast
+  product for it, linked from a snapshot of their store. He never gives a
+  number you'd act on (the server replaces any that slip through), every
+  answer is labelled "Steve is always wrong" with Ask Paul instead under it,
+  and the joke is Steve, not the store. Refresh his catalog with
+  `node tools/build_steve_catalog.mjs`, commit, and deploy functions.
 - **AI, on every ✨:** receipts, packing slips and resin jug labels read
   themselves into the grid you'd otherwise type, and you check before anything
   saves. A lead can switch all of it off from ⋯, and it stops itself at $80 a

@@ -28,6 +28,12 @@ in `paulUsers/{email}/chats/{id}` (owner-only rules; lead can't read; server
 appends, client can only read/rename/delete), personal context block,
 `paulRemember` Firestore trigger keeping <=20 notes, `search_my_chats` tool,
 "Hi, I'm Paul, from Easy Composites!" intro with the guardrail kept.
+- **Steve (v6.8.0, 2026-10-10):** second agent "from Fibreglast", always
+  wrong, upsells from `functions/steve_catalog.json` (Shopify snapshot via
+  `tools/build_steve_catalog.mjs`). Same askPaul callable, `agent:"steve"`;
+  `steveGuard` replaces any sentence with a number+unit; client labels every
+  answer and offers Ask Paul instead. Steve's chats skip `paulRemember`.
+  Not yet run: `tools/eval_steve.js` live (bar 5/6).
 - Not yet run: `tools/eval_askpaul.js` in the live app after the PAUL_SYSTEM
   rewrite (needs a signed-in session; 17 cases now, two for the intro).
 - Not yet tried live: a real long question on the iPhone, the stream-drop

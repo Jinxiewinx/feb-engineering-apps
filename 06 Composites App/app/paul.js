@@ -44,14 +44,31 @@ const PAUL_GENERAL = "General composites knowledge, not from the app:";
 const PAUL_WEB = "From the web, not from the app:";
 const PAUL_STORE = "feb-paul:thread";
 const PAUL_INTRO = "Hi, I'm Paul, from Easy Composites!";
+const STEVE_INTRO = "Hi, I'm Steve, from Fibreglast!";
+/* Two helpers share this panel (Simon, 2026-10-10). Paul answers. Steve,
+   "from Fibreglast", is the team's other joke: always a bit wrong, always
+   selling something from the Fibreglast store. The server keeps him away from
+   numbers people act on; here every Steve answer carries a fixed "Steve is
+   always wrong" label (not model text) and an Ask Paul instead button. Each
+   helper keeps his own open chat; the switch swaps them. */
+const PAUL_WHO = {
+  paul: { name: "Paul", sub: "composites help", intro: PAUL_INTRO },
+  steve: { name: "Steve", sub: "always wrong, always selling", intro: STEVE_INTRO },
+};
+const paulWho = () => (PAUL.agent === "steve" ? "steve" : "paul");
 let PAUL = paulLoad();
 
 function paulLoad() {
-  const fresh = { turns: [], draft: "", busy: false, open: false, aboutOff: false, chatId: "", view: "chat", chats: null, notes: null };
+  const fresh = { turns: [], draft: "", busy: false, open: false, aboutOff: false, chatId: "", view: "chat", chats: null, notes: null, agent: "paul", stash: {} };
+  const clean = (turns) => (Array.isArray(turns) ? turns : []).filter(t => t && t.q && (t.answer || t.error));
   try {
     const saved = JSON.parse(sessionStorage.getItem(PAUL_STORE) || "null");
-    if (saved && Array.isArray(saved.turns)) fresh.turns = saved.turns.filter(t => t && t.q && (t.answer || t.error));
+    if (saved && Array.isArray(saved.turns)) fresh.turns = clean(saved.turns);
     if (saved && typeof saved.chatId === "string") fresh.chatId = saved.chatId;
+    if (saved && saved.agent === "steve") fresh.agent = "steve";
+    if (saved && saved.stash && typeof saved.stash === "object") {
+      for (const k of ["paul", "steve"]) if (saved.stash[k]) fresh.stash[k] = { chatId: String(saved.stash[k].chatId || ""), turns: clean(saved.stash[k].turns) };
+    }
   } catch (e) { /* private window, blocked storage: start empty */ }
   return fresh;
 }
@@ -59,7 +76,9 @@ function paulSave() {
   try {
     const turns = PAUL.turns.filter(t => !t.pending).slice(-20)
       .map(t => ({ q: t.q, qid: t.qid, about: t.about, answer: t.answer, sources: t.sources, error: t.error, steps: t.steps, thinking: t.thinking }));
-    sessionStorage.setItem(PAUL_STORE, JSON.stringify({ chatId: PAUL.chatId || "", turns }));
+    const stash = {};
+    for (const [k, v] of Object.entries(PAUL.stash || {})) stash[k] = { chatId: v.chatId || "", turns: (v.turns || []).filter(t => !t.pending).slice(-20).map(t => ({ q: t.q, qid: t.qid, answer: t.answer, sources: t.sources, error: t.error })) };
+    sessionStorage.setItem(PAUL_STORE, JSON.stringify({ chatId: PAUL.chatId || "", turns, agent: paulWho(), stash }));
   } catch (e) { /* not worth a toast */ }
 }
 function paulNewId() {
@@ -100,6 +119,25 @@ function paulMerge(id, d) {
   PAUL.turns = [...merged, ...rest];
   if (JSON.stringify(PAUL.turns.map(t => [t.qid, !!t.answer, !!t.error])) !== before) { paulSave(); paulMount(); paulRender(); }
 }
+/* Swap helpers. The one you leave keeps his open chat in PAUL.stash. */
+function paulSwitch(agent) {
+  agent = agent === "steve" ? "steve" : "paul";
+  if (PAUL.busy || agent === paulWho()) { if (PAUL.view === "list") paulShowChats(false); return; }
+  PAUL.stash = { ...(PAUL.stash || {}), [paulWho()]: { chatId: PAUL.chatId, turns: PAUL.turns } };
+  const next = PAUL.stash[agent] || { chatId: "", turns: [] };
+  PAUL.agent = agent; PAUL.chatId = next.chatId; PAUL.turns = next.turns;
+  PAUL.view = "chat";
+  paulSave(); paulMount(); paulRender(); paulFocus();
+}
+/* "Ask Paul instead" under Steve, "What would Steve say?" under Paul: the
+   same question, to the other one, in his open chat. */
+function paulAskOther(i) {
+  const t = PAUL.turns[i];
+  if (!t || PAUL.busy) return;
+  paulSwitch(paulWho() === "steve" ? "paul" : "steve");
+  PAUL.draft = t.q;
+  return paulAsk();
+}
 let PAUL_LIST_OFF = null, PAUL_MEM_OFF = null;
 function paulShowChats(on) {
   PAUL.view = on ? "list" : "chat";
@@ -117,6 +155,7 @@ function paulShowChats(on) {
 function paulOpenChat(id) {
   const c = (PAUL.chats || []).find(x => x.id === id);
   if (PAUL.busy) return;
+  if (c && (c.agent || "paul") !== paulWho()) paulSwitch(c.agent || "paul");
   PAUL.chatId = id;
   PAUL.turns = c && Array.isArray(c.turns) ? c.turns.map(x => ({ q: x.q, qid: x.qid, about: x.about, answer: x.answer, sources: x.sources || [] })) : [];
   paulSave();
@@ -158,7 +197,7 @@ function paulChatsHtml() {
     ${chats == null ? `<div class="muted tny">Loading…</div>`
       : chats.length ? chats.map(c => `<div class="paul-chatrow ${c.id === PAUL.chatId ? "on" : ""}">
           <button class="paul-chatopen" onclick="paulOpenChat(${esc(JSON.stringify(c.id))})">
-            <span class="paul-chat-t">${esc(c.title || "Chat")}</span>
+            <span class="paul-chat-t">${paulAvatar(18, c.agent === "steve" ? "steve" : "paul")} ${esc(c.title || "Chat")}</span>
             <span class="muted tny">${esc(paulWhen(c.updatedAt))} · ${(c.turns || []).length} ${(c.turns || []).length === 1 ? "question" : "questions"}</span>
           </button>
           <button class="icon-btn" aria-label="Delete chat" title="Delete chat" onclick="paulDeleteChat(${esc(JSON.stringify(c.id))})">${icon("trash", 15)}</button>
@@ -173,7 +212,8 @@ function paulChatsHtml() {
    them only while .paul-busy is on an ancestor: the head bobs, the stir stick
    goes round the cup, the glasses catch the light. Reduced motion stills all
    of it through the app's global rule. */
-function paulAvatar(size) {
+function paulAvatar(size, who) {
+  if ((who || paulWho()) === "steve") return steveAvatar(size);
   /* A lead can give Paul a picture (⋯ → Paul's picture). It lives in the
      team's Storage, never in this public repo, and only its address is in
      config/ai, which guests cannot read. The same motion applies: the frame
@@ -199,6 +239,27 @@ function paulAvatar(size) {
       <path d="M44 47h11l-1.6 12h-7.8z" class="paul-av-cupbody"/>
       <path d="M45 50h9" class="paul-av-resin"/>
       <path d="M49.5 38l1.2 13" class="paul-av-stick"/>
+    </g>
+  </svg>`;
+}
+
+/* Steve: an original cartoon, not anyone real. Trucker cap, big grin, a
+   Fibreglast-orange shopping bag. Same parts move as Paul's while he works. */
+function steveAvatar(size) {
+  return `<svg class="paul-av steve-av" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="31" class="steve-av-bg"/>
+    <g class="paul-av-head">
+      <path d="M14 58c2-11 9-16 18-16s16 5 18 16" class="steve-av-shirt"/>
+      <circle cx="32" cy="29" r="14" class="paul-av-skin"/>
+      <path d="M17 24c1-9 8-13 15-13s14 4 15 13z" class="steve-av-cap"/>
+      <path d="M30 24h22c0 2-2 3-4 3H30z" class="steve-av-cap"/>
+      <rect x="27" y="14" width="10" height="5" rx="1.5" class="steve-av-patch"/>
+      <g class="paul-av-eyes"><circle cx="26" cy="29.5" r="1.5"/><circle cx="38" cy="29.5" r="1.5"/></g>
+      <path d="M24.5 35c3.5 4.6 11.5 4.6 15 0z" class="steve-av-grin"/>
+    </g>
+    <g>
+      <path d="M43 46h13l-1.5 13h-10z" class="steve-av-bag"/>
+      <path d="M46 46c0-4 7-4 7 0" class="steve-av-handle"/>
     </g>
   </svg>`;
 }
@@ -316,10 +377,13 @@ function paulAboutHtml() {
 function paulHeadHtml() {
   return `<div class="paul-head ${PAUL.busy ? "paul-busy" : ""}">
       ${paulAvatar(36)}
-      <div class="paul-title"><b>Paul</b><span class="muted tny">${PAUL.busy ? "working it out…" : "composites help"}</span></div>
+      <div class="paul-title"><b>${PAUL_WHO[paulWho()].name}</b><span class="muted tny">${PAUL.busy ? "working it out…" : PAUL_WHO[paulWho()].sub}</span></div>
+      <div class="paul-switch" role="group" aria-label="Who to ask">
+        ${["paul", "steve"].map(a => `<button class="${a === paulWho() ? "on" : ""}" aria-pressed="${a === paulWho()}" onclick="paulSwitch('${a}')" ${PAUL.busy ? "disabled" : ""}>${PAUL_WHO[a].name}</button>`).join("")}
+      </div>
       ${PAUL.view === "list" ? `<button class="sm" onclick="paulShowChats(false)">Back</button>`
         : `<button class="sm" onclick="paulShowChats(true)" title="Your saved chats and what Paul remembers">Chats</button>`}
-      ${PAUL.turns.length || PAUL.view === "list" ? `<button class="sm" onclick="paulClear()" title="Start a new conversation">New chat</button>` : ""}
+      ${PAUL.turns.length || PAUL.view === "list" ? `<button class="sm paul-new" onclick="paulClear()" title="Start a new conversation" aria-label="New chat">${icon("plus", 15)}<span class="paul-btxt">New chat</span></button>` : ""}
       <button class="icon-btn" aria-label="Close Paul" onclick="closePaul()">${icon("x", 18)}</button>
     </div>`;
 }
@@ -338,6 +402,7 @@ function paulRender() {
     if (about) about.innerHTML = paulAboutHtml();
     const send = el.querySelector && el.querySelector(".paul-send");
     if (send) send.disabled = !!PAUL.busy;
+    if (box.placeholder !== undefined) box.placeholder = `Ask ${PAUL_WHO[paulWho()].name}…`;
     const compose = el.querySelector && el.querySelector(".paul-compose");
     if (compose) compose.hidden = PAUL.view === "list";
   } else {
@@ -347,7 +412,7 @@ function paulRender() {
     <div class="paul-compose" ${PAUL.view === "list" ? "hidden" : ""}>
       <div id="paul-about" class="paul-about">${paulAboutHtml()}</div>
       <div class="paul-inputrow">
-        <textarea id="paul-q" rows="1" maxlength="4000" placeholder="Ask Paul…" aria-label="Ask Paul" enterkeyhint="send"
+        <textarea id="paul-q" rows="1" maxlength="4000" placeholder="Ask ${PAUL_WHO[paulWho()].name}…" aria-label="Ask ${PAUL_WHO[paulWho()].name}" enterkeyhint="send"
           oninput="PAUL.draft=this.value;paulGrow(this)" onkeydown="paulKey(event)" onfocus="paulViewport()">${esc(PAUL.draft)}</textarea>
         <button class="primary paul-send" aria-label="Send" onclick="paulAsk()" ${PAUL.busy ? "disabled" : ""}>${icon("chevronRight", 18)}</button>
       </div>
@@ -408,11 +473,14 @@ function paulScroll() {
 }
 
 function paulEmptyHtml() {
-  const tries = ["Where is the diffuser mold?", "Which IN2 lots expire soonest?", "What does CS-006 say about the drop test?", "What gloves for XCR?"];
+  const steve = paulWho() === "steve";
+  const tries = steve ? ["How do I stop dry spots?", "Best way to seal a mold?", "What should I buy for the diffuser?"]
+    : ["Where is the diffuser mold?", "Which IN2 lots expire soonest?", "What does CS-006 say about the drop test?", "What gloves for XCR?"];
   return `<div class="paul-empty">
     ${paulAvatar(72)}
-    <p><b>${esc(PAUL_INTRO)}</b></p>
-    <p>Ask me about molds, parts, work orders, lots, the standards or the datasheets. I remember our chats, and you can find them under Chats.</p>
+    <p><b>${esc(PAUL_WHO[paulWho()].intro)}</b></p>
+    <p>${steve ? "I'm always wrong, but I've got a product for that. For anything you'll actually do at the table, ask Paul."
+      : "Ask me about molds, parts, work orders, lots, the standards or the datasheets. I remember our chats, and you can find them under Chats."}</p>
     <div class="paul-tries">${tries.map(q => `<button class="chip" onclick="PAUL.draft=${esc(JSON.stringify(q))};paulAsk()">${esc(q)}</button>`).join("")}</div>
   </div>`;
 }
@@ -430,9 +498,13 @@ function paulReplyHtml(t, i) {
   if (t.error) return `<div class="paul-bubble paul-err">${esc(t.error)}</div>
     <button class="sm paul-retry" onclick="paulRetry(${i})">Try again</button>`;
   const worked = (t.steps && t.steps.length) || t.thinking;
-  return `${worked ? `<details class="paul-work"><summary>Show how Paul worked it out</summary>${paulWorkHtml(t, false)}</details>` : ""}
+  const steve = paulWho() === "steve";
+  return `${worked ? `<details class="paul-work"><summary>Show how ${PAUL_WHO[paulWho()].name} worked it out</summary>${paulWorkHtml(t, false)}</details>` : ""}
+    ${steve ? `<span class="pill steve-pill">Steve is always wrong</span>` : ""}
     <div class="paul-bubble">${paulAnswerHtml(t, i)}</div>
-    ${paulSourcesHtml(t, i)}`;
+    ${paulSourcesHtml(t, i)}
+    ${steve ? `<button class="sm paul-other" onclick="paulAskOther(${i})">Ask Paul instead</button>`
+      : `<button class="link tny paul-other" onclick="paulAskOther(${i})">What would Steve say?</button>`}`;
 }
 /* The live view while the answer is coming, and the same thing folded away
    after. Steps are what the function actually did; thinking is the model's
@@ -472,6 +544,7 @@ function paulAnswerHtml(t, i) {
 }
 function paulSourceTitle(s) {
   if (s.type === "doc") return `${s.title}, ${s.section}`;
+  if (s.type === "product") return `${s.title} at Fibreglast`;
   if (s.type === "chat") return `Earlier chat · ${s.title || ""}`;
   if (s.type === "web") return `${s.site || "web"} · ${s.title || s.ref}`;
   return `${paulRefLabel(s.ref)}${s.title && s.title !== paulRefLabel(s.ref) ? " · " + s.title : ""}`;
@@ -495,6 +568,8 @@ function paulSourcesHtml(t, i) {
         ? `${icon("externalLink", 13)} <b>${esc(s.site || "web")}</b><span class="muted"> · ${esc(s.title || s.ref)}</span><span class="muted tny"> web</span>`
         : s.type === "doc"
         ? `${icon("file", 13)} ${esc(s.title)}<span class="muted"> · ${esc(s.section)}</span>`
+        : s.type === "product"
+        ? `${icon("externalLink", 13)} <b>${esc(s.title)}</b><span class="muted">${s.price != null ? ` · $${esc(Number(s.price).toFixed(2))}` : ""} at Fibreglast</span>${s.checked ? `<span class="muted tny"> price checked ${esc(s.checked)}</span>` : ""}`
         : s.type === "chat"
         ? `${icon("message", 13)} ${esc(s.title || "Earlier chat")}<span class="muted tny"> earlier chat</span>`
         : `<b>${esc(paulRefLabel(s.ref))}</b>${s.title && s.title !== paulRefLabel(s.ref) ? `<span class="muted"> · ${esc(s.title)}</span>` : ""}${s.kind && !String(s.title || "").toLowerCase().includes(s.kind) ? `<span class="muted tny"> ${esc(s.kind)}</span>` : ""}`}</span>
@@ -534,13 +609,13 @@ async function paulAsk() {
     paulLive(turn);
   };
   try {
-    const data = { question: q, history, about, save: true, chatId, qid: turn.qid };
+    const data = { question: q, history, about, save: true, chatId, qid: turn.qid, agent: paulWho() };
     const out = fb.callStream ? await fb.callStream("askPaul", data, onChunk, PAUL_CALL_OPTS) : await fb.call("askPaul", data, PAUL_CALL_OPTS);
     turn.answer = String((out && out.answer) || "");
     turn.sources = (out && out.sources) || [];
   } catch (e) {
     if (turn.answer) return;   // the saved chat already delivered it
-    turn.error = paulErrorText(e);
+    turn.error = paulErrorText(e).replace(/^Paul /, PAUL_WHO[paulWho()].name + " ");
     /* The question reached the server; its answer may still land in the
        saved chat. The watch on the chat fills this turn in if it does. */
     turn.recovering = /Lost the connection|too long/.test(turn.error);
@@ -594,6 +669,7 @@ function paulOpenSource(ti, si) {
   /* A web page opens in a new browser tab and the chat stays exactly where
      it is; everything else is inside the app. */
   if (s.type === "web") { if (/^https?:\/\//i.test(s.ref)) window.open(s.ref, "_blank", "noopener,noreferrer"); return; }
+  if (s.type === "product") { if (/^https:\/\/www\.fibreglast\.com\/products\//.test(s.url || "")) window.open(s.url, "_blank", "noopener,noreferrer"); return; }
   if (s.type === "chat" || String(s.ref || "").startsWith("CHAT:")) {
     const id = String(s.ref).slice(5);
     if (window.fb && fb.paulChatWatch && !(PAUL.chats || []).some(c => c.id === id)) {

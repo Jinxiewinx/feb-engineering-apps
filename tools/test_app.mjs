@@ -11955,6 +11955,46 @@ await t("Ask Paul: a docked chat, live work shown, sources apart, and the way ba
   assert(/earlier chat/.test(paulTurnHtml(PAUL.turns[0], 0)), "a chat source reads as an earlier chat");
   paulOpenSource(0, 0);
   assert(PAUL.chatId === cid && PAUL.turns[0].q === "first", "and opens it");
+
+  // Steve, from Fibreglast (2026-10-10): his own chat, his own look, always labelled.
+  paulClear(); PAUL.stash = {}; PAUL.agent = "paul";
+  fb.callStream = async (n, d) => { sentData = d; return d.agent === "steve"
+    ? { answer: "More tape [[0]].", agent: "steve", sources: [{ type: "product", ref: "FG:yellow-sealant-tape", title: "Yellow Sealant Tape", url: "https://www.fibreglast.com/products/yellow-sealant-tape", price: 9.75, checked: "2026-10-10" }] }
+    : { answer: "Check the bag edges [[0]].", sources: [{ type: "record", ref: "WO-SN6-003", title: "Diffuser" }] }; };
+  PAUL.draft = "my bag leaks"; await paulAsk();
+  const paulChat = PAUL.chatId;
+  assert(!sentData.agent || sentData.agent === "paul", "Paul by default");
+  let ph2 = paulTurnHtml(PAUL.turns[0], 0);
+  assert(/What would Steve say\?/.test(ph2) && !/always wrong/.test(ph2), "Paul's answer offers Steve, without Steve's label");
+  await paulAskOther(0);
+  assert(PAUL.agent === "steve" && sentData.agent === "steve" && sentData.question === "my bag leaks" && PAUL.chatId !== paulChat, "What would Steve say? asks Steve the same question in his own chat");
+  ph2 = paulTurnHtml(PAUL.turns[0], 0);
+  assert(/Steve is always wrong/.test(ph2) && /Ask Paul instead/.test(ph2), "every Steve answer is labelled and offers Paul");
+  assert(/Yellow Sealant Tape[\s\S]*\$9\.75[\s\S]*at Fibreglast[\s\S]*price checked 2026-10-10/.test(ph2), "a product reads as a store item with its price and date");
+  assert(/steve-av/.test(ph2) && /Steve/.test(paulHeadHtml()) && /always wrong, always selling/.test(paulHeadHtml()), "Steve has his own face and name");
+  const opened2 = []; const hadOpen2 = window.open; window.open = (u, t, f) => opened2.push([u, f]);
+  paulOpenSource(0, 0);
+  assert(opened2[0][0] === "https://www.fibreglast.com/products/yellow-sealant-tape" && /noopener/.test(opened2[0][1]), "a product opens the store page, noopener");
+  PAUL.turns[0].sources[0].url = "https://evil.example/x"; paulOpenSource(0, 0);
+  assert(opened2.length === 1, "only a Fibreglast product URL ever opens");
+  window.open = hadOpen2;
+  const steveChat = PAUL.chatId;
+  paulSwitch("paul");
+  assert(PAUL.chatId === paulChat && PAUL.turns[0].q === "my bag leaks" && /Check the bag edges/.test(PAUL.turns[0].answer), "switching back finds Paul's chat where it was");
+  paulSwitch("steve");
+  assert(PAUL.chatId === steveChat && /More tape/.test(PAUL.turns[0].answer), "and Steve's where it was");
+  await paulAskOther(0);
+  assert(PAUL.agent === "paul" && PAUL.chatId === paulChat && PAUL.turns.length === 2 && sentData.agent === "paul", "Ask Paul instead asks in Paul's open chat");
+  paulSwitch("steve"); paulClear();
+  assert(/Hi, I&#39;m Steve, from Fibreglast!|Hi, I'm Steve, from Fibreglast!/.test(paulEmptyHtml()) && /always wrong/.test(paulEmptyHtml()), "Steve's empty chat has his intro");
+  PAUL.chats = [{ id: "s1", agent: "steve", title: "tape?", turns: [{ qid: "a", q: "tape?", answer: "More." }] }, { id: "p1", title: "ratio?", turns: [{ qid: "b", q: "ratio?", answer: "Check the datasheet." }] }];
+  const rows = paulChatsHtml();
+  assert(/steve-av[\s\S]*tape\?/.test(rows) && /paul-av-bg[\s\S]*ratio\?/.test(rows), "each chat row shows whose chat it is");
+  paulOpenChat("p1");
+  assert(PAUL.agent === "paul" && PAUL.chatId === "p1", "opening Paul's chat from Steve switches to Paul");
+  paulOpenChat("s1");
+  assert(PAUL.agent === "steve" && PAUL.chatId === "s1", "and back");
+  paulSwitch("paul"); PAUL.stash = {};
   fb.user = hadUser; paulClear();
 
   // Web sources are labelled and open outside; app reference sources route in.

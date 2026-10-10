@@ -32,11 +32,11 @@ var APP_VERSION = "6.7.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Paul keeps your chats now. Tap Chats in his panel to pick up an old conversation on any device.",
-  "He knows who's asking: your name, your trainings and the work orders you're engineer on.",
-  "He remembers a few things about you between chats. See them under Chats, and delete any you don't want kept.",
-  "Your chats and his notes are private to you. Leads can't read them.",
-  "If your phone loses signal mid-answer, Paul's reply still shows up when you're back. And yes: \"Hi, I'm Paul, from Easy Composites!\"",
+  "Meet Steve, from Fibreglast. Tap Steve at the top of Paul's panel.",
+  "Steve is always wrong, and he always has a Fibreglast product for that, with a link.",
+  "He won't give you ratios, cure times or temperatures. Tap Ask Paul instead for the real answer.",
+  "Under any of Paul's answers, \"What would Steve say?\" gets you Steve's take on the same question.",
+  "Paul and Steve each keep their own chat, and both show up under Chats.",
 ];
 
 
