@@ -41,10 +41,13 @@ never holds a half-updated standard. Round status:
 - R1 done: overhaul/REGISTER.md (306 rows + Simon's answers section).
 - R2 done: overhaul/drafts/ (CS-000..014, INDEX, templates), trial
   promotion lints clean except the new .v2 figures.
-- R3 graphics and R4 quick refs + Steve: workflows running. A worktree
-  agent is applying the small R-OTH code fixes on its own branch (merge
-  after review). Paul search fixes (R-OTH-06/08) are on main, not deployed.
-- Next: R6 fact-check, then R7 promote/build/release/functions deploy.
+- R3 done: 26 figures as src/figures/*.v2.* (variants/CHOICES.md). R4
+  done: overhaul/drafts/QR-001..015 and 06 Composites App/steve/. Small
+  R-OTH code fixes merged to main (not released yet).
+- A worktree agent is wiring Steve's notes tool, catalog filter, prompt
+  updates and evals (functions; merge after review, rebuild steve_kb).
+- R6 fact-check workflow running; then R7 promote/build/release, then ask
+  Simon for the functions deploy.
 - Gates that wait on Simon: the `functions:askPaul` deploy (R7), the CS-011 §6 co-storage proposal (R2
   drafts it into `overhaul/proposals/`, not into CS-011).
 - `04 Printables/printables.html` cards pin CS revs that are already stale
