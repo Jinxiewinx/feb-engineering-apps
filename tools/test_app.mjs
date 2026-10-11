@@ -6788,6 +6788,29 @@ await t("every doc path in the table exists in the manifest, and every number ci
   const srcs = (Array.isArray(manifest) ? manifest : manifest.docs || []).map(d => d.src);
   const problems = materialsTableProblems(srcs);
   assert(problems.length === 0, "table hygiene: " + problems.join("; "));
+  // The resin table's datasheet links go through the same manifest gate.
+  const resinMiss = RESINS.filter(r => !srcs.includes(r.doc)).map(r => `${r.id || r.label}: ${r.doc}`);
+  assert(resinMiss.length === 0, "resins.js doc not in the manifest: " + resinMiss.join("; "));
+});
+
+await t("an SDS button opens a safety sheet and a datasheet button does not", async () => {
+  // 2026-10-10: Airtac's datasheet button had been opening its 2005 MSDS for
+  // months. Read page 1 of each linked PDF out of Paul's corpus (pdftotext
+  // already ran there) and check it is the kind of sheet the button says.
+  const { readFileSync } = await import("node:fs");
+  const { join } = await import("node:path");
+  const corpus = JSON.parse(readFileSync(join(APP_ROOT, "..", "functions", "corpus.json"), "utf8"));
+  const page1 = (src) => (corpus.sections.find(x => x.src === src && /^page 1\b/.test(x.section)) || {}).text || "";
+  const SAFETY = /safety data sheet|\bSDS\b|product information for safe use/i;
+  const bad = [];
+  for (const m of MATERIALS) {
+    if (m.sds && !SAFETY.test(page1(m.sds))) bad.push(`${m.matKey}: sds ${m.sds} does not read as a safety sheet`);
+    // The title sits in the first few lines; deeper in, a datasheet may well
+    // say "see the safety data sheet".
+    if (m.doc && /(material\s+)?safety data sheet/i.test(page1(m.doc).slice(0, 300)))
+      bad.push(`${m.matKey}: doc ${m.doc} is a safety sheet, not a datasheet`);
+  }
+  assert(bad.length === 0, bad.join("; "));
 });
 
 await t("aliases resolve the RSS names the import actually produced", () => {

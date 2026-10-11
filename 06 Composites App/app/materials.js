@@ -43,8 +43,8 @@ const MATERIALS = [
     src: "EC TDS IN2 — the IN2 sheet states the AT30 ratio and the shared shelf life" },
   { matKey: "WEST-209", label: "West System 209 extra slow hardener", aliases: ["209 extra slow", "209 hardener"],
     doc: "docs/datasheets/105-209-Epoxy-Resin-1.pdf",
-    ratio: "3:1 with 105, by weight",
-    src: "West System 105/209 TDS (3 parts resin : 1 part hardener by weight)" },
+    ratio: "3:1 with 105, by volume (3.68:1 by weight)",
+    src: "West System 105/209 TDS (3 parts resin : 1 part hardener by volume, 300 Mini Pump ratio; 3.68:1 by weight)" },
   { matKey: "WEST-206", label: "West System 206 slow hardener", aliases: ["206 slow", "206 hardener"],
     doc: "docs/datasheets/west-system_slow-epoxy-hardener_206_tds.pdf",
     ratio: "5:1 with 105, by volume",
@@ -63,7 +63,8 @@ const MATERIALS = [
   { matKey: "PEEL-PLY", label: "PP180 peel ply", aliases: ["peel ply", "pp180"],
     doc: "docs/datasheets/EC-TDS-PP180-Peel-Ply.pdf" },
   { matKey: "AIRTAC", label: "Airtac 2 spray adhesive", aliases: ["airtac"],
-    doc: "docs/datasheets/airtac2spray.pdf" },
+    doc: "docs/datasheets/airtac2imp.pdf",
+    sds: "docs/datasheets/airtac2spray.pdf" },
   { matKey: "F5-WAX", label: "Formula Five mold release wax", aliases: ["mold release wax", "formula five mold release"],
     doc: "docs/datasheets/FORMULA-FIVE-Mold-Release-Wax.pdf",
     sds: "docs/datasheets/SDS-F5MRW-5.3-en-NA-2025-01-28.pdf" },
@@ -76,7 +77,8 @@ const MATERIALS = [
   { matKey: "DP420", label: "3M DP420 epoxy adhesive", aliases: ["dp420", "dp 420"],
     doc: "docs/datasheets/3m-scotch-weld-epoxy-adhesive-dp420-black.pdf" },
   { matKey: "URE-BOND-90", label: "Ure-Bond 90 urethane adhesive", aliases: ["ure-bond", "ure bond"],
-    doc: "docs/datasheets/URE_BOND_90_TB.pdf" },
+    doc: "docs/datasheets/URE_BOND_90_TB.pdf",
+    sds: "docs/datasheets/1386A_2-1386B_2.pdf" },
   /* No datasheets bundled for these — the alias rows exist so the containers
      still group and count under one key. Specific concentrations above the
      generic isopropyl row, first match wins. */

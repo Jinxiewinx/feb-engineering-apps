@@ -25,7 +25,13 @@ git log -p --follow -- SESSION-STATE.md
 `02 CS Standards/STYLE.md`). Google Docs are retired: markdown is canonical.
 Drafts stay in `overhaul/` until Round 7 promotes them, so the live app
 never holds a half-updated standard. Round status:
-- R0 tooling and baseline: in progress.
+- R0 tooling and baseline: done (STYLE.md, Drive retired, reproducible
+  docx/PDF, QR family wired into manifest + corpus, Saira/Inter figure
+  renderer with --variants review sheet, warn-only document lints in
+  check_traceability, materials.js Airtac/209/Ure-Bond fixes + SDS test).
+  The corpus changed (materials facts) but functions are NOT redeployed:
+  Paul still says 209 is 3:1 by weight until the R7 functions deploy.
+- R1 gap audit: next.
 - Gates that wait on Simon: the datasheet download list (R5), the
   `functions:askPaul` deploy (R7), the CS-011 §6 co-storage proposal (R2
   drafts it into `overhaul/proposals/`, not into CS-011).
