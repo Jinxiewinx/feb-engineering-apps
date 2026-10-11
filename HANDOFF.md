@@ -111,23 +111,38 @@ and say so in the commit.
 **Cure hold numbers** live in `06 Composites App/app/resins.js`, one file, one entry per
 resin system, each carrying the datasheet figure, the hold FEB actually
 enforces, and who signed it off. A test refuses a hold below its datasheet
-figure or without a name on it. Changing a hold is editing that file and
-deploying; adding a resin means having its TDS in `03 Datasheets/` first.
+figure or without a name on it. A lead can also change a hold in the app
+(the override lives in the config, no deploy needed); CS-000 then wants
+CS-008 revised within two weeks so the standard says the same number.
+Adding a resin means having its TDS in `03 Datasheets/` first.
 
 **The standards** are edited in `02 CS Standards/src/` (the markdown is
 canonical; the .docx is built; the August Google Docs copies are retired).
 `02 CS Standards/STYLE.md` is the house style. Then:
 
 ```bash
+node tools/render_figures.mjs          # only if an SVG changed
 tools/.venv/bin/python tools/build_docx.py --all
 python3 tools/gen_docs_manifest.py
-python3 tools/check_traceability.py
+node tools/build_ai_corpus.mjs
+python3 tools/check_traceability.py --strict
 ```
 
-Everything regenerates and everything churns; commit all of it. A content
-change to a standard is a revision bump with a row in its revision table,
-per CS-000. That includes the printables page, whose cards pin standard
-revisions in their footers.
+The builds are reproducible, so only what changed shows up in git. A content
+change to a standard is a revision bump with a row in its revision table, per
+CS-000 §7.2, and in the same change every quick reference on that standard
+and every printables card that names its revision. Members see a new revision
+after the hosting deploy; Paul quotes it only after the functions deploy.
+
+**The AI helpers** (Paul, Steve, and the ✨ readers for receipts, packing
+slips and jug labels) run as Cloud Functions on Claude Haiku. A lead can
+switch all of them off from ⋯, and they stop themselves at $80 a month.
+Anything that changes what they know (a standard, a quick reference, a
+datasheet, Steve's notes in `06 Composites App/steve/`, the Fibreglast
+catalog) needs `build_ai_corpus.mjs` or `build_steve_kb.mjs`, a commit, and a
+functions deploy: `firebase deploy --only functions` from
+`06 Composites App/`. That deploy is separate from hosting and is not covered
+by the standing deploy authorization; ask first.
 
 **The screenshots in the READMEs** regenerate with
 `node tools/make_mockups.mjs` after any UI change. Captions live in that

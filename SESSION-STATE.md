@@ -20,38 +20,22 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
-**Documentation overhaul (started 2026-10-10).** Plan:
-`02 CS Standards/overhaul/PLAN.md` (rounds 0-7; house rules in
-`02 CS Standards/STYLE.md`). Google Docs are retired: markdown is canonical.
-Drafts stay in `overhaul/` until Round 7 promotes them, so the live app
-never holds a half-updated standard. Round status:
-- R0 tooling and baseline: done (STYLE.md, Drive retired, reproducible
-  docx/PDF, QR family wired into manifest + corpus, Saira/Inter figure
-  renderer with --variants review sheet, warn-only document lints in
-  check_traceability, materials.js Airtac/209/Ure-Bond fixes + SDS test).
-  The corpus changed (materials facts) but functions are NOT redeployed:
-  Paul still says 209 is 3:1 by weight until the R7 functions deploy.
-- v6.8.1 shipped the R0 materials fixes (hosting only, verified live).
-- R5 datasheets: 31 downloaded (approved), in 03 Datasheets + INDEX
-  "Added 2026-10-10" table + materials.js links; pushed, NOT yet deployed
-  (next release). Stand-ins are marked "confirm against the container".
-  Still wanted by hand: Frekote SDS, LiME LiNE activator SDS, Supercool
-  pump oil SDS, Sigmatex/ACP sheets (ask sponsors).
-- v6.8.2 shipped the R5 datasheets (verified live).
-- R1 done: overhaul/REGISTER.md (306 rows + Simon's answers section).
-- R2 done: overhaul/drafts/ (CS-000..014, INDEX, templates), trial
-  promotion lints clean except the new .v2 figures.
-- R3 done: 26 figures as src/figures/*.v2.* (variants/CHOICES.md). R4
-  done: overhaul/drafts/QR-001..015 and 06 Composites App/steve/. Small
-  R-OTH code fixes merged to main (not released yet).
-- A worktree agent is wiring Steve's notes tool, catalog filter, prompt
-  updates and evals (functions; merge after review, rebuild steve_kb).
-- R6 fact-check workflow running; then R7 promote/build/release, then ask
-  Simon for the functions deploy.
-- Gates that wait on Simon: the `functions:askPaul` deploy (R7), the CS-011 §6 co-storage proposal (R2
-  drafts it into `overhaul/proposals/`, not into CS-011).
-- `04 Printables/printables.html` cards pin CS revs that are already stale
-  (Rev A/B); refresh them in R7 or they will name revisions twice gone.
+**Documentation overhaul (2026-10-10), promoted.** Plan, register,
+audits, reviews: `02 CS Standards/overhaul/`. House style:
+`02 CS Standards/STYLE.md`. Markdown is canonical; Google Docs retired.
+src/ holds CS-000..014 (CS-014 new), CS-INDEX Rev H, QR-001..015; all
+"Draft, pending Lead signature". v6.9.0 ships them to members.
+- NOT done: the functions deploy (`firebase deploy --only functions`),
+  which carries the new corpus, the search fixes, Steve's notes/tool/
+  filters and the prompt changes. Needs Simon's OK. Until it runs, Paul
+  answers from the August standards and says 209 is 3:1 by weight.
+- After that deploy: run tools/eval_askpaul.js (27 cases, bar 24) and
+  tools/eval_steve.js (12 cases) in a signed-in browser.
+- Open for a lead: REGISTER.md last section (CS-011 §6 proposal,
+  back-face engraving, label timing, DP420 no-load hold, NICK TO CONFIRM
+  marks in CS-006, and more).
+- 04 Printables cards predate the overhaul (banner says so; only the IN2
+  demould hold was corrected). Rebuild from the quick references.
 
 **Paul round 3 (2026-10-10).** Plan: `~/.claude/plans/i-have-paul-tested-misty-otter.md`.
 v6.6.2: the "isn't available" fix (empty forced last round on long

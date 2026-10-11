@@ -32,11 +32,11 @@ var APP_VERSION = "6.8.2";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "31 new datasheets in Documents: safety sheets for West 105/205/206/209/404, DP420, acetone, IPA, Bondo and pump oil.",
-  "Also new: tooling board (Precision Board), flow mesh, breather, sealant tape, 3D-core and the clear coat.",
-  "Glove charts from Ansell: thin nitrile does not hold up to acetone for long. Check before a big cleanup.",
-  "Materials now open their safety sheet from the SDS button where we have one.",
-  "A few sheets stand in for the brand on our shelf (solvents, Bondo, pump oil). Check the container label too.",
+  "The standards are rewritten to match how we work now: receiving, lots, techniques, the Fusion add-in, and more.",
+  "New standard CS-014: receiving a delivery, material lots and EH&S tags, start to finish.",
+  "15 quick references (QR-001 to QR-015): ratios and holds, bag stack, leaks, PPE, labels, buying. Paul reads them first.",
+  "Every drawing is redone in the app's style, and cautions now show as CAUTION in the PDFs.",
+  "All of it is still Draft until Nick signs, but it is the best current guidance. Ask Paul or open the PDF.",
 ];
 
 

@@ -13,7 +13,7 @@ for everything in here.
 |---|---|---|
 | `00 Agent/` | The "simon" reviewer-agent definition. Archival copy; the live one is at `composites_programs/.claude/agents/simon.md` | |
 | `01 Pain Points and Improvements/` | The SN5 season review: what went well, 10 major problems with root-cause analyses, traceability to the fixes | the .docx |
-| `02 CS Standards/` | 14 numbered composites standards (CS-000 to CS-013). The markdown in `src/` is the canonical text; the .docx files are built output. Figures are SVG in `src/figures/` with rendered PNGs beside them | `CS-INDEX` |
+| `02 CS Standards/` | 15 numbered composites standards (CS-000 to CS-014) and 15 quick references (QR-001 to QR-015, short summaries Paul searches first). The markdown in `src/` is the canonical text and `STYLE.md` the house style; the .docx and PDFs are built output. Figures are SVG in `src/figures/` (Saira/Inter, `.v2` since the October overhaul) with rendered PNGs beside them; `overhaul/` keeps the October 2026 overhaul's plan, register and reviews | `CS-INDEX` |
 | `03 Datasheets/` | 25 manufacturer TDS/SDS PDFs for the products we actually use | `INDEX.md` |
 | `04 Printables/` | Shop reference sheets meant to be printed: resin ratios, flowcharts, checklists | `README.md` |
 | `05 Design System/` | The app's visual language as a reusable system: tokens, component CSS, a living style guide | `styleguide.html` |
@@ -114,7 +114,7 @@ Twelve tabs, grouped in the sidebar by who is asking:
 - **Documents:** the datasheets (TDS, SDS and glove charts from `03 Datasheets/`), member uploads, and pinned Google Docs in
   one filterable shelf.
 - **Ask Paul:** a question box in the topbar that answers from the app's own
-  records, the CS standards and the datasheets, with a source chip for every
+  records, the CS standards, their quick references and the datasheets, with a source chip for every
   fact (Claude Haiku 5.5, read-only). Named after the team's running joke about
   Easy Composites' Paul, so he introduces himself with "Hi, I'm Paul, from
   Easy Composites!"; it's a catchphrase, and he isn't him or them. Chats are
@@ -128,8 +128,11 @@ Twelve tabs, grouped in the sidebar by who is asking:
   product for it, linked from a snapshot of their store. He never gives a
   number you'd act on (the server replaces any that slip through), every
   answer is labelled "Steve is always wrong" with Ask Paul instead under it,
-  and the joke is Steve, not the store. Refresh his catalog with
-  `node tools/build_steve_catalog.mjs`, commit, and deploy functions.
+  and the joke is Steve, not the store. He reads records only, never sells a
+  resin, adhesive, solvent or PPE, and sends safety, grounding, storage and
+  CNC questions to Paul. His private notes live in `06 Composites App/steve/`.
+  Refresh his catalog with `node tools/build_steve_catalog.mjs`, then
+  `node tools/build_steve_kb.mjs`, commit, and deploy functions.
 - **AI, on every ✨:** receipts, packing slips and resin jug labels read
   themselves into the grid you'd otherwise type, and you check before anything
   saves. A lead can switch all of it off from ⋯, and it stops itself at $80 a

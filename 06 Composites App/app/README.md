@@ -1359,8 +1359,10 @@ first-class R&D record — `CPN-SN6-042`, eleven characters, shorter than a mold
 The speech-bubble button in the topbar opens **Paul**, a chat for anything
 about the team's composites work: "where is the diffuser mold", "which IN2 lots
 expire soonest", "what does CS-006 say about the drop test", "what gloves for
-XCR". He looks things up in the app's records and in the standards and
-datasheets the app ships. While he works you see what he's doing ("Opening
+XCR". He looks things up in the app's records and in the standards, quick
+references (QR-001 to QR-015, short summaries of a standard written so the
+answer is near the top) and datasheets the app ships. When a quick reference
+and its standard differ, the standard wins. While he works you see what he's doing ("Opening
 WO-SN6-003", "Reading CS-006, 7.5 Mix and infuse") and his thinking as it comes;
 once he answers, that folds away under "Show how Paul worked it out".
 
@@ -1371,8 +1373,8 @@ chat steps aside, and the round Paul button in the corner brings the same
 conversation back. If he can't find something he says so. A general composites
 question the documents don't cover gets a short answer under a "General
 knowledge, not from the app" label, never for anything FEB-specific (where
-things are, what's blocking, our cure holds and mix ratios; the Resins page is
-the number the team enforces).
+things are, what's blocking, our cure holds and mix ratios; the hold the team
+enforces is the one on the cure step's "Why N hours?").
 
 Paul sees what the app shows: parts, work orders, molds, lots, shelves,
 boards, plans, purchases, issues, the schedule and weekly plans, all of R&D
@@ -1393,8 +1395,18 @@ Paul knows which record you have open: on a mold's page, "is this ready for
 layup?" means that mold (the "Looking at" chip; tap × to ask without it). ⌘K
 search also offers to ask Paul whatever you typed.
 
-He only reads; he can't change anything. The conversation stays for the tab
-(it survives a reload, not a new tab). 100 questions a person a day. The name
+He only reads; he can't change anything. Chats are saved under **Chats** and
+follow you to any device; **New chat** starts over, and **What Paul remembers**
+shows (and lets you delete) the few notes he keeps about you. Chats and notes
+are private to their owner. 100 questions a person a day.
+
+**Steve, from Fibreglast** sits behind the Paul | Steve switch in the same
+panel. He is the team's other joke: always a little wrong and always selling
+something from a snapshot of Fibreglast's store. Every answer is labelled
+"Steve is always wrong" with Ask Paul instead under it. He reads records but
+not the standards or datasheets, never gives a number you could act on, never
+sells a resin, hardener, adhesive, solvent or PPE, and won't touch safety,
+grounding, storage, CNC or a failed drop test at all; those he sends to Paul. The name
 is the team's running joke about Paul from Easy Composites, and he doesn't speak
 for them. The avatar is a cartoon until a lead gives him a picture (⋯ → Give
 Paul a picture). That photo goes to the team's private storage, not into the
@@ -1409,7 +1421,7 @@ so the page beside him keeps room to work; closing him puts it back.
 ![The public nameplate: what a phone camera opens, signed out](../design/scan-mockup-20260825.png)
 
 Scanning a label with a plain phone camera opens a public nameplate that works
-**with no account and no signal**. It paints immediately from the ID in the URL;
+**with no account**. It paints immediately from the ID in the URL;
 if the lookup succeeds it adds the name, stage, location and work order; if it
 does not, it says so plainly rather than spinning forever. There is an "Open in
 the app" button.
