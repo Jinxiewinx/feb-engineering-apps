@@ -189,9 +189,15 @@ async function loadRecords(db) {
     out.push({ id, coll: "reference", kind, title, key: keyLine(obj) || body.replace(/\n/g, " · ").slice(0, 200), body, src,
       hay: (id + " " + title + " " + kind + " " + body).toLowerCase() });
   };
+  /* An override counts only if resinById (app/resins.js) would honour it: a
+     number, not below the datasheet's sheetH, and signed by someone who is not
+     "pending", "tbd" or "todo". Anything else is ignored and the code table
+     stands, so the hold Paul quotes is the hold the app enforces. */
+  const validOverride = (r, o) => !!o && typeof o.febHoldH === "number" && o.febHoldH >= r.sheetH
+    && !!o.febBy && !/pending|tbd|todo/i.test(o.febBy);
   for (const r of facts.resins) {
-    const o = (resinCfg || {})[r.id] || {};
-    const merged = { ...r, ...(o.febHoldH != null ? { febHoldH: o.febHoldH, febBy: o.febBy || r.febBy } : {}) };
+    const o = (resinCfg || {})[r.id];
+    const merged = { ...r, ...(validOverride(r, o) ? { febHoldH: o.febHoldH, febBy: o.febBy } : {}) };
     ref("RESIN:" + r.id, "resin system (team cure hold)", r.label,
       { system: r.label, use: r.use, "team hold before demould (hours, enforced)": merged.febHoldH, "set by": merged.febBy,
         "datasheet says": r.sheetSays, "datasheet hold (hours)": r.sheetH, "at (°C)": r.refTempC }, r.doc);

@@ -523,6 +523,18 @@ ok("shelved project tickets are invisible; issues aren't", !/PROJ-SN6-006/.test(
 ok("a coupon's numbers are named by its study's columns", /UTS \(MPa\) \[result\]: 512/.test(seenTool[3]), seenTool[3]);
 ok("a resin system shows the lead's override, and the datasheet beside it", /team hold before demould \(hours, enforced\): 60/.test(seenTool[4]) && /datasheet hold/.test(seenTool[4]) && /Nick, 2026-10-01/.test(seenTool[4]), seenTool[4]);
 ok("people come with role and trainings, never an email", /PERSON:Nick/.test(seenTool[5]) && /Resin infusion/.test(seenTool[5]) && !/@/.test(seenTool[5]), seenTool[5]);
+/* An override the app's resinById would ignore must not reach Paul either:
+   below the datasheet, signed "TBD", a string for a number, unsigned, or null
+   (what "Revert to the code table" writes). */
+mergeInto("config/resins", { "IN2-AT30-FAST": { febHoldH: 4, febBy: "Nick, 2026-10-01" }, "WS-105-206": { febHoldH: 30, febBy: "TBD" },
+  "WS-105-209": { febHoldH: "40", febBy: "Nick, 2026-10-01" }, "XCR": { febHoldH: 20 }, "WS-105-205": null });
+{
+  const recs = (await req("./context.js").loadRecords(firestore)).records;
+  const held = (id) => { const m = /team hold before demould \(hours, enforced\): (\S+)/.exec((recs.find((x) => x.id === "RESIN:" + id) || {}).body || ""); return m && m[1]; };
+  const ids = ["IN2-AT30-FAST", "WS-105-206", "WS-105-209", "XCR", "WS-105-205"];
+  ok("an invalid resin override is ignored, as resinById ignores it", ids.map(held).join(",") === "24,24,36,12,24", ids.map(held).join(","));
+  ok("a valid override still folds in", held("IN2-AT30-SLOW") === "60", held("IN2-AT30-SLOW"));
+}
 ok("the overview is a citable source", r.out.sources[0] && r.out.sources[0].ref === "OVERVIEW", JSON.stringify(r.out.sources));
 ok("the R&D label is on the record text", /labels: R&D/.test(seenTool[1]) || /\[R&D\]/.test(seenTool[1]), seenTool[1]);
 

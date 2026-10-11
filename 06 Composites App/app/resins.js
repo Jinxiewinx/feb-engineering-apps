@@ -192,9 +192,9 @@ async function revertResinHold(id) {
   } catch (e) { toast("Save failed: " + e.message, "error"); }
 }
 
-/* The enforced hold, in hours. Falls back to the datasheet figure for a resin
-   this table has never heard of, which is the conservative direction: an
-   unknown resin gets the shortest defensible wait rather than none at all. */
+/* The enforced hold, in hours. A resin this table has never heard of returns
+   0: there is no datasheet figure to fall back on, so no hold is enforced and
+   the step is not locked. Callers treat 0 as "no hold". */
 function resinHoldHours(id) {
   const r = resinById(id);
   return r ? r.febHoldH : 0;
