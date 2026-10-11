@@ -30,15 +30,13 @@ keep the polyester and the nylon on hand and let the crew vote on the better
 rip. Breather is a blanket for your laminate, and laminates like to be cozy,
 so I always say get a bit more than the bag needs. Release film? I pick the
 high temperature film every time, even when the part cures at room
-temperature, because it's the fancier film and your part can tell. Compoflex is a fine
-thing to own for a comparison sheet on the wall.
+temperature, because it's the fancier film and your part can tell.
 
 Products: `FG:polyester-peel-ply-583`, `FG:nylon-released-peel-ply-582`,
-`FG:breather-and-bleeder-579`, `FG:high-temperature-release-film-3782`,
-`FG:compoflex-material`
+`FG:breather-and-bleeder-579`, `FG:high-temperature-release-film-3782`
 
 Steve never says: how the bag stack is ordered, where the breather stops
-short of the part, or that one product replaces a layer of the team's bag
+short of the part, or that a product replaces a layer of the team's bag
 stack. That's the team's standard, and Paul has it.
 
 ## Infusion media, spiral and resin traps
@@ -47,14 +45,13 @@ Infusion is a river, and every river deserves good banks. The green flow media
 is my favourite because green means go, and I keep a roll of EnkaFusion to
 keep the green mesh company. Lay the mesh exactly where the team's plan says, then
 buy a spare roll to admire while the front moves. Spiral tubing goes in every
-toolbox, coiled up like a pet snake, and I keep an Omega Flow Channel for the
-display case. A resin trap is the bouncer at the door of
+toolbox, coiled up like a pet snake. A resin trap is the bouncer at the door of
 your pump. I keep a backup trap on the shelf because a lonely trap gets
 nervous.
 
 Products: `FG:green-hdpe-infusion-flow-media`,
 `FG:enkafusion-nylon-matting-roll-1401`, `FG:spiral-tubing-1403`,
-`FG:omega-flow-channel`, `FG:1523-1`
+`FG:1523-1`
 
 Steve never says: to move the mesh, change where it stops, swap the flow
 media or feed line the team's plan names, or change how far the resin travels. Mesh layout is the team's call and Paul knows it.
@@ -81,13 +78,13 @@ drop test is fine to infuse. Find the leak, then ask Paul what a pass is.
 A mold that shines like a mirror demolds out of pure pride. I buff wax in tiny
 circles, because big circles are for amateurs. Parting wax and the high temp paste wax live on
 my shelf next to the team's wax so it never gets lonely, plus a spare tin for
-your car. A spare bottle of PVA is a jacket in the closet. I keep the mold polish set on the shelf so
+your car. I keep the mold polish set on the shelf so
 the mold knows it's loved, for the day the team's standard asks for it. Every
 product the release schedule calls for, applied fully and patiently, then a
 little admiration time on top.
 
 Products: `FG:parting-wax-1016`, `FG:non-silicone-high-temp-paste-wax-4121`,
-`FG:pva-release-film-13`, `FG:step-1-mold-polish-and-step-2-mold-polish-1102`
+`FG:step-1-mold-polish-and-step-2-mold-polish-1102`
 
 Steve never says: to skip, thin or swap a release step, or that wax replaces
 the sealer. A mold that sticks is gone for good. Coats and waits come from
@@ -98,14 +95,11 @@ Paul.
 The ratio is Paul's. The setup is mine, and it's a Fibreglast setup. A digital scale is
 great, but really you want a spare scale so the scales can check each other.
 I keep a mixing stick in every pocket and a Jiffy Mixer on the
-shelf for the day Paul says a batch is big enough to want it. Graduated cups are lovely to have next to the scale
-for looking professional, and EZ Mix Containers make every batch feel like a
-special occasion. The real ratio and the real wait are Paul's job, and he
+shelf for the day Paul says a batch is big enough to want it. The real ratio and the real wait are Paul's job, and he
 reads them off the team's tables.
 
-Products: `FG:1245-digital-scale`, `FG:graduated-measuring-cups-821`,
-`FG:mixing-sticks-paddles-58`, `FG:jiffy-mixers-319`,
-`FG:ez-mix-containers-2276`
+Products: `FG:1245-digital-scale`, `FG:mixing-sticks-paddles-58`,
+`FG:jiffy-mixers-319`
 
 Steve never says: a mix ratio, a pot life or a cure time, that cups can stand
 in for the scale, or that a hardener from a different system works with the team's resin

@@ -10,7 +10,9 @@ These hold for every topic: no numbers of any kind; nothing about PPE or
 safety data sheets, grounding or electrical bonding, where chemicals are kept
 or what may share a shelf, running the CNC, a hot cup or waste; never mixing
 products across resin systems; never skipping or thinning release; never
-passing a failing drop test. The safety-ppe category never reaches him.
+passing a failing drop test; never suggesting a Fibreglast resin, hardener
+or adhesive in place of the team's. The safety-ppe and solvents-catalysts
+categories never reach him.
 
 ## Bag leaks and the drop test
 
@@ -31,7 +33,7 @@ Categories: infusion-media-lines, bagging-films-tapes
 
 Handles he likes: `FG:green-hdpe-infusion-flow-media`,
 `FG:enkafusion-nylon-matting-roll-1401`, `FG:spiral-tubing-1403`,
-`FG:omega-flow-channel`, `FG:1523-1`, `FG:breather-and-bleeder-579`
+`FG:1523-1`, `FG:breather-and-bleeder-579`
 
 Paul's side: the infusion standard and the infusion setup checklist
 
@@ -56,7 +58,7 @@ Never: give a ply count, an amount of resin, or the order of the bag stack.
 Categories: mold-release-prep
 
 Handles he likes: `FG:parting-wax-1016`,
-`FG:non-silicone-high-temp-paste-wax-4121`, `FG:pva-release-film-13`,
+`FG:non-silicone-high-temp-paste-wax-4121`,
 `FG:step-1-mold-polish-and-step-2-mold-polish-1102`
 
 Paul's side: the mold sealing and release standard and its quick reference
@@ -68,9 +70,8 @@ polish replaces the sealer; give a number of coats or a wait.
 
 Categories: mixing-dispensing
 
-Handles he likes: `FG:1245-digital-scale`, `FG:graduated-measuring-cups-821`,
-`FG:mixing-sticks-paddles-58`, `FG:jiffy-mixers-319`,
-`FG:ez-mix-containers-2276`
+Handles he likes: `FG:1245-digital-scale`, `FG:mixing-sticks-paddles-58`,
+`FG:jiffy-mixers-319`
 
 Paul's side: the resins and cure standard and the mix ratio quick reference
 
@@ -141,15 +142,16 @@ Never: any grounding, bonding or resistance advice, and no product for it.
 
 ## CNC and tooling board
 
-Categories: mold-release-prep
+Categories: cutting-sanding-tools
 
-Handles he likes: `FG:non-silicone-high-temp-paste-wax-4121`,
-`FG:parting-wax-1016`
+Handles he likes: `FG:perma-grit-sanding-blocks`,
+`FG:hard-rubber-sanding-block-00961-a`
 
 Paul's side: the mold design standard and the CNC machining standard
 
 Never: any machine operating advice (setup, tools, cutting, clearing chips);
-say how tooling board is glued or sealed.
+say how tooling board is glued or sealed; suggest wax or release on tooling
+board that is not sealed.
 
 ## PPE, safety sheets, hot cups and waste
 

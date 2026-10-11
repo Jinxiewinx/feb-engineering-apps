@@ -1,0 +1,204 @@
+{
+ "findings": 176,
+ "byChecker": [
+  {
+   "key": "numbers-1",
+   "n": 14,
+   "summary": "Number check of CS-000 to CS-005, CS-INDEX, QR-004, QR-005, QR-009 and QR-011, plus the 14 v2 figures they reference. All 14 figure PNGs match `.hashes.json`, so none are stale.\n\nThese numbers were checked and match their sources:\n- **XCR (TDS p2 and p3):** 100:41 and 2:1, 8 and 4 min pot life (150 g), 2 h 50 and 1 h 30 overcoat, 8 h 30 and 4 h 30 initial cure, about 9 h handleable, \u22659 h then 120 grit, \u226514 d, 24 h water, 15\u201330 \u00b0C, 20\u201325 \u00b0C storage, 12 months.\n- **XCR SDS:** H codes, EN 166, EN ISO 374-1, EN 14387 A1, P272.\n- **Ure-Bond 90 (TB):** 1A:1B and 100A:88B, 3 min mix, 8 min pot life, 4 h clamp and handling, 16 h cure, 15 min eye flush. SDS 1386A: MDI 15\u201335 %, CAS 101-68-8, H codes. SDS 1386B: not classified.\n- **DP420 (TDS):** 20 min open time, 2.5 h handling strength at 23 \u00b0C.\n- **App code:** labels.js (QR 21.4/27/14 mm, 101.6/86.6 mm rolls, 0.4 mm module, 50 copies, last ten, 47/30/3/14 budget, Q 25 % against M 15 %), core.js (EHS 24/12, 30 days), slicer.js (152.4 mm, 25.4\u201350.8 mm margin, 12.7 mm quantum), packer.js (3.175 mm kerf), resins.js (XCR 12 h), timeline.js slot rows, fusion.js once-per-page.\n- **Other:** CS-012 dollar tiers, the 17 tensile CSVs, and the INDEX photo counts.\n\nNo number in these docs comes from a stand-in datasheet.\n\nWhat fails:\n- The 25 mm against 40 mm mold-label rule (R-001-30) was never settled, and it now appears in five places.\n- CS-001 quotes a storage-label footer the app no longer prints.\n- CS-004 leaves out the Formula Five one-hour out-gas wait (R-004-30), and it credits the team's 4 wax and 2 PVA coats to the guides.\n- CS-003 \u00a75 is missing the 45 lb grade the app plans with (R-003-31). There is no 45 lb TDS, and PBLT is not sold at 45.\n- CS-003 \u00a75 does not state the Ure-Bond TB's 30 lb/ft\u00b3 limit.\n- CS-INDEX's Parent and Checked-against cells for the four in-scope QRs disagree with their headers.\n- Smaller issues: an uncited tacky-tape width, a misattributed glove material, team values not labelled as team values, a contradictory ShopSabre citation, dotted cross-references that do not resolve, an arithmetic understatement in CS-003 Appendix A, and a stale QR-008 note in CS-INDEX."
+  },
+  {
+   "key": "numbers-2",
+   "n": 12,
+   "summary": "I checked every number in CS-006, CS-007, CS-008, QR-001, QR-002, QR-003, QR-012 and QR-008, plus the text in figures cs006-infusion.v2, cs007-bag-stack.v2 and cs008-holds.v2. Sources were the datasheets (pdftotext), app/resins.js, app/materials.js, app/inventory.js and the SN5 source docs.\n\n**Correct:** The IN2, West and XCR ratios, pot lives, cure figures, minimum temperatures and ratio tolerances all match the datasheets. The FEB holds match resins.js, and the bar lengths in cs008-holds are drawn to scale. The SDS H-statements and versions are right. The Ure-Bond, DP420, LiME LiNE and Ansell IPA figures match their sources. No number comes from a stand-in.\n\n**Wrong:**\n- **High: forged CF mix math (CS-008 \u00a77 step 4, QR-001 \u00a79).** The drafts misread R5: volume \u00d7 1.4 g/cc is the finished part's mass, not the carbon mass, and fiber is 60% of it. As written, the procedure overfills the mold about 2.25 times. The error is already in src.\n- **High: the 0.5 m resin-travel rule is cited to the wrong document.** It is credited to R7, but it actually comes from `SN5 Composites/Composites Info & Safety.docx`, which CS-006 never cites.\n- **Medium:**\n  - The 20\u201330 min infusion time is given for small parts; the source says it is for larger pieces.\n  - \"IN2 vapor pressure is low\" has no source; every SDS in the file says \"not determined\".\n  - The TDS gives two FAST pot-life figures (9\u201314 min in the text, 10\u201314 in the table), and the drafts quote only 10\u201314 without noting the 9\u201314 text figure.\n  - R-008-31 (\"after the weekend\") is not applied in CS-008, QR-001 or the cs008-holds figure.\n  - R-006-30 is not applied: CS-006 still says the shop stocks OV/P100, but the restock row says A + P100.\n  - The Ansell 93-800 glove is a latex/neoprene/nitrile blend, not nitrile, and its acetone breakthrough is 17 min under ASTM F739, not only the 21 min EN figure (QR-008, and the parent CS-009).\n- **Low:**\n  - The Airtac flash point comes from the 2005 MSDS of the predecessor product.\n  - 25 \u00b0C is attached to the 80\u2013100 min SLOW figure, which the datasheet gives no temperature for.\n  - Several team numbers are not labelled as team rules or cited: 27/25 inHg, the 1 and 2 inHg drop tests, the 0.65 and 0.9 mix factors, 30\u201350 mm, 300\u2013400 mm, \u00b110% and \u22652 min.\n  - CS-007 \u00a76 leaves out H302 and H312.\n\nKey files: `02 CS Standards/overhaul/drafts/CS-008.md`, `CS-006.md`, `QR-001.md`, `QR-002.md`, `QR-008.md`, `02 CS Standards/src/figures/cs008-holds.v2.svg`, `SN5 Composites/Documentation/Forged_Compression Molded Carbon Fiber.docx`, `SN5 Composites/Composites Info & Safety.docx`."
+  },
+  {
+   "key": "numbers-3",
+   "n": 13,
+   "summary": "I number-checked CS-009 to CS-014, QR-006, QR-007, QR-010, QR-013, QR-014, QR-015 and the nine v2 figures they cite.\n\n**What checks out:**\n- DP420: 2:1 B:A, 2:0.98, 20 min, 2.5 h at 23 \u00b0C, 0.13-0.20 mm, 16-27 \u00b0C, 40-60% RH, 24 months.\n- LiME LiNE: 4:1, 2 h pot life, 10-15 min between coats, 24 h recoat, 30 min dust free, 12-24 h sand. H-codes match.\n- IN2, XCR and West storage and shelf life; SDS flash points.\n- FEB holds (48/24/24/24/36 h) against resins.js.\n- App constants: EHS 24/12, $80, 50 reads, Haiku 5.5, 14 d, 24 h, the 50-unit cap, 30 d trash, 30 d walk.\n- QR budget: 47-30-3 = 14, MOLD 12, PNL 15.\n- STD_STEPS table, the twelve tabs, approval tiers (Slack, Shailen 2026-10-07), PP-08 $5.3k and $400/$120.\n- WO-SN5-006 and -026 values, label media.\n- Every figure's SVG text, with PNGs from the same commit.\n\n**What is wrong:**\n- **Ansell 93-800 glove chart (CS-009 \u00a76, QR-013 \u00a73):** the docs call it 0.45 mm nitrile with a 21 min acetone breakthrough. It is an NRL/Neoprene/Nitrile laminate, and 21 min is the EN figure; ASTM F739 gives 17 min.\n- **Stale since commit 9c632e5 (receiving warning):** CS-014, QR-006 and QR-014 say the restock table still marks the epoxies flammable. It now marks them not flammable, so the warning cannot fire.\n- **Stale since commit 9c632e5 (tacky tape supplier):** CS-011 says the app still lists Easy Composites for tacky tape; it now says Airtech.\n- **Stale since commit 61c2fe4 (self-review):** CS-013 \u00a74 and QR-007 \u00a73 say self-review is keyed on the run's creator. The app now asks the Mold Engineer instead.\n- **CS-010 graphite 1\u20135 wt%:** no source given. The Slack record shows the team ran at \"a little more than 5 percent\".\n- **Smaller items:** several uncited or mis-cited numbers and two minor omissions, listed in the findings below.\n\nI had no permission to change files (read-only run) and edited nothing."
+  },
+  {
+   "key": "app-1",
+   "n": 12,
+   "summary": "I checked the app-facing claims in CS-000 to CS-008, CS-INDEX, the two templates, QR-001, -002, -003, -004, -005, -008, -009, -011 and -012, and the referenced v2 figures, against app/*.js, q.html, functions/, the Fusion add-in source and the README. Most claims hold. Tab names, button labels, field labels, mold stages, step titles, training gates, cure-modal fields, hold values, EH&S tag rules, the scan chain, the label media and the Fusion add-in messages all match the code, and so do the figure labels I checked.\n\n**Out of date after commit 61c2fe4.** That commit landed app changes from the register (R-OTH-25, R-OTH-32), and two drafts weren't updated with it:\n- **CS-001 \u00a77.6:** it still names the old `SCAN TO SEE CONTENTS` footer. The label now prints `CONTENTS LISTED IN THE APP`.\n- **CS-003 \u00a77.2:** it still says the app doesn't check for self-review. The app now shows a \"Self-review\" warning when the run's Mold Engineer signs Mold design review, and lets them sign anyway.\n\nQR-007 and CS-013 are outside this checker's scope, but QR-007:54 has the same stale self-review sentence.\n\n**Smaller gaps:**\n- Several drafts call evidence gates absolute, but a lead can always press \"Sign without it\".\n- A lead can only reach the hold editor while a hold for that resin is counting down on some work order.\n- Start at cell and the calibration-bar checkbox exist only in the Print labels builder.\n- The planner's \"I'll pick the thicknesses\" and \"nothing yet\" options aren't mentioned.\n- \"+ New run\" can copy a previous run's stack instead of the plan, and it fills in the first linked mold on a split part.\n- The docs say \"Stack view\"; the mold page's heading is \"Stack\".\n- QR-008 cites a Trimming and finishing training that doesn't exist until a lead adds it.\n- CS-001's fabric row describes a \"(blank) key line\" that is never printed.\n- QR-009 calls PROJ a \"ticket\" where the app and CS-001 say \"issue\".\n\nI didn't check the tool claims in depth (`check_traceability.py`, the build scripts) beyond confirming they exist and cover quick references. One thing that is expected rather than wrong: `02 CS Standards/template/QR-Template.md` doesn't exist yet; the draft is in overhaul/drafts."
+  },
+  {
+   "key": "app-2",
+   "n": 16,
+   "summary": "I checked the app's buttons, labels, statuses and workflows in CS-009 to CS-014 and QR-006/007/010/013/014/015, plus the nine v2 figures those drafts reference, against app/*.js and functions/index.js. Most labels and flows match the code: step titles, training gates, the cure-hold modal, the receiving desk sheet, Incoming, Running out, exports, Recently deleted, Budget statuses and the AI caps. Fifteen claims do not.\n\n**Where the app changed and the drafts were not updated:**\n- CS-013 \u00a74 and QR-007 \u00a73 still describe the Self-review warning as firing for the run's creator. After R-OTH-32 it keys on the Mold Engineer.\n- CS-014 \u00a76, QR-006 \u00a77 and QR-014 \u00a75 say the restock table still marks the epoxies flammable. After R-OTH-22 none of the shipped restock rules is flammable, so the desk's flammable warning cannot fire for them.\n- CS-011 \u00a75's tacky-tape note says R-OTH-22 has not landed; it has. The same section calls the app's restock rules 'the live values' while three rows still differ from the app (the R-011-04 hold).\n\n**Where the documented path does not work:**\n- CS-014 \u00a77.7 and QR-006 \u00a73: 'leave Expires blank, then Link materials' never fills the expiry for lots made at the desk. The desk fills Material type from the name, and Link materials only looks at records with a blank Material type.\n- CS-014 \u00a77.3 step 6: rows seeded by Arrived \u25b8 or Take all never get a Material type, including a restock line's own matKey.\n- CS-013 \u00a77.6 and the cs013-issue-path figure: the app's completion check does not look at What happened, and the figure says 'open' where the code means 'undisposed'.\n- QR-014 \u00a78: 'press Move it' after scanning the shelf. Scanning already saves the move.\n\n**Smaller label and coverage problems:**\n- QR-010 \u00a71: the Documents tooltip is misquoted.\n- CS-014 \u00a74: changing State in Edit does not stamp the Opened or Emptied dates.\n- CS-013 \u00a77.6 step 2: the issue page's labels differ from what it describes.\n- CS-014 \u00a77.7 step 3: DP420's shelf life is missing from the list.\n- CS-014 \u00a75: the \u22ef menu that holds the AI switch is hidden on a wide screen.\n- CS-012 and QR-015: \u2728 Fill from receipt only appears in Edit mode, and Purpose loses 'Restock' once budget goal categories exist.\n- QR-010 \u00a79 understates what search covers, and CS-014 \u00a77.3 step 5 says only hardener lots are offered as the hardener.\n\nThe other figure labels match the code."
+  },
+  {
+   "key": "coverage",
+   "n": 27,
+   "summary": "I checked all 15 draft standards, CS-INDEX, both templates and the 15 QRs against REGISTER.md, including \"Answers from Simon\" and the Round 2, 3 and 4 appended rows. Cross-references were resolved by script against the draft headings; I found 1,196 CS \u00a7refs and every \"\u00a7n.n step N\" reference, and each step reference was also matched by content.\n\nThe structural checks mostly pass:\n- Every standard moves exactly one letter from src/ (CS-014 starts at A).\n- Each standard has one new history row dated 2026-10-10, and the Effective dates are all 2026-10-10.\n- Header Title equals the H1 minus the ID, and the status text equals the CS-INDEX row, for all 15 standards.\n- All QR Checked-against revisions match the draft revisions.\n- All figure files the drafts reference exist.\n- Held text (CS-011 \u00a76 and the \u00a75 minimums, Ure-Bond on 45/60 lb, the gluing training gate, CS-004 compressed air) is unchanged from src/.\n\nThe main failures:\n1. The CS-INDEX Quick references table disagrees with the header Parent/Covers of all 15 QR files.\n2. Every Round 3 and Round 4 \"do\" row aimed at a draft is unapplied: R-004-30, R-006-30, R-008-30, R-008-31, R-009-30, R-011-30, R-011-31, R-013-30 and R-003-31. R-001-30 was not settled either.\n3. Three of Simon's overrides are missing or applied wrong:\n   - R-001-17 is still \"held\" in CS-001, and its history row says so.\n   - R-003-02 is only partly applied in CS-003.\n   - R-008-04 lacks the goggles \"should\" in CS-008.\n4. R-000-20 (Reviewer rows) is not done in any standard.\n5. Two dotted cross-references do not resolve: CS-004 \u00a77.3.5 and CS-003 \u00a77.1.6.\n6. Several drafts and QRs still say the app's restock table marks the epoxies flammable and lists Easy Composites for tacky tape. R-OTH-22 already fixed both in commit 9c632e5.\n\nLower-severity items: the hold spots are not marked as the register asks; a stale QR-008 sentence in CS-INDEX; CS-INDEX history rows back-filled A to G against R-IDX-05; one wrong step reference in CS-013; and the register ID R-001-30 is used twice."
+  },
+  {
+   "key": "style",
+   "n": 44,
+   "summary": "I checked all 15 drafts, CS-INDEX, both templates, the 15 QRs, the 26 v2 figures and Steve's notes. The authorities were the register (including the Simon, Round 2, 3 and 4 sections), STYLE, the current app and functions code, and the datasheets.\n\nMost numbers check out against their sources, and every app label I sampled exists in the code: the West, IN2, XCR, DP420, Ure-Bond, LiME LiNE and Airtac figures, the Ansell glove times, and the H-statement tables all match. The serious problems are in three groups.\n\n1. **Text overtaken by code that has since landed.** R-OTH-32 changed the self-review warning to key on the Mold Engineer, but CS-013, CS-003 and QR-007 still say it keys on the run's creator. R-OTH-22 and R-OTH-25 changed the restock seed and the storage label footer, but CS-014, CS-011, CS-001, QR-006 and QR-014 still describe the old behaviour. The Documents tooltip changed too (QR-010).\n2. **A safety overstatement.** CS-008, QR-008 and CS-004 say no resin is a respiratory sensitizer. The XCR SDS \u00a711.1 says the resin may be one.\n3. **Register decisions that never reached the drafts.** Seven Round 4 rows were not applied (R-006-30, R-008-30, R-004-30, R-009-30, R-011-30) or were applied only in part (R-003-02, R-003-24). All six Round 3 text rows remain open (R-001-30, R-003-31, R-011-31, R-013-30, R-008-31, R-010-30). Simon's answer on R-001-17 (mark blanks at Tooling cut) was not written in, and the CS-001 history row still calls it held. No Reviewer row has been filled with a dated overhaul review (R-000-20).\n\nSmaller items:\n- The CS-INDEX quick-reference table does not match any QR header.\n- CS-INDEX still says QR-008 is waiting on the PPE answers.\n- CS-003 and CS-005 still use old \"\u00a77.3.5\"-style cross-references.\n- Some team values (wax and PVA coat counts) are not marked as team values.\n- Style violations remain: emphasis bold, steps with more than one action, a blockquote used for a note rather than a caution, and \"worth knowing/doing\" filler.\n\nThe only em dashes left are in the older Claude-written history rows, the CS-INDEX H1 (R-IDX-08 keeps it) and a quoted traveler string, so none is a new-prose violation. Steve's notes are clean. Every handle exists in steve_catalog.json with the cat the map claims, there are no digits outside handles, and there is no safety content. All referenced figure PNGs exist and are newer than their SVGs."
+  },
+  {
+   "key": "shop",
+   "n": 25,
+   "summary": "Shop review in the simon persona of \u00a76 Safety and \u00a77 Procedure in CS-000 to CS-014 and all 15 QRs, checked against STYLE.md, REGISTER.md (including the Answers, Round 2, Round 3 and Round 4 sections), app code and the datasheets (pdftotext; no numbers taken from stand-ins). The FEB-practice basics hold: XCR is the sealer and Duratec only appears as history, ShopSabre with Z zeroed from the stock top, ambient cure with FEB holds, blanks cut on a saw, AT-200Y tape, the weekly meeting, and real ID formats. No datasheet number I checked was wrong (XCR, IN2/AT30, West 205/206/209, DP420, Ure-Bond, Formula Five, Partall, LiME LiNE, Ansell).\n\nThe problems are on the shop floor, and some of them would cost a part or a mold:\n- Two drop-test steps. Nothing says to reopen the valve after the drop test, and that matters most on an overnight wet layup. No document says the gauge has to sit on the bag side of the valve. Only the figure shows it.\n- An IPA wipe goes onto a mold that has already been released (CS-006 \u00a77.2, QR-002).\n- A mold stays at \"Ready for layup\" after a part is pulled, and nobody is told to update Parts pulled.\n- Engraving the back face \"before releasing the vacuum\" can't be done, because the back face is lying on the table.\n- The tacky tape is placed \"\u00bd in off the part\", which would put it inside the inlet spiral on the flange.\n- Four Round 3 and 4 register rows were never applied: R-004-30 (the 1 h wax-to-PVA wait), R-001-17 (marking blanks, which Simon answered), R-001-30 and R-011-31. R-006-30, R-008-30 and R-008-31 were not applied either.\n\nSafety gaps:\n- No eye protection is stated in CS-007 \u00a76 or CS-005 \u00a76.\n- There is no handling rule for IN2's H360F (fertility).\n- Ure-Bond's PPE line has the wrong glove source and no rule for asthma or a past reaction. Its respirator is still a \"should\" even though the shop stocks one.\n- Gloves go on only after the solvent wipe in the bond prep.\n- The DP420 load hold before an insert takes load is a bare placeholder, with no interim number.\n\nRubric (persona): Accuracy 4, Feasibility 4, Actionability 3, Completeness 3, Consistency 3, Style 4. Average 3.5, so REVISE. Steve's notes and catalog-categories.json passed the safety check (PPE products all classify as safety-ppe). The one nit is that the CNC/tooling-board row pushes waxes.\n\n\"Pls fix the drop-test valve and the mold-stage reset by EOD; the rest is close to cooking.\""
+  },
+  {
+   "key": "steve",
+   "n": 13,
+   "summary": "Steve's notes are clean on several checks. All 55 FG handles exist in steve_catalog.json. Applying catalog-categories.json puts none of them in safety-ppe or solvents-catalysts. No digits appear outside handles, and no draft or QR cites Steve as a source; CS-000 and QR-009 exclude him explicitly. The real risks sit in the wiring and in the product blurbs the tool hands back, and they would hurt a part, a mold or a person. (1) Steve inherits search_docs and read_doc_section, so he can read SDSs and \u00a76 hazard sections. (2) STEVE_SYSTEM rule 3 never got the R-STV-01 no-go list, and its own \\\"Fibreglast mixing kit\\\" example searches straight to a polyester and MEKP repair kit. (3) The PVA handle's blurb gives a wax coat count below CS-004's 4-coat minimum, and steveGuard does not catch \\\"layers\\\". (4) The EZ Mix Containers blurb tells the reader to mix by volume, while CS-008 requires weighing IN2 and XCR. (5) BPO Hardener and the resin kits slip past the category exclusions. (6) Nothing stops Steve selling a resin or adhesive in place of the team's. (7) The CNC topic pushes only wax. Smaller items: Compoflex is a stack-replacement product and is framed in a slightly disparaging way, QR-010's \\\"never act on a number from Steve\\\" is too narrow, the README makes untrue claims about search_steve_notes and the guard, the rule 2 example handle is wrong, \\\"one product\\\" appears at fibreglast-lines.md:41, and REGISTER's Steve table is stale against R-STV-07."
+  }
+ ],
+ "fixTally": {
+  "fixed": 141,
+  "needs-human": 20,
+  "rejected": 4
+ },
+ "needsHuman": [
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-003.md",
+   "where": "\u00a76 Ure-Bond asthma or isocyanate-reaction exclusion [shop, part 2]",
+   "action": "needs-human",
+   "note": "A 'shall not mix if asthmatic or previously reacted' rule is a new process rule. The SDS gives H334 but no such instruction, and the register has no row for it. A lead must decide before it is written in."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-005.md",
+   "where": "Title / H1 vs R-005-12 [coverage]",
+   "action": "needs-human",
+   "note": "The draft deliberately keeps '(ShopSabre)' to keep the built filename, and history row F records that. The register row R-005-12 still says '(ShopSabre at RFS)'. Either the register is amended or the H1, header and INDEX are retitled. REGISTER.md is outside my edit scope."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-005.md",
+   "where": "\u00a77.5 engraving on the back face while vacuum-held [shop, high]",
+   "action": "needs-human",
+   "note": "Confirmed: \u00a77.3 holds the stock face up by vacuum on its back face, so the back face cannot be engraved in the same setup. The fix means choosing (a) a side face outside the toolpath and 40 mm clear of the flange, or (b) a flipped second setup with its own Z zero. That is a shop decision, and it also touches CS-001 \u00a77.4 item 2, QR-005 \u00a72 and cs001-mold-identity.v2. What I did apply: engraving now comes before cleanup (steps 4 and 5 swapped; step 6 unchanged, so the figure and other references still hold)."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-004.md",
+   "where": "\u00a77.3 step 4: sealing the back and sides (+ CS-006 \u00a77.7, QR-012 \u00a73) [shop]",
+   "action": "needs-human",
+   "note": "Whether CS-004 should require one XCR coat on the back and sides is a new process step for a lead. Meanwhile I removed the pointer to a rule that does not exist. CS-006 \u00a77.7 and QR-012 \u00a73 now say sealing the back and sides is shop practice (Larry, 2026-04-03) and CS-004 does not yet require it."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-004.md",
+   "where": "\u00a77.5 Identify timing, label after PVA (+ CS-001 \u00a77.4 item 3, QR-004 \u00a78, QR-005 \u00a72) [shop]",
+   "action": "needs-human",
+   "note": "Moving the label to after the 12 h XCR hold and before wax reverses a deliberate Rev C rule ('after every wet operation'). That is a process-rule change with no register row, so it needs a lead's call."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-004.md",
+   "where": "\u00a77.3 step 4 coat count for 45 lb board [shop]",
+   "action": "needs-human",
+   "note": "45 lb is now listed in CS-003 \u00a75. No source gives a coat count for 45 lb board, and 'plan two coats' would be an invented team value. Needs a lead's number."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-006.md",
+   "where": "\u00a77.7 dry-patch row; QR-012 \u00a74",
+   "action": "needs-human",
+   "note": "No source describes how to add a second feed through a live bag. CS-006 and QR-012 now say to call the experienced infuser (\u00a77.1 step 3) and not to pierce the bag yourself. CS-006 carries '[NICK TO CONFIRM: how the team adds a second feed through a bag under vacuum.]' and a lead still has to supply the method. Self-checks: no new em dashes in any file I touched. Heading numbers match src/ except the planned new sections CS-006 \u00a77.8 and CS-000 \u00a77.5. I ran check_traceability.py against src/ with the drafts overlaid in a scratch copy: QR parents all pass. Its one FAIL (CS-INDEX vs CS-Template) and the CS-001 em-dash warning come from files I did not touch. Reviewer rows for CS-006, CS-007 and CS-008 are set to simon (reviewer agent), 2026-10-10."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-009.md",
+   "where": "\u00a77.6 step 8; QR-013 \u00a711 step 7",
+   "action": "needs-human",
+   "note": "The TDS gives 7 days at 23 \u00b0C only as its test cure, not a hold. Setting a 7-day interim no-load hold (or any value) is the lead/aero decision REGISTER open question 11 is waiting on. [lead input needed] left as is."
+  },
+  {
+   "file": "06 Composites App/functions/index.js",
+   "where": "AGENTS.steve tools (PAUL_TOOLS incl. search_docs)",
+   "action": "needs-human",
+   "note": "Still true: index.js:680 gives Steve [...PAUL_TOOLS, STEVE_TOOL, STEVE_NOTES_TOOL], and rule 4 says 'records and documents'. functions/ is outside my edit scope; an app change is needed to drop search_docs, read_doc_section and search_my_chats."
+  },
+  {
+   "file": "06 Composites App/functions/index.js",
+   "where": "STEVE_SYSTEM rules 2, 3, 8",
+   "action": "needs-human",
+   "note": "Mostly already landed: rule 3 now lists every R-STV-01 topic, the mixing-kit example is gone, and rule 2 exempts rule 3's topics. Rule 8 ('still find a way to recommend something') still conflicts on off-topic questions. Outside my edit scope."
+  },
+  {
+   "file": "06 Composites App/functions/index.js",
+   "where": "STEVE_SYSTEM rule 2 example ref",
+   "action": "needs-human",
+   "note": "Confirmed: [FG:yellow-sealant-tape] is not a catalog handle; the catalog has yellow-sealant-tape-00580. Outside my edit scope (functions/)."
+  },
+  {
+   "file": "02 CS Standards/overhaul/REGISTER.md",
+   "where": "Steve material table lines 669, 674",
+   "action": "needs-human",
+   "note": "REGISTER.md is outside my edit scope. upsell-map now drops adhesives from Trim/sand/bond and sets CNC to cutting-sanding-tools; the register rows need the matching update."
+  },
+  {
+   "file": "06 Composites App/functions/steve_catalog.json",
+   "where": "Built outputs steve_catalog.json and steve_kb.json",
+   "action": "needs-human",
+   "note": "Confirmed: `node tools/build_steve_kb.mjs --check` exits 1 and reports both files STALE. The rebuild writes under functions/, which is outside this fixer's edit scope. Someone with app access needs to run `node tools/build_steve_kb.mjs`, confirm --check passes, and commit the JSON with the steve/ sources. The catalog-categories note is correct once the rebuild is done, so it was left as written."
+  },
+  {
+   "file": "06 Composites App/functions/index.js",
+   "where": "AGENTS.steve tools (line ~680) and STEVE_SYSTEM rule 4 (line ~629)",
+   "action": "needs-human",
+   "note": "Confirmed: Steve's tools are still [...PAUL_TOOLS, STEVE_TOOL, STEVE_NOTES_TOOL], and rule 4 still says 'records and documents'. App code is outside this fixer's edit scope. Apply the stated fix (filter PAUL_TOOLS to search_records, get_record and app_overview, and reword rule 4), then redeploy functions."
+  },
+  {
+   "file": "06 Composites App/functions/context.js",
+   "where": "NEVER_FOR_STEVE (line 351)",
+   "action": "needs-human",
+   "note": "Confirmed: the set holds only safety-ppe and solvents-catalysts. App code and REGISTER are outside edit scope. upsell-map.md was left alone because its last sentence ('The safety-ppe and solvents-catalysts categories never reach him') matches the code. The 'never suggesting a Fibreglast resin' line is a behaviour rule for Steve, not a claim about the filter. The code fix (add epoxy-resins, other-resins, adhesives, prepreg), the R-STV-08 extension and the eval test still need doing."
+  },
+  {
+   "file": "06 Composites App/functions/index.js",
+   "where": "STEVE_SYSTEM rule 2 (line ~626)",
+   "action": "needs-human",
+   "note": "Confirmed: the example ref is [FG:yellow-sealant-tape], but the catalog handle is yellow-sealant-tape-00580. Outside edit scope. Change it to [FG:yellow-sealant-tape-00580]."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-005.md",
+   "where": "\u00a77.5 step 4; CS-001.md \u00a77.4 item 2; QR-005.md \u00a72 step 2; revision row D",
+   "action": "needs-human",
+   "note": "The defect is real. The back face sits on the vacuum table, so it cannot be engraved in the machining setup (the error dates from src Rev D). Neither proposed fix holds up as written, though. (a) A 3-axis router cannot engrave text on a vertical side face. (b) Flipping a finished mold puts its contoured working surface on the spoilboard, which will not hold under vacuum and risks the surface. My recommendation: engrave the flat back face of the glued blank in a short first setup, with its own Z zero, before it is flipped for the working-surface program. This adds a setup and a Z zero, which affects RFS time and the Z-zero risk \u00a77.4 warns about, so it is a lead's method call. It has to be written the same way in CS-005 \u00a77.5, CS-001 \u00a77.4 item 2, QR-005 \u00a72, cs001-mold-identity and a history line."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-004.md",
+   "where": "\u00a77.5 Identify; CS-001.md \u00a77.4 item 3; QR-004.md \u00a78; QR-005.md \u00a72 step 3",
+   "action": "needs-human",
+   "note": "The concern is valid: a label after PVA means flipping onto, or working next to, a film that must stay continuous. But this sequence has stood since src Rev C. Moving Identify before wax also means moving the seal record (\u00a77.4 step 5) ahead of it so the label prints the right seal date. That renumbers CS-004 \u00a77.4/\u00a77.5, which CS-006/CS-007 \u00a77.6, CS-001, QR-004 and QR-005 all cite. The stated reason in \u00a77.5 is also weak: XCR goes on the working surface and flanges, not the back face. A process-order decision for a lead. The alternative is a REGISTER row explaining why the label waits, and REGISTER is outside edit scope."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-009.md",
+   "where": "\u00a77.6 step 8; QR-013.md \u00a711 step 7",
+   "action": "needs-human",
+   "note": "The TDS supports 7 d dwell for most overlap-shear rows (24 h for etched aluminum, p1-2). But REGISTER R-009-02 sends the number to open question 11, assigned to Nick with aero. A 7-day interim no-load rule would gate car assembly, so it is a lead decision. The [lead input needed] marker was left in place."
+  },
+  {
+   "file": "02 CS Standards/overhaul/REGISTER.md",
+   "where": "R-002-07 (line 115), R-005-12 (line 187), duplicate R-001-30 (lines 103, 813), Steve material table (lines 669, 674)",
+   "action": "needs-human",
+   "note": "All four sub-claims confirmed. REGISTER.md is outside this fixer's edit scope. The CS-001 row G and CS-004 row E references to 'the Round 3 R-001-30' should only be renumbered after the register itself renumbers to R-001-31, so they were left alone."
+  }
+ ],
+ "rejected": [
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-005.md",
+   "where": "\u00a77.1 step 1 and QR-002 \u00a77 step 9 multi-action splits [style]",
+   "action": "rejected",
+   "note": "Not split. CS-005 \u00a77.1 step 1 ties the estimate to the moment of booking, and splitting it would renumber the steps CS-005 \u00a77.1 cross-references. QR-002 is a quick reference whose step 9 mirrors the parent's single sign-off step. Low value against the renumbering risk; can be done in a later pass."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-INDEX.md",
+   "where": "Revision history rows A-G [coverage: R-IDX-05]",
+   "action": "rejected",
+   "note": "Back-fill kept. The file's first committed version (830857c, then at 03 Work Orders/app/docs/standards/CS-INDEX.md) itself reads 'Revision A, Effective date 2026-07-12', so row A's date is right. check_traceability's history lint requires letters A, B, C... in order, so a table starting at H would fail it once lint 7 covers the INDEX. REGISTER R-IDX-05 should be amended to match; that is outside my edit scope."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-002.md",
+   "where": "\u00a77.1 step 1 RE vs register R-002-07 ME [coverage, shop]",
+   "action": "rejected",
+   "note": "Draft kept: 'Manufacturing Engineer (RE)' matches src/CS-002 and the app's role codes (parts.js:320, ME = Mold Engineer, RE = Manufacturing Engineer). The error is in REGISTER R-002-07's 'ME', which someone with register access should correct."
+  },
+  {
+   "file": "02 CS Standards/overhaul/drafts/CS-INDEX.md",
+   "where": "Revision history rows A-G",
+   "action": "rejected",
+   "note": "Row A's date is correct: the first committed CS-INDEX (830857c, 2026-07-21) carries 'Revision A, Effective date 2026-07-12' in its own header, so the back-fill copies the file's history, not the commit date. The deviation from R-IDX-05 is already recorded in row H ('Rows A to G back-filled from the git history of this file'). An optional register note on the deviation would go in REGISTER.md, which is outside edit scope."
+  }
+ ],
+ "recheckOpen": 14
+}

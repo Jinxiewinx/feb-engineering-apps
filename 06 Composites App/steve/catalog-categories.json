@@ -1,5 +1,5 @@
 {
-  "note": "Steve's catalog categories (register R-STV-02, R-STV-03). Applied offline to functions/steve_catalog.json, never at request time. For each product, build the test string as decodedTitle + ' ' + tags.join(' ') + ' ' + handle, test each rule's match as a case-insensitive JS regex (new RegExp(match, 'i')) in the order listed, and give the product the first category that matches; a product that matches none gets the fallback. safety-ppe and solvents-catalysts never reach Steve's results. gelcoat-colour reaches them only when the query says gel coat, colour, color or RAL. instruments-heat ranks below the shop families.",
+  "note": "Steve's catalog categories (register R-STV-02, R-STV-03). Applied offline to functions/steve_catalog.json, never at request time. For each product, build the test string as decodedTitle + ' ' + tags.join(' ') + ' ' + handle, test each rule's match as a case-insensitive JS regex (new RegExp(match, 'i')) in the order listed, and give the product the first category that matches; a product that matches none gets the fallback. safety-ppe and solvents-catalysts never reach Steve's results; solvents-catalysts also takes every hardener and peroxide catalyst, and the kits that carry one (polyester mold-making and repair kits, deep-pour epoxy), so none of them reaches him through another category. gelcoat-colour reaches them only when the query says gel coat, colour, color or RAL. instruments-heat ranks below the shop families.",
   "rules": [
     {
       "cat": "safety-ppe",
@@ -7,7 +7,7 @@
     },
     {
       "cat": "solvents-catalysts",
-      "match": "\\bacetone\\b|\\bmekp\\b|surfasolve|thinner|reducer"
+      "match": "\\bacetone\\b|\\bmekp\\b|\\bbpo\\b|hardener|peroxide|surfasolve|thinner|reducer|mold making kit|fiberglass repair kit|deep pour"
     },
     {
       "cat": "gelcoat-colour",
@@ -15,7 +15,7 @@
     },
     {
       "cat": "kits-samples",
-      "match": "sample-packs|\\bproject-kits\\b|\\bindividual-kit\\b|mixing-sets-starter-kits|sample pack|starter kit|mixing set|repair kit|mold making kit|target kit|infusion kits"
+      "match": "sample-packs|\\bproject-kits\\b|\\bindividual-kit\\b|mixing-sets-starter-kits|sample pack|starter kit|mixing set|target kit|infusion kits"
     },
     {
       "cat": "prepreg",

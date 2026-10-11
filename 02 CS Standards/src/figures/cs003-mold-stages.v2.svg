@@ -39,13 +39,13 @@
   <rect x="325" y="329" width="86" height="38" rx="6" fill="#003262"/>
   <text x="368" y="356" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#ffffff">APP</text>
   <text x="440" y="345" font-family="Inter" font-size="24" fill="#141d2b">You press Mark cut after fixing offcut sizes;</text>
-  <text x="440" y="373" font-family="Inter" font-size="22" fill="#515f74">the app moves it · CS-003 §7.3 step 4</text>
+  <text x="440" y="373" font-family="Inter" font-size="22" fill="#515f74">the app moves it · CS-003 §7.3 step 8</text>
   <rect x="65" y="402" width="240" height="56" rx="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
   <text x="185" y="439" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Board glued</text>
   <rect x="325" y="411" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
   <text x="368" y="438" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">YOU</text>
   <text x="440" y="427" font-family="Inter" font-size="24" fill="#141d2b">Once clamped and the stack is marked</text>
-  <text x="440" y="455" font-family="Inter" font-size="22" fill="#515f74">CS-003 §7.3 steps 14–15</text>
+  <text x="440" y="455" font-family="Inter" font-size="22" fill="#515f74">CS-003 §7.3 steps 18–19</text>
   <rect x="65" y="484" width="240" height="56" rx="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
   <text x="185" y="521" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Machined</text>
   <rect x="325" y="493" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
@@ -57,7 +57,7 @@
   <rect x="325" y="575" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
   <text x="368" y="602" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">YOU</text>
   <text x="440" y="591" font-family="Inter" font-size="24" fill="#141d2b">With Sealing system, Sealed on, Sealed by</text>
-  <text x="440" y="619" font-family="Inter" font-size="22" fill="#515f74">CS-004 §7.4 step 4</text>
+  <text x="440" y="619" font-family="Inter" font-size="22" fill="#515f74">CS-004 §7.4 step 5</text>
   <rect x="65" y="648" width="240" height="56" rx="28" fill="#003262" stroke="#003262" stroke-width="4"/>
   <text x="185" y="685" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#ffffff">Ready for layup</text>
   <rect x="325" y="657" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>

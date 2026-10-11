@@ -11,7 +11,7 @@
   </defs>
   <rect width="1000" height="1036" fill="#ffffff"/>
 
-  <text x="40" y="56" font-size="24" fill="#515f74">The run cannot complete while any issue is open.</text>
+  <text x="40" y="56" font-size="24" fill="#515f74">The run cannot complete while any issue is undisposed.</text>
 
   <!-- 1 Raise -->
   <rect x="40" y="84" width="580" height="124" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
@@ -66,7 +66,7 @@
   <!-- closeout bar -->
   <line x1="330" y1="732" x2="330" y2="802" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
   <rect x="200" y="758" width="260" height="18" fill="#141d2b"/>
-  <text x="480" y="775" font-size="22" font-weight="700" fill="#141d2b">closeout: every issue closed</text>
+  <text x="480" y="775" font-size="22" font-weight="700" fill="#141d2b">closeout: every issue disposed</text>
 
   <!-- 4 Complete -->
   <rect x="40" y="806" width="580" height="80" rx="10" fill="#003262" stroke="#141d2b" stroke-width="3"/>
@@ -74,7 +74,7 @@
 
   <!-- closeout note -->
   <rect x="40" y="914" width="8" height="98" fill="#141d2b"/>
-  <text x="66" y="940" font-size="24" font-weight="700" fill="#141d2b">Set Complete with an issue open?</text>
+  <text x="66" y="940" font-size="24" font-weight="700" fill="#141d2b">Set Complete with an issue undisposed?</text>
   <text x="66" y="972" font-size="22" fill="#141d2b">It is refused and the closeout list opens: Resolve on each,</text>
   <text x="66" y="1002" font-size="22" fill="#141d2b">or <tspan font-weight="700">Resolve all &amp; complete work order</tspan>.</text>
 </svg>

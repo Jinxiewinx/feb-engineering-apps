@@ -102,8 +102,8 @@
   <text x="255" y="574" text-anchor="middle" font-size="22" fill="#141d2b">IN spiral on the flange</text>
   <path d="M 170 554 V 446 H 226" fill="none" stroke="#141d2b" stroke-width="1.5"/>
   <text x="728" y="574" font-size="22" fill="#141d2b">AT-200Y tacky tape,</text>
-  <text x="728" y="600" font-size="22" fill="#141d2b">whole perimeter, about</text>
-  <text x="728" y="626" font-size="22" fill="#141d2b">½ in off the part</text>
+  <text x="728" y="600" font-size="22" fill="#141d2b">flange edge, outboard</text>
+  <text x="728" y="626" font-size="22" fill="#141d2b">of all bag layers</text>
   <line x1="724" y1="566" x2="692" y2="472" stroke="#141d2b" stroke-width="1.5"/>
 
   <line x1="255" y1="604" x2="255" y2="626" stroke="#003262" stroke-width="2"/>

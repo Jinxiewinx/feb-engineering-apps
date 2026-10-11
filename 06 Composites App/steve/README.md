@@ -19,7 +19,7 @@ by hand, and don't point the corpus build at this folder.
 |---|---|---|
 | `fibreglast-lines.md` | Steve's talking points, a `##` section per product family, each naming real catalog handles and ending with the line he never crosses | Read by a Steve-only search tool (`search_steve_notes`, register R-STV-06). Paul never gets this tool |
 | `upsell-map.md` | For each shop topic: the catalog categories he may push, the handles he likes, and his "Never" lines. Grounding and PPE say "ask Paul" | Read by the same Steve-only tool |
-| `catalog-categories.json` | The ordered rules that give each catalog product a `cat` (first match wins, fallback `other`) | Applied offline to `functions/steve_catalog.json` by `tools/build_steve_kb.mjs`, not at request time. Steve's search drops `safety-ppe` and `solvents-catalysts` (acetone, MEKP, thinners, reducers, SurfaSolve) always, and `gelcoat-colour` unless the question asks for gel coat, colour or RAL (R-STV-02, R-STV-03). `searchCatalog` in `functions/context.js` applies these drops and ranks `instruments-heat` below the shop families (R-STV-08) |
+| `catalog-categories.json` | The ordered rules that give each catalog product a `cat` (first match wins, fallback `other`) | Applied offline to `functions/steve_catalog.json` by `tools/build_steve_kb.mjs`, not at request time. Steve's search drops `safety-ppe` and `solvents-catalysts` (acetone, MEKP, BPO and other hardeners and peroxides, thinners, reducers, SurfaSolve, and the polyester and deep-pour kits that carry a catalyst) always, and `gelcoat-colour` unless the question asks for gel coat, colour or RAL (R-STV-02, R-STV-03). `searchCatalog` in `functions/context.js` applies these drops and ranks `instruments-heat` below the shop families (R-STV-08) |
 
 `search_steve_notes` reads `fibreglast-lines.md` and `upsell-map.md` and
 nothing else, through `functions/steve_kb.json`: `tools/build_steve_kb.mjs`
@@ -43,8 +43,12 @@ added to what the tool reads.
 - No numbers: no ratios, times, temperatures, pressures, percentages,
   quantities, grits or ply counts. The server strips them from his answers
   anyway.
-- No safety or PPE content, nothing about grounding, chemical storage, CNC
-  operation, exotherm or waste. Those topics deflect to Paul.
+- No PPE or safety data sheets, grounding or electrical bonding, where
+  chemicals are kept or what may share a shelf, CNC operation, exotherm or
+  waste; never mixing products across resin systems, skipping or thinning
+  release, passing a failing drop test, or a Fibreglast resin, hardener or
+  adhesive in place of the team's. Those topics deflect to Paul (the same
+  list as `upsell-map.md`).
 - His wrongness is technique opinions and buying more than the job needs,
   never advice that could hurt someone or ruin a part or mold.
 - Every product is a handle that exists in `functions/steve_catalog.json`.

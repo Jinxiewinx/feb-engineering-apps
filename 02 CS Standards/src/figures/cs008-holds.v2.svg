@@ -69,7 +69,7 @@
   <rect x="380" y="666" width="126.2" height="40" fill="#ffffff" fill-opacity="0" stroke="#003262" stroke-width="4" stroke-dasharray="9 6"/>
   <text x="518.2" y="700" font-family="Saira" font-size="34" font-weight="700" fill="#003262">12 h</text>
   <line x1="20" y1="790" x2="980" y2="790" stroke="#dde3ec" stroke-width="2"/>
-  <text x="20" y="820" font-size="22" fill="#141d2b"><tspan font-weight="700">24 h</tspan> is come back tomorrow; <tspan font-weight="700">48 h</tspan> is after the weekend.</text>
+  <text x="20" y="820" font-size="22" fill="#141d2b"><tspan font-weight="700">24 h</tspan> is come back tomorrow; <tspan font-weight="700">48 h</tspan> is the day after.</text>
   <text x="20" y="848" font-size="22" fill="#141d2b"><tspan font-weight="700">Cold shop?</tspan> It runs long. Test the flange, not the clock.</text>
   <text x="20" y="876" font-size="22" fill="#141d2b"><tspan font-weight="700">XCR:</tspan> no work-order step locks it. Watch the 12 h yourself (CS-004).</text>
   <text x="20" y="904" font-size="22" fill="#141d2b"><tspan font-weight="700">The app locks</tspan> “Cure and demould” (“Cure” on Foam wrapped) until the hold ends.</text>

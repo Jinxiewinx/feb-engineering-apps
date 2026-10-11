@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1130" font-family="Inter" fill="#141d2b">
-  <!-- CS-003 §7.3 step 8: a layer sheet as app/drawings.js draws it. Solid
+  <!-- CS-003 §7.3 step 12: a layer sheet as app/drawings.js draws it. Solid
        heavy = this layer's blank, dashed = mold at this height (DASH_MOLD),
        dash-dot = the layer underneath (DASH_BELOW), Datum A at the near-left
        corner, the PLACEMENT ON Ln and CHECK FROM DATUM A tables, SPLIT on
@@ -139,5 +139,5 @@
   <text x="520" y="1004" font-size="22">and are rounded to a 1/2 in size,</text>
   <text x="520" y="1032" font-size="22">so a small shift still machines.</text>
   <text x="520" y="1066" font-size="22" fill="#515f74">1 Set the insets first, 2 then check</text>
-  <text x="520" y="1094" font-size="22" fill="#515f74">the Datum A table (§7.3 step 8).</text>
+  <text x="520" y="1094" font-size="22" fill="#515f74">the Datum A table (§7.3 step 12).</text>
 </svg>

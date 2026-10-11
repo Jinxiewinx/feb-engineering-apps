@@ -18,7 +18,7 @@
 | E | 2026-08-27 | Claude | CS-001 and CS-013 to Rev D, for the R&D build. |
 | F | 2026-08-28 | Claude | Engineering pass: every standard moved one letter; CS-007, CS-008 and CS-009 out of outline. |
 | G | 2026-08-29 | Claude | CS-001, CS-002 and CS-013 caught up with the R&D bench; CS-012 to Rev E, then Rev F the same day. |
-| H | 2026-10-10 | Claude (doc overhaul, requested by Simon Starbuck) | Every standard one letter on for the documentation overhaul. CS-014 added. Quick-reference table added. Notes split into sections, with handoff reviews and candidate standards. Titles now repeat each H1 and statuses repeat each header exactly. Photos column added. Rows A to G back-filled from the git history of this file. Register R-IDX-01..07, R-000-16. |
+| H | 2026-10-10 | Claude (doc overhaul, requested by Simon Starbuck) | Every standard one letter on for the documentation overhaul. CS-014 added. Quick-reference table added. Notes split into sections, with handoff reviews and candidate standards. Titles now repeat each H1 and statuses repeat each header exactly. Photos column added. Quick-reference rows copy each QR header's Parent (or Covers) and Checked against word for word. Rows A to G back-filled from the git history of this file. Register R-IDX-01..07, R-000-16. |
 
 ---
 
@@ -60,25 +60,25 @@ Quick references are short documents derived from a standard (CS-000 §4). They 
 
 | Doc ID | Title | Parent (or Covers) | Checked against |
 |---|---|---|---|
-| QR-001 | Mix ratios and cure holds | CS-008 §5; CS-008 §5.1 | CS-008 Rev E; CS-008 Rev E |
-| QR-002 | Infusion setup checklist | CS-006 §7.1 to §7.6; CS-006 §7.8 | CS-006 Rev D; CS-006 Rev D |
-| QR-003 | Wet layup and the bag stack | CS-007 §7.2 to §7.6 | CS-007 Rev D |
-| QR-004 | Mold sealing and release, in order | CS-004 §7.1 to §7.5 | CS-004 Rev E |
-| QR-005 | Which label goes where | CS-001 §7.2; CS-001 §7.6; CS-001 §7.11 | CS-001 Rev G; CS-001 Rev G; CS-001 Rev G |
-| QR-006 | Receiving a delivery and material lots | CS-014 §7 | CS-014 Rev A |
-| QR-007 | Work orders: steps, buy-offs, holds and issues | CS-013 §7.1 to §7.7 | CS-013 Rev G |
-| QR-008 | PPE and handling by chemical | CS-003 §6; CS-004 §6; CS-006 §6; CS-008 §6; CS-009 §6 | CS-003 Rev E; CS-004 Rev E; CS-006 Rev D; CS-008 Rev E; CS-009 Rev D |
-| QR-009 | Words the team uses | CS-001 §4; CS-006 §4; CS-007 §4; CS-008 §4; CS-013 §4 | CS-001 Rev G; CS-006 Rev D; CS-007 Rev D; CS-008 Rev E; CS-013 Rev G |
-| QR-010 | Where things are in the app | Covers `app/core.js`, `app/inventory.js`, `app/paul.js` | None (Covers) |
-| QR-011 | Fusion add-in: planning stock | CS-003 §7.1 | CS-003 Rev E |
-| QR-012 | Bag leaks and dry spots | CS-006 §7.4; CS-006 §7.7; CS-007 §7.5 | CS-006 Rev D; CS-006 Rev D; CS-007 Rev D |
-| QR-013 | Trim, sand and bond prep | CS-009 §7.1 to §7.3; CS-009 §7.6 | CS-009 Rev D; CS-009 Rev D |
-| QR-014 | Where things are stored | CS-011 §7.3; CS-011 §6 | CS-011 Rev E; CS-011 Rev E |
-| QR-015 | Buying something and getting paid back | CS-012 §7.1; CS-012 §7.2; CS-012 §7.9 | CS-012 Rev G; CS-012 Rev G; CS-012 Rev G |
+| QR-001 | Mix ratios and cure holds | CS-008 §5; CS-008 §5.1; CS-008 §6; CS-008 §7 | CS-008 Rev E; CS-008 Rev E; CS-008 Rev E; CS-008 Rev E |
+| QR-002 | Infusion setup checklist | CS-006 §7.1; CS-006 §7.2; CS-006 §7.3; CS-006 §7.4; CS-006 §7.5; CS-006 §7.6; CS-006 §7.8; CS-006 §4; CS-008 §7 | CS-006 Rev D; CS-006 Rev D; CS-006 Rev D; CS-006 Rev D; CS-006 Rev D; CS-006 Rev D; CS-006 Rev D; CS-006 Rev D; CS-008 Rev E |
+| QR-003 | Wet layup and the bag stack | CS-007 §7.1; CS-007 §7.2; CS-007 §7.3; CS-007 §7.4; CS-007 §7.5; CS-007 §7.6; CS-007 §7.7 | CS-007 Rev D; CS-007 Rev D; CS-007 Rev D; CS-007 Rev D; CS-007 Rev D; CS-007 Rev D; CS-007 Rev D |
+| QR-004 | Mold sealing and release, in order | CS-004 §5; CS-004 §7.1; CS-004 §7.2; CS-004 §7.3; CS-004 §7.4; CS-004 §7.5; CS-004 §8 | CS-004 Rev E; CS-004 Rev E; CS-004 Rev E; CS-004 Rev E; CS-004 Rev E; CS-004 Rev E; CS-004 Rev E |
+| QR-005 | Which label goes where | CS-001 §2; CS-001 §5; CS-001 §6; CS-001 §7.2; CS-001 §7.4; CS-001 §7.5; CS-001 §7.6; CS-001 §7.7; CS-001 §7.8; CS-001 §7.9; CS-001 §7.11; CS-014 §7.8 | CS-001 Rev G; CS-001 Rev G; CS-001 Rev G; CS-001 Rev G; CS-001 Rev G; CS-001 Rev G; CS-001 Rev G; CS-001 Rev G; CS-001 Rev G; CS-001 Rev G; CS-001 Rev G; CS-014 Rev A |
+| QR-006 | Receiving a delivery and material lots | CS-014 §2; CS-014 §4; CS-014 §5; CS-014 §6; CS-014 §7.1; CS-014 §7.2; CS-014 §7.3; CS-014 §7.4; CS-014 §7.5; CS-014 §7.6; CS-014 §7.7; CS-014 §7.8; CS-014 §7.11; CS-014 §8; CS-001 §7.2 | CS-014 Rev A; CS-014 Rev A; CS-014 Rev A; CS-014 Rev A; CS-014 Rev A; CS-014 Rev A; CS-014 Rev A; CS-014 Rev A; CS-014 Rev A; CS-014 Rev A; CS-014 Rev A; CS-014 Rev A; CS-014 Rev A; CS-014 Rev A; CS-001 Rev G |
+| QR-007 | Work orders: steps, buy-offs, holds and issues | CS-013 §2; CS-013 §4; CS-013 §4.1; CS-013 §5; CS-013 §7.1; CS-013 §7.2; CS-013 §7.3; CS-013 §7.5; CS-013 §7.6; CS-013 §7.7; CS-008 §5; CS-008 §5.1; CS-007 §7.5 | CS-013 Rev G; CS-013 Rev G; CS-013 Rev G; CS-013 Rev G; CS-013 Rev G; CS-013 Rev G; CS-013 Rev G; CS-013 Rev G; CS-013 Rev G; CS-013 Rev G; CS-008 Rev E; CS-008 Rev E; CS-007 Rev D |
+| QR-008 | PPE and handling by chemical | CS-003 §6; CS-004 §6; CS-005 §6; CS-006 §5; CS-006 §6; CS-007 §6; CS-008 §6; CS-009 §6; CS-010 §6; CS-011 §5; CS-011 §6; CS-014 §6 | CS-003 Rev E; CS-004 Rev E; CS-005 Rev F; CS-006 Rev D; CS-006 Rev D; CS-007 Rev D; CS-008 Rev E; CS-009 Rev D; CS-010 Rev D; CS-011 Rev E; CS-011 Rev E; CS-014 Rev A |
+| QR-009 | Words the team uses | CS-001 §4; CS-002 §4; CS-003 §4; CS-004 §4; CS-005 §4; CS-006 §4; CS-007 §4; CS-008 §4; CS-009 §4; CS-011 §4; CS-012 §4; CS-013 §4; CS-013 §4.1; CS-014 §4 | CS-001 Rev G; CS-002 Rev F; CS-003 Rev E; CS-004 Rev E; CS-005 Rev F; CS-006 Rev D; CS-007 Rev D; CS-008 Rev E; CS-009 Rev D; CS-011 Rev E; CS-012 Rev G; CS-013 Rev G; CS-013 Rev G; CS-014 Rev A |
+| QR-010 | Where things are in the app | Covers `app/core.js`; `app/inventory.js`; `app/molds.js`; `app/reports.js`; `app/documents.js`; `app/paul.js`; `app/timeline.js` | None (Covers) |
+| QR-011 | Fusion add-in: planning stock | CS-003 §5; CS-003 §7.1; CS-003 §7.2; CS-003 §7.3 | CS-003 Rev E; CS-003 Rev E; CS-003 Rev E; CS-003 Rev E |
+| QR-012 | Bag leaks and dry spots | CS-006 §7.2; CS-006 §7.4; CS-006 §7.5; CS-006 §7.7; CS-007 §7.3; CS-007 §7.5 | CS-006 Rev D; CS-006 Rev D; CS-006 Rev D; CS-006 Rev D; CS-007 Rev D; CS-007 Rev D |
+| QR-013 | Trim, sand and bond prep | CS-009 §1; CS-009 §4; CS-009 §5; CS-009 §6; CS-009 §7.1; CS-009 §7.2; CS-009 §7.3; CS-009 §7.4; CS-009 §7.6; CS-009 §8; CS-009 §9; CS-008 §5; CS-008 §5.1; CS-010 §7.4 | CS-009 Rev D; CS-009 Rev D; CS-009 Rev D; CS-009 Rev D; CS-009 Rev D; CS-009 Rev D; CS-009 Rev D; CS-009 Rev D; CS-009 Rev D; CS-009 Rev D; CS-009 Rev D; CS-008 Rev E; CS-008 Rev E; CS-010 Rev D |
+| QR-014 | Where things are stored | CS-011 §7.3; CS-011 §6; CS-011 §7.1; CS-011 §7.4; CS-011 §7.6; CS-014 §6; CS-011 §5; CS-011 §8; CS-003 §6; CS-008 §7 | CS-011 Rev E; CS-011 Rev E; CS-011 Rev E; CS-011 Rev E; CS-011 Rev E; CS-014 Rev A; CS-011 Rev E; CS-011 Rev E; CS-003 Rev E; CS-008 Rev E |
+| QR-015 | Buying something and getting paid back | CS-012 §7.1; CS-012 §7.2; CS-012 §7.9; CS-012 §4; CS-012 §6; CS-012 §7.4; CS-012 §7.5; CS-012 §7.7; CS-012 §1; CS-012 §7.3; CS-011 §7.2 | CS-012 Rev G; CS-012 Rev G; CS-012 Rev G; CS-012 Rev G; CS-012 Rev G; CS-012 Rev G; CS-012 Rev G; CS-012 Rev G; CS-012 Rev G; CS-012 Rev G; CS-011 Rev E |
 
 QR-006, QR-007, QR-011 and QR-015 also describe app screens (`app/receiving.js`, `app/workorders.js`, `app/fusion.js` with `10 Fusion Add-in/`, and `app/budget.js`), but their headers carry Parent and Checked against, not Covers.
 
-QR-008 copies its PPE lines from the parent standards, so it is written only after the PPE decisions held for Simon are made; until then its row reserves the number. QR-014's section on what may share a shelf waits the same way on CS-011 §6.
+QR-008 copies its PPE lines from its parent standards and follows Simon's PPE answer of 2026-10-10: PPE the shop stocks is required, and anything still to buy is a should on the purchase list. QR-014's section on what may share a shelf waits on CS-011 §6, which is still held.
 
 ## Next free numbers
 
@@ -124,7 +124,7 @@ Every doc above got a language pass (fewer em dashes, less decorative bold) plus
 
 Topics that may need their own standard. No number is reserved for any of them; a candidate takes the next free number only when drafting starts (CS-000 §7.1 step 2).
 
-- Sandwich cores and degassing. Honeycomb skins follow CS-007 for now (CS-007 §2); core-specific rules are not written yet.
+- Sandwich cores. Honeycomb skins follow CS-007 for now (CS-007 §2); core-specific rules are not written yet. Degassing is in CS-006 §7.8.
 - Forged CF and structural bonding.
 - AI helpers in the shop: what Paul, Steve and the ✨ fills may be trusted for.
 - Prepreg handling, storage and cure. New practice for SN6.
