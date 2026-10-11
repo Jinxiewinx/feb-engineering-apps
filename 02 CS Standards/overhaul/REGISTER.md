@@ -816,3 +816,45 @@ needs fixing (`src/figures/variants/CHOICES.md`). Round 6 applies them.
 | R-013-30 | CS-013 | style | Text still says "gate"/"gated" where the figures and app say blocker/hold; use the app's words | cs013-issue-path.v2 | do |
 | R-008-31 | CS-008 | wrong | "48 h is after the weekend" holds only for a Friday infusion; reword | cs008-holds.v2 | do |
 | R-010-30 | CS-010 | missing | The draft does not say what the catch can ended up with; the figure no longer claims copper paths. State the outcome or leave it out | cs010-path-decision.v2 | do |
+
+## Promoted 2026-10-10, and what is still open for a lead
+
+Round 7 copied the drafts into `src/` and `template/`, rebuilt everything,
+and ran `check_traceability.py --strict` clean. Every standard is "Draft,
+pending Lead signature" at its new letter until Nick signs (CS-000 §7.1).
+The drafts in `overhaul/drafts/` are now identical to `src/` and kept only
+as the record; edit `src/`.
+
+**Decisions only a lead can make** (the text marks each spot or keeps the
+current rule):
+
+1. CS-011 §6 co-storage and the flammables list: `proposals/CS-011-s6.md`.
+2. Mold back-face engraving (CS-005 §7.5, CS-001 §7.4, QR-005 §2): the back
+   face sits on the vacuum table, so it cannot be engraved in the machining
+   setup. Suggested: a short first setup engraving the glued blank's flat
+   back face, with its own Z zero, before the flip.
+3. When the mold label goes on (CS-004 §7.5): after PVA as today, or after
+   the 12 h XCR hold and before wax.
+4. Sealing the back and sides with one XCR coat (CS-004 §7.3): shop
+   practice per Larry (2026-04-03), not yet a rule.
+5. XCR coat count for 45 lb board (CS-004 §7.3): no source gives one.
+6. Ure-Bond 90: a "do not mix if asthmatic or previously reacted" rule
+   (CS-003 §6, H334), and its use on board above the TB's 30 lb rating.
+7. How the team adds a second resin feed through a bag under vacuum
+   (CS-006 §7.7, marked NICK TO CONFIRM), and the degassing setup
+   (CS-006 §7.8, marked NICK TO CONFIRM).
+8. The no-load hold after a DP420 insert bond (CS-009 §7.6, marked
+   [lead input needed]).
+9. Compressed air vs vacuum before sealing (R-004-15).
+10. The 25 mm vs 40 mm mold-label keep-out wording, if the drawn 40 mm rule
+    is not what the team wants (R-001-30).
+11. Everything in "Open questions" above that was not answered today:
+    expired chemicals (7), label printer bought (8), tool library location
+    (12), what a WO label goes on (13), purchasing bot details (14), the
+    chemical boxes/barrel location (15), the chemical-inventory role (16),
+    minimum stock values (17), and the container labels to read at RFS (18).
+
+**Purchases the PPE answer implies** (written as "should" until bought):
+EN 166 goggles for pouring and mixing XCR; ABEK cartridges where AT30 is
+used in a closed room. Check the 6000-series cartridge in the cabinet
+against the restock row (A + P100).
