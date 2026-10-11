@@ -784,8 +784,11 @@ ok("the shipped catalog is real and dated", shipped.products.length > 400 && /^\
   // pages and nothing else. A how-to question must reach a datasheet or a
   // standard; a safety question must still reach the safety sheet.
   ok("a how-to question is not answered by safety sheets", !top("AT30 hardener ratio").every(isSds), JSON.stringify(top("AT30 hardener ratio").map(h => h.ref)));
-  ok("a safety question still reaches the safety sheet", top("IN2 SDS first aid").some(isSds) && top("acetone gloves").some(isSds), JSON.stringify(top("acetone gloves").map(h => h.ref)));
-  ok("the master list is searchable", docsCtx.searchDocs("which standards exist").some(h => h.doc === "CS-INDEX"));
+  // Since the quick references (2026-10-10) a safety question should land on
+  // QR-008, the PPE summary written from the SDSs, and still reach the SDS.
+  const safe = (h) => isSds(h) || h.doc === "QR-008";
+  ok("a safety question reaches the PPE quick reference or the safety sheet", top("acetone gloves").some(safe) && top("IN2 SDS first aid").some(isSds), JSON.stringify(top("acetone gloves").map(h => h.ref)));
+  ok("the master list is searchable", docsCtx.searchDocs("list of standards").some(h => h.doc === "CS-INDEX"));
   ok("revision history is its own section, not the document's opening", docsCtx.searchDocs("bag stack order", 3)[0].doc !== "CS-007" || !/^CS-007 /.test(docsCtx.searchDocs("bag stack order", 3)[0].section));
 }
 
