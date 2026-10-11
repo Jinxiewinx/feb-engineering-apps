@@ -37,7 +37,7 @@ if (!chromium) { console.log(skipMessage("the scan landing page")); process.exit
    explicitly — which also documents exactly which URLs the rewrite has to
    cover. Both cases: labels carry uppercase, hand-typed codes may not. */
 const Q_HTML = await readFile(join(APP_ROOT, "q.html"), "utf8");
-const IDS = ["MOLD-SN6-004", "WO-SN6-118", "P-SN6-007", "PNL-SN6-006-C03", ""];
+const IDS = ["MOLD-SN6-004", "WO-SN6-118", "P-SN6-007", "PNL-SN6-006-C03", "RDS-SN6-001", "CPN-SN6-004", ""];
 const routes = {};
 for (const id of IDS) { routes["/Q/" + id] = Q_HTML; routes["/q/" + id] = Q_HTML; }
 const { server, port } = await serveApp(routes);
@@ -80,6 +80,16 @@ console.log("\noffline-first");
 
   const cls = await page.textContent("#cls");
   eq(cls.trim(), "Mold", "and so is the class word, derived from the prefix alone");
+  await page.close();
+}
+/* The R&D bench prints labels too (Study label, the coupon row's print icon),
+   so its prefixes need words here rather than the bare "RDS" / "CPN". */
+for (const [id, word] of [["RDS-SN6-001", "R&D study"], ["CPN-SN6-004", "R&D coupon"]]) {
+  const page = await browser.newPage({ viewport: { width: 393, height: 850 } });
+  await sealNetwork(page, { mode: "hang" });
+  await page.goto(`http://127.0.0.1:${port}/Q/${id}`, { waitUntil: "commit" });
+  await page.waitForFunction((x) => document.getElementById("id")?.textContent.trim() === x, id, { timeout: 3000 });
+  eq((await page.textContent("#cls")).trim(), word, `${id.split("-")[0]} reads as "${word}"`);
   await page.close();
 }
 

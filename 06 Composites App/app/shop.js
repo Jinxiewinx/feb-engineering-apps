@@ -33,8 +33,10 @@
 
 /* ---------- the schema ---------- */
 
-/* "Tooling cut" is the blanks off the ShopSabre and not yet glued into a
-   stack, which is where a mold actually sits for most of a weekend. It was
+/* "Tooling cut" is the blanks cut from tooling board and not yet glued into a
+   stack, which is where a mold actually sits for most of a weekend. Blanks
+   are cut mostly on a saw, which is why packer.js models a 1/8 in kerf
+   (KERF_MM); the ShopSabre may cut them in future (Simon, 2026-10-10). It was
    added in September 2026 on Simon's ask; before it, a half-cut mold was
    either still "Designed", which put it back in the cut list, or already
    "Board glued", which it was not.

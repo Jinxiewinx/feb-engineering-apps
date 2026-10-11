@@ -8735,6 +8735,13 @@ await t("a shelf label says what it is; a scanned mold's nameplate names the she
   const lines = labelLines("items", bin, { cls: "STORAGE" });
   assert(lines.key === "STORAGE" && lines.name.includes("RESIN SHELF"), "BIN branch: " + JSON.stringify(lines));
   assert(lines.mid.includes("RFS CONTAINER"), "site on the label");
+  assert(lines.foot === "CONTENTS LISTED IN THE APP" || /^CONTENTS CONFIRMED /.test(lines.foot),
+    "the footer says something a phone-camera scan does not contradict: " + lines.foot);
+  const fab = labelLines("lots", { id: "FAB-SN6-001", cls: "FAB", name: "195 twill", vendorLot: "SX-88" }, { cls: "FABRIC" });
+  assert(fab.key === "", "a fabric lot has no ratio or role: " + JSON.stringify(fab));
+  const fabHtml = labelMarkup({ ...fab, id: "FAB-SN6-001" });
+  assert(!fabHtml.includes("lbl-r2"), "so the bold key row is left out, not printed empty");
+  assert(labelMarkup({ name: "X", key: "100 : 30" }).includes('<div class="lbl-r2">100 : 30</div>'), "a key that has something to say still prints");
   const pub = pubProjection("molds", DB.molds[0]);
   assert(pub.location === "Dry fabric bin", "BIN id resolved to the shelf name: " + pub.location);
 });
@@ -10917,6 +10924,27 @@ await t("an open blocker still wins over the training gate", async () => {
   assert(!document.getElementById("modal").innerHTML.includes("training"), "not the training modal");
   signInAsLead();
 });
+await t("a design review warns the run's Mold Engineer, not whoever created the work order", async () => {
+  DB.users = [{ email: "nick@b.edu", name: "Nick Jepsen", role: "member" }, { email: "sander@b.edu", name: "Sander Green", role: "member" }];
+  const mk = () => ({ ...trainWO(), createdBy: "sander@b.edu", moldEngineer: "Nick Jepsen", moldEngineerEmail: "nick@b.edu",
+    steps: [{ seq: 1, title: "Mold design review", status: "open", buyoff: { name: "", date: "" }, notes: "", photoRefs: [] }] });
+  let asked = [];
+  const had = window.confirmAsync;
+  window.confirmAsync = globalThis.confirmAsync = async (msg, o) => { asked.push(o && o.title); return !(o && o.title === "Self-review"); };
+  try {
+    fb.user = { uid: "u3", email: "nick@b.edu", name: "Nick Jepsen" }; fb.roster = { name: "Nick", role: "member" };
+    DB.workOrders = [mk()]; view = { ...view, tab: "workorders", mode: "detail", id: "WO-TR-1", edit: false };
+    await buyoff(0);
+    assert(asked.includes("Self-review"), "the Mold Engineer is asked: " + JSON.stringify(asked));
+    assert(!isSigned(DB.workOrders[0].steps[0]), "and Cancel leaves the review unsigned");
+    asked = [];
+    fb.user = { uid: "u2", email: "sander@b.edu", name: "Sander Green" }; fb.roster = { name: "Sander", role: "member" };
+    DB.workOrders = [mk()];
+    await buyoff(0);
+    assert(!asked.includes("Self-review"), "the creator who did not design the mold is not warned: " + JSON.stringify(asked));
+    assert(isSigned(DB.workOrders[0].steps[0]), "and signs");
+  } finally { window.confirmAsync = globalThis.confirmAsync = had; signInAsLead(); }
+});
 await t("engineer fields suggest only the qualified, stamp the email sidecar, and warn — never block", () => {
   DB.users = [
     { email: "nick@b.edu", name: "Nick Jepsen", role: "member", trainings: { moldDesign: { by: "s", at: "" } } },
@@ -12231,18 +12259,20 @@ await t("CS-013 inverts a design review rather than filtering it", () => {
      for its creator and UP for everyone else — a distinction that exists in
      buyoff() and has never existed anywhere on screen. */
   signInAsLead();
-  const w = woLadder({ createdBy: myEmail(), moldEngineer: "Simon" });
+  /* "Made the thing" is the run's Mold Engineer, the same field buyoff()
+     checks. Who opened the work order does not enter into it. */
+  const w = woLadder({ createdBy: "someone@else.test", moldEngineer: "Simon Starbuck", moldEngineerEmail: myEmail() });
   w.steps[0] = { title: "Design review", status: "" };
   DB.workOrders = [w];
   const mine = signableSteps(myEmail())[0];
-  assert(mine.selfReview === true, "the app knows you made this run");
+  assert(mine.selfReview === true, "the app knows you designed this run's mold");
   assert(!waitingOnMe(myEmail()).length, "so it is not yours to sign");
   assert(actScore({ base: "signoffReady", selfReview: true }) < actScore({ base: "signoffReady" }),
     "and it scores below the same step without that flag");
 
-  DB.workOrders = [woLadder({ createdBy: "someone@else.test" })];
+  DB.workOrders = [woLadder({ createdBy: myEmail(), moldEngineer: "Nick Jepsen", moldEngineerEmail: "nick@b.edu" })];
   DB.workOrders[0].steps[0] = { title: "Design review", status: "" };
-  assert(signableSteps(myEmail())[0].selfReview === false, "somebody else's run is an ordinary review");
+  assert(signableSteps(myEmail())[0].selfReview === false, "a run you opened around somebody else's mold is an ordinary review");
 });
 
 await t("the score is capped, so one ancient part cannot outrank every live blocker", () => {

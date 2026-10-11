@@ -258,9 +258,11 @@ function signableSteps(email) {
     // 5. CS-013. A design review signed by whoever made the thing is not a
     //    review. Inverted rather than filtered: it ranks DOWN for the creator
     //    and UP for everyone else, which is a distinction nothing on screen
-    //    has ever drawn.
+    //    has ever drawn. "Whoever made the thing" is the run's Mold Engineer,
+    //    the same person field buyoff() checks, not createdBy: whoever opened
+    //    the work order is often not the mold's designer.
     const selfReview = /design review/i.test(s.title || "")
-      && !!email && email === String(w.createdBy || "").toLowerCase();
+      && !!email && typeof personRef === "function" && personRef(w, "moldEngineer").email === email;
 
     const qualified = (tr && typeof qualifiedFor === "function") ? qualifiedFor(tr) : [];
     out.push({

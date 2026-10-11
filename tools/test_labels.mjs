@@ -46,7 +46,7 @@ const RECS = [
   { coll: "molds", o: {
       id: "MOLD-SN6-005",
       name: "UNDERTRAY LEFT SIDE POD OUTBOARD SKIN LOWER SECTION TWO",  // 55 chars
-      density: 60, location: "RFS" } },
+      density: 60, location: "RFS", sealedDate: "2026-09-20" } },   // a key row worth keeping
   { coll: "molds", o: { id: "MOLD-SN6-006", name: "" } },   // nothing but an id
   // A footer long enough to overflow. This is the case that clipped the FEB tag
   // mid-glyph, which every overflow check passed because the clip happened
@@ -280,7 +280,9 @@ const lines = await page.evaluate(() => {
     h: name.getBoundingClientRect().height,
     clippedY: name.scrollHeight > name.clientHeight + 1,
     clippedX: name.scrollWidth > name.clientWidth + 1,
-    hasKey: !!el.querySelector(".lbl-r2"),
+    // With content: labelMarkup leaves an empty key row out of the markup, so
+    // bare existence would not say the row survived the two-line name.
+    hasKey: /SEALED/.test((el.querySelector(".lbl-r2") || {}).textContent || ""),
     hasId: (el.querySelector(".lbl-rid") || {}).textContent === "MOLD-SN6-005",
   };
 });

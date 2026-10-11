@@ -348,10 +348,13 @@ function labelHtml(coll, o, opts) {
  * TEXT to encode, not a flag: the caller decides what a code means, this
  * decides how big it is.
  *
- * The ID row is dropped outright when there is no id, rather than emitted
- * empty. .lbl-r2/.lbl-r3 already collapse when blank (print.css) but .lbl-rid
- * cannot — it is a flex row holding a span, so :empty never fires on it and a
- * custom label would print a blank 9.5pt gap where an ID would be.
+ * The ID row and the bold key row are dropped outright when they have nothing
+ * to say, rather than emitted empty. .lbl-rid has to be: it is a flex row
+ * holding a span, so :empty never fires on it and a custom label would print a
+ * blank 9.5pt gap where an ID would be. .lbl-r2 collapses when blank in
+ * print.css, but a fabric lot (no ratio, no role) is the common blank key, and
+ * leaving the row out of the markup means no renderer can print an empty bold
+ * line.
  *
  * opts: { qrMm, narrow }. narrow goes straight to nameTier.
  */
@@ -380,7 +383,7 @@ function labelMarkup(L, opts) {
             test panel?". R&D is an adjective on a class, so it prints as its own
             tag. */""}
       ${L.id ? `<div class="lbl-rid"><span>${esc(L.id)}</span>${L.rnd ? '<span class="lbl-rnd">R&amp;D</span>' : ""}</div>` : ""}
-      <div class="lbl-r2">${esc(L.key)}</div>
+      ${L.key ? `<div class="lbl-r2">${esc(L.key)}</div>` : ""}
       ${t.merge ? "" : `<div class="lbl-r3">${esc(L.mid)}</div>`}
       <div class="lbl-r4"><span>${esc(foot)}</span><span class="lbl-feb">FEB</span></div>
     </div>
@@ -483,7 +486,10 @@ function labelLines(coll, o, p) {
       name: up(o.name),
       key: "STORAGE",
       mid: j(up(o.site), up(o.locKind), o.flam === "Yes" ? "FLAMMABLES OK" : ""),
-      foot: o.walkedAt ? `CONTENTS CONFIRMED ${o.walkedAt}` : "SCAN TO SEE CONTENTS"
+      /* Not "SCAN TO SEE CONTENTS": a phone camera lands on the public /Q
+         page, which shows the location but never what is on it. The contents
+         list is in the app, behind sign-in, one tap from that page. */
+      foot: o.walkedAt ? `CONTENTS CONFIRMED ${o.walkedAt}` : "CONTENTS LISTED IN THE APP"
     };
   }
   if (coll === "workOrders") {
@@ -820,7 +826,7 @@ function labelBuilderHtml() {
   <div class="field"><label>Copies of each</label>
     <input type="number" min="1" max="${LABEL_COPIES_MAX}" value="${labelCopies(LB.copies)}"
       onchange="LB.copies=labelCopies(this.value);lbRefresh()">
-    <div class="muted tny">Two is the usual ask at demould — one for the part, one for the bag.</div>
+    <div class="muted tny">Two is the usual ask at demould: one for the part, one for the traveler.</div>
   </div>` : `
   <div class="field"><label>Start at cell</label>
     <input type="number" min="1" max="${per}" value="${LB.skip + 1}"

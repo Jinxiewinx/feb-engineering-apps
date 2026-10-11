@@ -3580,7 +3580,7 @@ const TABS = [
      #/weekplan links and stored notifications land there. */
   { id: "weekplan", label: "Weekly Plan", ic: "calendar", coll: "schedule", grp: "planning", hidden: true, render: () => { view.tab = "timeline"; view.schedView = "week"; return renderSchedule(); } },
   { id: "budget", label: "Budget", ic: "budget", coll: "budget", grp: "planning", tip: "Budget — purchases, arrivals and reimbursement", render: () => renderBudget() },
-  { id: "documents", label: "Documents", ic: "documents", coll: null, grp: "team", tip: "Documents — datasheets, standards, printables", render: () => renderDocuments() },
+  { id: "documents", label: "Documents", ic: "documents", coll: null, grp: "team", tip: "Documents — datasheets, uploads and the team shelf of links", render: () => renderDocuments() },
   { id: "reports", label: "Reports", ic: "reports", coll: null, grp: "team", tip: "Reports — exports, print boards, labels", render: () => renderReports() },
   { id: "people", label: "People", ic: "people", coll: null, grp: "team", tip: "People — the roster and who carries what", render: () => renderPeople() },
 ];

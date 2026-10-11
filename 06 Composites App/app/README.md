@@ -42,9 +42,10 @@ So: **four lanes, each a question**, and a lane with no answer says so.
   button then refuses. Missing evidence *demotes* a step rather than hiding it:
   pressing the button is how you find out what is short. A cure hold stops a
   member and offers a lead an override, so this lane is genuinely different for
-  the two of them. And a design review on a run you created ranks down for you
-  and up for everyone else, which is what CS-013 says and what nothing on screen
-  used to show.
+  the two of them. And a design review on a run where you are the Mold Engineer
+  ranks down for you and up for everyone else, which is what CS-013 says and
+  what nothing on screen used to show. The buy-off button warns the same person
+  before they sign it.
 - **Due this week** — inside seven days, late first. Its header says how many
   are actually late, because "5 due this week" listing things from January is
   true and reads as a lie.

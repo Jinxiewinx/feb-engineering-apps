@@ -3337,10 +3337,13 @@ async function buyoff(i) {
     addStepPhotos(w.id, i, { then: () => buyoff(i) });
     return;
   }
-  // CS-013: a design review signed by whoever made the thing isn't a review.
+  /* CS-013: a design review signed by whoever made the thing isn't a review.
+     Keyed on the run's Mold Engineer (the person field, through isMineRef),
+     not on createdBy: the person who opened the work order is often not the
+     one who designed the mold, and the reviewer checks the Mold Engineer. */
   if (w.steps[i].title.toLowerCase().includes("design review") && myEmail() &&
-      myEmail() === w.createdBy &&
-      !await confirmAsync("You created this work order. A design review should be signed off by someone else. Sign it anyway?",
+      isMineRef(w, ["moldEngineer"]) &&
+      !await confirmAsync("You are this run's Mold Engineer. A design review should be signed off by someone other than the mold's designer. Sign it anyway?",
         { title: "Self-review", ok: "Sign it anyway" })) return;
   // Starting a cure: ask what and when before signing. signStep() does the write.
   if (startsHold(w.steps[i]) && !w.retro) { openCureModal(i); return; }
