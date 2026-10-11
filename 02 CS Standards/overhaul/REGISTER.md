@@ -766,3 +766,20 @@ rows it names.
   on the glued stack (R-001-17, R-003-25 become "do (rule)"). Recorded
   containers no: the app record already carries the open date, and a
   second hand-written copy is one more thing to disagree (R-001-19 drop).
+
+## Rows added in Round 2 review
+
+Raised by the Round 2 revisers (`proposals/register-rows-from-R2-review.md`), merged here.
+
+| ID | § | Type | Change | Evidence | Decision |
+|---|---|---|---|---|---|
+| R-007-13 | §7.5 | process-rule | Withdraw the second half of R-007-04 (a lead should add a "Drop test, 2 inHg or less over 10 min" blocker to Mold wet lay and Foam wrapped) until the app's cure hold looks back to the last hold-starting step. §7.5 states the limit as plain fact: a step between "Wet layup and bag" and "Cure and demould" (or "Cure") switches the hold off, so the drop test is recorded in the "Wet layup and bag" note. The same limit applies to R-013-05 / CS-013 §7.5: a lead adding a drop-test step to a wet-layup technique would lose the cure hold | `app/workorders.js:721-738`, holdState() reads only `steps[idx - 1]` | do (rule) |
+| R-OTH-33 | app/workorders.js holdState | missing | Make holdState() walk back from the hold step to the nearest step with `kind: "startsHold"` instead of reading only `steps[idx - 1]`, so a blocker (a drop test) can sit between the resin step and the hold. Once it lands, R-007-04's should can return and CS-007 §7.5 can name the step | `app/workorders.js:721-738` | do |
+| R-004-15 | §5 Compressed air row; §7.1 step 1 | process-rule | "Blow all dust off the mold with compressed air" becomes "Vacuum all dust off the mold, including pockets and scribe lines"; the §5 row becomes a shop vacuum. Three standards disagree today: CS-005 §6 bans blowing dust around with compressed air, CS-003 Rev E (R-003-05) replaced compressed air with vacuuming before gluing, and CS-004 still blows dust off the machined mold. The alternative is to record in CS-004 why sealing prep is the exception. The §7.3 step 6 tack-free recoat ("Blow off the dust") is the same question | CS-005 §6; R-003-05 | hold: Simon |
+
+Process-rule changes list, old and new wording:
+
+| ID | Old | New |
+|---|---|---|
+| R-007-13 | "A lead should add the 2 inHg drop-test blocker to both wet-layup techniques" (R-007-04) | No should; readings stay in the "Wet layup and bag" note until the app's hold looks past a blocker |
+| R-004-15 | "Blow all dust off the mold with compressed air" | "Vacuum all dust off the mold, including pockets and scribe lines" (if Simon agrees) |

@@ -1,0 +1,1268 @@
+{
+ "drafts": [
+  {
+   "files": [
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-009.md",
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-010.md"
+   ],
+   "applied": [
+    "R-009-01",
+    "R-009-02",
+    "R-009-03",
+    "R-009-04",
+    "R-009-05",
+    "R-009-07",
+    "R-009-08",
+    "R-009-09",
+    "R-009-10",
+    "R-009-11",
+    "R-009-12",
+    "R-009-13",
+    "R-009-14",
+    "R-009-15",
+    "R-009-16",
+    "R-009-17",
+    "R-010-01",
+    "R-010-02",
+    "R-010-03",
+    "R-010-04",
+    "R-010-06",
+    "R-010-07",
+    "R-010-08"
+   ],
+   "skipped": [
+    {
+     "id": "R-009-06",
+     "why": "hold: Simon. The \u00a76 CF-dust PPE line is unchanged and no PPE-by-task table was added. CS-003 \u00a76 still cites a 'CS-009 PPE table' that does not exist yet."
+    },
+    {
+     "id": "R-010-05",
+     "why": "hold: Simon. The \u00a76 text on graphite powder and cut-mesh PPE is unchanged."
+    },
+    {
+     "id": "R-000-*",
+     "why": "No series-wide R-000 row names CS-009 or CS-010. R-000-20 (Reviewer rows) belongs to Round 6, so the Reviewer rows were left as they are."
+    },
+    {
+     "id": "R-009-14 (figure part)",
+     "why": "The text fix is done in \u00a74. The image line for cs009-sacrificial.png was left unchanged as instructed; its '\u00a77.1.3' and '\u00a77.3' labels are Round 3's redraw (Figures table)."
+    }
+   ],
+   "new_figures": [
+    {
+     "file": "figures/cs009-insert-bond.v2.png",
+     "doc": "CS-009 \u00a77.6",
+     "must_show": "A section through a CF tube with a bonded metal insert or rod end. Show the prep sequence on both faces as solvent wipe, abrade (120 grit team value), solvent wipe. Show the bondline gap labelled 'DP420 TDS test bondline 0.13 to 0.20 mm (5 to 8 mil)'. Show a dam plugging the tube behind the insert, masked threads on the rod end, and a clamp or fixture with 'handling strength 2.5 h at 23 \u00b0C'. Show a 'no load before the team hold' clock, with the hold left as [lead input needed] and not given a number. Every distinction has to survive grayscale."
+    },
+    {
+     "file": "figures/cs010-path-decision.v2.png",
+     "doc": "CS-010 \u00a77.1",
+     "must_show": "A decision tree for choosing the conductive path, with three outcomes: copper mesh in the stack, a surface path (epoxy-bonded copper strip or braid, copper tape, conductive paint, applied after cure), or no CF. The questions that drive it are geometry (large open laminate vs thin-walled, tapered or wrapped metal substrate), permeability in an infusion (only permeable mesh in an infused stack; foil, sheet or paint film blocks resin), mass (mesh is heavy on large parts like the undertray), and access to the grounding point (a terminable tail at an accessible flange). Mark the diffuser as an example on the mesh branch and the catch can on the bad-fit branch. A side note on any unproven path: 'prove on a first article by \u00a77.3'."
+    }
+   ],
+   "notes": "Both drafts are Rev D, Effective 2026-10-10. Each has one new history row, and older rows and the Reviewer/Approver rows are untouched. Status wording is unchanged, and CS-009 keeps its '(photos to add at first SN6 use)' because a [PHOTO] placeholder is still there. Neither draft has an em dash. Heading diff against src: CS-009 renames only \u00a77.5 (to 'Cutting flat panels: waterjet, ShopSabre or bandsaw', per R-009-07) and appends \u00a77.6. CS-010 headings are identical. Within-section steps were renumbered in CS-009 \u00a77.3 (one step became seven, as R-009-05 and R-009-12 require) and \u00a77.4 (one step became seven, per R-009-03 and R-009-11). No \u00a7n.n step references to either section were found in code or other standards.\n\nEvery app label was checked against the code:\n- Technique steps from the STD_STEPS templates (workorders.js:271-292): 'Cure and demould', 'Cure', 'Trim and finish', 'Finish', 'Cut to DXF, confirm revision', 'Stack frozen', 'Define acceptance criterion: target and method, set before work starts', 'Verify against criterion'.\n- Technique names: 'Mold infusion', 'Glass infusion', 'Foam wrapped', 'Other'.\n- Work-order sections and buttons: 'Quality checks / acceptance criteria' with 'Target (set at creation!)', '+ check', '\u2691 (Report an issue on this step)', 'Photos of the defect', 'Disposition', 'Add photos to this step'.\n- Navigation and admin: 'Work Orders' (core.js:3548), People \u2192 'Catalog' / 'Add a training' / 'CS standard', Reports \u2192 'Layup techniques' \u2192 'Edit steps' / 'Training to sign'.\n- 'Trimming and finishing' is only the placeholder example in the training catalog (people.js:518), not a training that exists. The draft therefore says the lead adds it.\n\nSources for the numbers:\n- DP420: 3m-scotch-weld-epoxy-adhesive-dp420-black.pdf. 2:1 by volume B:A and 2:0.98 by weight; open time 20 min; handling strength 2.5 h at 23 \u00b0C (73 \u00b0F); 7 d strength dwell; test bondline 0.13-0.20 mm; purge, then nozzle; store at 16-27 \u00b0C and 40-60% RH; use within 24 months.\n- LiME LiNE: TDS gives 4:1, pot life 2 h at 77 \u00b0F, 2 medium wet coats 10-15 min apart, scuff after 24 h before a recoat, dust free 30 min, sand and buff 12-24 h. The Part A SDS gives H225, H317, H319, H336, ventilation and the gloves/eye/face line.\n- The isocyanate statement for Part B is cited to 03 Datasheets/INDEX.md.\n- West 404: its TDS says it is developed for hardware bonding. The draft says so and states the team rule is stricter.\n- Team values are marked as team values: 120 grit, the \u00b11 mm trim tolerance, the 25 mm mesh overlap and the sanding grits. No number was taken from a row marked stand-in.\n\nStill open in the text:\n- CS-009 \u00a77.6 step 8 leaves the team hold before a bonded joint takes load as [lead input needed] (open question 11).\n- The CS-009 \u00a72 drilling placeholder is [lead input needed].\n- The copper mesh wire size and opening are marked 'not recorded' (open question 18).\n\nJudgment calls:\n- CS-009 \u00a76 gets a new labelled clear-coat bullet. It quotes the Part A SDS hazards and states the Part B shall from R-009-03. I treated this as part of R-009-03 rather than the held R-009-06 PPE table: it adds no PPE beyond what the SDS states and replaces nothing.\n- CS-010 italics (*giving up on CF for that geometry*, *achieves and proves*, *supplement*) were left as they are, because R-010-08 covers bold only.",
+   "xrefs_for_others": [
+    "R-OTH-18: tools/gen_retro_wos.py:140 and app/sn5-work-orders.json have seven retro step titles that read 'Cut to DXF (CS-009 \u00a77.6, confirm rev)'. The waterjet section is still \u00a77.5 (now retitled 'Cutting flat panels: waterjet, ShopSabre or bandsaw'), and \u00a77.6 is now 'Bonding inserts and hardware into CF tube and parts'. Fix these in the same change that lands the CS-009 draft.",
+    "R-OTH-11: the 03 Datasheets/INDEX.md DP420 row still says '2:1, 20 min work life, 24 h full cure'. It should match CS-009 Rev D: 2:1 by volume, open time 20 min, handling strength 2.5 h at 23 \u00b0C, and no full-cure figure.",
+    "CS-003 \u00a76 cites a 'CS-009 PPE table'. It still does not exist because R-009-06 is held.",
+    "CS-001 \u00a77.5: the clear coat that encapsulates label B is now gated in CS-009 \u00a76 and \u00a77.4 until the Part B SDS or the label hazard text is on file. CS-001 may need a line on what protects label B in the meantime (F-06 coordination note).",
+    "CS-INDEX: show CS-009 and CS-010 as Under Revision while the drafts are outside src/, and as Rev D when they land. The R-IDX-06 photo counts for CS-009 (1) and CS-010 (1) are unchanged.",
+    "QR-013 (R-QR-13) should copy from CS-009 Rev D \u00a77.1 to \u00a77.3 and \u00a77.6. The numbers are: DP420 2:1 by volume, open time 20 min, handling strength 2.5 h at 23 \u00b0C, 120 grit as the team value, DP420 for every load-carrying bond, and no load before the team hold (number still open).",
+    "Optional, for whoever owns the materials (cluster G): app/materials.js could carry DP420 shelfLifeMonths: 24 sourced to the TDS. R-OTH-31 (facts.js:30) still waits on R-009-06."
+   ]
+  },
+  {
+   "files": [
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-004.md",
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-006.md"
+   ],
+   "applied": [
+    "R-004-01",
+    "R-004-03",
+    "R-004-04",
+    "R-004-05",
+    "R-004-06",
+    "R-004-07",
+    "R-004-08",
+    "R-004-09",
+    "R-004-10",
+    "R-004-11",
+    "R-004-12",
+    "R-004-13",
+    "R-004-14",
+    "R-006-01",
+    "R-006-02",
+    "R-006-04",
+    "R-006-05",
+    "R-006-06",
+    "R-006-07",
+    "R-006-08",
+    "R-006-09",
+    "R-006-10",
+    "R-006-11",
+    "R-006-12",
+    "R-006-13",
+    "R-006-15"
+   ],
+   "skipped": [
+    {
+     "id": "R-004-02",
+     "why": "hold: Simon (EN 166 goggles). The 'safety glasses when mixing/pouring' line in \u00a76 is kept as it was."
+    },
+    {
+     "id": "R-006-03",
+     "why": "hold: Simon (ABEK respirator). No respirator line added to CS-006 \u00a76."
+    },
+    {
+     "id": "R-006-14",
+     "why": "CS-006 itself does not change. The fix belongs in 03 Datasheets/INDEX.md: drop CS-006 from the Rohacell row (R-OTH-11). Passed on as an xref."
+    },
+    {
+     "id": "R-000-20",
+     "why": "Round 6 fills the Reviewer rows. The only change made here is the em-dash-to-comma swap in both Reviewer rows, as R-004-14 and R-006-15 ask. Names and dates are untouched."
+    }
+   ],
+   "new_figures": [],
+   "notes": "Revisions: CS-004 D\u2192E and CS-006 C\u2192D. Both are effective 2026-10-10 with status \"Draft, pending Lead signature\" and one new history row each, ending \"Register R-004-01..14 (02 held).\" and \"Register R-006-01..15 (03 held).\" Existing section and step numbers are unchanged; I checked the heading lists and step prefixes against src/. The only heading changes are the title rewordings for \u00a77.3, \u00a77.4 and \u00a77.7 that the register asks for. Additions are appended only: CS-004 \u00a77.5 step 5 (Stage = Ready for layup) and CS-006 \u00a77.8 (degassing). Inbound refs still resolve: CS-004 \u00a77.3 step 5 and \u00a77.5, CS-006 \u00a77.4 step 3, and \u00a77.2 to \u00a77.7. Both drafts contain zero em dashes, and every cited 03 Datasheets path exists. I left the existing image lines alone. The register asks for no new figure in either doc.\n\nThree register rows were wrong when checked against the datasheet, so I drafted them correctly instead of as written:\n1. R-006-08: the AT30 FAST SDS IS on file. EC-SDS-IN2-Epoxy-Infusion-Resin-and-Hardener.pdf (59 pages) contains IN2 resin, AT30 Slow Hardener v7.0 (2024-07-10) and AT30 FAST Epoxy Hardener v6.0 (2022-09-08). The R2 row now names all three. The register header's \"still missing after Round 5: the AT30 FAST SDS\" is wrong.\n2. R-006-02: AT30 SLOW is classified H302, H314, H318, H317 and H412. H332 appears only in \u00a716 among the component H-statements (from benzyl alcohol), not as a classification of the mixture, so I left out \"harmful if inhaled\". The AT30 FAST classification adds H373 and EUH071 (\"corrosive to the respiratory tract\"), and \u00a76 now states both. EUH071 is new evidence for the held respirator question (open question 2, R-006-03, R-008-04).\n3. R-006-04 (\u00a77.8 degassing) is drafted as the register words it. The register says it lands only after Nick confirms the team does not degas (open question 9). If he says otherwise, strip \u00a77.8 before promotion.\n\nSmaller notes:\n- R-004-14 and R-006-15 ask for a comma in place of the Reviewer-row em dash. I made that one punctuation swap and left the names and dates for Round 6.\n- \u00a73 key-number tables in both docs are now headed \"from R1 unless the row says otherwise\". Each gained a team-hold row (XCR 12 h; IN2 48 h / 24 h) labelled \"team hold, not R1\", so the team hold and the datasheet figure are always told apart.\n- In the R-004-07 step I wrote \"Sealed on = the date of the last XCR coat\" rather than \"today\", because release is often done the day after sealing.\n\nGaps for Simon/Nick that I found but did not draft, since there is no register row:\n(a) The XCR TDS says no water exposure until initial cure, \"at least 24hrs at 20\u00b0C\". Partall Film #10 is water- and alcohol-based PVA. With the 12 h hold plus 4 wax coats, PVA can go on before 24 h. Someone should decide whether the wax barrier makes that fine or whether PVA waits for 24 h.\n(b) The Formula Five guide (R4) asks for at least 1 h after the final wax coat before PVA. The Partall guide (R3) gives 15 to 45 min drying per PVA coat. CS-004 \u00a77.4 states neither, and QR-004 wants \"the wait between\".\n(c) The IN2 TDS text gives FAST pot life as 9 to 14 min; its table says 10 to 14. I kept 10 to 14.\n(d) The \u00a74 resin-trap definition still has a bolded sentence. R-006-15 named only the vacuum sentence, so only that one was unbolded.",
+   "xrefs_for_others": [
+    "CS-INDEX: CS-004 shows Rev E and CS-006 shows Rev D (Under Revision while the drafts are outside src/).",
+    "REGISTER.md header and any Round 5 fetch list: the AT30 FAST SDS is already inside EC-SDS-IN2-Epoxy-Infusion-Resin-and-Hardener.pdf (v6.0, 2022-09-08), so remove it from 'still missing'. R-006-02's H332 is a component statement, not a mixture classification.",
+    "CS-008 \u00a75 table: SLOW pot life should read 'plan on 80-100 min (TDS text; table 120-150 min)' to match CS-006 (R-006-06 says 'same in CS-008 \u00a75').",
+    "CS-008 \u00a76 / R-008-04 and open question 2: AT30 FAST carries EUH071 (corrosive to the respiratory tract) and H373. This is new evidence for the ABEK respirator decision.",
+    "CS-001 \u00a76 rule 2 and \u00a77.4 step 3: 'CS-006 \u00a77.4.3' becomes 'CS-006 \u00a77.4 step 3'; 'CS-004 \u00a77, step 4' becomes 'CS-004 \u00a77.5' (R-001-23). The numbering is unchanged in the drafts, so these targets still exist.",
+    "03 Datasheets/INDEX.md: drop CS-006 from the Rohacell IG-F row (R-006-14 / R-OTH-11). The XCR row's 'overcoat at firm-but-tacky within 2 h 50' should become 'about 2 h 50, check with a fingernail' (R-004-06). Add CS-004 to the IPA 70% row, which the draft now cites as R8. The 'Cited by' column still credits CS-006 for FM100/Greenflow, ML3, PE spiral tube, pump oil and the Ansell charts, and CS-004 for acetone and Ansell, but neither draft cites those files. Either add the citations under a new register row or drop them from INDEX.",
+    "04 Printables/printables.html and app/docs/printables.html CS-006 card: the demould line becomes 'FEB hold 48 h SLOW / 24 h FAST from inlet clamp', at Rev D (R-OTH-17). Any CS-004 card should show Rev E.",
+    "Figure cs004-seal-stack.v2 (Round 3): '2 h 50' becomes 'approximate overcoat time: check firm but tacky'; mark the 12 h FEB hold before the release system, as in the existing-figures table.",
+    "App README:497 and README:1013 cite CS-004 for 'grades are not interchangeable silently'. CS-004 still does not hold that rule (only the R-004-08 should on sealing coats), so those citations move to CS-003 \u00a75 (R-003-14 / R-OTH-19).",
+    "QR-002 copies CS-006 \u00a77.8 (degassing) and the 80-100 min pot life. QR-004 copies the 12 h hold, the fingernail overcoat check and Stage = Ready for layup. QR-012 can use the two new \u00a77.7 rows ('Leak you cannot find', 'Bubbles under a sound bag').",
+    "tools/eval_askpaul.js degassing case (R-OTH-30): CS-006 now has '### 7.8 Degassing the resin', so the eval can require a cited section matching /degas/i.",
+    "CS-008 \u00a75.1 / R-008-02: CS-004 now says plainly that the app does not lock the XCR 12 h hold (no startsHold on 'Seal and release mold'). Keep CS-008 consistent with that."
+   ]
+  },
+  {
+   "files": [
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-001.md"
+   ],
+   "applied": [
+    "R-001-01",
+    "R-001-02",
+    "R-001-03",
+    "R-001-04",
+    "R-001-05",
+    "R-001-06",
+    "R-001-07",
+    "R-001-08",
+    "R-001-09",
+    "R-001-10",
+    "R-001-11",
+    "R-001-12",
+    "R-001-13",
+    "R-001-14",
+    "R-001-15",
+    "R-001-16",
+    "R-001-18",
+    "R-001-20",
+    "R-001-21",
+    "R-001-22",
+    "R-001-23",
+    "R-001-24",
+    "R-001-25",
+    "R-001-26",
+    "R-001-27",
+    "R-001-28",
+    "R-001-29",
+    "R-001-30"
+   ],
+   "skipped": [
+    {
+     "id": "R-001-17",
+     "why": "hold: Simon (open question 6). \u00a77.4 keeps glue-up as the first marking step; no tooling-cut step added. The conditional cut-sheet figure was not requested either."
+    },
+    {
+     "id": "R-001-19",
+     "why": "hold: Simon (open question 6). \u00a77.7's last line is unchanged: the opened sticker still applies only to containers with no lot record."
+    },
+    {
+     "id": "R-001-15 (\u00a77.2 part only)",
+     "why": "Applied to \u00a72 and \u00a74. The register says the \u00a77.2 row for a work-order label waits on open question 13 (what physical thing it goes on), so \u00a77.2 has no WO row."
+    },
+    {
+     "id": "R-000-20",
+     "why": "Round 6 fills the Reviewer row; I left it blank as instructed."
+    }
+   ],
+   "new_figures": [
+    {
+     "file": "figures/cs001-two-codes.v2.png",
+     "doc": "CS-001 \u00a77.11",
+     "must_show": "One chemical container (jug) with two codes side by side. On the left, an FEB QR label in the v2 label layout: name first, then the ID (e.g. RSN-SN6-001), the bold key line, a detail line and a footer with FEB. On the right, a UC EH&S tag: a Data Matrix square marked RSS, the made-up 24-character code CA00 0000 0000 0000 0024 3F1C printed underneath in six groups of four, and the last twelve characters (0000 0024 3F1C) reprinted, rotated, down the right edge, labelled 'edge print'. Show what each resolves to: the FEB QR opens HTTPS://FEB-COMPOSITES.WEB.APP/Q/<ID> (the public page from a phone camera, the record in the app); the EH&S tag opens the same FEB record in the app through its EH&S barcode field, and is campus's RSS identity. Note that a tagged container gets no FEB label; the paired view is for an untagged container that was labelled before campus tagged it (\u00a77.11 step 7). Synthetic code only, never a real container's. Must survive grayscale."
+    },
+    {
+     "file": "figures/cs001-scan-chain.v2.png",
+     "doc": "CS-001 \u00a77.12 (QR-005 can reuse it)",
+     "must_show": "The order the app's Scan tries a code in, as a vertical chain of decisions: (1) an FEB /Q/<ID> URL or bare ID opens that record (a deleted record says who deleted it, restore under Reports \u2192 Recently deleted); (2) otherwise an exact match on a stored EH&S barcode opens that lot or storage location; (3) otherwise a typed code of at least 12 characters matching the end of exactly one stored tag (the edge print) opens it, and two matches are refused with 'type more of the code'; (4) otherwise an unknown tag offers 'Log it', which opens the Receiving desk with the code in the EH&S tag cell. Source: scan.js scanResolve/scanToOpen/scanManual, core.js ehsResolveTyped. Must survive grayscale (refuse path distinguished by line style, not colour)."
+    }
+   ],
+   "notes": "CS-001 Rev F to Rev G, dated 2026-10-10. The Status line is unchanged and the Reviewer row is still blank. I added one history row (G) and left rows A to F alone. Every existing heading number is the same, which I checked with a diff against src. Three headings got new wording: 7.3 \"Engrave, encapsulate or laminate: choosing the label method\" (R-001-27), 7.7 \"Mixed pots and opened containers\" and 7.10 \"Labeling a shelf or storage location\". New sections were appended as 7.11 (EH&S tag), 7.12 (Scanning a label) and 7.13 (Custom label). The \u00a77.1 step list now runs 1 to 8: steps 3 to 4 are the sheet path, step 5 is apply, and steps 6 to 8 are the roll path. A grep of code and standards found no step-level cites of CS-001 \u00a77.1.\n\nEm dashes: two are left, and neither is new prose. One is in history row D, the other in the quoted traveler string `R&D \u2014 NOT A SEASON DELIVERABLE` in \u00a74 (a literal from print.js). The \u00a78 \"\u2014\" cells became \"None\".\n\nEvery button and field name was grepped in app code: Label, Study label, Labels, Label sheet, Label media, \"This device prints to\", Team default, Media, Start at cell, \"Include the 100 mm calibration bar\", Copies of each, Print labels, Mark cut, + Location, Storage map, Edit location, Confirm contents, Move here (scan), Move, Scan the shelf, Move it, \"Scan a label\", \"\u2026or type the code\", Use this code, Receive a delivery, Receiving desk, EH&S tag, EH&S barcode, \"Scan the EH&S tag\", Log it, \u2728 Read label, Rebuild scan mirror (Reports \u2192 Maintenance), Recently deleted, Export \u2192 EH&S reconciliation, the Custom label fields, Name/Site/Type/Rated for flammables, \"Contents last confirmed\" and \"Confirmed by\". Nothing in the doc comes from a stand-in datasheet. No label datasheet exists in 03 Datasheets, so the numbers cite app code (labels.js LABEL_ROLLS, QR_MIN_MM, LABEL_COPIES_MAX; core.js EHS_TAIL, TRASH_DAYS) or other standards.\n\nJudgment calls for the reviewer:\n(1) \u00a75 used to say 5522's extra third of an inch \"carries the hazard strip\". Nothing in labels.js or print.css prints a hazard strip, so I replaced it with the true reason: the app draws a 27 mm QR on 5522.\n(2) R-001-04's shall and R-001-22's roll pair don't fit together. Label B goes under clear coat on an IPA-wiped face, so by the stock rule it has to be 5522, while a roll pair is thermal. So \u00a77.5 step 1 says to print the pair on 5522 (twice on a sheet using Start at cell) and that a roll pair only works for a part that won't be wiped or clear-coated. Simon or Nick should confirm. If they agree, the app's demould Copies hint (R-OTH-25) may want to steer to 5522.\n(3) For the media column in \u00a77.2 I applied the stock rule to the mold label, the part-after-trim label, and untagged chemical containers. I left part-at-demold, test-panel and coupon rows as \"Printed\".\n(4) The \u00a77.6 lot row now describes what the label actually prints (ratio \u00b7 role in bold, LOT/OPENED on the detail line, RECD/EXP/shelf in the footer). I did this under R-001-01's \u00a77.6 scope, from audit finding B-02.\n(5) \u00a71's \"Rev C exists because...\" paragraph was replaced with a one-line scope sentence. History row C already records the reason.\n(6) Existing figure lines were left as they were. The Figure 1 alt text still says \"class word\", which is now wrong. Round 3 needs to rewrite that caption along with the v2 redraw that the register already asks for.",
+   "xrefs_for_others": [
+    "CS-014 (new): CS-001 now points at CS-014 for the Receiving desk, the RSS import, Inventory \u2192 Export \u2192 EH&S reconciliation, and the AI-fill rule (R-014-03). CS-014 should cite CS-001 \u00a77.11 for the tag-as-label rule and \u00a77.12 for scanning.",
+    "CS-012 \u00a77.8 (R-012-06): CS-001 \u00a75 now names a Brother QL-series on AirPrint with DK-2210 and DK-1201 rolls, 'Not bought as of 2026-10-10; the request is CS-012 \u00a77.8'. CS-012 should name the same printer and stock and keep the CS-001 \u00a77.8 fallback citation. CS-001 no longer gives a printer price.",
+    "CS-003 \u00a77.3 step 3: CS-001 \u00a77.4 step 1 now says 'part name, the WO and an up arrow', matching CS-003. Both stay without the mold ID while R-001-17 and R-003-25 are held.",
+    "CS-004 \u00a77.5: CS-001 \u00a77.4 step 3 now cites 'CS-004 \u00a77.5 Identify' and says the mold label is 5522. CS-004 \u00a77.5 should say 5522 if it names a stock.",
+    "CS-006 \u00a77.4: CS-001 \u00a76 rule 2 cites 'CS-006 \u00a77.4 step 3', so CS-006 must keep its \u00a77.4 step numbering (R-006-15).",
+    "CS-011 \u00a77.3 / \u00a77.1: CS-001 \u00a77.10 now has steps (+ Location on Inventory \u2192 Storage map, Label, the RSS tag in EH&S barcode, Confirm contents). CS-011's 'scan the object, tap Move, scan the shelf' matches CS-001 \u00a77.12 step 2.",
+    "CS-013 \u00a74.1 PROJ row: its citation 'never gets a printed label (CS-001 \u00a74)' now resolves. CS-001 \u00a74 and \u00a72 state it for PROJ, BUY, DOC and STK.",
+    "QR-005 (Which label goes where): parent sections CS-001 \u00a77.2, \u00a77.6, \u00a77.11. Check it against CS-001 Rev G and reuse cs001-scan-chain.v2.",
+    "R-OTH-24 (app/receiving.js:798): 'one QR label each' for resin contradicts CS-001 \u00a77.2. A tagged chemical container gets no FEB label.",
+    "R-OTH-25 (app/labels.js:823): the Copies hint says 'one for the bag'; CS-001 \u00a77.5 says the traveler, and says the pair should be 5522 when label B goes under clear coat. Also, the BIN footer 'SCAN TO SEE CONTENTS' is true only in the app, which CS-001 \u00a77.6 now says.",
+    "R-OTH-13 (app README Scanning): CS-001 \u00a74 drops the 'no signal' claim. The README should match.",
+    "labels.js comment at labelClass ('Mandatory on every label and always larger than the code') contradicts CS-001 Rev G \u00a74. That's an app-comment fix, not in the register yet.",
+    "Figure cs001-label-anatomy: its alt text in CS-001 \u00a74 still mentions the class word. The v2 redraw needs a new caption."
+   ]
+  },
+  {
+   "files": [
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-000.md",
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-INDEX.md",
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-Template.md",
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/QR-Template.md"
+   ],
+   "applied": [
+    "R-000-01",
+    "R-000-02",
+    "R-000-03",
+    "R-000-04",
+    "R-000-05",
+    "R-000-06",
+    "R-000-07",
+    "R-000-08",
+    "R-000-09",
+    "R-000-10",
+    "R-000-11",
+    "R-000-12",
+    "R-000-13",
+    "R-000-14",
+    "R-000-15",
+    "R-000-16",
+    "R-000-18",
+    "R-000-19",
+    "R-IDX-01",
+    "R-IDX-02",
+    "R-IDX-03",
+    "R-IDX-04",
+    "R-IDX-05",
+    "R-IDX-06",
+    "R-IDX-07",
+    "R-TPL-01",
+    "R-TPL-02",
+    "R-TPL-03",
+    "R-TPL-04"
+   ],
+   "skipped": [
+    {
+     "id": "R-000-17",
+     "why": "drop: the opening paragraph reads as Simon's voice, so \"turnover isn't a risk, it's a schedule\" stays as written"
+    },
+    {
+     "id": "R-000-20",
+     "why": "Round 6 fills the Reviewer rows. The CS-000 Reviewer row is left as it is, per the drafting rules"
+    },
+    {
+     "id": "R-IDX-08",
+     "why": "drop: the CS-INDEX H1 keeps its em dash because it names the built .docx and PDF"
+    }
+   ],
+   "new_figures": [
+    {
+     "file": "figures/cs000-source-to-shop.v2.png",
+     "doc": "CS-000 \u00a77.2 (after step 7)",
+     "must_show": "Left to right: src/CS-0xx.md and figures/*.svg as the sources. Then the rebuild chain in order: render_figures.mjs (only if an SVG changed), build_docx.py --all, gen_docs_manifest.py, build_ai_corpus.mjs, check_traceability.py. Then three outputs: the .docx in 02 CS Standards/, the in-app PDF at docs/standards/CS-0xx.pdf, and Paul's corpus (functions/corpus.json). Mark two deploy gates: the hosting deploy (firebase deploy --only hosting) puts the PDF in members' hands, and the functions deploy (firebase deploy --only functions, done separately) puts the corpus in Paul's answers. Draw a QR-0xx box hanging off its parent standard with a 'Checked against CS-0xx Rev X' tag, and a loop back from a new parent revision to that tag (\u00a77.2 step 5). Nothing may differ by hue alone: give the deploy gates a heavy bar or a distinct shape so they survive grayscale. Saira titles, Inter labels, monospace for paths and IDs, nothing under ~22 units on a 1000-wide viewBox. It answers 'I edited the standard, so why does Paul still say the old thing?'"
+    }
+   ],
+   "notes": "I drafted CS-000 Rev D, CS-INDEX Rev H (written as the state after promotion) and CS-Template. I also drafted a new QR-Template.md for R-TPL-04, which is in my table. It should be copied to `02 CS Standards/template/QR-Template.md` at promotion.\n\nDecisions to check:\n\n1. **CS-000 \u00a77.2 step numbers.** The register puts R-000-04 \"after step 3\" and R-000-03 at \"steps 5-6\". Inserting a step after 3 would renumber the existing step 4, which the drafting rules forbid. I appended all three instead: step 5 is the dependants (R-000-04, worded \"In the same change as step 3\"), step 6 is the rebuild and step 7 is the deploys (R-000-03). \u00a77.1 step 6 and \u00a77.5 point to \"\u00a77.2 steps 6 and 7\".\n\n2. **R-000-06, Under Revision.** This is now in the \u00a74 Status bullet and in \u00a77.2 step 2. The R-000-10 Draft sentence is also inside the Status bullet. A separate R-IDX-04 \"Title\" bullet in \u00a74 says the title is written once, identically, in the H1, the header and CS-INDEX, and that status text matches exactly.\n\n3. **The figure line in the template is inline prose.** It is inside a sentence on purpose: `build_docx.py` takes any line that is only an image and treats a missing PNG as a build error, so a standalone `![\u2026](figures/csXXX-name.png)` line would crash `build_docx.py --all` when it builds the template. Guidance lines sit one per line, because build_docx renders every source line as its own paragraph.\n\n4. **CS-INDEX revision history.** Rows A to G are back-filled from `git log` of CS-INDEX.md: 533ed39 A (eff 2026-07-12), 9ccc038 B, 4007c74 C, cfc5352 D, 8e4a708 E, f185c62/36cf5d5 G, and F from 6335ae4. With those rows, lint 7 will pass once R-OTH-05 extends it to the INDEX. The register only asked to start at H.\n\n5. **CS-INDEX table columns.**\n   - The Standards table gains a 7th column, \"Photos wanted\", for R-IDX-06. The count is the `[PHOTO: \u2026]` placeholders in src today (CS-003 1, CS-004 3, CS-006 2, CS-007 2, CS-009 1, CS-010 1). The CS-004 and CS-009 drafts already in drafts/ agree. Rev and Status stay in cells 2 and 3, so lint 6 parsing is unchanged.\n   - Titles are the H1 text (R-IDX-04). That changes the CS-009 row to \"Trimming, Sanding & Finishing\" and the CS-012 row to \"Purchasing & Reimbursement\".\n   - Status is the header text exactly. CS-007 drops its parenthetical (R-007-10). CS-009, CS-011 and CS-012 keep theirs, and the CS-009 draft does keep it.\n\n6. **Candidate future standards.** I listed all five register candidates (R-IDX-07) plus the onboarding gap, not only the three named in the task. The register is the source of truth.\n\n7. **Quick references.** The table lists all 15 QRs. Checked against uses the post-promotion letters, and the Covers-only QR-010 shows \"None (Covers)\". A note says QR-008 (and QR-014's co-storage section) wait on the held decisions. Next free numbers are CS-015 and QR-016.\n\nSelf-checks: there are zero em dashes in new prose across all four drafts. The only em dash is the kept INDEX H1. CS-000's heading list matches src except for the appended \"### 7.5 Writing or updating a quick reference\", and the template's headings are unchanged. The only cross-reference in CS-000 that the lint parses is CS-008 \u00a75.1, and it resolves.\n\nThe revision letters used for the other documents are CS-000 D, 001 G, 002 F, 003 E, 004 E, 005 F, 006 D, 007 D, 008 E, 009 D, 010 D, 011 E, 012 G, 013 G and 014 A.",
+   "xrefs_for_others": [
+    "R-IDX-04: the header Title field in CS-003, CS-004, CS-005, CS-009, CS-010 and CS-012 must equal the H1 minus the ID. The CS-004 and CS-009 drafts still carry the long Title fields (\"...Surface Preparation (Polyurethane Tooling Board)\", \"...of Cured Composites\"). Whoever promotes them, or their drafters, should set them to the H1 text and move any lost information into \u00a71 or \u00a72.",
+    "CS-005: R-005-12 mentions \"(ShopSabre at RFS)\". CS-INDEX uses the current H1 \"CNC Machining of Tooling Board (ShopSabre)\". If the CS-005 drafter changes the H1 instead of only the Title field, the CS-INDEX row must follow, and the built .docx filename changes with it.",
+    "CS-INDEX Status column copies each header word for word. CS-007 is \"Draft, pending Lead signature\" (R-007-10). CS-009 keeps \"(photos to add at first SN6 use)\", CS-011 keeps \"(storage-map locations to field-verify)\" and CS-012 keeps \"(re-verify tiers/names each fall)\". If a drafter changes a parenthetical, update the INDEX row at promotion.",
+    "CS-INDEX \"Photos wanted\" counts were taken from src. Recount `[PHOTO:` in each promoted standard (including CS-014) and fix the column at promotion.",
+    "Quick-reference parents in CS-INDEX need new sections to exist: CS-006 \u00a77.8 (QR-002, which lands only if Nick confirms R-006-04), CS-009 \u00a77.6 (R-009-02, QR-013), CS-012 \u00a77.9 (R-012-05, QR-015), CS-001 \u00a77.11 (R-001-08, QR-005) and CS-014 \u00a77 (QR-006). If \u00a77.8 does not land, drop \"; \u00a77.8\" from the QR-002 row.",
+    "CS-000 \u00a77.2 numbering in the draft: step 5 = update dependants (QRs, printables cards, \u00a7n.n refs), step 6 = rebuild, step 7 = hosting and functions deploys. Anything citing the register's \"\u00a77.2 steps 5-6\" for the rebuild and deploy should cite steps 6 and 7. tools/README.md and HANDOFF.md (R-OTH-15, R-OTH-16) can point there.",
+    "R-OTH-05 (check_traceability.py): lint 5 should compare the Title field and INDEX title exactly and check the new Quick references table against src/QR-*.md. Lint 6 should compare the full status text and accept INDEX \"Under Revision\" against a header \"Draft\" (CS-000 \u00a77.2 step 2 now states that pairing). Lint 7 should cover CS-INDEX, whose history now runs A to H. The INDEX Standards table has a 7th column, \"Photos wanted\". Rev and Status stay in cells 2 and 3.",
+    "template/QR-Template.md is new: copy it from overhaul/drafts/QR-Template.md at promotion. CS-000 \u00a73 R2 and \u00a77.5 step 2 name it. Rebuild template/CS-Template.docx from the new CS-Template.md.",
+    "R-000-11 series-wide: \"Monday meeting\" becomes \"the weekly meeting\" in CS-002 \u00a77.2 step 3, CS-005 \u00a77.1 step 4 (\"show up Monday night\"), and CS-013 \u00a77.4 and \u00a78 rows 1 and 3. Those drafters own the edits. STYLE.md \u00a72 already says \"the weekly meeting\".",
+    "CS-000 \u00a72 now says CS-008 owns the cure holds, CS-013 the layup technique checklists and CS-011 the restock minimums. Each should state its value at its revision and name the app as the live value (R-000-09). CS-008 and CS-011 drafters cover this through their own rows.",
+    "Round 6 (R-000-20) fills the CS-000 Reviewer row, which was left as is."
+   ]
+  },
+  {
+   "files": [
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-002.md",
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-013.md"
+   ],
+   "applied": [
+    "R-002-01",
+    "R-002-02",
+    "R-002-03",
+    "R-002-04",
+    "R-002-05",
+    "R-002-06",
+    "R-002-07",
+    "R-002-08",
+    "R-002-09",
+    "R-002-10",
+    "R-002-11",
+    "R-002-12",
+    "R-002-13",
+    "R-013-01",
+    "R-013-02",
+    "R-013-03",
+    "R-013-04",
+    "R-013-05",
+    "R-013-06",
+    "R-013-07",
+    "R-013-08",
+    "R-013-09",
+    "R-013-10",
+    "R-013-11",
+    "R-013-12",
+    "R-013-13",
+    "R-013-14",
+    "R-013-15",
+    "R-013-16",
+    "R-013-17",
+    "R-013-18",
+    "R-013-19",
+    "R-013-20",
+    "R-013-21",
+    "R-013-22",
+    "R-013-23",
+    "R-000-09",
+    "R-000-11"
+   ],
+   "skipped": [
+    {
+     "id": "R-000-20",
+     "why": "Reviewer rows are left for Round 6, per the drafting rules."
+    },
+    {
+     "id": "R-001-16",
+     "why": "This row changes CS-001. CS-013 \u00a74.1's PROJ row already cites CS-001 \u00a74 and is unchanged. The new STK/BUY/DOC rows say 'not a physical object' and rule 1 says none of them gets a label."
+    }
+   ],
+   "new_figures": [
+    {
+     "file": "figures/cs002-plan-asbuilt.v2.png",
+     "doc": "CS-002 \u00a77.4 (after new step 4)",
+     "must_show": "The part (Parts tab) holds the plan: Layup stack plus Materials (plan). Arrows labelled '+ New run' copy it into two or three runs (WO-SN6-###), each with its own Stack & BOM. One run is drawn as edited ('as built on this run'), its changed ply rows hatched and a count like '2 plies differ'. Two return arrows run from that run back to the part: 'Adopt as the part's plan' (stack, reached via Compare) and '\u21a9 plan' (a BOM line, shown only when used differs from planned). A 'Stack frozen' bar on one run cuts it off from later plan edits: a dashed arrow from the part stops at the bar, with a note that edits to the part's plan no longer reach this run. Distinctions must survive grayscale: solid copy arrows, dashed blocked arrow, hatched drift rows."
+    },
+    {
+     "file": "figures/cs013-issue-path.v2.png",
+     "doc": "CS-013 \u00a77.6 (end of section)",
+     "must_show": "A path on one run. Raise: '\u26a0 Raise an issue' (Issues section) or '\u2691' on a step row. The issue then needs three boxes filled: Disposition (UAI (Use As Is), Corrective Action, Rework, Scrap, Other), What happened (root cause), What was done (the prompt depends on the disposition, e.g. Scrap: 'Why could it not be saved?'). Resolve leads to 'run may be set Complete'. Show the closeout gate: Complete is refused while any issue is open, and opens the closeout list with Resolve / Resolve all & complete work order. A side exit 'Cancel ticket (false alarm)' is not a disposition. A loop arrow 'Reopen' goes from closed back to open, labelled 'clears Disposition and What was done, keeps What happened'. Reusable on QR-007."
+    }
+   ],
+   "notes": "I wrote both drafts from the current src. CS-002 goes Rev E to F and CS-013 goes Rev F to G. Both are dated 2026-10-10, with status wording unchanged and one new history row each. Older history rows and Reviewer rows are untouched.\n\nChecks:\n- Heading diff against src: the only changes are CS-002's '### Coupons' becoming '### 7.5 Coupons: IDs and data files' and CS-013's new \u00a77.5, \u00a77.6 and \u00a77.7. No existing number moved.\n- Em dashes: the only one in either draft sits in CS-013's old Rev D history row, which I left alone.\n- UI labels: I grepped every one in app/*.js. Where the app's label contains an em dash, I quoted only the part before it ('Start fresh', 'Use a previous run', 'Materials used').\n- Bold: following the sibling CS-004 draft, UI labels are plain text. Bold stays only on definition terms and on bold that was already in src.\n- No datasheet numbers were added. New numbers are cited to code: 30 days to `TRASH_DAYS` in `app/core.js`, and the technique table to `STD_STEPS` in `app/workorders.js`. The drop-test number in that table points to CS-006 \u00a77.4. The \u00b110% is now labelled a team value.\n\nJudgment calls a reviewer should know about:\n1. **R-002-07 (who drafts the stack):** the register says 'The ME drafts the stack'. But R-002-08 defines ME as the Mold Engineer (people.js:136 tags moldEngineer 'ME' and manufacturingEngineer 'RE'), and both the current text and audit C-07 say the Manufacturing Engineer drafts. I kept 'Manufacturing Engineer (RE)', because writing 'ME' would quietly change who drafts. Simon or Nick should confirm.\n2. **R-002-02 (freezing the stack):** I left out 'a lead may add a note requirement to Stack frozen in Layup techniques'. The technique editor allows only one evidence requirement per step (workorders.js:1841, a single 'Evidence required' select). Switching Stack frozen to 'needs a note on this step' would drop its 'needs a layup stack' check, and that check is the one the app was built around. Instead the text says the app refuses an empty stack, and the note naming who agreed is the standard's requirement.\n3. **R-013-05 shall:** reworded to fit the built-ins. A technique that lays up a stack keeps its Stack frozen blocker, and a technique that has a drop-test blocker keeps it. Mold wet lay and Foam wrapped have no drop test, and Other has no Stack frozen.\n4. **R-013-04 step order:** \u00a77.1 steps were renumbered within the section. New order: 1 part, 2 requirements, 3 + New run, 4 Quality targets, 5 checklist from the technique (R-013-15), 6 cross-team, 7 R&D. 'New WO' is a closing paragraph. Nothing in the repo cites a CS-013 \u00a77.1 step number.\n5. **R-000-09:** applied in CS-013 \u00a77.5 step 5, plus a table of the built-in checklists as the app ships them. Lead edits saved in the app's technique settings (config/techniques) override that table, and I could not read them.\n\nSmall edits made for consistency with the register rows:\n- CS-013 \u00a71 now says a WO is 'one run's complete record' (follows R-013-01).\n- CS-013 \u00a77.2 step 3 now points to CS-002 \u00a77.2 step 3 instead of 'the revision letter rides the WO header'. The Revision field is in the run's Details (follows R-002-04).\n- CS-013 R3 now also lists CS-005 \u00a74 and CS-008 \u00a75.1, since the new text cites them.\n\nLeft as found (not in the register):\n- CS-002 \u00a77.4 step 3 and \u00a78 still say 'WO qualityChecks'. The app's section is 'Quality'.\n- CS-002 \u00a77.2 step 3 still says 'season timeline'. The app tab is 'Schedule'.\n\nThe two existing figure lines (cs002-stack.png, cs013-records.png) are unchanged for Round 3.",
+   "xrefs_for_others": [
+    "CS-007 (R-007-08): match the CS-002 \u00a77.4 step 1 wording. The RE checks each ply against the run's stack in Stack & BOM, edits changes in with the reason in the ply's Notes, and may tick in pen on a printed traveler.",
+    "CS-003 \u00a77.2: CS-013 \u00a74 now states that Mold design review shall be signed by someone other than the part's Mold Engineer, and that the app only warns on the run's creator. CS-003 can cross-reference CS-013 \u00a74 'Independent design review'.",
+    "CS-005 \u00a74 (R-005-01): CS-013 \u00a74 'Training gate' says the app's ShopSabre CNC training mirrors the RFS record and cites CS-005 \u00a74 as the authority. Keep that section number.",
+    "CS-008 \u00a75.1: CS-013 \u00a74 'Cure hold' cites it for the team hold. Keep the number.",
+    "CS-006 \u00a77.4: the CS-013 \u00a77.5 technique table cites it for the drop-test number (1 inHg or less over 10 min).",
+    "CS-009 (R-009-14): cite 'CS-002 \u00a77.1 step 3'. The function plies are still step 3 in the draft.",
+    "CS-000 \u00a72 (R-000-09): CS-013 \u00a77.5 step 5 cites 'CS-000 \u00a72' for the two-week revision rule. The CS-000 drafter should land that rule in \u00a72.",
+    "CS-001 \u00a74 (R-001-16): CS-013 \u00a74.1 now lists STK, BUY and DOC as not physical and never labelled. CS-001 \u00a72 and \u00a74 should say the same.",
+    "R-OTH-19 (code comments): 'The CS-003 enforcement point' in projects.js:65, workorders.js:2516 and season.js:31 can now point to CS-013 \u00a77.6.",
+    "R-OTH-32: CS-013 \u00a74 describes today's self-review warning, which keys on the run's creator. Once the app keys it on the Mold Engineer, update that sentence.",
+    "QR-007 and QR-009: parents are CS-013 \u00a77.1 to \u00a77.7 and the \u00a74 definitions (Part and run, Training gate, Independent design review, Cure hold, OnHold, Evidence, Person fields, ME / RE), checked against CS-013 Rev G. CS-002 is Rev F.",
+    "CS-INDEX: CS-002 becomes Rev F and CS-013 becomes Rev G, both 'Under Revision' while in drafts (R-000-06).",
+    "app/README.md (R-OTH-13): the README still says techniques are edited from Work Orders. CS-013 \u00a77.5 says Reports, Layup techniques, which matches reports.js."
+   ]
+  },
+  {
+   "files": [
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-003.md",
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-005.md"
+   ],
+   "applied": [
+    "R-003-01",
+    "R-003-04",
+    "R-003-05",
+    "R-003-06",
+    "R-003-07",
+    "R-003-08",
+    "R-003-09",
+    "R-003-10",
+    "R-003-11",
+    "R-003-12",
+    "R-003-13",
+    "R-003-14",
+    "R-003-15",
+    "R-003-16",
+    "R-003-17",
+    "R-003-18",
+    "R-003-19",
+    "R-003-20",
+    "R-003-21",
+    "R-003-22",
+    "R-003-23",
+    "R-005-01",
+    "R-005-02",
+    "R-005-03",
+    "R-005-04",
+    "R-005-05",
+    "R-005-06",
+    "R-005-07",
+    "R-005-08",
+    "R-005-09",
+    "R-005-10",
+    "R-005-11",
+    "R-005-12",
+    "R-000-11",
+    "R-IDX-04"
+   ],
+   "skipped": [
+    {
+     "id": "R-003-02",
+     "why": "hold: Simon (Ure-Bond 90 PPE). The \u00a76 PPE words 'nitrile gloves, no skin contact' are kept as they were; only the hazard facts from R-003-01 changed."
+    },
+    {
+     "id": "R-003-03",
+     "why": "hold: Simon (Ure-Bond 90 on 45/60 lb board). \u00a73 and \u00a75 add nothing about the TB's 30 lb rating."
+    },
+    {
+     "id": "R-003-24",
+     "why": "hold: Simon (gluing behind ShopSabre CNC training). No training is named for Glue mold stock in CS-003 or CS-005; CS-005 \u00a74 names only Machine mold as gated."
+    },
+    {
+     "id": "R-003-25",
+     "why": "hold: Simon (mold ID on the glued stack). \u00a77.3 marking step keeps part name, WO, up-direction (emphasis bold removed per R-003-23, words unchanged)."
+    },
+    {
+     "id": "R-000-20",
+     "why": "Round 6 fills Reviewer rows; task says leave the Reviewer row as is."
+    }
+   ],
+   "new_figures": [
+    {
+     "file": "figures/cs003-mold-stages.v2.png",
+     "doc": "CS-003 (\u00a77.1, after the existing cs003-mold-section figure)",
+     "must_show": "Mold life as a track using the app's exact stage names (app/shop.js MOLD_STAGE): Designed, Tooling cut, Board glued, Machined, Sealed, Ready for layup, with Retired drawn off to the side (dashed, not on the track). Under each arrow, what moves the mold: Designed is created by planning (+ Mold / Plan from Fusion, CS-003 \u00a77.1 step 8); Tooling cut is set automatically by 'Mark these boards cut\u2026' then Mark cut (\u00a77.3 step 4); Board glued is set by hand after clamping (\u00a77.3 step 15); Machined is set at the machine (CS-005 \u00a77.5 step 6); Sealed and Ready for layup per CS-004. Mark the Mold design review blocker (WO step) sitting before Tooling cut, i.e. before any blank is cut, with 'No initials, no cutting, no glue, no booking'. Note that walking back a stage asks first. Grayscale-safe: blocker as a heavy bar/hatched gate, not just colour."
+    },
+    {
+     "file": "figures/cs003-layer-sheet.v2.png",
+     "doc": "CS-003 (\u00a77.3, after the Sharpie caution)",
+     "must_show": "A layer sheet as app/drawings.js draws it: one board placed on the board below with inset dimensions from each edge (the PLACEMENT ON Ln table), Datum A at the near-left corner of the stack with the CHECK FROM DATUM A table, blanks carrying 1 to 2 in margin past the mold and sized to a 1/2 in lattice (app/slicer.js MARGIN_MIN/MAX, BLANK_QUANTUM), a SPLIT line between sections. Line conventions as drawings.js: solid blocks, dashed (\u2013 \u2013 \u2013) mold outline at this height, dash-dot (\u2014 \u00b7 \u2014) the layer underneath. Do not reproduce the em dashes from the app's captions as text in the figure caption."
+    },
+    {
+     "file": "figures/cs005-feed-density.v2.png",
+     "doc": "CS-005 (\u00a77.4, after the existing cs005-zzero figure); register marks it optional",
+     "must_show": "A mixed-grade stack glued from 30 and 45 lb/ft\u00b3 boards (two grades may share a layer inside a declared range), with the feed called out as the 45 lb feed for every setup because the densest board cut sets the feed; show where the number comes from (the mold's Highest density cut, and the cut list line 'Machine at the N lb/ft\u00b3 feed.'). Grades distinguished by hatching, not hue. If Round 3 decides not to draw it, remove this image line from CS-005 or the figure lint fails."
+    }
+   ],
+   "notes": "Drafts are written. CS-003 goes from Rev D to E and CS-005 from Rev E to F. Both are dated 2026-10-10, keep the status \"Draft, pending Lead signature\", and each gets one new history row ending \"Register R-00x-01..NN.\". I left older history rows and both Reviewer rows alone.\n\nSection numbers: no existing ## or ### heading changed number. Diffed against src, the only heading changes are the retitles the register asks for: CS-003 \u00a77.3 \"Cutting blanks and gluing tooling board (Ure-Bond 90)\", CS-005 \u00a77.1 \"Booking the ShopSabre\" and \u00a77.5 \"During the run, engraving the ID and cleanup\".\n\nIn \u00a77.1, steps 1-7 keep their numbers (code cites \u00a77.1.4, .5 and .6) and steps 8-10 are new at the end. The \u00a77.2 checklist keeps rows 1-9 and adds 10-12. CS-005 \u00a77.4 gets step 6 for feeds, placed before the caution so the list keeps counting. CS-005 \u00a77.1 step 5 and \u00a77.2 steps 4-5 are appended. CS-003 \u00a77.4 step 3 (retire, don't delete) is appended.\n\nCS-003 \u00a77.3 is the one place where step numbers inside a section changed. R-003-12 puts the cut-list steps first and R-003-04 splits the glue step, so the old steps 1, 2 and 3 are now 7-13, 9-13 and 14 (marking the stack). Nothing in code or the other standards cites a \u00a77.3 step number.\n\nTitle judgement call: I followed R-IDX-04 (the H1 is canonical) rather than the literal \"(ShopSabre at RFS)\" in R-005-12. Renaming the H1 would rename the built .docx. So CS-005's Title field is now \"CNC Machining of Tooling Board (ShopSabre)\", matching the H1 and current INDEX, and the em dash is gone. CS-003's Title field now reads \"Mold Design & Manufacturing\", matching its H1 and INDEX. \"(Tooling Board)\" is already covered by \u00a72. If Simon wants \"at RFS\" in the name, the H1, Title and INDEX all change together, and the docx gets rebuilt.\n\nReferences: R-003-22 said use or drop R6 Rohacell. Nothing in the body used it, so I dropped it and numbered the new references R6 app README, R7 FEBPlanStock README, R8 SN5 Tooling Board Adhesives.docx and R9 Precision Board PBLT TDS/SDS. The register calls these R7-R10; the numbers are only used inside the doc. I took no numbers from the PBLT files (confirm column).\n\nNumbers and labels: every Ure-Bond number comes from the TB (03 Datasheets/URE_BOND_90_TB.pdf): 1A:1B by volume or 100A:88B by weight, pre-mix B, mix 3 min, 8 min pot life at 73 \u00b0F, 4 h clamp, 16 h full cure, and the 4 h machinable figure labelled as the datasheet number, not FEB's rule. Hazard lines (H334, H319, MDI CAS 101-68-8 at 15-35 %) come from SDS \u00a72-3 of 03 Datasheets/1386A_2-1386B_2.pdf. Code figures cite their files: 6 in / 152.4 mm (slicer.js), 1-2 in margin and 1/2 in sizes (slicer.js), Datum A near-left (drawings.js). I grepped every UI label before writing it: + Mold, Re-plan, Plan the stack, Plan from Fusion, Cut list, Print cut list, \"Mark these boards cut\u2026\", Mark cut, + Add offcut, Print labels, Drawings, Stock STL, STL S1, Mold file, Earlier, Superseded, Datum cut plans, Short N blanks, \"Machined depth stays under 6in\", STL units, \"Which body?\", Board density min/max (lb/ft\u00b3), Highest density cut (lb/ft\u00b3), Home location, Stage, Sealing system, Sealed on, Sealed by, Mold Engineer, Mold design review, Glue mold stock, Machine mold, Glue and machine mold, Mold design and ShopSabre CNC trainings, Sign without it, Inventory \u2192 Boards, Schedule tab \"Season by station\" with rows \"ShopSabre slot 1/2\", \"+ Link a mold\u2026\" / \"+ Link another mold\u2026\", and Utilities tab \u2192 FEB panel \u2192 Plan stock with Mold body and Bottom face in the add-in.\n\nSome app labels contain em dashes (\"an STL file \u2014 beta\", the full \"Machined depth stays under 6in \u2014 do not section this stack\", \"PLACEMENT ON Ln \u2014 INSET FROM EACH EDGE\"). I quoted only the part before the dash or paraphrased, so the drafts have zero em dashes.\n\nNot named on purpose:\n- the tool that cuts blanks (open question 4)\n- where the ShopSabre tool library file lives (open question 12)\n\nLint: running tools/check_traceability.py on a scratch copy with these drafts in src/ gave only expected warnings: INDEX revision letters (D/E) behind the headers, and the three new .v2 figure files not drawn yet. Em-dash, citation, INDEX-title and cross-reference checks passed.\n\nExisting image lines are untouched, as instructed. That leaves a known mismatch until Round 3: the cs005-zzero caption still says \"touched off once per job\", while \u00a77.4 step 1 now says once per setup.",
+   "xrefs_for_others": [
+    "CS-INDEX drafter: CS-003 row to Rev E and CS-005 row to Rev F (Under Revision while drafts are outside src, per R-000-06); INDEX status text should read exactly 'Draft, pending Lead signature' (R-IDX-04). Titles unchanged: 'Mold Design & Manufacturing' and 'CNC Machining of Tooling Board (ShopSabre)'.",
+    "CS-001 drafter (R-001-24): CS-003's glue-up marking step moved from \u00a77.3 step 3 to \u00a77.3 step 14 (wording unchanged: part name, WO, up-direction). Cite 'CS-003 \u00a77.3' without a step number, or 'step 14'.",
+    "CS-013 drafter (R-013-06, R-013-09): CS-005 \u00a74 now says RFS's record on the RSO/RFS student access dashboard is the authority and the app's ShopSabre CNC training mirrors it. CS-003 \u00a77.2 now tells the reviewer to compare the signer with the run's Mold Engineer field.",
+    "R-OTH-19 code fix: stock.js:336,1004 and packer.js:304 grade-rule comments can now cite CS-003 \u00a75 ('Board grades' paragraph). app/README.md:497 too (R-OTH-13).",
+    "Code comment molds.js:631 ('initialling the CS-003 \u00a77.2 review step') still resolves. stackview.js:3 cites 'CS-003 \u00a77.2 item 7' as the stack-view check, but the dashed-outline check is now checklist row 11; row 7 is now the Mold file / Short N blanks check. Point the comment at row 11.",
+    "timeline.js:241 cites 'CS-005 \u00a71' for the Shopbot fallback; it is \u00a72 and the Appendix (code comment, from audit F36).",
+    "QR-011 (Fusion add-in): parent is CS-003 \u00a77.1 step 9, checked against CS-003 Rev E.",
+    "QR-004 / CS-004: CS-003 \u00a77.4 step 2 says CS-004 fills Sealing system, Sealed on, Sealed by and moves the mold to Sealed, then Ready for layup. That matches the CS-004 draft (\u00a77.4 step 4, \u00a77.5 step 5).",
+    "Round 3 figures: cs005-zzero caption and art change 'once per job' to 'once per setup'; cs003-mold-section changes the max-Z note to 'over 6 in: split into sections unless the split is waived'. Both image lines were left unchanged in the drafts for Round 3 to swap to .v2."
+   ]
+  },
+  {
+   "files": [
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-011.md",
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-012.md"
+   ],
+   "applied": [
+    "R-011-03",
+    "R-011-05",
+    "R-011-06",
+    "R-011-07",
+    "R-011-08",
+    "R-011-09",
+    "R-011-10",
+    "R-011-11",
+    "R-011-12",
+    "R-011-13",
+    "R-011-14",
+    "R-011-15",
+    "R-000-09 (CS-011 side: \u00a75 names the app as the live value; lead opens a revision within two weeks)",
+    "R-008-10 (CS-011 side: storage temperatures land in new CS-011 \u00a77.6)",
+    "R-014-05 (CS-011 \u00a77.1 cross-reference to CS-014 \u00a77.8)",
+    "R-012-01",
+    "R-012-02",
+    "R-012-03",
+    "R-012-04",
+    "R-012-05",
+    "R-012-06",
+    "R-012-07",
+    "R-012-08",
+    "R-012-09",
+    "R-012-10",
+    "R-012-11",
+    "R-012-12",
+    "R-012-13",
+    "R-IDX-04 (CS-012 header Title now equals the H1: Purchasing & Reimbursement)",
+    "R-014-03 (CS-012 \u00a77.2 step 7 cross-reference to CS-014 \u00a75)"
+   ],
+   "skipped": [
+    {
+     "id": "R-011-01",
+     "why": "hold: Simon. CS-011 \u00a76 co-storage left byte-identical to src; proposal file not requested of me this round."
+    },
+    {
+     "id": "R-011-02",
+     "why": "hold: Simon. \u00a76 flammables list unchanged; the \u00a77.3 table points chemicals at 'Per \u00a76' rather than naming a site."
+    },
+    {
+     "id": "R-011-04",
+     "why": "hold: Simon. \u00a75 keeps XCR 1 kit, West 105 + 206 '\u00bd tank + 1 can', 195 twill 10 yd, in the new table shape, with no note added."
+    },
+    {
+     "id": "R-014-07",
+     "why": "hold: Simon. Nothing on expired material added to CS-011."
+    },
+    {
+     "id": "R-000-20",
+     "why": "Reviewer rows are Round 6's; left as in src."
+    },
+    {
+     "id": "R-000-11",
+     "why": "Names neither CS-011 nor CS-012; neither contains 'Monday'."
+    }
+   ],
+   "new_figures": [
+    {
+     "file": "figures/cs011-storage-map.v2.png",
+     "doc": "CS-011 \u00a77.3",
+     "must_show": "Storage map by site using the app's exact site names: RFS container (molds, foam and tooling-board stock), Jacobs basement (finished parts, keycard access), Flammables cabinet (hatched), Dry sealed bin (cloth), General Box (consumables), Other. Show the food fridge and the etch locker as crossed-out boxes (never chemicals in a food fridge; never parts in the etch locker). The chemical placement must follow CS-011 \u00a76 as it stands (held for Simon): Airtac, acetone and clear coat in the flammables cabinet; do not draw resin and hardener sharing a shelf or cabinet until R-011-01 is decided. Grayscale-safe: hatching and crossing, not hue."
+    },
+    {
+     "file": "figures/cs012-purchase-tracks.v2.png",
+     "doc": "CS-012 \u00a77.1",
+     "must_show": "One purchase on two parallel tracks. Goods track (solid line): Submitted, Purchased, Arrived. Money track (dashed line): Submitted, Approved, Reimbursed. On the money side, /purchase in #purchasing-slackbot at the start, the bot's approval DM at Approved (and the gate 'buy only after the approval DM' before Purchased on the goods track), /reimburse toward Reimbursed. Receiving (CS-014) where the goods reach Arrived, marked as set by hand. A BUY-SN6-### label on the purchase and the REQ number noted in Notes. Grayscale: solid against dashed carries the distinction."
+    }
+   ],
+   "notes": "Both drafts start from src (CS-011 Rev D, CS-012 Rev F) and bump one letter each (CS-011 E, CS-012 G, Effective 2026-10-10, status parentheticals kept because both are still true). No em dashes in either file. Existing heading numbers diff clean against src; the only additions are CS-011 \u00a77.6 and CS-012 \u00a77.9. CS-011 \u00a76 is byte-identical to src (verified with diff), including its bold.\n\nCalls I made that a reviewer should check:\n1. CS-011 \u00a77.6 (storage temperature and shelf life) does not come from an R-011 row. It comes from R-008-10, which says \"storage temperatures go to CS-011 with a pointer\". Without it, CS-008's pointer has nothing to land on. The numbers come from the IN2 TDS (10-25 \u00b0C, 12 months), the XCR TDS (20-25 \u00b0C, 12 months) and the US West TDSs (room temperature; warm crystallized 105 to 125 \u00b0F). All are labelled as datasheet figures, not team holds. None is read from a stand-in row.\n2. In CS-011 \u00a75, IN2 and AT30 now read \"2 on hand, one may be open\", as R-011-03 says. West 105 + 206 stays as one row reading \"\u00bd tank + 1 can\". I did not split it, because the hold covers what that phrase means. The tacky-tape supplier is shown as unsettled (open question 10), naming both sources. Lead times are cited as team planning values from RESTOCK_SEED.\n3. I checked the code: receiving does not set the purchase's Order status to Arrived (receiving.js only writes line receivedOn and lotRefs). So the CS-012 \u00a77.1 table says to set Arrived by hand.\n4. In CS-012 \u00a77.2 step 4, `/reimburse` with the reference ID and amount is the submit step. The bot tutorial's wording (\"when reimbursement is completed\") is ambiguous, and open question 14 (does the pinned form survive?) is still open. I did not mention the form. The finance lead should confirm.\n5. Gift cards: the register's new wording lists cash, Venmo, Zelle and PayPal. I kept gift cards as a separate sentence citing the 2025 pin, now R4 (the old pin, retired channel). R1 is now the 2026-10-07 policy plus the bot. \u00a76's \"deposits take up to a month\" now cites R4.\n6. CS-012 \u00a77.8: R-001-02 says \"not bought as of 2026-10-10\", so it stays a request. Following B-03, it names the QL series without a model number. The cost line says \"not quoted yet\" because no QL or DK price exists in the repo. The ~480 labels/season figure is kept. DK-2210 was not added to CS-011 \u00a75.\n7. The rush-order sign-off and the pre-approval check now record in the purchase's Notes (Budget tab), because the #purchasing threads they used to live in are gone.\n8. CS-012 \u00a77.9 is a should, stated in its first sentence. Its numbered steps describe how to do it.",
+   "xrefs_for_others": [
+    "CS-000 draft \u00a72 says 'a lead who changes one of these values in the app'. Restock minimums are not changed in the app: a lead edits config/restock in the Firebase console (inventory.js:84-112, no editor). CS-011 \u00a75 says so. CS-000 should word it as 'in the app or its config'.",
+    "CS-008 (R-008-10): point storage temperatures at CS-011 \u00a77.6. CS-004 \u00a73's 'Where it lives: CS-011' can point at CS-011 \u00a77.3 (site) and \u00a77.6 (temperature).",
+    "CS-014 drafter: these cross-references must resolve. CS-011 \u00a77.1 cites CS-014 \u00a77.8 (one open container per material; mark Empty, don't delete). CS-011 \u00a75 tells members to set Material type at receiving (CS-014). CS-012 \u00a77.1 table cites CS-014 \u00a77 for Arrived. CS-012 \u00a77.2 step 7 cites CS-014 \u00a75 for the 'a \u2728 fill is a draft' shall. CS-012 \u00a77.6 step 2 cites CS-014 \u00a77.11 for donated and sponsor stock (Supplier names the sponsor).",
+    "CS-INDEX (R-IDX-04): the CS-011 row becomes Rev E and the CS-012 row Rev G. The CS-012 title is 'Purchasing & Reimbursement'. INDEX status must equal the header text exactly, parenthetical included: 'Draft, pending Lead signature (storage-map locations to field-verify)' for CS-011 and 'Draft, pending Lead signature (re-verify tiers/names each fall)' for CS-012. Both show as Under Revision while the drafts sit outside src/ (R-000-06).",
+    "CS-001 \u00a75 printer row (R-001-02) should match CS-012 \u00a77.8: a Brother QL-series printer over AirPrint, DK-2210 29 mm continuous cut at 101.6 mm, DK-1201 29 x 90 mm die-cut fallback, not bought as of 2026-10-10. CS-012 no longer names an exact model.",
+    "CS-006 \u00a75 tacky tape row and CS-011 \u00a75 tacky tape supplier must change together once open question 10 is answered (R-006-12, R-OTH-22).",
+    "App (R-OTH-23): budget.js:538, budget.js:597 and inventory.js:289 still say '#purchasing sign-off' and flag only over $50. CS-012 \u00a77.1 now says approval is needed under $50 too, through #purchasing-slackbot. inventory.js:42 says RESTOCK_SEED is 'CS-011 \u00a75's table, verbatim'. The new \u00a75 matches the seed's supplier and lead-time columns except tacky tape, and still differs on the three held minimums (R-011-04).",
+    "App (R-OTH-26): CS-011 \u00a78 now has a 'no chemical lot on a fridge-type location' check that the app does not warn on yet.",
+    "03 Datasheets/INDEX.md: add CS-011 to 'Cited by' for EC-TDS-IN2-Infusion-Resin.pdf, EC-TDS-XCR-Epoxy-Coating-Resin.pdf and the West 105/205/206/209 US TDSs (CS-011 \u00a73 R7 and \u00a77.6).",
+    "QR-014 parent is CS-011 \u00a77.3 (heading now 'Where things are stored (storage map)'; a site table replaces the old step 1). QR-015 parents are CS-012 \u00a77.1, \u00a77.2 and \u00a77.9, with headings 'Getting a purchase approved (before you buy)', 'Getting reimbursed (paid back)' and 'Logging the purchase in the app'.",
+    "Code citations unchanged: CS-011 \u00a75, \u00a76, \u00a77.1 and \u00a77.3 and CS-012 \u00a77.1 and \u00a77.4 keep their numbers, so inventory.js, shop.js, scan.js, budget.js and workorders.js references still resolve."
+   ]
+  },
+  {
+   "files": [
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-007.md",
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-008.md"
+   ],
+   "applied": [
+    "R-007-01",
+    "R-007-02",
+    "R-007-03",
+    "R-007-04 (first half: readings in the step note; see skipped)",
+    "R-007-05",
+    "R-007-06",
+    "R-007-07",
+    "R-007-08",
+    "R-007-09",
+    "R-007-10 (status wording; reviewer date left for Round 6)",
+    "R-007-11",
+    "R-007-12",
+    "R-008-01",
+    "R-008-02",
+    "R-008-03",
+    "R-008-05",
+    "R-008-06",
+    "R-008-07",
+    "R-008-08",
+    "R-008-09",
+    "R-008-10",
+    "R-008-11",
+    "R-008-12",
+    "R-008-13",
+    "R-008-14 (heading and \u00a77 step 5 ref; reviewer date left for Round 6)",
+    "R-000-09 (CS-008 \u00a75.1: two-week revision shall, code table vs live app value)",
+    "R-006-06 (CS-008 \u00a75 side: IN2 SLOW pot-life conflict, plan on 80-100 min)"
+   ],
+   "skipped": [
+    {
+     "id": "R-008-04",
+     "why": "hold: Simon in the row. Simon's 2026-10-10 answer (REGISTER 'Answers from Simon') turns it into do (rule): shall where stocked, should plus a purchase list where not. That section says Round 6 applies it, and the CS-004 draft also left its PPE row held, so I kept the current PPE text in CS-008 \u00a76 (and CS-007 \u00a76) for consistency. For Round 6: safety glasses with side shields (EN 166) per the IN2/AT30 SDS \u00a78.2 and West SDS \u00a78 as a shall; EN 166 goggles for XCR (XCR SDS \u00a78.2) and ABEK cartridges for AT30 work (AT30 SLOW and FAST SDS \u00a78.2) as shoulds on Nick's purchase list. The shop stocks 'Respirator cartridges (A + P100)' (inventory.js restock line, 3M 60921)."
+    },
+    {
+     "id": "R-007-04 (second half)",
+     "why": "Not written: 'a lead should add a blocker step \"Drop test, 2 inHg or less over 10 min\" to Mold wet lay and Foam wrapped'. holdState() in workorders.js:721-738 reads the cure from steps[idx-1] only. A drop-test step between 'Wet layup and bag' and 'Cure and demould' would switch the cure hold off, and putting it before the layup step makes no physical sense. I added a CAUTION blockquote in \u00a77.5 telling leads not to add it there. The should can be written once holdState looks back to the last startsHold step."
+    },
+    {
+     "id": "R-007-10 / R-008-14 (reviewer date)",
+     "why": "The task says leave the Reviewer row alone. Round 6 fills it (R-000-20)."
+    }
+   ],
+   "new_figures": [],
+   "notes": "Both drafts are written. CS-007 is Rev D and CS-008 is Rev E, each dated 2026-10-10 with status \"Draft, pending Lead signature\". Each has one new history row. Headings match src/ by number (the only heading change is CS-008 \u00a75's text, per R-008-14), there are zero em dashes, and existing image lines are unchanged.\n\nThe register is wrong in places. Check these before Round 6:\n1. **AT30 FAST SDS is on file.** `03 Datasheets/EC-SDS-IN2-Epoxy-Infusion-Resin-and-Hardener.pdf` holds three SDSs: IN2 resin, AT30 Slow and \"AT30 FAST Epoxy Hardener\" (v6.0, 08.09.2022, starting near text line 2240 of the 59-page PDF). So R-006-08, R-008-07 and the register header (\"Still missing after Round 5: the AT30 FAST SDS\") are wrong. CS-008 R4 lists it as on file.\n2. **IN2 resin H360F.** Its SDS \u00a72 lists H360F \"May damage fertility\" (Repr. 1B). No register row mentions it. CS-008 \u00a76 now lists it in a hazard table built from every SDS's \u00a72 (aquatic hazards left out). CS-006 \u00a76 should carry it too.\n3. **The hold reads only the step before it.** See the R-007-04 skip. The wet-layup techniques cannot take a drop-test blocker without an app change.\n\nAdditions beyond the rows, all sourced:\n- CS-008 \u00a76 has an eye first-aid line (IN2/AT30 SDS \u00a74, West 205 SDS \u00a74). The template says \u00a76 must say what to do when it goes wrong.\n- The CS-008 \u00a75 minimum-temp column also fills XCR at 15 \u00b0C / 59 \u00b0F (XCR TDS) and marks IN2 \"not stated\".\n- CS-008 R3 notes that the app's \"Open the datasheet\" opens `105_205-207-Combined.pdf` (the path resins.js cites), which is the same Gougeon data.\n- CS-007 \u00a75 and \u00a77.2 give 209's pot life of 40-50 min (R6).\n\nLabels were checked against code: \"Resin mixed\", \"Finished on\"/\"at\", \"Shop temperature, \u00b0C (optional)\", \"Which lots went in\", \"I don't know / not recorded\", \"Something else / not recorded\", \"why N h?\" (the banner button), \"Why N hours?\", \"Change this hold\u2026\", \"FEB hold (hours)\", \"Signed off by\", \"Save\", \"Revert to the code table\", \"Demould early?\", \"Why are you demoulding early?\", and the step titles \"Wet layup and bag\", \"Wet layup over core\", \"Cure and demould\", \"Cure\", \"Shape foam core\", \"Stack frozen\" and \"Trim and finish\". Also checked: trainings \"Wet layup\" and \"Foam core\", techniques \"Mold wet lay\" and \"Foam wrapped\" (humanTechnique), Reports \u2192 Layup techniques, Stack & BOM, the ply \"Notes\" column, \"Expires\" on lots and \"EXP\" on lot labels. Cure numbers match resins.js exactly: holds 48/24/24/24/36/12 h; sheetSays 18-24 h, 6-8 h, 10-15 h, 6-8 h, 20-24 h, and 8 h 30 with about 9 h; refTemp 25/22/20 \u00b0C.\n\nOpen gap for a lead: an IN2 FAST/SLOW blend (now allowed in CS-008 \u00a76, per the IN2 TDS) has no \"Resin mixed\" option. Nothing says which hold to record for it. Recording SLOW is the conservative default, but that is a lead's rule to write.\n\nFor the round report (R-007-12): Nick's Aero DR2 SOP (flat panels, infusion, hollow and foam-core elements) and CS-006/CS-007 should merge into one document rather than drift apart.\n\nFigures: no new figures are asked for in CS-007/CS-008. R-007-07 landed, so the cs007-bag-stack variant (release film or caul plate in place of peel ply) is now wanted in Round 3. The cs008-holds caption alt text still says \"Datasheet demould figure\" and is left for Round 3 per the rules.\n\nTacky tape: Simon answered Airtech AT-200Y, but no CS-007 row covers it. CS-007 \u00a75 and \u00a77.4 still say \"tacky tape\" generically.",
+   "xrefs_for_others": [
+    "CS-006 \u00a73 R2 and R-006-08: the AT30 FAST SDS is on file, as the third SDS inside 03 Datasheets/EC-SDS-IN2-Epoxy-Infusion-Resin-and-Hardener.pdf. Cite it rather than saying 'not on file'. CS-006 \u00a76 should also state IN2 resin H360F (may damage fertility).",
+    "03 Datasheets/INDEX.md: the IN2 row should say the combined SDS file includes AT30 FAST. Mark the UK WEST_SYSTEM_105_Epoxy_Resin_with_206_Slow_Hardener.pdf superseded (R-OTH-11). CS-007 and CS-008 no longer cite it.",
+    "06 Composites App/app/workorders.js:741 comment cites 'CS-008 \u00a77.5'. It is 'CS-008 \u00a77 step 5'.",
+    "06 Composites App/app/workorders.js holdState() (around line 721): it reads the cure only from steps[idx-1]. It has to look back to the last startsHold step before any drop-test blocker can be added to Mold wet lay / Foam wrapped (R-007-04, R-013-05). CS-013 \u00a77.5's planned 'every bagged technique keeps its drop-test blocker' shall would break the cure hold on wet layups as written.",
+    "04 Printables/printables.html:189 'CS-007 \u00a77, item 8' is stale; the drop test is CS-007 \u00a77.5 step 2. The CS-008 card should show Rev E (R-OTH-17).",
+    "CS-011: CS-008 \u00a75 now points storage temperatures and shelf lives to CS-011 (R-008-10). IN2 10-25 \u00b0C and 12 months (IN2 TDS); XCR 20-25 \u00b0C and 12 months (XCR TDS); West: room temperature, usable for many years, crystallized 105 handling in CS-008 \u00a77 step 8 (R3).",
+    "CS-000 \u00a72 must carry R-000-09's rule (a lead who changes a hold opens a revision of the owning standard within two weeks), because CS-008 \u00a75.1 cites CS-000 \u00a72 for it.",
+    "CS-004 \u00a77.3: CS-008 \u00a75.1 now says the XCR 12 h hold is watched by hand per CS-004 \u00a77.3 (R-004-01 step 7 and step note).",
+    "HANDOFF.md:111-115 (R-OTH-15) should match CS-008 \u00a75.1: holds change from the app via 'Change this hold\u2026', not by editing resins.js and deploying.",
+    "CS-INDEX: CS-007 moves to Rev D and CS-008 to Rev E, shown as Under Revision while in drafts. QR-001 and QR-003 'Checked against' should be CS-008 Rev E and CS-007 Rev D.",
+    "CS-002 \u00a77.4 (R-002-05): CS-007 \u00a77.3 step 2 now uses the same per-ply check wording (check each ply against the run's stack in Stack & BOM, reason in that ply's Notes, pen tick on a printed traveler allowed). Keep the two identical.",
+    "Round 6 purchase list for Nick (Simon's PPE answer): EN 166 goggles for XCR; ABEK cartridges for AT30 work. CS-008 \u00a76 PPE text is unchanged until Round 6 applies R-008-04."
+   ]
+  },
+  {
+   "files": [
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-014.md",
+    "/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/proposals/CS-011-s6.md"
+   ],
+   "applied": [
+    "R-014-01",
+    "R-014-02",
+    "R-014-03",
+    "R-014-04",
+    "R-014-05",
+    "R-014-06",
+    "R-014-08",
+    "R-014-09",
+    "R-014-10"
+   ],
+   "skipped": [
+    {
+     "id": "R-014-07",
+     "why": "hold: Simon. \u00a77.9 exists because R-014-01 asks for it, but it holds only facts the app shows today, the CS-008 \u00a77 step 1 expiry check (R-008-11), and a [lead input needed] marker. The candidate rule and its tradeoffs are in the proposal, section 3."
+    },
+    {
+     "id": "R-011-01",
+     "why": "hold: Simon. Written only in proposals/CS-011-s6.md as options A/B/C with proposed wording. Nothing about it is in any draft."
+    },
+    {
+     "id": "R-011-02",
+     "why": "hold: Simon. Proposed replacement for \u00a76 is in the proposal. CS-014 \u00a76 only records what each SDS says, to set the Hazard field (R-014-04), and leaves storage location to CS-011 \u00a76."
+    },
+    {
+     "id": "R-011-04",
+     "why": "hold: Simon/Nick. Covered in the proposal (section 4) only, so all the CS-011 holds sit in one place."
+    }
+   ],
+   "new_figures": [
+    {
+     "file": "figures/cs014-receiving-flow.v2.png",
+     "doc": "CS-014 \u00a77 (top of Procedure)",
+     "must_show": "Left-to-right flow. A delivery box goes into the Receiving desk sheet. The sheet is reached three ways, drawn as three entry arrows: toolbar 'Receive a delivery', Incoming 'Arrived \u25b8', a shelf's 'Receive delivery'. A fourth arrow is 'Scan \u2192 Log it' for an unknown EH&S tag. Then the confirm 'Create N records?' (untick what did not arrive). Then lots: FAB and RSN as one record per roll or container, drawn as several small boxes. CON as one record with a count, drawn as one box marked 'x50'. Then the shelf. Side branch: '\u2728 From packing slip' (photo or PDF) feeds rows into the sheet through a thick bar labelled 'person checks every row', so it reaches the sheet only through that bar. Second side branch: EH&S tag scanned or typed into the row's 'EH&S tag' cell, one code per container. After Create: the bar with 'Print N labels' / 'Undo'; tagged chemical containers get no FEB label. Grayscale-safe: the AI branch dashed, the person-check bar heavy solid. Exact app labels as quoted. Synthetic tag only (\u20260024 3F1C)."
+    }
+   ],
+   "notes": "CS-014 is drafted as Rev A, \"Draft, pending Lead signature\", Effective 2026-10-10. It has the template's nine sections and \u00a77.1 to \u00a77.11 exactly as R-014-01 lists them. The H1 is \"# CS-014 Receiving, Lots & EH&S\". It cites PP-02, PP-09 and PP-10 plus 03 Datasheets SDS and TDS paths. It has one history row (A, \"Initial issue. \u2026 Register R-014-01..10.\") and zero em dashes in either file.\n\nEvery UI label was copied from the code: receiving.js, inventory.js, shop.js, scan.js, materials.js, ehsimport.js, labels.js, workorders.js, core.js and functions/index.js. Where a code label contains an em dash I quoted only the part before it (\"running low\", \"emptied\", \"retire it in RSS too\").\n\nNormative changes:\n- R-014-03 (shall): everything a \u2728 button fills is checked row by row. It sits in the \u00a77.4 preamble and covers \u2728 Read label (\u00a77.7) and CS-012's \u2728 Fill from receipt.\n- R-014-04 (shall): the receiver sets Hazard, in \u00a76 step 4. It comes with a per-SDS table of the flammable class for IN2, AT30 SLOW and FAST, XCR, West 105/205/206/209, Airtac, LiME LiNE Part A, acetone and IPA. The test used is GHS H220 to H226, the same one ehsimport.js uses. This records classification only; storage stays with CS-011 \u00a76.\n- R-014-05 and R-014-06 (should): \u00a77.8 steps 1, 4 and 6.\n\nLead input is still needed at three spots, marked [lead input needed]:\n- the RFS disposal route (\u00a76 step 5);\n- the expired-material rule (\u00a77.9);\n- who holds the chemical-inventory role (\u00a77.10).\n\nThings I found that the register has wrong or missing:\n1. The AT30 FAST SDS is on file. It is inside 03 Datasheets/EC-SDS-IN2-Epoxy-Infusion-Resin-and-Hardener.pdf (\"Trade name: AT30 FAST Epoxy Hardener\", v6.0, 2022-09-08, flash point 100 \u00b0C). The register header, R-006-08 and R-008-07 all say it is missing.\n2. Receiving never sets a purchase's Order status to Arrived. Nothing in app/ does it automatically. G-23 implied receiving sets it, so CS-014 \u00a77.5 step 9 tells the member to set it by hand.\n3. Both AT30 SDSs say \u00a77.2 \"Keep away from isocyanates\". The LiME LiNE Part B activator is an isocyanate and shares the flammables cabinet. This is in the proposal as a separate yes/no for Simon.\n4. \"Print N labels\" on the receiving undo bar prints every record in the batch. That conflicts with R-001-06 (tagged containers get no FEB label), so CS-014 \u00a77.5 step 6 sends people to Inventory \u2192 Labels \u2192 Material lots to tick only the untagged records. This belongs on R-OTH-24's list.\n\nThe proposal is in proposals/CS-011-s6.md and is not in any draft. For each of R-011-01 and R-011-02 it gives the current text, the history (commit de7994a, Rev D \"No rule changed\"), what the app does now, SDS quotes with file paths, options with tradeoffs, and wording ready to paste. It also covers R-014-07 and R-011-04 briefly, and ends with a checklist of what Simon needs to decide.",
+   "xrefs_for_others": [
+    "CS-001 drafter: CS-014 points to CS-001 \u00a77.11 for the EH&S tag as a container's label and for recording a tag on a container already on a shelf, and to CS-001 \u00a77.1/\u00a77.2 for printing and placing labels. CS-001 \u00a77.6's AI-read note (R-001-26) should point at CS-014 \u00a77.4, where the R-014-03 rule lives (\u00a77.7 restates it for \u2728 Read label).",
+    "CS-012 drafter: CS-014 \u00a77.1 step 1 points to CS-012 \u00a77.9 for line items. CS-014 \u00a77.5 step 9 points to CS-012 \u00a77.2 for Order status. Receiving does NOT set Order status to Arrived (no code sets it), so the R-012-04 table must not say receiving moves it. \u2728 Fill from receipt should point at CS-014 \u00a77.4 for the check-every-row rule, and at CS-014 \u00a75 for the AI switch, the $80 ceiling and the 50 reads/day facts. Sponsor receiving (R-012-10) is CS-014 \u00a77.11.",
+    "CS-011 drafter: CS-014 \u00a77.8 holds the one-open-container rule and the Empty-not-delete rule (R-014-05/06), so CS-011 \u00a77.1 should point there. CS-014 \u00a77.10 says reconciliation runs monthly at the CS-011 \u00a77.1 stock walk. CS-011 \u00a76 is untouched pending the proposal.",
+    "CS-013 drafter: CS-014 points to CS-013 \u00a74.1 (ID grammar) and \u00a77.2 step 4 (lot capture at the cure buy-off). The workorders.js comment at 3041-3042 citing \"CS-011's one open container per material rule\" should be re-pointed to CS-014 \u00a77.8 (add to R-OTH-19).",
+    "CS-008 drafter: CS-014 \u00a77.9 step 1 cites \"CS-008 \u00a77 step 1\" for the expiry check before mixing (R-008-11); keep it at step 1 or tell the CS-014 owner the step number.",
+    "CS-000 drafter: CS-014 \u00a77.4 cites CS-000 \u00a72 for \"an AI read is never a source\" (R-000-10).",
+    "CS-006 / CS-008 drafters and REGISTER: the AT30 FAST SDS is on file inside 03 Datasheets/EC-SDS-IN2-Epoxy-Infusion-Resin-and-Hardener.pdf (AT30 FAST section, v6.0, 2022-09-08). R-006-08 (\"AT30 FAST SDS not on file\") and R-008-07 should cite it instead, and 03 Datasheets/INDEX.md's IN2 row can say so.",
+    "R-OTH-24 (app/receiving.js): besides stamping Hazard, \"Print N labels\" on the undo bar prints a label for EH&S-tagged containers too, and the confirm text \"one QR label each\" contradicts R-001-06. Add skipping tagged containers when printing from the undo bar.",
+    "CS-INDEX drafter: the CS-014 row (R-IDX-01) should read Title \"Receiving, Lots & EH&S\", Rev A, Status \"Draft, pending Lead signature\", PP-02, PP-09, PP-10 (the draft cites all three; R-IDX-01 listed PP-02 and PP-10).",
+    "QR-006 drafter: parent sections are CS-014 \u00a77.1 to \u00a77.8; the \u2728 rule is \u00a77.4, Hazard is \u00a76 step 4, EH&S tags are \u00a77.6."
+   ]
+  }
+ ],
+ "critics": [
+  {
+   "issues": [
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-006.md",
+     "where": "\u00a76 Safety, first paragraph (line 89)",
+     "kind": "wrong-fact",
+     "problem": "The paragraph says it lists IN2 resin's hazards 'Per R2 (\u00a72 of each SDS)' but gives only H315, H319 and H317. The IN2 resin SDS \u00a72 also classifies the resin Repr. 1B, H360F 'May damage fertility' (pdftotext of EC-SDS-IN2-Epoxy-Infusion-Resin-and-Hardener.pdf, lines 51 and 78). CS-008's draft \u00a76 table already includes it, so the two standards now disagree on the most serious hazard of the infusion resin. The history row's claim that the hazards were 'corrected to the SDSs' is therefore not true yet.",
+     "fix": "Make the first sentence read: 'IN2 resin causes skin irritation, serious eye irritation and allergic skin reactions, and may damage fertility (H315, H319, H317, H360F).'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-003.md",
+     "where": "\u00a76 Safety, Ure-Bond 90 bullet (line 83)",
+     "kind": "wrong-fact",
+     "problem": "The bullet reads as the complete hazard list: 'It is a respiratory sensitizer (H334) and an eye irritant (H319) (SDS \u00a72)'. Part A's SDS \u00a72 (1386A_2-1386B_2.pdf, lines 29-36 and 46-58) also lists H315 skin irritation, H317 skin sensitizer, H332 harmful if inhaled, H335 respiratory irritation, H351 suspected of causing cancer and H373 organ damage through repeated exposure. Part B is not classified. A member reading this bullet would not learn that the glue is a skin sensitizer and a suspected carcinogen.",
+     "fix": "Replace the sentence with: 'Part A causes skin and eye irritation, may cause an allergic skin reaction, is harmful if inhaled, may cause allergy or asthma symptoms if inhaled, may irritate the airways, is suspected of causing cancer and may damage the airways through repeated exposure (H315, H319, H317, H332, H334, H335, H351, H373; SDS 1386A \u00a72). Part B is not classified (SDS 1386B \u00a72).' The held PPE words stay as they are."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-006.md",
+     "where": "\u00a77.8 Degassing the resin (lines 161-171) and the Rev D history row",
+     "kind": "other",
+     "problem": "The section says 'We do not degas IN2 before infusing' and 'Degassing is a candidate R&D study, not a step.' REGISTER 'Answers from Simon' (open question 9), which overrides R-006-04, says the team does degas sometimes: \u00a77.8 should describe degassing as an optional step (when, how, what to watch), with the exact setup marked for Nick to confirm. As drafted, the section states the opposite of the answer, and Paul and QR-002 would quote it.",
+     "fix": "Rewrite \u00a77.8 as an optional step. State when degassing is worth doing, then how, with the chamber, the vacuum level and the time left as one marked spot for Nick to confirm, then what to watch for (foam rise, pot life spent under the bell). Keep steps 1-5 as the controls that apply whether or not you degas. Delete 'We do not degas' and 'not a step'. In the history row, replace 'new \u00a77.8 on degassing' with 'new \u00a77.8: degassing as an optional step'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-008.md",
+     "where": "\u00a76 hazard table, row 'AT30 FAST hardener' (line 143)",
+     "kind": "wrong-fact",
+     "problem": "The row lists H302, H314, H317, H318 and H373 but leaves out EUH071 'Corrosive to the respiratory tract'. The AT30 FAST SDS \u00a72.2 carries EUH071 as a supplemental hazard (pdftotext lines 2324 and 3596), and the CS-006 draft \u00a76 states it. The table's heading says 'Hazard statements for people (SDS \u00a72)', so the row is incomplete, and the two standards disagree.",
+     "fix": "Change the row to 'H302, H314, H317, H318, H373 organ damage through repeated exposure, EUH071 corrosive to the respiratory tract'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-004.md",
+     "where": "Header table, Title row (line 6)",
+     "kind": "register-miss",
+     "problem": "R-IDX-04 (do (rule)) names CS-004 among the standards whose titles differ: header Title must equal the H1 minus the ID, and the INDEX must match it. The draft keeps 'Mold Sealing, Release & Surface Preparation (Polyurethane Tooling Board)', while the H1 and CS-INDEX (src and draft) say 'Mold Sealing, Release & Surface Prep'. The CS-003 and CS-005 drafts applied the same row; CS-004 did not.",
+     "fix": "Set Title to 'Mold Sealing, Release & Surface Prep' and add 'title field matches the H1 (R-IDX-04)' to the Rev E history row."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-006.md",
+     "where": "\u00a75 table, Tacky tape row (line 79), and the history row clause 'tacky tape brand left open'",
+     "kind": "register-miss",
+     "problem": "REGISTER 'Answers from Simon' (open question 10) settles R-006-12: the team buys Airtech AT-200Y. Cite 03 Datasheets/AIRTECH-TDS-AT-200Y-Sealant-Tape.pdf and drop the 'confirm' or stand-in note. The draft still says 'brand not settled', calls AT-200Y a stand-in, and lists three suppliers as 'Not settled'.",
+     "fix": "Spec/product: 'Airtech AT-200Y (yellow) sealant tape (`03 Datasheets/AIRTECH-TDS-AT-200Y-Sealant-Tape.pdf`; safety sheet `03 Datasheets/AIRTECH-SDS-Sealant-Tapes.pdf`)'. Source: 'Airtech'. Keep the notes cell, including the 'go back to the last one that held 27 inHg' sentence. In the history row, replace 'tacky tape brand left open' with 'tacky tape named: Airtech AT-200Y'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-003.md",
+     "where": "\u00a77.3 step 3 (line 140)",
+     "kind": "register-miss",
+     "problem": "R-003-12 said to name the cutting tool once open question 4 was answered. Simon has answered it ('Answers from Simon'): blanks are cut mostly on a saw, as the packer models with a 1/8 in kerf, and the step should say 'a saw (the ShopSabre may be used)'. Step 3 still names no tool.",
+     "fix": "'3. Cut each board on a saw (the ShopSabre may be used) along the sheet's numbered cuts, all the way across each time. The cut list allows a 1/8 in kerf per cut (`app/packer.js`).'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-003.md",
+     "where": "\u00a77.3 step 14 (line 151) and the Rev E history row (line 28)",
+     "kind": "register-miss",
+     "problem": "'Answers from Simon' (open question 6) turns R-003-25 into do (rule): the mold ID goes on the glued stack in paint marker. Step 14 still marks only part name, WO and up-direction. The history row still lists 'the mold ID on the glued stack' as held for Simon.",
+     "fix": "Step 14: '...on two adjacent side faces: the mold ID (`MOLD-SN6-###`), part name, WO, and the up-direction (CS-001 \u00a77.4).' In the history row, delete 'and the mold ID on the glued stack' from the held list, and add 'mold ID added to the glue-up marking (Simon, 2026-10-10)' to the rule changes. Keep CS-001 \u00a77.4 step 1 in step."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-003.md",
+     "where": "\u00a77.3 step 15 (line 152); \u00a78 Glue lines row 'Record where' (line 170)",
+     "kind": "wrong-fact",
+     "problem": "Step 15 says to sign 'the work order's Glue mold stock step' at glue-up. The Mold wet lay technique has no such step: it has one combined step, 'Glue and machine mold' (workorders.js STD_STEPS.MoldWetLay), which needs a note and cannot honestly be signed until machining is done. A member on a wet-layup run is sent to a step that does not exist. The step also does two things at once (set the stage, sign).",
+     "fix": "Split into 15: 'Set the mold's stage to Board glued.' and 16: 'Write the mix time and clamp-off time in the note on the work order's Glue mold stock step and sign it. On a wet-layup run, write them in the note on Glue and machine mold and sign that step after machining (CS-005 \u00a77.5).' Renumber the current step 16 to 17; it is new in this revision, so nothing cites it. In \u00a78, set Record where to 'WO Glue mold stock step note (Glue and machine mold on a wet-layup run)'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-007.md",
+     "where": "\u00a77.5 CAUTION blockquote after step 3 (line 107)",
+     "kind": "other",
+     "problem": "The blockquote adds a new instruction to leads, 'do not add one between \"Wet layup and bag\" and \"Cure and demould\"'. No register row covers it, and it replaces the R-007-04 should ('a lead should add a blocker step \"Drop test, 2 inHg or less over 10 min\"'). The technical claim checks out: holdState() reads only steps[idx-1] (workorders.js:721-738). But STYLE \u00a72 says a changed should or shall needs its own register line, and the app fix that would let R-007-04 land has no R-OTH row. This applies equally to R-013-05 / CS-013 \u00a77.5.",
+     "fix": "Add a register row (process-rule: R-007-04 second half withdrawn until holdState looks back to the last startsHold step) and an R-OTH row for the workorders.js holdState change. Keep the caution as plain fact without the 'do not' instruction: 'The cure hold reads only the step directly before it, so a drop-test step placed between \"Wet layup and bag\" and \"Cure and demould\" (or \"Cure\") would switch the hold off. Until the app changes, the drop test is recorded in the \"Wet layup and bag\" note.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-006.md",
+     "where": "\u00a76 Safety bullets (Eyes line 92; no respirator line)",
+     "kind": "held-item-changed",
+     "problem": "R-006-03 is unchanged in this draft, which is correct for Round 2. 'Answers from Simon' (open question 2) now makes it do (rule): PPE the SDSs require becomes a shall where the shop stocks it and a should plus a purchase-list entry where it does not. For CS-006: safety glasses with side shields to EN 166 (IN2/AT30 SDS \u00a78.2, already the team's glasses) as a shall; ABEK-filter respirator for AT30 work (AT30 SLOW and FAST SDS \u00a78.2) as a should, bought by Nick. The AT30 FAST EUH071 the draft now states strengthens the respirator case.",
+     "fix": "Round 6: change the Eyes bullet to 'Safety glasses with side shields (EN 166) whenever resin or hardener is open (R2 \u00a78.2).' Add 'Respirator: in a closed room or a long session you should wear a respirator with ABEK cartridges (EN 14387) (R2, AT30 SLOW and FAST \u00a78.2); the shop stocks OV/P100 (3M 60921), so ABEK cartridges are on the purchase list.' Update the history row's '(03 held)'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-004.md",
+     "where": "\u00a76 Eyes/skin bullet (line 101) and history row '(02 held)'",
+     "kind": "held-item-changed",
+     "problem": "The draft is unchanged here, which is correct for Round 2. 'Answers from Simon' now makes R-004-02 do (rule) on the purchase-list terms: EN 166 goggles for XCR are not stocked, so they become a should plus a purchase-list entry. 'Safety glasses' becomes the shall where stocked (the XCR SDS \u00a78.2 says prescription glasses are not protection).",
+     "fix": "Round 6: 'Eyes: safety glasses with side shields whenever XCR resin or hardener is open; prescription glasses are not eye protection. You should wear safety goggles with side protection (EN 166) when mixing or brushing XCR (R2 \u00a78.2); goggles are on the purchase list.' Change the history row to 'Register R-004-01..14.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-003.md",
+     "where": "\u00a76 Ure-Bond 90 bullet, 'Nitrile gloves, no skin contact.'",
+     "kind": "held-item-changed",
+     "problem": "The draft correctly kept the held words. 'Answers from Simon' now turns R-003-02 into do (rule): what the SDS and TB ask for becomes a shall where stocked (safety glasses, long sleeves; the TB's 'safety glasses, long sleeves and rubber gloves') and a should plus purchase list where not (a respirator if ventilation is poor, per SDS P284).",
+     "fix": "Round 6: 'Safety glasses, long sleeves and chemical-resistant gloves (nitrile) (TB). If the room cannot be ventilated, you should wear the CS-009 respirator (SDS P284).' Drop R-003-02 from the history row's held list."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-008.md",
+     "where": "\u00a76 first bullet, 'PPE: ...A-filter respirator for long/enclosed sessions' (line 151)",
+     "kind": "held-item-changed",
+     "problem": "The draft correctly kept the text. 'Answers from Simon' now makes R-008-04 do (rule). The A-filter line conflicts with the AT30 SDS \u00a78.2, which asks for an ABEK filter, and with the new EUH071 on AT30 FAST.",
+     "fix": "Round 6: 'PPE: nitrile gloves; safety glasses with side shields (EN 166); ventilation; wash skin with soap, not solvent. For long or enclosed sessions you should wear a respirator: A1 cartridges cover XCR (XCR SDS \u00a78.2), and AT30 work wants ABEK (AT30 SDS \u00a78.2); ABEK and EN 166 goggles for XCR are on the purchase list.' Change the history row's '(04 held)'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-003.md",
+     "where": "\u00a77.1 step 8 fifth bullet ('Check the Stack drawing on the mold page') and \u00a77.2 checklist row 11 ('In the Stack drawing on the mold page')",
+     "kind": "ui-label",
+     "problem": "No label in the app says 'Stack drawing'. The mold page section heading is 'Stack' (molds.js:629), and the app's own beta note says 'Check the stack view before anyone cuts' (stock.js mold dialog).",
+     "fix": "Use 'the Stack view on the mold page' in both places."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-006.md",
+     "where": "\u00a77.5 step 6 (line 138), 'enter Shop temperature, \u00b0C'",
+     "kind": "ui-label",
+     "problem": "The field label is 'Shop temperature, \u00b0C (optional)' (workorders.js:2761). Cut short to 'Shop temperature, \u00b0C', it no longer matches what is on screen, and 'enter' makes it sound required. The CS-007 and CS-008 drafts quote the full label.",
+     "fix": "'...and fill in \"Shop temperature, \u00b0C (optional)\".'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-008.md",
+     "where": "\u00a73 R3 (line 46)",
+     "kind": "wrong-fact",
+     "problem": "R3 says the app's 'Open the datasheet' button opens the combined Gougeon sheet, 'which carries the same figures'. resins.js points 206 and 205 at docs/datasheets/105_205-207-Combined.pdf, but points 209 at 105-209-Epoxy-Resin-1.pdf. The combined file covers 205, 206 and 207 only (pdftotext headings), not 209.",
+     "fix": "'For 205 and 206 the app's \"Open the datasheet\" button opens the combined Gougeon sheet `03 Datasheets/105_205-207-Combined.pdf`, which carries the same figures; for 209 it opens `03 Datasheets/105-209-Epoxy-Resin-1.pdf`.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-004.md",
+     "where": "\u00a75 table, Isopropyl alcohol row (line 86)",
+     "kind": "unsourced-number",
+     "problem": "'\u226590% IPA' has no source. materials.js:92-95 lists only the 'Isopropyl alcohol 91%' and 'Isopropyl rubbing alcohol 70%' records and states no threshold, and the R8 SDSs are stand-ins that may not be used for numbers.",
+     "fix": "'The 91% isopropyl bottle (team rule; the app records it as \"Isopropyl alcohol 91%\"), never the 70% rubbing alcohol' and drop the '\u226590%' figure. Otherwise, mark '\u226590%' as a team rule with no datasheet source (CS-000 \u00a77.1 step 3)."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-003.md",
+     "where": "\u00a77.2 paragraph after step 2 (line 132), last sentence",
+     "kind": "other",
+     "problem": "'The cut list does not check the review at all, so look at the run before pressing \"Mark these boards cut\u2026\"' puts the check too late. By the time Mark these boards cut is pressed the board is already sawn (\u00a77.3 steps 3-4). The rule in step 2 and \u00a77.3 step 1 is 'no initials, no cutting'.",
+     "fix": "'...so check the run's Mold design review is signed before cutting any blank (\u00a77.3 step 1).'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-007.md",
+     "where": "\u00a77.6 steps 2-4 (lines 114-116)",
+     "kind": "renumbered",
+     "problem": "The original \u00a77.6 step 2 ('Demold no earlier than the FEB hold... Record times... hand to CS-009') was pushed down to steps 3 and 4 by a new step 2. The drafting rule is to append new steps, not renumber, and the drafter's report says 'Headings match src/ by number' without mentioning the step shift. No inbound 'CS-007 \u00a77.6 step N' reference exists today, so nothing breaks, but QR-003 is about to be drafted against these step numbers.",
+     "fix": "Either keep step 2 as the demould rule with the buy-off sentence folded into it (R-007-06 targets \u00a77.6 step 2 itself), or put the buy-off as step 1's second paragraph and append the record line as step 3. Add one clause to the history row if the step numbers stay changed."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-005.md",
+     "where": "Header Title (line 6) against R-005-12",
+     "kind": "other",
+     "problem": "R-005-12 literally asks for the title '(ShopSabre at RFS)'. The draft uses 'CNC Machining of Tooling Board (ShopSabre)' so that the H1 and the built .docx/PDF filename stay unchanged. That is defensible under R-IDX-04 (the H1 is canonical) and consistent with INDEX, but it departs from the row as written and is not recorded as a deviation anywhere a later round reads.",
+     "fix": "Either add to the history row 'title kept as the H1 (ShopSabre); \"at RFS\" not added, to keep the built filename' or have Simon decide. If 'at RFS' is wanted, change the H1, Title and INDEX together and rebuild the docx."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-004.md",
+     "where": "\u00a77.3 step 6 (line 130)",
+     "kind": "style",
+     "problem": "One step now carries five separate things: the fingernail check, the 'bonds with no prep' fact, the coat count by grade, the new should for mixed-grade molds, and the next-session recoat branch (wait 9 h, key, blow off, wipe, recoat). That breaks STYLE \u00a72's one action per step for a member with gloves on, and the should is buried mid-paragraph.",
+     "fix": "Keep step 6 as the overcoat check (state, fingernail, about 2 h 50 / 1 h 30, R1). Move the coat count plus the mixed-grade should to a sub-bullet or a short paragraph under step 4. Make the tack-free branch a sub-list of its own actions (wait \u22659 h; key with 120 grit; blow off; IPA wipe; recoat). Step numbers 7 and 8 stay as they are."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-004.md",
+     "where": "\u00a77.1 step 1 (line 109), 'Blow all dust off the mold with compressed air'",
+     "kind": "other",
+     "problem": "The overhaul now has three conflicting rules. CS-005 \u00a76 says 'don't blow dust around with compressed air'. CS-003 Rev E (R-003-05) replaced the compressed-air step with vacuuming because of that rule. CS-004 still tells members to blow dust off the machined mold, and \u00a75 lists compressed air for it. No register row covers CS-004 here, so the drafter was right not to change it, but the conflict ships.",
+     "fix": "Raise a register row (process-rule, for Simon) to change step 1 to 'Vacuum all dust off the mold, including pockets and scribe lines' and update the \u00a75 Compressed air row. Alternatively, record why sealing prep is the exception."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-003.md",
+     "where": "\u00a73 References, row R6 (line 49)",
+     "kind": "style",
+     "problem": "R6 used to be the Rohacell IG-F TDS (src). The draft reuses the R6 number for the app README, so the same ID means two different documents across revisions. R-003-22 assigned the new refs R7-R10 and said to 'use or drop R6'.",
+     "fix": "Number the new references R7-R10 as the register says, and leave R6 out of the table. Otherwise, add a clause to the history row: 'R6 Rohacell dropped; R6-R9 renumbered for the new references.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-006.md",
+     "where": "\u00a74 Definitions, Resin trap (line 67)",
+     "kind": "style",
+     "problem": "'**Without it, the first overlong pull kills the vacuum pump.**' is an emphasis-bold sentence. STYLE \u00a72 limits bold to labels, and \u00a75 already marks the trap as mandatory. R-006-15 unbolded only the inHg sentence (the drafter flagged this as gap d).",
+     "fix": "Unbold it, or make it a CAUTION blockquote if it should stand out, and note it under R-006-15 in the history row."
+    }
+   ],
+   "verdict": "The six drafts are mostly sound. Section and heading numbers match src/ apart from the retitles the register asks for. There are zero em dashes, and each draft has one revision bump with a correct header and history row, an Effective date of 2026-10-10 and the status wording 'Draft, pending Lead signature'. I grepped every UI label in app/*.js and the add-in, and all of them exist (including the full 'Board density, min (lb/ft\u00b3)', 'Sign without it', 'Season by station', 'ShopSabre slot 1/2', 'Mark these boards cut\u2026', '+ Link a mold\u2026', 'Change this hold\u2026'). Every numbered figure I checked matches its TDS: Ure-Bond, XCR, IN2, US West 205/206/209 and Airtac 2. No number comes from a stand-in. The drafters' three challenges to the register hold up against the files: the AT30 FAST SDS is inside the combined IN2 file (v6.0, 2022-09-08), AT30 SLOW's H332 appears only in \u00a716, and holdState() reads only steps[idx-1].\n\nThese must be fixed before promotion:\n- CS-006 \u00a76 leaves out IN2 resin's H360F ('may damage fertility').\n- CS-003 \u00a76 cuts Ure-Bond Part A's hazards down to H334 and H319, dropping H317, H351, H332, H335, H373 and H315.\n- CS-008's AT30 FAST row is missing EUH071.\n- CS-004's Title field still breaks R-IDX-04.\n- CS-003 \u00a77.3 step 15 sends wet-layup runs to a 'Glue mold stock' step that does not exist on them.\n\nSimon's 2026-10-10 answers override the register in five places the drafts predate:\n- CS-006 \u00a77.8 states 'we do not degas' and needs rewriting as an optional step.\n- The tacky tape is Airtech AT-200Y.\n- Blanks are cut on a saw (the ShopSabre may be used).\n- The mold ID goes on the glued stack.\n- The PPE rows (R-003-02, R-004-02, R-006-03, R-008-04) become shall-where-stocked or should-plus-purchase-list.\n\nLower priority: CS-007's caution adds a leads' rule with no register row, and an app-fix row is needed for holdState. The rest are small label, source and style fixes."
+  },
+  {
+   "verdict": "The seven drafts are close, and I'd fix them before promotion rather than redraft. Every do / do (rule) row the drafters claim is in the text. No hold: Simon item was changed: R-001-17 and R-001-19 are untouched, \u00a77.4 step 1 still starts at glue-up, and \u00a77.7's last line is unchanged. Heading lists match src apart from the appended \u00a77.5 (CS-000), \u00a77.11 to \u00a77.13 (CS-001), \u00a77.5 (CS-002) and \u00a77.5 to \u00a77.7 (CS-013), plus the renames the register allows. Each standard has one revision bump, dated 2026-10-10, with the status wording unchanged. Every UI label I grepped exists in app/*.js. There are no em dashes in new prose; the remaining ones are history rows, the print.js literal and the kept INDEX H1.\n\nWhat needs fixing:\n- **A lint conflict about quick references.** CS-000 \u00a74 and QR-Template say \"one Checked against per parent standard\", and the INDEX rows are written that way. Lint 10 needs every Parent entry to carry its own CS-0xx ID and its own Checked against, so several QR headers would fail when written.\n- **CS-INDEX.** The quick-reference table mixes Parent and Covers in one cell. One claim is invented: that honeycomb skins follow CS-007.\n- **CS-000 \u00a77.2.** Step 2 says check_traceability already accepts the Under Revision / Draft pairing. It doesn't until R-OTH-05 lands. The steps also announce a revision before it is deployed.\n- **CS-001.** The fabric label is said to print an expiry date, but fabric records have no expiry field. The class word is called \"never printed\", but storage labels print STORAGE. The new 5522 shall contradicts the overlaminated-paper fallback in \u00a77.8 and \u00a77.9.\n- **CS-002.** Some UI labels are stale (\"season timeline\", \"qualityChecks\").\n- **Register decisions.** Simon or Nick should rule on four calls the drafters made: R-002-07 (ME vs RE), the trimmed R-002-02, the narrower R-013-05 shall, and the switch to 5522 for the demould label pair.",
+   "issues": [
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-000.md",
+     "where": "\u00a74 Quick reference bullet (line 67): 'with one Checked against per parent standard'",
+     "kind": "wrong-fact",
+     "problem": "Lint 10 needs one Checked against per Parent entry, and every entry must parse as 'CS-0xx \u00a7n.n'. See tools/check_traceability.py lines 243-259: it splits on ';', requires len(parents)==len(checks) and matches each entry with the regex (CS-\\d{3})\\s*\u00a7. STYLE \u00a76 and R-OTH-02 ('one Checked against each') say the same. 'Per parent standard' allows 'CS-008 \u00a75; \u00a75.1' with one check, and lint 10 fails that.",
+     "fix": "Replace 'with one Checked against per parent standard, in the same order' with 'each entry written in full (CS-008 \u00a75; CS-008 \u00a75.1), with one Checked against per entry, in the same order'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/QR-Template.md",
+     "where": "line 12, guidance on Parent: 'with one Checked against per parent standard in the same order'",
+     "kind": "wrong-fact",
+     "problem": "This has the same mismatch with lint 10 and STYLE \u00a76: each Parent entry needs its own CS-0xx ID and its own Checked against.",
+     "fix": "Write 'Every entry names its standard (CS-008 \u00a75; CS-008 \u00a75.1) and has its own Checked against, in the same order (CS-008 Rev E; CS-008 Rev E).'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-INDEX.md",
+     "where": "Quick references table rows QR-001, QR-002, QR-005, QR-012, QR-013, QR-014, QR-015",
+     "kind": "other",
+     "problem": "These Parent cells use bare continuation sections ('CS-008 \u00a75; \u00a75.1', 'CS-006 \u00a77.1 to \u00a77.6; \u00a77.8', 'CS-006 \u00a77.4; \u00a77.7; CS-007 \u00a77.5') and give one Checked against per standard. Copied into the QR headers as written, lint 10 fails them: '\u00a75.1' does not match the CS-0xx regex, and the entry counts don't match the check counts.",
+     "fix": "Repeat the doc ID in every entry and give one check per entry. Examples: QR-001 'CS-008 \u00a75; CS-008 \u00a75.1' / 'CS-008 Rev E; CS-008 Rev E'. QR-012 'CS-006 \u00a77.4; CS-006 \u00a77.7; CS-007 \u00a77.5' / 'CS-006 Rev D; CS-006 Rev D; CS-007 Rev D'. Apply the same pattern to QR-002, QR-005, QR-013, QR-014 and QR-015."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-INDEX.md",
+     "where": "Quick references table, QR-006, QR-007, QR-011 and QR-015 Parent cells: '(also covers `app/receiving.js`)' etc.",
+     "kind": "other",
+     "problem": "STYLE \u00a76 and the new QR-Template make Parent+Checked against and Covers alternatives. Lint 10 skips the Parent check entirely when a Covers row is present. A hybrid cell describes a header shape the template does not offer, so the QR drafter will either drop the Covers or lose the Parent check.",
+     "fix": "Keep only the Parent in these cells, e.g. 'CS-014 \u00a77'. If the app files matter, add one sentence under the table saying which QRs also describe app screens. Do not put them in the Parent column."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-000.md",
+     "where": "\u00a77.2 step 2: 'and `check_traceability.py` accepts that pairing'; also \u00a74 Title bullet 'The status text in the header and in CS-INDEX match exactly too'",
+     "kind": "wrong-fact",
+     "problem": "Today lint 6 compares status_kw(INDEX) to status_kw(header) (check_traceability.py around line 190). 'under revision' is not equal to 'draft', so it warns, and fails under --strict. It accepts the pairing only after R-OTH-05 lands. The \u00a74 Title bullet also says 'match exactly' with no exception, which contradicts the Under Revision rule in the next bullet.",
+     "fix": "Land R-OTH-05 in the same promotion as CS-000 Rev D, or say so in the step: '\u2026keeps its status until the revision lands; check_traceability.py accepts INDEX Under Revision against a header Draft (R-OTH-05).' In \u00a74, append to the Title bullet: '(except while a revision is in flight: Under Revision in CS-INDEX, see Status)'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-000.md",
+     "where": "\u00a77.2 step 4 ('Announce released revisions in the weekly summary message') vs new steps 6 and 7",
+     "kind": "other",
+     "problem": "Step 4 announces the revision before step 6 rebuilds and step 7 deploys it. Members would hear about a revision that is not yet in the in-app PDF or in Paul's corpus, which is the exact gap the new steps exist to close (the bb5cc0b 'Paul keeps the old 209 ratio until then' case).",
+     "fix": "Cut the second sentence from step 4, leaving 'Same review + approval as 7.1.' End step 7 with: 'Announce a released revision in the weekly summary message only after both deploys.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-000.md",
+     "where": "\u00a77.2 step 7, last sentence 'Name both deploys in the commit message.'",
+     "kind": "other",
+     "problem": "The commit happens in step 6, before the deploys, and the repo rule is push first, deploy second. As written, the step can't be followed in order.",
+     "fix": "Write 'The step 6 commit message names both deploys still to run; run them after the push.' Alternatively, move the sentence into step 6."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-000.md",
+     "where": "\u00a77.5 step 5 ('It fails a quick reference whose Parent\u2026') and \u00a77.2 step 6",
+     "kind": "wrong-fact",
+     "problem": "Lints 6 to 12 only warn unless run with --strict (check_traceability.py lines 12-13 and 58-62). Without the flag the script does not 'fail' a stale QR. \u00a78 already uses --strict, so the procedure and the checks table disagree.",
+     "fix": "Use `python3 tools/check_traceability.py --strict` in \u00a77.5 step 5 and at the end of \u00a77.2 step 6."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-000.md",
+     "where": "\u00a74 Status bullet, last sentence 'because members read headers, not the INDEX footnotes'",
+     "kind": "style",
+     "problem": "R-IDX-02 splits the INDEX notes into sections, so CS-INDEX no longer has footnotes. The sentence now describes a file that no longer exists in that form.",
+     "fix": "Change it to 'because members read headers, not CS-INDEX.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-INDEX.md",
+     "where": "Candidate future standards, first bullet: 'Honeycomb skins follow CS-007 for now; core-specific rules are not written yet.'",
+     "kind": "wrong-fact",
+     "problem": "CS-007 (src and draft) never mentions honeycomb or Nomex. It covers foam cores only, in \u00a77.7 'Foam-wrapped elements'. Audit A-26 and the register give no source for this sentence; it reads as new guidance invented in the INDEX.",
+     "fix": "Delete the sentence. Alternatively: 'No standard covers honeycomb or Nomex cores; CS-007 \u00a77.7 covers foam-wrapped elements only (Slack ts 1791680440.315469 on Nomex vs G10 insert thickness).'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-INDEX.md",
+     "where": "Revision history row F: 'Engineering pass: every standard moved one letter; CS-007 and CS-009 out of outline.'",
+     "kind": "wrong-fact",
+     "problem": "Commit 6335ae4 also moved CS-008 from Outlined to Drafted (Depth column), and the 2026-08-28 change log says CS-008 dropped its '(outline)' label. The back-filled row leaves CS-008 out.",
+     "fix": "Write 'CS-007, CS-008 and CS-009 out of outline.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-INDEX.md",
+     "where": "Standards table, CS-011 and CS-012 rows, Depth column",
+     "kind": "style",
+     "problem": "The Status column now carries the parenthetical, as R-IDX-04 requires: '(storage-map locations to field-verify)' and '(re-verify tiers/names each fall)'. The Depth column still repeats it, so each row says the same thing twice.",
+     "fix": "Set Depth to 'Drafted' for CS-011 and CS-012, as was done for CS-007 and CS-009."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-Template.md",
+     "where": "header Status field: 'Draft, pending Lead signature / Released / Under Revision / Retired'",
+     "kind": "other",
+     "problem": "CS-000 Rev D \u00a74 and \u00a77.2 step 2 (R-000-06) say Under Revision is written in CS-INDEX only and the header keeps its status. The template still offers Under Revision as a header value.",
+     "fix": "Use 'Draft, pending Lead signature / Released / Retired (a doc is never \"Released\" while its Approver row is blank; Under Revision is shown in CS-INDEX only)'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-001.md",
+     "where": "\u00a77.6 table, Fabric row: 'with received and expiry dates in the footer'",
+     "kind": "wrong-fact",
+     "problem": "FAB lots have no expiresOn field. shop.js:971-975 says 'FAB deliberately has no expiresOn', and FAB's field list has none. labelLines for lots prints EXP only when expiresOn exists (labels.js:470-476), so a fabric label never shows an expiry date. Its bold key line is ratio \u00b7 role, which is blank for fabric (R-OTH-25).",
+     "fix": "Write 'The vendor lot number on the detail line under the (blank) key line; received date and shelf in the footer. Dry fabric has no expiry field (R11, shop.js).'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-001.md",
+     "where": "\u00a74 Class word bullet: 'It is not printed on the label'; \u00a77.6 Storage location row",
+     "kind": "wrong-fact",
+     "problem": "A storage location's label prints the class word as its bold key line: labels.js:484 sets key: \"STORAGE\". The absolute statement is false for one class, and the \u00a77.6 Storage row does not mention the key line.",
+     "fix": "In \u00a74 write 'It is not printed on the label, except on a storage location, whose key line reads STORAGE.' In \u00a77.6 Storage row add 'Key line STORAGE;' before 'Site and kind of location'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-001.md",
+     "where": "\u00a77.2 'Stock rule' shall vs \u00a77.8 and \u00a77.9 step 2",
+     "kind": "other",
+     "problem": "The new shall (R-001-04) says anything that will see IPA, acetone or resin 'shall get a 5522 polyester label'. That covers molds and after-trim parts. Yet \u00a77.8 is 'the documented path, not a degraded one', laminated paper that 'survives repeated IPA wipes'. And \u00a77.9 step 2 sends people to Avery 5161 with the \u00a77.8 overlaminate when the printer breaks. A member following \u00a77.9 on a mold breaks a shall.",
+     "fix": "Narrow the shall to what the register's evidence supports. Write: 'shall get a 5522 polyester label, or a \u00a77.8 overlaminated sheet label where 5522 is not on hand, never direct-thermal roll stock (DK-2210, DK-1201).' Flag it to Simon and Nick as a wording change to R-001-04 in the Process-rule table."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-001.md",
+     "where": "\u00a77.5 step 1 (two labels on 5522; roll pair only for parts that will not be wiped or clear-coated)",
+     "kind": "other",
+     "problem": "This is the drafter's reconciliation of R-001-04 with R-001-22, which said 'On a roll set Copies of each to 2'. It changes the demould shop step: the roll pair is no longer the default for a part. The step also packs four actions (print, print again with Start at cell, apply A, staple B) into one numbered step.",
+     "fix": "Have Simon or Nick confirm the 5522 default before promotion, and note the deviation from R-001-22 in the register. Split the printing into a lettered sub-procedure, or keep only 'Print two identical labels on 5522 (\u00a77.1 step 3 for a second print on the same sheet)' in step 1 and move the roll caveat to a sentence after the list."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-001.md",
+     "where": "\u00a77.13 step 4: 'cannot carry `?`, `#`, `&` or `_`'",
+     "kind": "wrong-fact",
+     "problem": "clQrTrouble (labels.js:956-965) refuses any character outside QR alphanumeric mode, not just those four. Commas, '@', '!' and so on are refused too. The list reads as exhaustive.",
+     "fix": "Write 'can carry only `0-9 A-Z space $%*+-./:` (R8); anything else, such as `?`, `#`, `&` or `_`, is refused (R11, clQrTrouble). Lowercase is uppercased.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-001.md",
+     "where": "\u00a72 Scope: 'resin, hardener and consumable containers (most of which are identified by their UC EH&S tag, \u00a77.11)'",
+     "kind": "wrong-fact",
+     "problem": "Only chemical containers carry an EH&S tag. Cups, bag film and tape (the \u00a77.2 Consumable row) never do, so 'most of which' is wrong for consumables.",
+     "fix": "Write 'resin, hardener and chemical consumable containers (identified by their UC EH&S tag, \u00a77.11), other consumables (by box or bin)'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-001.md",
+     "where": "\u00a77.6 R&D builds paragraph: 'capped (14 characters, \u00a74)'",
+     "kind": "other",
+     "problem": "CS-001 \u00a74 does not state the 14-character ID cap. CS-013 \u00a74.1 does, so the cross-reference points at the wrong section. This error predates the draft, but the paragraph was edited this round.",
+     "fix": "Change '(14 characters, \u00a74)' to '(14 characters, CS-013 \u00a74.1)'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-001.md",
+     "where": "\u00a77.4 Re-sealing: example `SEALED 2025-11-02 \u00b7 USES 09`",
+     "kind": "other",
+     "problem": "The mold label's key line prints sealed date, sealed-by, uses and revision (labels.js:428-431). R-004-10 changes the same example in CS-004 \u00a77.5 to 'SEALED 2025-11-02 \u00b7 J LEE \u00b7 USES 09'. The two standards would quote different labels.",
+     "fix": "Use `SEALED 2025-11-02 \u00b7 J LEE \u00b7 USES 09` (placeholder name), matching CS-004 Rev E."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-002.md",
+     "where": "\u00a77.1 step 1: 'The part's Manufacturing Engineer (RE) drafts the stack'",
+     "kind": "other",
+     "problem": "R-002-07 says 'The ME drafts the stack'. R-002-08 and people.js:136 define ME as the Mold Engineer. The drafter kept the Manufacturing Engineer (RE), which matches src and audit C-07. The register contradicts itself, and the draft departs from a 'do' row without the register recording it.",
+     "fix": "Have Simon or Nick decide. If RE stands, correct R-002-07 in REGISTER.md to 'The RE drafts\u2026' so the history row's 'R-002-01..13' is true."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-002.md",
+     "where": "\u00a77.2 step 2 (R-002-02)",
+     "kind": "other",
+     "problem": "The register's last clause, 'A lead may add a note requirement to Stack frozen in Layup techniques', was omitted. The omission is correct: the technique editor has a single 'Evidence required' select per step (workorders.js:1841), so a note requirement would replace 'needs a layup stack'. But the history row claims R-002-01..13 in full, and the Process-rule table still lists the clause.",
+     "fix": "Keep the draft text. Amend R-002-02 in REGISTER.md and its Process-rule row to drop the 'lead may add a note requirement' clause, citing workorders.js:1841."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-002.md",
+     "where": "\u00a77.2 step 3 'season timeline'; \u00a77.4 step 3 and \u00a78 rows 'Mass vs target' and 'Thickness vs target' ('WO qualityChecks')",
+     "kind": "ui-label",
+     "problem": "The app tab is 'Schedule' (core.js:3578; R-005-08 uses 'Schedule tab'), and the run's section is 'Quality' (workorders.js:1394). \u00a75, \u00a77.2 and \u00a79 were rewritten to the app model, so these leftovers now contradict the rest of the doc.",
+     "fix": "Change 'season timeline' to 'the Schedule tab'. Change 'WO qualityChecks' to 'the run's Quality section' in \u00a77.4 step 3 and in both \u00a78 Record-where cells."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-002.md",
+     "where": "\u00a77.2 step 3 and \u00a77.4 step 4",
+     "kind": "style",
+     "problem": "Step 3 now holds four actions: edit the run's stack, raise Revision, write why in Notes, then Compare and Adopt. Step 4 holds three. STYLE \u00a72 asks for one action per step. CS-013 cites 'CS-002 \u00a77.2 step 3', so that number has to stay.",
+     "fix": "Keep step 3 as the trigger: 'A frozen stack changes only by a run revision (steps 4 to 6).' Append \u00a77.2 steps 4 to 6: edit the run's stack in Stack & BOM; raise Revision one letter in Details and write why in Notes; if future runs should follow, press Compare, then Adopt as the part's plan. Do the same for \u00a77.4 step 4 with appended steps 5 and 6."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-013.md",
+     "where": "\u00a74 R&D part / R&D WO bullet, the three indented '  - ' sub-bullets",
+     "kind": "style",
+     "problem": "build_docx.py strips indentation (stripped = line.strip(); line 196 matches ^[-*]), so in the .docx these become top-level bullets. They look like three new definitions with no term. Only the pandoc PDF nests them.",
+     "fix": "Fold them into the bullet as sentences ('It is kept off the Season tab, \u2026 It is counted and marked everywhere else, \u2026 The flag lives on the part; \u2026'), or give each a bold term label as its own definition."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-013.md",
+     "where": "\u00a77.5 step 4 (R-013-05 shall)",
+     "kind": "other",
+     "problem": "The register shall reads 'every bagged technique keeps its drop-test blocker'. The draft says 'a technique with a drop-test blocker shall keep it'. Mold wet lay is bagged and has no drop-test step, so the draft's wording is weaker than the register's. It is correct for the code as shipped, and it adds 'ahead of the first physical step / ahead of the resin step', which the register does not ask for. R-007-04 separately asks a lead to add a 2 inHg drop test to both wet-layup techniques.",
+     "fix": "Keep the wording, but record it as the new R-013-05 text in REGISTER.md's Process-rule table. Add one sentence to step 4: 'CS-007 \u00a77.5 asks a lead to add a drop-test blocker to Mold wet lay and Foam wrapped (R-007-04); once added, this rule covers it.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-013.md",
+     "where": "\u00a77.6 step 2",
+     "kind": "style",
+     "problem": "One step holds four actions: set Disposition, write What happened, write What was done, press Resolve. A gloved member on a phone loses their place in it.",
+     "fix": "Split into appended steps after step 5 (e.g. \u00a77.6 steps 6 to 9), or turn step 2 into 'Close it on the issue's page: Disposition, then What happened, then What was done, then Resolve.' with the prompt examples moved to a sentence after the list."
+    }
+   ]
+  },
+  {
+   "verdict": "The drafts are close, and nothing needs a full redraft. Things I confirmed: revision blocks are right (one new letter each, one new history row, Effective 2026-10-10, status wording kept). There are no em dashes in any of the six files. No existing heading was renumbered: only renames and appended \u00a77.6/\u00a77.9 sections, checked by diffing heading lists against src/. CS-011 \u00a76 is byte-identical to src. The DP420, LiME LiNE, IN2, XCR, West and SDS flash-point numbers match the PDFs, none is read from a stand-in, and almost every UI label greps to the code. Problems to fix: (1) Simon's 2026-10-10 answers override three rows the drafts treat as held or open: R-009-06 and R-010-05 PPE are now do (rule), and the CS-011 tacky-tape supplier is Airtech AT-200Y. (2) Under R-IDX-04 the CS-009 and CS-010 header Titles must equal their H1s, and the CS-INDEX draft already uses the H1 text. (3) Four cross-references point at the wrong section (CS-012\u2192CS-014 \u00a75 and \u00a77; CS-014\u2192CS-012 \u00a77.2 and CS-011 \u00a75). (4) CS-014 \u00a77.9 turns CS-008's \"should\" on expiry into a numbered requirement and pre-empts the held R-014-07. (5) CS-014 describes two receiving-desk warnings the code does not raise. (6) CS-009 \u00a77.5 still says Jacobs rules govern every cutting machine. (7) The proposal says an EH&S import ran when the audits say the production import has not. The rest are small style fixes.",
+   "issues": [
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-009.md",
+     "where": "\u00a76 (line 81) and revision row D",
+     "kind": "register-miss",
+     "problem": "R-009-06 was held when drafted, but REGISTER 'Answers from Simon (2026-10-10)' makes it do (rule): PPE the shop already stocks is written as a requirement, and anything that must be bought is written as 'should'. \u00a76 still has the old one-line PPE bullet. The CS-003 draft \u00a76 cites a 'CS-009 PPE table' that does not exist. The DP420 SDS on file (03 Datasheets/3M-SDS-DP420-Black.pdf) is not cited anywhere in the draft.",
+     "fix": "Round 6: add a PPE-by-task table under \u00a76 for cutting, sanding or machining CF or G10, solvent wipe, DP420, and clear coat. Use the respirator with the shop-stocked 3M 60921 OV/P100 cartridge (03 Datasheets/3M-spec-60921-OV-P100-Cartridge.pdf) as the dust minimum ('shall'), gloves per the Ansell charts, and any goggles not stocked as 'should' (and add them to Nick's purchase list). Add the DP420 SDS as a reference row. Change the history row's 'The PPE-by-task table (R-009-06) is held for Simon' to say what was added. Align facts.js:30 (R-OTH-31)."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-009.md",
+     "where": "Header table, line 6 (Title)",
+     "kind": "register-miss",
+     "problem": "R-IDX-04 (do (rule)) names CS-009: the header Title must equal the H1 minus the ID. The header reads 'Trimming, Sanding & Finishing of Cured Composites' but the H1 is 'Trimming, Sanding & Finishing'. The CS-INDEX draft row already uses the H1 text, so header and INDEX now disagree.",
+     "fix": "Change line 6 to '| **Title** | Trimming, Sanding & Finishing |' and add 'header title matches the H1 (R-IDX-04)' to the Rev D row."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-009.md",
+     "where": "\u00a77.5 step 1, last sentence",
+     "kind": "wrong-fact",
+     "problem": "'Jacobs shop rules govern the machine.' \u00a77.5 now also covers the RFS ShopSabre (governed by CS-005) and the RFS composites bandsaw (RFS training), so this sentence is wrong for two of the three machines.",
+     "fix": "Delete it from step 1. Make step 2 read: 'Pick the machine by the job and your training: the Jacobs Hall OMAX waterjet (Jacobs waterjet training; Jacobs shop rules govern it), the RFS ShopSabre (CS-005 governs it; ask RFS staff before machining G10), or the RFS composites bandsaw (RFS composites bandsaw training) (R8).'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-009.md",
+     "where": "\u00a77.6 step 9 and \u00a78 row 'Insert bond record'",
+     "kind": "other",
+     "problem": "'Record in the step note' and 'Step note (\u00a77.6 step 9)' never name a step. Insert bonds are often cross-team jobs on Other runs, whose steps are 'Define acceptance criterion\u2026', 'Execute' and 'Verify against criterion' (workorders.js:291-292). A member cannot tell where to write.",
+     "fix": "In step 9 write: 'Record in the note on the step where the bond is done (\"Trim and finish\"; \"Finish\" on a Glass infusion run; \"Execute\" on an Other run): adhesive and lot, prep done, time bonded, and time first loaded.' Use the same wording in the \u00a78 Record-where cell."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-009.md",
+     "where": "\u00a77.2 step 1",
+     "kind": "style",
+     "problem": "One step carries five actions: read the stack, stop sanding, press \u2691, add photos under 'Photos of the defect', and leave the Disposition. STYLE \u00a72 asks for one action per step.",
+     "fix": "Keep step 1 as 'Read the run's stack before sanding anything. The sanding budget is the sacrificial ply and only the sacrificial ply (Figure 1).' Append the weave-past-plan sequence as new steps after step 3 (4: stop sanding; 5: press \u2691 (Report an issue on this step) on \"Trim and finish\" (\"Finish\" on a Glass infusion run); 6: add the spot under \"Photos of the defect\"; 7: leave the Disposition to the part's engineer or the Composites Lead), so step 3 keeps its number for the figure. Point \u00a78 at \u00a77.2 steps 4 to 7."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-010.md",
+     "where": "\u00a76 Safety (line 71) and revision row D",
+     "kind": "register-miss",
+     "problem": "R-010-05 is now do (rule) per 'Answers from Simon': P100 respirator and nitrile gloves while weighing and mixing graphite powder, and gloves for cut copper mesh. \u00a76 is unchanged and the history row still says it is held.",
+     "fix": "Round 6: add to \u00a76: 'Graphite powder (\u00a75, \u00a77.2 step 4): wear the respirator with a P100 cartridge and nitrile gloves while weighing and mixing it. No graphite SDS is on file yet. Cut copper mesh has sharp wire ends: wear gloves when cutting and placing it.' The shop stocks OV/P100 (R-008-04 evidence), so write it as a requirement. Update the Rev D row."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-010.md",
+     "where": "Header table, line 6 (Title)",
+     "kind": "register-miss",
+     "problem": "Under R-IDX-04 (which names CS-010), the header Title 'Carbon Fiber Grounding & Electrical Bonding' differs from the H1 'CF Grounding & Electrical Bonding'. The CS-INDEX draft uses the H1 text.",
+     "fix": "Change line 6 to '| **Title** | CF Grounding & Electrical Bonding |' and note R-IDX-04 in the Rev D row."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-010.md",
+     "where": "\u00a77.3 step 3 (measuring step)",
+     "kind": "ui-label",
+     "problem": "The measuring step is named only for Other ('Verify against criterion') and Mold infusion ('Trim and finish'). Glass infusion ends in 'Finish', and Mold wet lay and Foam wrapped end in 'Trim and finish' (workorders.js:281-290), so a member on those runs gets no step name.",
+     "fix": "Write: '(\"Trim and finish\" on Mold infusion, Mold wet lay and Foam wrapped runs; \"Finish\" on a Glass infusion run; \"Verify against criterion\" on an Other run)'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-011.md",
+     "where": "\u00a75 table, Tacky tape row (line 79), and the Tacky tape bullet (line 68)",
+     "kind": "register-miss",
+     "problem": "Simon answered open question 10 on 2026-10-10: the team buys Airtech AT-200Y (R-011-03, R-006-12, R-OTH-22). The draft still says 'Not settled: CS-006 \u00a75 names Airtech / General Sealants, the app's restock table names Easy Composites'.",
+     "fix": "Round 6: set the Supplier cell to 'Airtech (AT-200Y, `03 Datasheets/AIRTECH-TDS-AT-200Y-Sealant-Tape.pdf`)'. Keep 7 days as the team planning lead time, and add one clause that the app's restock table still says Easy Composites until R-OTH-22 lands. Make the same change in CS-006 \u00a75."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-011.md",
+     "where": "\u00a75, last paragraph (line 90)",
+     "kind": "ui-label",
+     "problem": "'set Material type when a delivery is received (CS-014)' tells the member to set a field the Receiving desk does not have. The sheet's columns are Class, What is it, How many, Shelf, Vendor lot, EH&S tag, Expires and $ each (receiving.js:572-573). Material type is filled from the name or the materials table; blanks are filled with Link materials or by Edit on the lot.",
+     "fix": "Rewrite as: 'A Material type appears on Running out only once at least one lot carries it. The Receiving desk fills it from the name (CS-014 \u00a77.3 step 6); for a lot that still has none, press Link materials on the Materials list (CS-014 \u00a77.7 step 3) or set it with Edit on the lot.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-011.md",
+     "where": "\u00a77.3 table row 'Foam and tooling-board stock' and step 1; \u00a77.6 step 1",
+     "kind": "style",
+     "problem": "'Log boards and offcuts under Inventory \u2192 Boards' is said twice in \u00a77.3, once in the table Rule cell and again as step 1. \u00a77.6 step 1, crystallized West 105 warmed to 125 \u00b0F, repeats the CS-008 draft \u00a77 step 8 word for word. That is the same procedure in two standards, and one will drift.",
+     "fix": "Set the table Rule cell to 'Board stock goes on Inventory \u2192 Boards (step 1)'. In \u00a77.6 step 1 keep the storage fact (no repeated freeze/thaw) and point to 'CS-008 \u00a77 step 8' for the warm-and-stir step instead of restating it."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-012.md",
+     "where": "\u00a77.2 step 7",
+     "kind": "other",
+     "problem": "The cross-reference '(CS-014 \u00a75)' points at the wrong section. CS-014 \u00a75 holds only the AI facts (switch, $80, 50 reads/day) and says outright 'They are facts about the app, not rules'. The shall that 'anything a \u2728 button fills is a draft' is in CS-014 \u00a77.4.",
+     "fix": "Change to '(CS-014 \u00a77.4)'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-012.md",
+     "where": "\u00a77.1 table, Arrived row",
+     "kind": "other",
+     "problem": "'(CS-014 \u00a77)' points at the whole procedure. The instruction to set Arrived by hand is CS-014 \u00a77.5 step 9.",
+     "fix": "Change to '(CS-014 \u00a77.5 step 9)'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-012.md",
+     "where": "\u00a77.2 steps 4 and 5",
+     "kind": "style",
+     "problem": "The steps are out of order for someone following them. Step 4 submits with `/reimburse` and 'the reference ID' before step 5 says how to pick that ID, and \u00a77.1 step 1 needs the ID even earlier (it points forward to \u00a77.2 step 5).",
+     "fix": "Swap the two steps so picking the reference ID is step 4 and submitting is step 5. Change \u00a77.1 step 1's pointer to '(\u00a77.2 step 4)'. No code or other standard cites \u00a77.2 step numbers."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-012.md",
+     "where": "\u00a77.4 step 4",
+     "kind": "ui-label",
+     "problem": "'opens one Restock purchase' names no control. In the app, Restock is a Purpose value (budget.js:42 PURPOSE), and the Running out card's purchases are created with purpose 'Restock' (inventory.js submitRestockPurchase).",
+     "fix": "Write: 'Before each Easy Composites order, the lead presses + New Purchase in Budget and sets Purpose to Restock. Members add their wants to it as Line items (+ Line).'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-012.md",
+     "where": "\u00a77.5 step 1 against \u00a78 row 'No unplanned rush shipping'",
+     "kind": "other",
+     "problem": "\u00a78 checks for 'The lead's sign-off written in the purchase's Notes', but \u00a77.5 never tells anyone to write it there.",
+     "fix": "Add to \u00a77.5 step 1 (or as a step 2): 'The lead writes the sign-off and the alternative considered in the purchase's Notes.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-012.md",
+     "where": "\u00a77.2 step 4 (gift cards) and \u00a77.8 intro",
+     "kind": "style",
+     "problem": "'The 2025 rules also excluded gift cards (R4)' leaves a member unsure whether gift cards are allowed now. The \u00a77.8 intro cites 'CS-001 Rev C's \u00a75', a revision three letters old, which no longer resolves to the text it describes.",
+     "fix": "Step 4: 'Gift cards: ask the finance lead first (the 2025 rules excluded them, R4).' \u00a77.8 intro: 'Filed here rather than left implicit: the printer is the one CS-001 \u00a75 item the team has not bought.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-014.md",
+     "where": "\u00a77.9 steps 1-2",
+     "kind": "held-item-changed",
+     "problem": "A numbered \u00a77 step is a requirement (STYLE \u00a72), so 'Before you open or mix from a container, check Expires' and 'If it is past its date, do not mix it' are stronger than the rule they cite. That rule, R-008-11 as written in the CS-008 draft \u00a77 step 1, is a 'should' that ends 'Past it, ask a lead before it goes on a part'. 'Do not mix it' also pre-empts the expired-material decision held under R-014-07.",
+     "fix": "Replace the two steps with an unnumbered sentence: 'You should check Expires on the container or its lot page before you mix (CS-008 \u00a77 step 1). Past it, ask a lead before it goes on a part.' Keep the [lead input needed] marker below."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-014.md",
+     "where": "\u00a77.5 step 9",
+     "kind": "other",
+     "problem": "The cross-reference '(CS-012 \u00a77.2)' points at reimbursement. Order status is in CS-012 \u00a77.1 (the two-track table) and \u00a77.9 step 6.",
+     "fix": "Change to '(CS-012 \u00a77.1 table; \u00a77.9 step 6)'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-014.md",
+     "where": "\u00a77.8 step 6",
+     "kind": "other",
+     "problem": "'An Empty record counts as zero toward the minimum (CS-011 \u00a75)'. In the CS-011 draft that fact is in \u00a74 (How full definition, citing restockOnHand), not \u00a75.",
+     "fix": "Change to '(CS-011 \u00a74)'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-014.md",
+     "where": "\u00a77.6 step 4",
+     "kind": "wrong-fact",
+     "problem": "'The confirm warns when they differ' is not true in every case. rxEhsWarnings (receiving.js:869-872) warns when there are more codes than records, or when there are two or more codes but fewer than the records. One code on a three-jug row raises no warning, and the other two jugs are saved untagged.",
+     "fix": "Write: 'The confirm warns when a row has more codes than containers, or two or more codes but fewer than containers. One code on a multi-container row raises no warning, so count them yourself.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-014.md",
+     "where": "\u00a77.6 step 6",
+     "kind": "wrong-fact",
+     "problem": "'A code that is not 24 characters still saves, with a warning. Check it \u2026 before you go on.' The desk runs no length check: ehsShape is not called anywhere in receiving.js. The warning appears only later: on the lot page when the field is edited (shop.js:484), on the shelf row (inventory.js:680), and as 'check the tag' in the EH&S reconciliation export.",
+     "fix": "Write: 'The desk does not check a code's length. Count the characters against the tag before you press Create; a code that is not 24 characters saves anyway, and shows later as \"check the tag\" on the shelf page and in the EH&S reconciliation export.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-014.md",
+     "where": "\u00a77.10 step 3; \u00a78 rows 'Every chemical container has an EH&S tag' and 'Every chemical lot has Hazard set'",
+     "kind": "wrong-fact",
+     "problem": "invExportEhs (inventory.js:1011) exports every RSN and every CON lot. Mixing cups, gloves and bag film therefore appear with 'no EH&S tag on record' and a blank hazard. 'Work every note' and 'hazard column has no blanks' would send members hunting tags for cups and can never reach the 100% target.",
+     "fix": "Step 3: 'Work every note on a chemical container (resin, hardener, chemical consumable); a non-chemical consumable such as cups or gloves shows \"no EH&S tag on record\" and needs nothing.' \u00a78 Method cells: '\"no EH&S tag on record\" rows for chemical containers' and '`hazard` column has no blanks on chemical rows'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-014.md",
+     "where": "\u00a76 step 4, last sentence",
+     "kind": "wrong-fact",
+     "problem": "'That is the same test the EH&S import applies (ehsimport.js ehsHazard).' ehsHazard checks only GHS H220 to H226 (ehsimport.js:189). The 'older OSHA Class I flammable liquid' clause, needed for the Airtac SDS, is this standard's addition.",
+     "fix": "Write: 'The EH&S import applies the H-code half of this test (`ehsimport.js` ehsHazard); the OSHA Class I clause covers older US-format sheets such as Airtac's.'"
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-014.md",
+     "where": "\u00a77.2 step 4 ('24 hours') and \u00a77.3 step 7 ('more than 50 tracked units')",
+     "kind": "unsourced-number",
+     "problem": "Both numbers come from code constants, but the text gives no source (STYLE \u00a72: every number has a source).",
+     "fix": "Add '(`receiving.js` RX_DRAFT_MAX_AGE_MS)' after 24 hours and '(`receiving.js`, the review check on tracked rows)' after 50."
+    },
+    {
+     "file": "02 CS Standards/overhaul/drafts/CS-014.md",
+     "where": "\u00a77.10 step 6; \u00a77.5 step 6; \u00a74 EH&S tag definition; \u00a77.3 step 13",
+     "kind": "style",
+     "problem": "\u00a77.10 step 6 packs six actions into one step (export from RSS, choose file, tick sublocations, set 'Their shelf is our', untick, press Create N records), and \u00a77.5 step 6 has three. \u00a74 bolds '**EH&S barcode**' mid-sentence, which STYLE \u00a72 allows only for labels. \u00a77.3 step 13 says 'as the toast says', but the paste toast mentions only class and shelf (receiving.js:400).",
+     "fix": "CS-014 is a new document, so split \u00a77.10 step 6 and \u00a77.5 step 6 into one action per step. Unbold 'EH&S barcode' in \u00a74. In \u00a77.3 step 13 drop 'as the toast says', or write 'the toast reminds you of class and shelf; check How many as well'."
+    },
+    {
+     "file": "02 CS Standards/overhaul/proposals/CS-011-s6.md",
+     "where": "'What the app does now', second bullet (line 76)",
+     "kind": "wrong-fact",
+     "problem": "'The campus RSS export you imported on 2026-08-28 filed the team's containers\u2026' Audits B (line 298) and G (line 743) both report from SESSION-STATE that the production EH&S import has not been run, and R-014-02 and open question 16 rest on that. No source in the repo dates an import to 2026-08-28.",
+     "fix": "Rewrite as: 'Campus RSS files the team's containers under one sublocation, \"Formula Electric at Berkeley - Flammable Cabinet\", with resin and hardener together (`app/ehsimport.js` header comment; the lead decision comment at `app/inventory.js` 387-393). The production import has not been run yet (SESSION-STATE).'"
+    }
+   ]
+  }
+ ],
+ "revisions": [
+  "Applied (all edits are under `/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/`):\n\n1. **CS-000 \u00a74, Quick reference bullet.** Now \"each entry written in full (CS-008 \u00a75; CS-008 \u00a75.1), with one Checked against per entry, in the same order\". Checked against check_traceability.py lines 243-259.\n2. **QR-Template line 12.** Uses the wording the fix gave: every entry names its standard and has its own Checked against.\n3. **CS-INDEX, Parent cells for QR-001, 002, 005, 012, 013, 014 and 015.** Each entry repeats its doc ID and has its own check. The paragraph above the table now says the same.\n4. **CS-INDEX, QR-006, 007, 011 and 015.** The \"(also covers \u2026)\" text is gone from the Parent cells. One sentence under the table names the app files these QRs describe and says their headers carry Parent and Checked against, not Covers.\n5. **CS-000 \u00a77.2 step 2 and the \u00a74 Title bullet.** Step 2 now says check_traceability.py accepts INDEX Under Revision against a Draft header only once R-OTH-05 lands, and that lint 6 flags the pair until then (status_kw comparison at line 190, verified). The Title bullet gets the in-flight exception.\n6. **CS-000 \u00a77.2 steps 4 and 7.** The announcement sentence is cut from step 4. Step 7 ends with \"announce only after both deploys\".\n7. **CS-000 \u00a77.2 step 7.** Now reads \"The step 6 commit message names both deploys still to run; run them after the push.\"\n8. **CS-000 \u00a77.5 step 5 and the end of \u00a77.2 step 6.** Both use `--strict` (confirmed at lines 12-13 and 58-62).\n9. **CS-000 \u00a74 Status bullet.** Ends \"not CS-INDEX.\"\n10. **CS-INDEX history row F.** Now \"CS-007, CS-008 and CS-009 out of outline\" (confirmed in the 6335ae4 diff).\n11. **CS-INDEX, CS-011 and CS-012 rows.** Depth is now \"Drafted\".\n12. **CS-Template Status field.** \"Under Revision\" is dropped from the header values, with a note that it is shown in CS-INDEX only.\n13. **CS-001 \u00a77.6 Fabric row.** Rewritten as the fix gave it, citing `shop.js`. Verified: FAB has no expiresOn, and lots print EXP only when expiresOn exists.\n14. **CS-001 \u00a74 Class word and \u00a77.6 Storage row.** Both now say a storage location's key line reads STORAGE (labels.js:484 verified).\n15. **CS-001 \u00a77.2 Stock rule.** The shall is narrowed to allow a \u00a77.8 overlaminated sheet label where 5522 is not on hand. This changes the wording of R-001-04, so Simon and Nick need to see it and the Process-rule table in REGISTER.md needs the new text. I did not edit REGISTER.md because the rules keep me inside drafts/.\n16. **CS-001 \u00a77.5 step 1.** Reduced to \"Print two identical labels on 5522 (\u00a77.1 step 3 \u2026)\", then apply A and staple B, which is the same shape as the src step. The 5522 reason and the roll caveat moved to a paragraph after the list. Still open: Simon or Nick must confirm the 5522 default, and the register needs a note that this departs from R-001-22.\n17. **CS-001 \u00a77.13 step 4.** Now lists the full alphanumeric set, and says anything else is refused and lowercase is uppercased (`clQrTrouble`, verified).\n18. **CS-001 \u00a72 Scope.** Now reads \"chemical consumable containers (identified by their UC EH&S tag, \u00a77.11), other consumables (by box or bin)\".\n19. **CS-001 \u00a77.6 R&D paragraph.** Points to CS-013 \u00a74.1 (verified that \u00a74.1 states the 14-character cap).\n20. **CS-001 \u00a77.4 Re-sealing example.** Now `SEALED 2025-11-02 \u00b7 J LEE \u00b7 USES 09`, matching CS-004 line 157.\n21. **CS-002.** \"season timeline\" is now \"the Schedule tab\" (core.js). \"WO qualityChecks\" is now \"the run's Quality section\" in \u00a77.4 step 3 and both \u00a78 cells (workorders.js:1394).\n22. **CS-002 \u00a77.2 and \u00a77.4 splits.** \u00a77.2 step 3 keeps the Schedule sentence plus the trigger \"(steps 4 to 6)\". New steps 4 to 6: edit the stack, raise Revision and write Notes, then Compare and Adopt as the part's plan. \u00a77.4 step 4 is trimmed, with new steps 5 (\u21a9 plan) and 6 (Compare and Adopt). The \u00a74 Stack freeze definition now points at \"\u00a77.2 steps 3 to 6\". All labels were checked in the code.\n23. **CS-013 \u00a74 R&D bullet.** The three indented sub-bullets are folded into sentences.\n24. **CS-013 \u00a77.6 step 2.** Now one line on the issue's page: Disposition, then What happened, then What was done, then Resolve. The prompt examples moved to a sentence after the list (strings verified in projects.js:86-89).\n25. **CS-013 \u00a77.5 step 4.** The wording is kept. I added a pointer sentence, but not the one proposed; see the second rejection below.\n\nRejected or changed:\n\n- **CS-INDEX honeycomb sentence.** Not deleted. The claim that \"CS-007 (src and draft) never mentions honeycomb\" is wrong for the draft: drafts/CS-007.md line 39 (\u00a72, R-007-09 \"do\") says the skins of honeycomb (Nomex) cores follow CS-007. I added \"(CS-007 \u00a72)\" as the citation instead.\n- **CS-013 \u00a77.5 step 4, the proposed sentence \"CS-007 \u00a77.5 asks a lead to add a drop-test blocker\u2026\".** Not applied, because it contradicts drafts/CS-007.md \u00a77.5. That caution tells leads not to add a step between \"Wet layup and bag\" and \"Cure and demould\", because the cure hold reads only the step directly before it (R-007-04 was applied only in part, for this reason). I added this instead: \"Mold wet lay and Foam wrapped have no drop-test step; CS-007 \u00a77.5 says why a lead does not add one there and where the readings go instead.\"\n\nNot done because they need REGISTER.md, which is outside my write scope:\n\n- **R-002-07, ME vs RE.** Simon or Nick needs to decide. The draft keeps RE (Manufacturing Engineer).\n- **R-002-02.** The register row and its Process-rule row should drop the \"lead may add a note requirement\" clause, citing workorders.js:1841. The draft text is unchanged.\n- **R-013-05.** The Process-rule row should record the draft's narrower wording: a technique that already has a drop-test blocker keeps it.\n- **R-001-04 and R-001-22.** The wording change and the 5522-default note from items 15 and 16.\n\nChecks:\n\n- Heading numbers in CS-000, CS-001, CS-002, CS-013 and CS-INDEX are unchanged against src/. CS-001 only adds \u00a77.11 to \u00a77.13, and its renamed headings keep their numbers.\n- No new em dashes in any edited file. The only em dash in a changed CS-001 line is the quoted traveler string `R&D \u2014 NOT A SEASON DELIVERABLE`, which the earlier drafter wrote; this round did not touch it.",
+  "Applied all 24 fixes. None were rejected, and I checked each one against the code or datasheet before applying it. No em dashes were added. Existing heading numbers match `src/` in all seven drafts I edited. The only extra headings are the ones that were already appended: CS-006 \u00a77.8 and CS-001 \u00a77.11-7.13. CS-001 still has 2 em dashes, both in older text (the Rev D history row and \u00a74).\n\nApplied:\n1. CS-006 \u00a76: H360F added to the IN2 hazards (IN2 SDS lines 51 and 78).\n2. CS-003 \u00a76: Ure-Bond 90 Part A now lists the full SDS \u00a72 set (H315, H319, H317, H332, H334, H335, H351, H373), and Part B is stated as not classified (SDS 1386B).\n3. CS-006 \u00a77.8: rewritten as an optional step covering when, how and what to watch. The chamber, vacuum level and time under the bell are one `[NICK TO CONFIRM: ...]` spot. Steps 1-5 are kept as the controls that apply either way, and the history row is updated. The \"when\" and \"what to watch\" text has no numbers except pot life from R1, but it is my wording, so Nick should check it with the setup.\n4. CS-008 \u00a76: EUH071 added to the AT30 FAST row (SDS line 2324).\n5. CS-004 header: Title is now \"Mold Sealing, Release & Surface Prep\", and R-IDX-04 is in the history row.\n6. CS-006 \u00a75 tacky tape: Airtech AT-200Y, citing the TDS and `AIRTECH-SDS-Sealant-Tapes.pdf` (both on disk), with Airtech as the source. The notes cell is unchanged and the history row is updated.\n7. CS-003 \u00a77.3 step 3: cut on a saw (the ShopSabre may be used), with the 1/8 in kerf cited to `packer.js` (`KERF_MM = 3.175`).\n8. CS-003 \u00a77.3 step 14: mold ID `MOLD-SN6-###` added to the glue-up marking, and the history row is updated. To keep CS-001 in step, CS-001 \u00a77.4 step 1 also adds the mold ID, with a clause in its Rev G row. The rest of R-001-17 (marking blanks at the tooling cut) is still not applied in CS-001.\n9. CS-003 \u00a77.3 step 15: split into 15 (set the stage) and 16 (note and sign, with the \"Glue and machine mold\" branch). The old step 16 is now 17, and the \u00a78 \"Record where\" cell is updated. I confirmed in `workorders.js:273/284` that \"Glue mold stock\" has no required note and that MoldWetLay has only \"Glue and machine mold\". Notes are optional on any step.\n10. CS-007 \u00a77.5: the CAUTION now states the app limit as plain fact, with no \"do not\". Confirmed that `holdState` reads `steps[idx-1]` (`workorders.js:721-738`). The register rows go in the new file `proposals/register-rows-from-R2-review.md`, since `REGISTER.md` is outside my write scope: R-007-13 (process rule; withdraws the second half of R-007-04, and the same limit applies to R-013-05) and R-OTH-33 (the holdState change).\n11. CS-006 \u00a76: Eyes is now EN 166 safety glasses as a shall. A new Respirator bullet makes ABEK (EN 14387) a should and puts the cartridges on the purchase list. \"(03 held)\" is removed.\n12. CS-004 \u00a76: Eyes and Skin are now separate bullets. Glasses are a shall, prescription glasses don't count (XCR SDS line 354), and EN 166 goggles are a should and on the purchase list. The history row now ends \"Register R-004-01..14.\"\n13. CS-003 \u00a76: PPE is now safety glasses, long sleeves and nitrile gloves (TB line 18), plus the CS-009 respirator as a should (SDS P284). R-003-02 is removed from the held list. P284 says to wear respiratory protection and the shop does stock a respirator, but I kept \"should\" as the fix specified because OV/P100 cartridges aren't shown to protect against MDI. Simon may want that settled.\n14. CS-008 \u00a76 PPE: replaced the A-filter line with the given text (A1 for XCR at XCR SDS line 375, ABEK for AT30). \"(04 held)\" is removed.\n15. CS-003 \u00a77.1 step 8 and \u00a77.2 row 11: \"the Stack view on the mold page\" (molds.js:629 has the heading \"Stack\").\n16. CS-006 \u00a77.5 step 6: `fill in \"Shop temperature, \u00b0C (optional)\"` (workorders.js:2761).\n17. CS-008 R3: 205 and 206 open `105_205-207-Combined.pdf`, and 209 opens `105-209-Epoxy-Resin-1.pdf` (resins.js:80/88/96).\n18. CS-004 \u00a75 IPA: the \"\u226590%\" figure is gone. The cell now says the 91% bottle, as a team rule, with the app record \"Isopropyl alcohol 91%\" (materials.js:92).\n19. CS-003 \u00a77.2 paragraph: the cut-list sentence now says to check the run's Mold design review is signed before cutting any blank (\u00a77.3 step 1).\n20. CS-007 \u00a77.6: the buy-off is now step 1's second paragraph, step 2 stays the demold rule, and the record line is appended as step 3. \u00a77.7's \"\u00a77.6 step 2\" is now \"step 1\", and there's a clause in the history row.\n21. CS-005: the history row now records that the title was kept as the H1 (ShopSabre), with \"at RFS\" not added so the built filename stays the same.\n22. CS-004 \u00a77.3 step 6: kept as the overcoat check. The coat count and the mixed-grade should moved to an indented paragraph under step 4. The tack-free recoat is now its own sub-list of five actions. Steps 7 and 8 are unchanged.\n23. CS-004 \u00a77.1 compressed air: the draft text is unchanged, as the fix says. The proposed row R-004-15 (process rule, hold: Simon) is in the same proposals file. It also points out that the \u00a77.3 step 6 recoat says \"Blow off the dust\", which raises the same question.\n24. CS-003 \u00a73: references renumbered to R7-R10 with R6 left out, as R-003-22 says. Inline citations are updated: step 2 is now R7, the add-in R8, the board TDS R10. The history row notes that R6 (Rohacell) was dropped.\n25. CS-006 \u00a74: the resin trap sentence is unbolded, noted under R-006-15 in the history row.\n\nRejected: none.\n\nFiles changed, all under `/Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/`:\n- drafts/CS-001.md\n- drafts/CS-003.md\n- drafts/CS-004.md\n- drafts/CS-005.md\n- drafts/CS-006.md\n- drafts/CS-007.md\n- drafts/CS-008.md\n- proposals/register-rows-from-R2-review.md (new)",
+  "Applied:\n- **CS-009 \u00a76, PPE table (R-009-06):**\n  - Replaced the one-line PPE bullet with a PPE-by-task table: cutting, sanding or machining CF, glass or G10; solvent wipe; DP420; clear coat Part A.\n  - Shop-stocked PPE is a shall: respirator with OV/P100 cartridges (`inventory.js` restock row \"A + P100\"), nitrile gloves, safety glasses.\n  - Unstocked PPE is a should and goes on the purchase list.\n  - Glove figures come from the Ansell charts: IPA 117 min through 0.11 mm nitrile, acetone 21 min through 0.45 mm. No number comes from the stand-in solvent SDSs.\n  - DP420 PPE comes from its SDS \u00a78.2.2. Clear coat PPE comes from the Part A SDS \u00a78.\n  - Added R9 (3M 60921), R10 and R11 (Ansell charts) and R12 (DP420 SDS) as appended reference rows.\n  - Rev D row now says what was added. The CS-003 citation of a \"CS-009 PPE table\" now resolves.\n- **CS-009 header Title:** now matches the H1. R-IDX-04 is noted in Rev D.\n- **CS-009 \u00a77.5:** step 1's Jacobs sentence is deleted and step 2 uses the given wording.\n- **CS-009 \u00a77.6 step 9 and \u00a78 \"Insert bond record\":** both now name the step per run type (\"Trim and finish\" / \"Finish\" / \"Execute\").\n- **CS-009 \u00a77.2:** step 1 is trimmed. Weave-past-plan is now steps 4 to 7 under a lead-in line, so step 3 keeps its number, and \u00a78 points at steps 4 to 7.\n- **CS-010 \u00a76 (R-010-05):**\n  - Graphite powder needs the respirator with P100 and nitrile gloves while weighing and mixing. Gloves for cut copper mesh. A note that no graphite SDS is on file.\n  - These are written as requirements because the shop stocks both (`inventory.js`).\n  - Rev D row updated.\n- **CS-010 header Title:** now matches the H1. R-IDX-04 is noted in Rev D.\n- **CS-010 \u00a77.3 step 3:** the measuring step is named for all five run types (checked against `workorders.js` STD_STEPS and humanProcess).\n- **CS-011 \u00a75 tacky tape:** supplier is now Airtech AT-200Y with the TDS path, 7 days marked as a team planning value, and a clause that the restock table still says Easy Composites until R-OTH-22 lands. Rev E row updated. CS-006 \u00a75 already named Airtech AT-200Y, so no change was needed there.\n- **CS-011 \u00a75 last paragraph:** rewritten as given. Link materials and Edit were checked in `shop.js`; the CS-014 \u00a77.3 step 6 and \u00a77.7 step 3 references were checked.\n- **CS-011 \u00a77.3:** the table Rule cell now reads \"Board stock goes on Inventory \u2192 Boards (step 1)\".\n- **CS-012:**\n  - \u00a77.2 step 7 now cites CS-014 \u00a77.4.\n  - The Arrived row cites a CS-014 \u00a77.5 step. It was set to step 9, then moved to step 11 after the CS-014 \u00a77.5 split below.\n  - \u00a77.2 steps 4 and 5 are swapped, and \u00a77.1 step 1 points to step 4. No code cites these step numbers, and the original step 5 was already replaced in this draft.\n  - \u00a77.4 step 4 uses + New Purchase, Purpose = Restock and + Line (checked in `budget.js`).\n  - \u00a77.5 has a new step 2: the sign-off goes in Notes.\n  - Gift cards: \"ask the finance lead first\".\n  - The \u00a77.8 intro no longer cites CS-001 Rev C.\n  - Rev G row updated.\n- **CS-014:**\n  - \u00a77.9 steps 1 and 2 are replaced by the unnumbered should sentence. The [lead input needed] marker is kept.\n  - \u00a77.5 step 9 (now 11) cites CS-012 \u00a77.1 table and \u00a77.9 step 6.\n  - \u00a77.8 step 6 cites CS-011 \u00a74.\n  - \u00a77.6 step 4 has the exact warning conditions from rxEhsWarnings. I also aligned \u00a77.5 step 3's wording to match.\n  - \u00a77.10 step 3 and the two \u00a78 Method cells are limited to chemical containers.\n  - \u00a76 step 4 rewritten as given.\n  - 24 hours and 50 units now carry their `receiving.js` sources.\n  - \"EH&S barcode\" in \u00a74 is unbolded.\n  - \u00a77.3 step 13 toast wording fixed.\n  - \u00a77.5 step 6 is split into steps 6 to 8, so old 7 to 9 are now 9 to 11. \u00a77.10 step 6 is split into steps 6 to 11, so old 7 is now 12. No code or other draft cites these step numbers except CS-012, which is updated.\n- **proposals/CS-011-s6.md:** the second \"What the app does now\" bullet is rewritten as given. I checked `ehsimport.js` lines 4-6, `inventory.js` lines 387-393, and SESSION-STATE lines 172-173 (\"nothing imported into production yet\").\n\nPartly applied or rejected:\n- **CS-009, align facts.js:30 (R-OTH-31):** not done. Round 2 writes only to drafts and proposals, so the code change is left for whoever lands R-OTH-31.\n- **CS-011 \u00a77.6 step 1 (crystallized 105):** partly applied. STYLE \u00a72 says \"the number goes in the step\u2026 never 'see elsewhere'\", so a plain pointer would break the house rule. The step keeps the storage fact and its TDS citation, keeps 125 \u00b0F in one short clause, and names CS-008 \u00a77 step 8 as the step that owns the procedure. The rest of that fix (the table Rule cell) is applied.\n- **CS-014 \u00a77.6 step 6:** applied with one correction. The shelf page does not show \"check the tag\"; `inventory.js` invEhsShort marks a bad code with a \"?\" and a tooltip. The step now says it shows \"with a ? after it on the shelf page and as 'check the tag' in the EH&S reconciliation export\".\n\nPurchase list for Nick, new from CS-009 \u00a76:\n- Indirect vented goggles and a full face shield for DP420 Part A (DP420 SDS \u00a78.2.2).\n- Tightly sealed goggles for clear coat (LiME LiNE Part A SDS \u00a78).\n\nOne sourcing gap: safety glasses with side shields are written as a shall, the same as the CS-004, CS-006 and CS-008 drafts. They are not in the `inventory.js` restock table, though `paul.js` mentions them as shop kit.\n\nChecks: zero em dashes in CS-009, CS-010, CS-011, CS-012, CS-014 and proposals/CS-011-s6.md. No headings changed in this pass. Compared with src, every existing section number is unchanged; the only extra headings are the sections the drafts had already appended (CS-009 \u00a77.6, CS-011 \u00a77.6, CS-012 \u00a77.9). No new figures.\n\nFiles edited:\n- /Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-009.md\n- /Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-010.md\n- /Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-011.md\n- /Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-012.md\n- /Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/drafts/CS-014.md\n- /Users/simonstarbuck/Downloads/composites_programs/SN6 Resources/02 CS Standards/overhaul/proposals/CS-011-s6.md"
+ ]
+}
