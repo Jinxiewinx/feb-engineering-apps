@@ -362,8 +362,12 @@
   .paul-panel { display: none; }
   body.paul-open .paul-panel { display: flex; flex-direction: column; flex: 0 0 400px; width: 400px;
     height: 100vh; position: sticky; top: 0; background: var(--surface); border-left: 1px solid var(--line); z-index: 30; }
-  .paul-head { display: flex; align-items: center; gap: 10px; padding: calc(10px + var(--sa-t, 0px)) 12px 10px; border-bottom: 1px solid var(--line); }
-  .paul-title { display: flex; flex-direction: column; flex: 1; line-height: 1.2; }
+  .paul-head { display: flex; flex-direction: column; gap: 8px; padding: calc(10px + var(--sa-t, 0px)) 12px 10px; border-bottom: 1px solid var(--line); }
+  .paul-head-top, .paul-head-bar { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .paul-head-gap { flex: 1; }
+  .paul-close { margin: -4px -6px -4px 0; flex: none; }
+  .paul-title { display: flex; flex-direction: column; flex: 1; min-width: 0; line-height: 1.25; }
+  .paul-title b, .paul-title span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .paul-thread { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; }
   .paul-msg { display: flex; gap: 8px; align-items: flex-start; }
   .paul-me { justify-content: flex-end; }
@@ -384,10 +388,8 @@
   .paul-chat-t { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   .paul-private { margin-top: 8px; }
   .paul-new { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-  @media (max-width: 480px) {
-    /* The switch already says who you're talking to. */
-    .paul-head .paul-title { display: none; }
-    .paul-head .paul-switch { margin-right: auto; }
+  @media (max-width: 360px) {
+    /* Only the narrowest phones: New chat keeps its icon and title. */
     .paul-btxt { display: none; }
   }
   .paul-switch { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; flex: none; }

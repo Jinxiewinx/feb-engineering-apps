@@ -375,16 +375,26 @@ function paulAboutHtml() {
    header, the thread and the "looking at" chip, and only flips the send
    button; the box keeps its focus, its caret and whatever is typed in it. */
 function paulHeadHtml() {
+  /* Two rows (2026-10-10). One row held avatar, name, switch, Chats, New chat
+     and close in a 400px panel: the name squeezed into a four-line column
+     and the close button fell off the edge. Now the top row says who you are
+     talking to and closes; the bar under it switches and manages chats. */
+  const who = PAUL_WHO[paulWho()];
   return `<div class="paul-head ${PAUL.busy ? "paul-busy" : ""}">
-      ${paulAvatar(36)}
-      <div class="paul-title"><b>${PAUL_WHO[paulWho()].name}</b><span class="muted tny">${PAUL.busy ? "working it out…" : PAUL_WHO[paulWho()].sub}</span></div>
-      <div class="paul-switch" role="group" aria-label="Who to ask">
-        ${["paul", "steve"].map(a => `<button class="${a === paulWho() ? "on" : ""}" aria-pressed="${a === paulWho()}" onclick="paulSwitch('${a}')" ${PAUL.busy ? "disabled" : ""}>${PAUL_WHO[a].name}</button>`).join("")}
+      <div class="paul-head-top">
+        ${paulAvatar(36)}
+        <div class="paul-title"><b>${who.name}</b><span class="muted tny">${PAUL.busy ? "working it out…" : who.sub}</span></div>
+        <button class="icon-btn paul-close" aria-label="Close ${who.name}" onclick="closePaul()">${icon("x", 18)}</button>
       </div>
-      ${PAUL.view === "list" ? `<button class="sm" onclick="paulShowChats(false)">Back</button>`
-        : `<button class="sm" onclick="paulShowChats(true)" title="Your saved chats and what Paul remembers">Chats</button>`}
-      ${PAUL.turns.length || PAUL.view === "list" ? `<button class="sm paul-new" onclick="paulClear()" title="Start a new conversation" aria-label="New chat">${icon("plus", 15)}<span class="paul-btxt">New chat</span></button>` : ""}
-      <button class="icon-btn" aria-label="Close Paul" onclick="closePaul()">${icon("x", 18)}</button>
+      <div class="paul-head-bar">
+        <div class="paul-switch" role="group" aria-label="Who to ask">
+          ${["paul", "steve"].map(a => `<button class="${a === paulWho() ? "on" : ""}" aria-pressed="${a === paulWho()}" onclick="paulSwitch('${a}')" ${PAUL.busy ? "disabled" : ""}>${PAUL_WHO[a].name}</button>`).join("")}
+        </div>
+        <span class="paul-head-gap"></span>
+        ${PAUL.view === "list" ? `<button class="sm" onclick="paulShowChats(false)">Back</button>`
+          : `<button class="sm" onclick="paulShowChats(true)" title="Your saved chats and what Paul remembers">Chats</button>`}
+        ${PAUL.turns.length || PAUL.view === "list" ? `<button class="sm paul-new" onclick="paulClear()" title="Start a new conversation" aria-label="New chat">${icon("plus", 15)}<span class="paul-btxt">New chat</span></button>` : ""}
+      </div>
     </div>`;
 }
 function paulRender() {

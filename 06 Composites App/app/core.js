@@ -32,11 +32,8 @@ var APP_VERSION = "6.9.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "The standards are rewritten to match how we work now: receiving, lots, techniques, the Fusion add-in, and more.",
-  "New standard CS-014: receiving a delivery, material lots and EH&S tags, start to finish.",
-  "15 quick references (QR-001 to QR-015): ratios and holds, bag stack, leaks, PPE, labels, buying. Paul reads them first.",
-  "Every drawing is redone in the app's style, and cautions now show as CAUTION in the PDFs.",
-  "All of it is still Draft until Nick signs, but it is the best current guidance. Ask Paul or open the PDF.",
+  "Paul and Steve's panel header is tidier: who you're talking to and the close button on top, the Paul | Steve switch and your chats underneath.",
+  "The name and \"always wrong, always selling\" no longer squash into a column, and the close button no longer falls off the edge.",
 ];
 
 
