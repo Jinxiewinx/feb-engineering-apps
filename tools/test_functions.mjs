@@ -687,7 +687,7 @@ const sc = state.sent.slice(ns);
 ok("Steve gets his own prompt with the catchphrase", /Hi, I'm Steve, from Fibreglast!/.test(SYS(sc[0])) && !/You are "Paul"/.test(SYS(sc[0])), SYS(sc[0]).slice(0, 120));
 ok("and the no-number rule, and the joke isn't on the store", /NEVER give a number for a mix ratio/.test(SYS(sc[0])) && /Never disparage Fibreglast/.test(SYS(sc[0])));
 ok("low effort, thinking off", sc.every((b) => b.output_config.effort === "low" && b.thinking.type === "disabled"));
-ok("records, docs, his chats, the store and his notes; no web search", JSON.stringify(sc[0].tools.map((t) => t.name)) === JSON.stringify(["search_records", "app_overview", "get_record", "search_docs", "read_doc_section", "search_my_chats", "search_fibreglast", "search_steve_notes"]), JSON.stringify(sc[0].tools.map((t) => t.name)));
+ok("records, his chats, the store and his notes; no documents, no web search", JSON.stringify(sc[0].tools.map((t) => t.name)) === JSON.stringify(["search_records", "app_overview", "get_record", "search_my_chats", "search_fibreglast", "search_steve_notes"]), JSON.stringify(sc[0].tools.map((t) => t.name)));
 ok("his no-go topics are named and sent to Paul (R-STV-01)", ["PPE and safety data sheets", "grounding and electrical bonding", "co-storage", "CNC operation", "exotherm and waste", "different resin systems", "skipping or thinning mold release", "failed its drop test", "ask Paul"].every((x) => SYS(sc[0]).includes(x)), SYS(sc[0]).slice(0, 200));
 ok("the store search is announced", chunks.some((c) => c.type === "step" && c.text === 'Browsing the Fibreglast store for "sealant tape"'));
 ok("a real product becomes a source with its store link", r.ok && r.out.sources[0].type === "product" && r.out.sources[0].ref === fgRef && /^https:\/\/www\.fibreglast\.com\/products\/[a-z0-9-]+$/.test(r.out.sources[0].url) && r.out.sources[0].checked, JSON.stringify(r.out && r.out.sources));
@@ -758,6 +758,8 @@ ok("the shipped catalog is real and dated", shipped.products.length > 400 && /^\
   const sctx = req(path.join(fnDir, "context.js"));
   const banned = (q) => sctx.searchCatalog(q).filter((h) => h.cat === "safety-ppe" || h.cat === "solvents-catalysts");
   for (const q of ["gloves", "acetone", "respirator", "nitrile gloves", "MEKP hardener"]) ok(`"${q}" never puts PPE or a solvent in front of Steve`, !banned(q).length, JSON.stringify(banned(q).map((h) => h.title)));
+  const mixes = (q) => sctx.searchCatalog(q).filter((h) => ["epoxy-resins", "other-resins", "adhesives", "prepreg"].includes(h.cat));
+  for (const q of ["epoxy resin", "hardener", "structural adhesive", "infusion resin"]) ok(`"${q}" never offers Steve a resin, hardener or adhesive to sell`, !mixes(q).length, JSON.stringify(mixes(q).map((h) => h.title)));
   ok('"copper mesh" brings no gel coat colour', !sctx.searchCatalog("copper mesh").some((h) => h.cat === "gelcoat-colour"), JSON.stringify(sctx.searchCatalog("copper mesh").map((h) => h.title)));
   ok("a gel coat colour question still finds the colours", sctx.searchCatalog("RAL red gel coat colour").some((h) => h.cat === "gelcoat-colour"));
   // On raw score the thermometer beats the scale and the Vac Checker; demoted, it comes after both.

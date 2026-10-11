@@ -348,7 +348,11 @@ function catalog() {
   }
   return CATALOG;
 }
-const NEVER_FOR_STEVE = new Set(["safety-ppe", "solvents-catalysts"]);
+// Resins, adhesives and prepreg too (round-6 check): a Fibreglast resin or
+// hardener next to the team's IN2 or West is a cross-system mix, and a
+// structural adhesive for inserts is the September bond failure. Steve may
+// joke about many things; never those.
+const NEVER_FOR_STEVE = new Set(["safety-ppe", "solvents-catalysts", "epoxy-resins", "other-resins", "adhesives", "prepreg"]);
 const ASKS_COLOUR = /gel\s*-?coat|colou?r|\bral\b/i;
 const demoted = (p) => p.cat === "instruments-heat"
   || (p.tags.includes("wind-turbine-blade-repair") && p.tags.length === 1);
