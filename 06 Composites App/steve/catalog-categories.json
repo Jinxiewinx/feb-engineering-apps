@@ -1,0 +1,82 @@
+{
+  "note": "Steve's catalog categories (register R-STV-02, R-STV-03). Applied offline to functions/steve_catalog.json, never at request time. For each product, build the test string as decodedTitle + ' ' + tags.join(' ') + ' ' + handle, test each rule's match as a case-insensitive JS regex (new RegExp(match, 'i')) in the order listed, and give the product the first category that matches; a product that matches none gets the fallback. safety-ppe and solvents-catalysts never reach Steve's results. gelcoat-colour reaches them only when the query says gel coat, colour, color or RAL. instruments-heat ranks below the shop families.",
+  "rules": [
+    {
+      "cat": "safety-ppe",
+      "match": "\\bgloves?\\b|respirator|\\bmasks?\\b|goggles?|safety glasses|body suit|lab coat|boot covers?|hand wipes"
+    },
+    {
+      "cat": "solvents-catalysts",
+      "match": "\\bacetone\\b|\\bmekp\\b|surfasolve|thinner|reducer"
+    },
+    {
+      "cat": "gelcoat-colour",
+      "match": "^ral \\d|color book|^(?!paint can).*\\bcolor-gel-coat\\b"
+    },
+    {
+      "cat": "kits-samples",
+      "match": "sample-packs|\\bproject-kits\\b|\\bindividual-kit\\b|mixing-sets-starter-kits|sample pack|starter kit|mixing set|repair kit|mold making kit|target kit|infusion kits"
+    },
+    {
+      "cat": "prepreg",
+      "match": "prepreg"
+    },
+    {
+      "cat": "vacuum-pumps-fittings",
+      "match": "^(?!.*(resin traps?\\b|mti®? valve)).*(vacuum-pumps|vacuum-fittings-supplies|vacuum pump|vacuum gauge|vacuum generator|vacuum connector|vacuum tubing|leak detector|\\bvalves?\\b|\\bfittings?\\b|hose clamps?)"
+    },
+    {
+      "cat": "infusion-media-lines",
+      "match": "^(?!.*double-backed).*(resin-traps-feed-lines|flow media|flow channel|spiral tubing|resin traps?\\b|enkafusion|soric|mti®? valve)"
+    },
+    {
+      "cat": "bagging-films-tapes",
+      "match": "^(?!.*\\bpva\\b).*(films-peel-ply-tapes|bagging film|peel ply|release film|sealant tape|breather)"
+    },
+    {
+      "cat": "mold-release-prep",
+      "match": "^(?!.*styrene).*(mold-releases|\\bclay\\b|release wax|paste wax|parting wax|mold polish|machine glaze|mold release|release wedges)"
+    },
+    {
+      "cat": "core",
+      "match": "^(?!.*(roller|buffing)).*(sandwich-core|(?:^|\\s)foam(?:\\s|$)|honeycomb|balsa|coosa|divinycell)"
+    },
+    {
+      "cat": "adhesives",
+      "match": "\\badhesives?\\b|bonding paste|\\bmma\\b"
+    },
+    {
+      "cat": "carbon-fabric",
+      "match": "^(?!.*scissors).*(\\bcarbon\\b|carbon-fiber)"
+    },
+    {
+      "cat": "glass-aramid-fabric",
+      "match": "^(?!.*(scissors|trimmer|burr|chopper gun|pulp)).*(fiberglass-fabric|stitched-fiberglass|fiberglass-mat|fiberglass-tapes-sleeve|surfacing-veils-fabrics|braided-sleeves|\\bkevlar\\b|e-glass|s2-glass|saertex|roving|chopped strand)"
+    },
+    {
+      "cat": "epoxy-resins",
+      "match": "^(?!.*(pigment|fairing|filler)).*(epoxy-resins|\\bepoxy\\b|ampreg|system \\d|biresin|coolset|huntsman resins)"
+    },
+    {
+      "cat": "other-resins",
+      "match": "^(?!.*(\\bgun\\b|gauge|pigment|primer|putty|light kit|caps|dispensers?|additive)).*(polyester resin|laminating resin|vinyl ester resin|gel coat|casting resin|mekp hardener|bpo hardener|styrene|uv resin|uv non styrenated|sunrez \\d+ blend|miracle-method)"
+    },
+    {
+      "cat": "coatings-fillers-pigments",
+      "match": "^(?!.*dispenser).*(fairing|fillers?\\b|pigments?\\b|glitterflake|duratec|additive|\\btalc\\b|microspheres|silica|milled glass|chopped glass|kevlar® pulp|primer|topcoat|leading edge|putty|surfasolve)"
+    },
+    {
+      "cat": "mixing-dispensing",
+      "match": "^(?!.*cup gun).*(\\bdispensing\\b|mixing-supplies|dispensing-guns|caulking|\\bcups?\\b|\\bscale\\b|syringes?|funnels?|buckets?|\\btubs?\\b|mixers?|stirrer|\\bjars?\\b|spouts?|faucet|measuring)"
+    },
+    {
+      "cat": "cutting-sanding-tools",
+      "match": "scissors|cutters?\\b|sanding|sandpaper|grinding|\\bgrit\\b|perma-grit|rollers?\\b|squeegees?|brush(es)?\\b|spray gun|cup gun|chopper gun|sprayer|hvlp|fabric rack|workcenter|cutting station|casters|ruler|markers|fray|line tape|trimmer|burr|polish|buffing|can opener|paper wipes|drop cloth|\\btools\\b"
+    },
+    {
+      "cat": "instruments-heat",
+      "match": "instrumentation|heat-blankets|heat blankets|thermometer|datalogger|moisture meter|camera|thickness gauge|distance meter|light kit"
+    }
+  ],
+  "fallback": "other"
+}

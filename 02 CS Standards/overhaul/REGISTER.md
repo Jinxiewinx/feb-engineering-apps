@@ -783,3 +783,22 @@ Process-rule changes list, old and new wording:
 |---|---|---|
 | R-007-13 | "A lead should add the 2 inHg drop-test blocker to both wet-layup techniques" (R-007-04) | No should; readings stay in the "Wet layup and bag" note until the app's hold looks past a blocker |
 | R-004-15 | "Blow all dust off the mold with compressed air" | "Vacuum all dust off the mold, including pockets and scribe lines" (if Simon agrees) |
+
+## Rows added in Round 4 (quick references and Steve)
+
+Raised by the Round 4 critics and retrieval tester; the reviser could not
+apply them because they touch a draft standard or code. Round 6's fix pass
+applies the draft-standard rows; Claude applies the code rows before R7.
+
+| ID | § | Type | Change | Evidence | Decision |
+|---|---|---|---|---|---|
+| R-006-30 | CS-006 §6 | wrong | "The shop stocks OV/P100 (3M 60921)" disagrees with the other parents, which name A + P100 (the restock row "A + P100"). Say what the restock row says | inventory.js restock seed; QR-008 critic | do |
+| R-008-30 | CS-008 §6 | process-rule | Respirator is a "should" here but "wear" in CS-004 §6 and CS-007 §6. Under Simon's PPE answer the stocked A + P100 cartridge is required; only ABEK for AT30 stays a should | Answers from Simon; QR-008 critic | do (rule) |
+| R-004-30 | CS-004 §7.4 | missing | Between steps 1 and 2: the Formula Five out-gas wait before the first wax coat, cited to the Formula Five guide; CS-004 sets no wait today | 03 Datasheets/FORMULA-FIVE-Mold-Release-Wax.pdf; QR-004 critic | do |
+| R-009-30 | CS-009 §7.4 heading | style | Retitle "7.4 Clear coat" to "7.4 Clear coat a part: mixing and applying LiME LiNE UC4:1" (number unchanged) so searches for "clear coat" and "LiME LiNE" land | R4 retrieval test | do |
+| R-003-30 | CS-003 §7.3 heading | style | Retitle to "7.3 Cutting blanks and gluing tooling board (Ure-Bond 90)" so "glue" matches | R4 retrieval test | do |
+| R-011-30 | CS-011 §7.2 heading | style | Retitle "Order timing" to "Order timing: when to order resin and cloth" | R4 retrieval test | do |
+| R-STV-07 | REGISTER Steve material; steve/upsell-map.md | wrong | "Trim, sand, bond" drops "adhesives" from Steve's categories: a Fibreglast structural adhesive is the September insert-bond failure mode | R4 fact critic | do |
+| R-STV-08 | functions/context.js searchCatalog | missing | Read the `cat` field: never return safety-ppe or solvents-catalysts; gelcoat-colour only when the query says gel coat, colour or RAL | steve/catalog-categories.json; R4 critic | do |
+| R-OTH-34 | tools/build_ai_corpus.mjs | wrong | Skip the H1 "Introduction" section of a QR (the header table and a lead-in carry nothing a search should land on) | R4 retrieval test | do |
+| R-OTH-35 | functions/context.js score | wrong | Terms of 3 characters or fewer match whole words only ("lot" matched "pilot", "slot", "bottle") | R4 retrieval test | do |
