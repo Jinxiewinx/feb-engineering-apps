@@ -82,11 +82,16 @@ for (const f of readdirSync(stdDir).filter(f => /^(CS|QR)-(\d+|INDEX)\.md$/.test
   const h1 = (md.match(/^#\s+(.+)$/m) || [])[1] || doc;
   const title = h1.replace(/\*\*/g, "").trim();
   const pdf = existsSync(path.join(stdDir, doc + ".pdf")) ? `docs/standards/${doc}.pdf` : `docs/standards/${f}`;
-  let heading = "Introduction", buf = [];
-  const flush = () => { if (buf.length) add(doc, title, pdf, heading, buf.join("\n"), extra); buf = []; };
+  /* A quick reference's opening (the text under its H1, before the first
+     ##) is the header table and a "derived from its parent" lead-in. It
+     carries nothing a search should land on, and it matched every term in
+     the title, so it is skipped (R-OTH-34). A standard keeps its opening. */
+  const isQR = doc.startsWith("QR-");
+  let heading = "Introduction", top = true, buf = [];
+  const flush = () => { if (buf.length && !(isQR && top)) add(doc, title, pdf, heading, buf.join("\n"), extra); buf = []; };
   for (const line of md.split("\n")) {
-    const h = line.match(/^#{1,3}\s+(.+)$/);
-    if (h) { flush(); heading = h[1].replace(/\*\*/g, "").trim(); continue; }
+    const h = line.match(/^(#{1,3})\s+(.+)$/);
+    if (h) { flush(); heading = h[2].replace(/\*\*/g, "").trim(); top = h[1].length === 1; continue; }
     const t = line.match(/^\*\*(Approvals|Revision history)\*\*\s*$/);
     if (t) { flush(); heading = t[1]; continue; }
     buf.push(line);
