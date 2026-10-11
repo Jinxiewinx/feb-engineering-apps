@@ -32,11 +32,10 @@ var APP_VERSION = "6.8.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Meet Steve, from Fibreglast. Tap Steve at the top of Paul's panel.",
-  "Steve is always wrong, and he always has a Fibreglast product for that, with a link.",
-  "He won't give you ratios, cure times or temperatures. Tap Ask Paul instead for the real answer.",
-  "Under any of Paul's answers, \"What would Steve say?\" gets you Steve's take on the same question.",
-  "Paul and Steve each keep their own chat, and both show up under Chats.",
+  "West 209 hardener: the materials table now says 3:1 by volume (3.68:1 by weight). It said \"by weight\" before, which was wrong.",
+  "Airtac 2: the datasheet button opens the datasheet now, and the safety sheet has its own button.",
+  "Ure-Bond 90's safety sheet is linked from its material.",
+  "The standards' PDF and Word copies point at the right folders again.",
 ];
 
 
