@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 790">
+  <!-- CS-005 §7.4 step 6 and CS-003 §5: a mold planned across a 30 to 45 lb
+       range, glued with one 45 lb board beside a 30 lb board in L2. The densest
+       board cut sets the feed for every setup, including a section that holds
+       only 30 lb board (app/drawings.js layer-sheet note: "machine every setup
+       at the N lb feed"). Sources: the cut list band (app/stock.js
+       feedRateBand) and the mold's Highest density cut (app/shop.js). Grades by
+       hatching, not hue. Variant b: one stack, two setups, one answer. -->
+  <defs>
+    <pattern id="fd-30" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="22" height="22" fill="#ffffff"/>
+      <line x1="0" y1="0" x2="0" y2="22" stroke="#515f74" stroke-width="2"/>
+    </pattern>
+    <pattern id="fd-45" width="10" height="10" patternUnits="userSpaceOnUse">
+      <rect width="10" height="10" fill="#FDB515"/>
+      <path d="M0,0 L10,10 M10,0 L0,10" stroke="#141d2b" stroke-width="2"/>
+    </pattern>
+    <marker id="fd-a" markerWidth="16" markerHeight="14" refX="14" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L16,7 L0,14 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="790" fill="#ffffff"/>
+
+  <text x="40" y="50" font-family="Saira" font-size="32" font-weight="700" fill="#003262">Feed: set by the densest board in the stack</text>
+
+  <!-- the stack -->
+  <g stroke="#141d2b" stroke-width="3">
+    <rect x="120" y="100" width="320" height="70" fill="url(#fd-30)"/>
+    <rect x="120" y="170" width="320" height="70" fill="url(#fd-30)"/>
+    <rect x="120" y="240" width="160" height="70" fill="url(#fd-30)"/>
+    <rect x="280" y="240" width="160" height="70" fill="url(#fd-45)"/>
+    <rect x="120" y="310" width="320" height="70" fill="url(#fd-30)"/>
+  </g>
+  <line x1="110" y1="240" x2="450" y2="240" stroke="#141d2b" stroke-width="9"/>
+  <g font-family="Inter" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">
+    <rect x="245" y="119" width="70" height="32" fill="#ffffff"/><text x="280" y="143">30 lb</text>
+    <rect x="245" y="189" width="70" height="32" fill="#ffffff"/><text x="280" y="213">30 lb</text>
+    <rect x="165" y="259" width="70" height="32" fill="#ffffff"/><text x="200" y="283">30 lb</text>
+    <rect x="325" y="259" width="70" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2"/><text x="360" y="283">45 lb</text>
+    <rect x="245" y="329" width="70" height="32" fill="#ffffff"/><text x="280" y="353">30 lb</text>
+  </g>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="22" font-weight="700" fill="#141d2b" text-anchor="end">
+    <text x="100" y="143">L4</text><text x="100" y="213">L3</text><text x="100" y="283">L2</text><text x="100" y="353">L1</text>
+  </g>
+  <text x="500" y="249" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">SPLIT</text>
+  <text x="280" y="412" text-anchor="middle" font-family="Inter" font-size="22" fill="#515f74">two grades may share a layer</text>
+
+  <!-- setup brackets -->
+  <path d="M 470 104 L 486 104 L 486 236 L 470 236" fill="none" stroke="#141d2b" stroke-width="3"/>
+  <path d="M 470 244 L 486 244 L 486 376 L 470 376" fill="none" stroke="#141d2b" stroke-width="3"/>
+  <line x1="488" y1="170" x2="582" y2="170" stroke="#141d2b" stroke-width="3" marker-end="url(#fd-a)"/>
+  <line x1="488" y1="310" x2="582" y2="310" stroke="#141d2b" stroke-width="3" marker-end="url(#fd-a)"/>
+
+  <!-- feed tags -->
+  <rect x="590" y="110" width="370" height="120" fill="#ffffff" stroke="#003262" stroke-width="3"/>
+  <text x="610" y="148" font-family="Inter" font-size="26" font-weight="700" fill="#003262">Setup 2: 45 lb feed</text>
+  <text x="610" y="182" font-family="Inter" font-size="22" fill="#141d2b">only 30 lb board here,</text>
+  <text x="610" y="210" font-family="Inter" font-size="22" fill="#141d2b">still the 45 lb feed</text>
+  <rect x="590" y="262" width="370" height="96" fill="#ffffff" stroke="#003262" stroke-width="3"/>
+  <text x="610" y="300" font-family="Inter" font-size="26" font-weight="700" fill="#003262">Setup 1: 45 lb feed</text>
+  <text x="610" y="336" font-family="Inter" font-size="22" fill="#141d2b">the 45 lb board is in this one</text>
+
+  <!-- hatch key -->
+  <rect x="120" y="450" width="56" height="34" fill="url(#fd-30)" stroke="#141d2b" stroke-width="2"/>
+  <text x="190" y="476" font-family="Inter" font-size="22" fill="#141d2b">30 lb/ft³</text>
+  <rect x="340" y="450" width="56" height="34" fill="url(#fd-45)" stroke="#141d2b" stroke-width="2"/>
+  <text x="410" y="476" font-family="Inter" font-size="22" fill="#141d2b">45 lb/ft³</text>
+
+  <!-- where the number comes from -->
+  <line x1="40" y1="520" x2="960" y2="520" stroke="#dde3ec" stroke-width="2"/>
+  <text x="40" y="562" font-family="Saira" font-size="26" font-weight="700" fill="#003262">Where to read the number</text>
+  <g font-family="Inter" font-size="24" fill="#141d2b">
+    <text x="40" y="608"><tspan font-weight="700">Cut list:</tspan> “Machine at the 45 lb/ft³ feed.”</text>
+    <text x="40" y="648"><tspan font-weight="700">Mold page:</tspan> Highest density cut (lb/ft³), once boards are marked cut</text>
+    <text x="40" y="688"><tspan font-weight="700">Not cut yet:</tspan> top of the planned range (Board density, max)</text>
+    <text x="40" y="728"><tspan font-weight="700">Layer sheets</tspan> repeat it.</text>
+  </g>
+  <text x="40" y="766" font-family="Inter" font-size="22" fill="#515f74">CS-005 §7.4 step 6, CS-003 §5</text>
+</svg>

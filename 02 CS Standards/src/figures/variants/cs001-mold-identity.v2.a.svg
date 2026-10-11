@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" font-family="Inter" fill="#141d2b">
+  <!-- CS-001 §7.4 mold identity, v2 (brief A). Keep-out zones are diagonal hatch;
+       the label zone is a heavy solid bar; the engraving is drawn as outlined (cut) type,
+       the printed label as solid type on a white card. Label lines from labels.js labelLines (molds). -->
+  <defs>
+    <pattern id="keep" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="12" stroke="#141d2b" stroke-width="2"/>
+    </pattern>
+    <pattern id="board" width="16" height="16" patternUnits="userSpaceOnUse">
+      <circle cx="8" cy="8" r="1.4" fill="#515f74"/>
+    </pattern>
+    <marker id="dim" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,5 L0,10 z" fill="#003262"/>
+    </marker>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,5 L0,10 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="1000" fill="#ffffff"/>
+
+  <!-- ===== Back face ===== -->
+  <text x="30" y="44" font-family="Saira" font-size="30" font-weight="700" fill="#003262">Back face</text>
+  <text x="30" y="74" font-size="22" fill="#515f74">where the identity lives</text>
+  <rect x="30" y="96" width="440" height="340" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <rect x="60" y="138" width="380" height="256" fill="none" stroke="#141d2b" stroke-width="2" stroke-dasharray="10 7"/>
+  <text x="245" y="126" font-size="22" text-anchor="middle">≥25 mm inboard, every side</text>
+
+  <!-- engraving: outlined type reads as cut -->
+  <text x="245" y="200" font-family="ui-monospace, Menlo, monospace" font-size="38" font-weight="700" text-anchor="middle" fill="none" stroke="#141d2b" stroke-width="1.6" letter-spacing="2">MOLD-SN6-004</text>
+  <text x="245" y="232" font-size="22" text-anchor="middle">engraved at machining</text>
+  <text x="245" y="260" font-size="22" text-anchor="middle">6 mm caps, 1.0 mm deep</text>
+
+  <!-- printed label in place -->
+  <rect x="120" y="282" width="250" height="70" rx="4" fill="#ffffff" stroke="#003262" stroke-width="3"/>
+  <rect x="300" y="292" width="54" height="50" fill="#141d2b"/>
+  <rect x="136" y="298" width="150" height="10" fill="#141d2b"/>
+  <rect x="136" y="316" width="110" height="7" fill="#141d2b"/>
+  <rect x="136" y="331" width="140" height="6" fill="#515f74"/>
+  <text x="245" y="380" font-size="22" text-anchor="middle">printed 5522 label (below)</text>
+
+  <!-- ===== Section A-A ===== -->
+  <text x="520" y="44" font-family="Saira" font-size="30" font-weight="700" fill="#003262">Section A–A</text>
+  <text x="520" y="74" font-size="22" fill="#515f74">the keep-out zones</text>
+
+  <text x="750" y="112" font-size="22" font-weight="700" text-anchor="middle">tool face and flanges: no labels, ever</text>
+  <!-- tool-side keep-out band (above the surface) -->
+  <path d="M 540 150 H 650 Q 670 150 680 175 L 720 245 Q 750 280 780 245 L 820 175 Q 830 150 850 150 H 960 V 136 H 850 Q 830 136 820 161 L 780 231 Q 750 266 720 231 L 680 161 Q 670 136 650 136 H 540 Z" fill="url(#keep)" stroke="#141d2b" stroke-width="1.5"/>
+  <!-- mold body -->
+  <path d="M 540 150 H 650 Q 670 150 680 175 L 720 245 Q 750 280 780 245 L 820 175 Q 830 150 850 150 H 960 V 310 H 540 Z" fill="#ffffff"/>
+  <path d="M 540 150 H 650 Q 670 150 680 175 L 720 245 Q 750 280 780 245 L 820 175 Q 830 150 850 150 H 960 V 310 H 540 Z" fill="url(#board)" stroke="#141d2b" stroke-width="3"/>
+  <text x="750" y="298" font-size="22" text-anchor="middle" fill="#515f74">tooling board</text>
+  <!-- back-face keep-out strips: 40 mm from the flange perimeter -->
+  <rect x="540" y="310" width="70" height="14" fill="url(#keep)" stroke="#141d2b" stroke-width="1.5"/>
+  <rect x="890" y="310" width="70" height="14" fill="url(#keep)" stroke="#141d2b" stroke-width="1.5"/>
+  <!-- label zone: heavy bar -->
+  <rect x="626" y="312" width="248" height="10" fill="#003262"/>
+  <!-- 40 mm dims -->
+  <line x1="540" y1="344" x2="610" y2="344" stroke="#003262" stroke-width="2" marker-start="url(#dim)" marker-end="url(#dim)"/>
+  <line x1="890" y1="344" x2="960" y2="344" stroke="#003262" stroke-width="2" marker-start="url(#dim)" marker-end="url(#dim)"/>
+  <text x="575" y="374" font-size="22" font-weight="700" text-anchor="middle" fill="#003262">40 mm</text>
+  <text x="925" y="374" font-size="22" font-weight="700" text-anchor="middle" fill="#003262">40 mm</text>
+  <text x="750" y="352" font-size="22" font-weight="700" text-anchor="middle">label zone</text>
+  <text x="750" y="380" font-size="22" text-anchor="middle">back face only</text>
+  <text x="520" y="414" font-size="22">Hatched: never a label. 40 mm from the</text>
+  <text x="520" y="442" font-size="22">flange perimeter on either face, because</text>
+  <text x="520" y="470" font-size="22">a label edge under 12.7 mm tacky tape is</text>
+  <text x="520" y="498" font-size="22">a leak channel (§6).</text>
+
+  <!-- ===== Printed label, enlarged ===== -->
+  <text x="30" y="474" font-family="Saira" font-size="26" font-weight="700" fill="#003262">The printed label</text>
+  <text x="30" y="502" font-size="22" fill="#515f74">enlarged, not to scale</text>
+  <rect data-box="label" x="30" y="524" width="700" height="210" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="54" y="568" font-size="34" font-weight="800">DIFFUSER</text>
+  <text x="54" y="602" font-family="ui-monospace, Menlo, monospace" font-size="26" font-weight="700">MOLD-SN6-004</text>
+  <text x="54" y="636" font-size="22" font-weight="800">SEALED 2025-11-02 · J LEE · USES 09</text>
+  <text x="54" y="666" font-size="22">30 PCF · 3 LAYERS · XCR</text>
+  <text x="54" y="712" font-size="22">RFS CONTAINER · KEEP-OUT 40MM</text>
+  <text x="520" y="712" font-size="22" font-weight="800" letter-spacing="2">FEB</text>
+  <!-- QR, schematic -->
+  <g transform="translate(560 544)">
+    <rect width="150" height="150" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    <g fill="#141d2b">
+      <rect x="10" y="10" width="40" height="40"/><rect x="100" y="10" width="40" height="40"/><rect x="10" y="100" width="40" height="40"/>
+      <rect x="62" y="12" width="10" height="10"/><rect x="78" y="28" width="10" height="10"/><rect x="62" y="44" width="10" height="10"/>
+      <rect x="62" y="62" width="10" height="10"/><rect x="82" y="62" width="10" height="10"/><rect x="104" y="64" width="10" height="10"/>
+      <rect x="126" y="76" width="10" height="10"/><rect x="12" y="66" width="10" height="10"/><rect x="34" y="78" width="10" height="10"/>
+      <rect x="62" y="96" width="10" height="10"/><rect x="82" y="112" width="10" height="10"/><rect x="100" y="98" width="10" height="10"/>
+      <rect x="118" y="116" width="10" height="10"/><rect x="66" y="128" width="10" height="10"/><rect x="104" y="130" width="10" height="10"/>
+    </g>
+    <g fill="#ffffff"><rect x="18" y="18" width="24" height="24"/><rect x="108" y="18" width="24" height="24"/><rect x="18" y="108" width="24" height="24"/></g>
+    <g fill="#141d2b"><rect x="24" y="24" width="12" height="12"/><rect x="114" y="24" width="12" height="12"/><rect x="24" y="114" width="12" height="12"/></g>
+  </g>
+  <!-- row callouts -->
+  <text x="752" y="568" font-size="22" fill="#515f74">name first</text>
+  <text x="752" y="602" font-size="22" fill="#515f74">ID second</text>
+  <text x="752" y="636" font-size="22" fill="#515f74">sealing record</text>
+  <text x="752" y="666" font-size="22" fill="#515f74">PCF · layers · seal</text>
+  <text x="752" y="712" font-size="22" fill="#515f74">shelf · keep-out</text>
+
+  <!-- ===== Three identities ===== -->
+  <text x="30" y="790" font-family="Saira" font-size="26" font-weight="700" fill="#003262">Three artifacts, three lifetimes</text>
+  <text x="30" y="830" font-size="22"><tspan font-weight="700">1  Glue-up</tspan> (CS-003 §7.3): paint marker, 15 mm characters, on two adjacent</text>
+  <text x="62" y="858" font-size="22">side faces: the mold ID, part name, WO and an up arrow.</text>
+  <text x="30" y="898" font-size="22"><tspan font-weight="700">2  Machining</tspan> (CS-005): the ID engraved on the back face. The record of record.</text>
+  <text x="30" y="938" font-size="22"><tspan font-weight="700">3  End of sealing</tspan> (CS-004 §7.5): the printed 5522 label on a 220-grit scuffed,</text>
+  <text x="62" y="966" font-size="22">IPA-wiped patch. Reprinted at every re-seal with the new count.</text>
+</svg>

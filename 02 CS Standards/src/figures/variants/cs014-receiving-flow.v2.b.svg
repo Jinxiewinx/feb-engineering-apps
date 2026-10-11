@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1330" font-family="Inter, sans-serif">
+  <!-- CS-014 §7.2-7.6: a delivery from the box to the shelf, read top
+       down. Labels copied from inventory.js, receiving.js and scan.js.
+       Grayscale: the ✨ branch is dashed and reaches the sheet only through
+       the heavy solid "person checks" bar; tracked lots are several small
+       boxes, a consumable is one box with a count. EH&S code is the
+       made-up test tail, never a real tag. -->
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,6 L0,12 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="1330" fill="#ffffff"/>
+
+  <text x="40" y="58" font-family="Saira, sans-serif" font-size="38" font-weight="700" fill="#003262">From the box to the shelf</text>
+  <text x="40" y="96" font-size="24" fill="#515f74">Log a delivery the day it arrives.</text>
+
+  <!-- entries -->
+  <rect x="24" y="116" width="952" height="190" rx="14" fill="#ffffff" stroke="#515f74" stroke-width="2" stroke-dasharray="4 6"/>
+  <text x="40" y="146" font-size="24" font-weight="700" fill="#141d2b">Open the Receiving desk from any of these:</text>
+  <g font-size="22">
+    <rect x="40" y="164" width="450" height="56" rx="28" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    <text x="64" y="200" fill="#515f74"><tspan font-weight="700" fill="#141d2b">Receive a delivery</tspan>  toolbar</text>
+    <rect x="510" y="164" width="450" height="56" rx="28" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    <text x="534" y="200" fill="#515f74"><tspan font-weight="700" fill="#141d2b">Arrived ▸</tspan>  a line on Incoming</text>
+    <rect x="40" y="232" width="450" height="56" rx="28" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    <text x="64" y="268" fill="#515f74"><tspan font-weight="700" fill="#141d2b">Receive delivery</tspan>  a shelf's page</text>
+    <rect x="510" y="232" width="450" height="56" rx="28" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    <text x="534" y="268" fill="#515f74"><tspan font-weight="700" fill="#141d2b">Scan → Log it</tspan>  unknown EH&amp;S tag</text>
+  </g>
+  <line x1="300" y1="306" x2="300" y2="336" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+
+  <!-- 1 sheet -->
+  <rect x="40" y="340" width="560" height="270" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="64" y="384" font-size="28" font-weight="700" fill="#141d2b">1  Fill the sheet</text>
+  <text x="64" y="422" font-size="22" fill="#141d2b">One row per kind of thing.</text>
+  <text x="64" y="462" font-size="22" font-weight="700" fill="#141d2b">Pick Class first:</text>
+  <text x="64" y="492" font-size="22" fill="#141d2b">Fabric · Resin · Hardener · Consumable</text>
+  <text x="64" y="532" font-size="22" fill="#141d2b">Resin and hardener on separate rows.</text>
+  <text x="64" y="576" font-size="22" fill="#515f74">Then How many, Shelf, Vendor lot, Expires.</text>
+
+  <!-- ✨ branch through person check -->
+  <rect x="660" y="330" width="300" height="78" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3" stroke-dasharray="12 8"/>
+  <text x="684" y="364" font-size="24" font-weight="700" fill="#141d2b">✨ From packing slip</text>
+  <text x="684" y="394" font-size="22" fill="#515f74">photo or PDF</text>
+  <line x1="810" y1="408" x2="810" y2="440" stroke="#141d2b" stroke-width="3" stroke-dasharray="8 6" marker-end="url(#ah)"/>
+  <rect x="660" y="444" width="300" height="18" fill="#141d2b"/>
+  <text x="810" y="492" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">A person checks</text>
+  <text x="810" y="518" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">every row</text>
+  <polyline points="660,453 632,453 632,453 604,453" fill="none" stroke="#141d2b" stroke-width="4" marker-end="url(#ah)"/>
+
+  <!-- EH&S tag branch -->
+  <rect x="660" y="540" width="300" height="168" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="684" y="576" font-size="24" font-weight="700" fill="#141d2b">EH&amp;S tag</text>
+  <text x="684" y="606" font-size="22" fill="#141d2b">Scan or type it into</text>
+  <text x="684" y="632" font-size="22" fill="#141d2b">the row's EH&amp;S tag cell.</text>
+  <text x="684" y="660" font-size="22" font-weight="700" fill="#141d2b">One code per container.</text>
+  <text x="684" y="692" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#515f74">… 0024 3F1C</text>
+  <line x1="660" y1="580" x2="604" y2="580" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+
+  <line x1="300" y1="610" x2="300" y2="738" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+
+  <!-- 2 confirm -->
+  <rect x="40" y="742" width="560" height="96" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="64" y="784" font-size="28" font-weight="700" fill="#141d2b">2  Create N records?</text>
+  <text x="64" y="818" font-size="22" fill="#141d2b">Untick what did not arrive.</text>
+
+  <line x1="300" y1="838" x2="300" y2="874" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+
+  <!-- 3 records -->
+  <rect x="40" y="878" width="920" height="170" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="64" y="920" font-size="28" font-weight="700" fill="#141d2b">3  The records</text>
+  <text x="300" y="920" font-size="22" fill="#515f74">every one starts Sealed</text>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">
+    <rect x="64" y="942" width="80" height="48" rx="4" fill="#ffffff" stroke="#141d2b" stroke-width="2"/><text x="104" y="974">FAB</text>
+    <rect x="152" y="942" width="80" height="48" rx="4" fill="#ffffff" stroke="#141d2b" stroke-width="2"/><text x="192" y="974">FAB</text>
+    <rect x="240" y="942" width="80" height="48" rx="4" fill="#ffffff" stroke="#141d2b" stroke-width="2"/><text x="280" y="974">RSN</text>
+    <rect x="328" y="942" width="80" height="48" rx="4" fill="#ffffff" stroke="#141d2b" stroke-width="2"/><text x="368" y="974">RSN</text>
+    <rect x="620" y="942" width="150" height="48" rx="4" fill="#ffffff" stroke="#141d2b" stroke-width="5"/><text x="695" y="974">CON ×50</text>
+  </g>
+  <text x="64" y="1026" font-size="22" fill="#141d2b">One per roll or container</text>
+  <text x="620" y="1026" font-size="22" fill="#141d2b">One record with a count</text>
+  <line x1="580" y1="940" x2="580" y2="1036" stroke="#dde3ec" stroke-width="2"/>
+
+  <!-- after Create bar -->
+  <rect x="40" y="1070" width="920" height="64" rx="8" fill="#141d2b"/>
+  <text x="64" y="1111" font-size="24" font-weight="700" fill="#ffffff">N records added</text>
+  <rect x="560" y="1082" width="220" height="40" rx="6" fill="#ffffff"/>
+  <text x="670" y="1110" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">Print N labels</text>
+  <rect x="800" y="1082" width="140" height="40" rx="6" fill="#ffffff"/>
+  <text x="870" y="1110" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">Undo</text>
+  <text x="40" y="1170" font-size="22" fill="#141d2b"><tspan font-weight="700">A container with an EH&amp;S tag gets no FEB label.</tspan> The tag is its label.</text>
+  <text x="40" y="1198" font-size="22" fill="#515f74">If the batch has tagged ones, print the rest from Inventory → Labels.</text>
+
+  <!-- 4 shelf -->
+  <rect x="40" y="1226" width="560" height="72" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <line x1="40" y1="1298" x2="600" y2="1298" stroke="#141d2b" stroke-width="10"/>
+  <text x="64" y="1272" font-size="28" font-weight="700" fill="#141d2b">4  Onto its shelf, same day</text>
+</svg>

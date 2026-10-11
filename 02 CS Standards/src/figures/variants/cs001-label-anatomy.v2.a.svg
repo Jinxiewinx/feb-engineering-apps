@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1040" font-family="Inter" fill="#141d2b">
+  <!-- CS-001 label anatomy, v2 (brief A), redrawn from labels.js labelMarkup/labelLines and
+       print.css .lbl-*: name, ID row with R&D box, bold key line, detail line, footer with FEB,
+       QR on the right. Rows are spaced out for the numbered callouts; type sizes follow the
+       print.css ratios, with the 7 pt rows held at the figure's 22-unit floor. -->
+  <rect width="1000" height="1040" fill="#ffffff"/>
+
+  <text x="30" y="40" font-family="Saira" font-size="28" font-weight="700" fill="#003262">4 × 1 in label, enlarged</text>
+
+  <!-- the label -->
+  <rect data-box="label" x="106" y="70" width="864" height="230" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="127" y="122" font-size="42" font-weight="700">SEAT</text>
+  <text x="127" y="164" font-family="ui-monospace, Menlo, monospace" font-size="28" font-weight="700">P-SN6-007</text>
+  <rect x="297" y="140" width="72" height="30" rx="4" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="333" y="163" font-size="22" font-weight="700" text-anchor="middle" letter-spacing="1">R&amp;D</text>
+  <text x="127" y="202" font-size="25" font-weight="700">6X 195 TWILL + .125 NOMEX</text>
+  <text x="127" y="238" font-size="22">MOLD INFUSION · MOLD-SN6-004 · WO-SN6-012</text>
+  <text x="127" y="276" font-size="22">LAID 2026-10-03 · AERO</text>
+  <text x="752" y="276" font-size="22" font-weight="800" letter-spacing="2" text-anchor="end">FEB</text>
+  <!-- QR, schematic, 21.4 mm -->
+  <g transform="translate(772 94)">
+    <rect width="182" height="182" fill="#ffffff" stroke="#515f74" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <g fill="#141d2b">
+      <rect x="14" y="14" width="48" height="48"/><rect x="120" y="14" width="48" height="48"/><rect x="14" y="120" width="48" height="48"/>
+      <rect x="74" y="16" width="12" height="12"/><rect x="94" y="34" width="12" height="12"/><rect x="74" y="54" width="12" height="12"/>
+      <rect x="74" y="76" width="12" height="12"/><rect x="98" y="76" width="12" height="12"/><rect x="124" y="78" width="12" height="12"/>
+      <rect x="152" y="92" width="12" height="12"/><rect x="16" y="80" width="12" height="12"/><rect x="42" y="94" width="12" height="12"/>
+      <rect x="74" y="116" width="12" height="12"/><rect x="98" y="136" width="12" height="12"/><rect x="120" y="118" width="12" height="12"/>
+      <rect x="142" y="140" width="12" height="12"/><rect x="80" y="154" width="12" height="12"/><rect x="126" y="156" width="12" height="12"/>
+    </g>
+    <g fill="#ffffff"><rect x="23" y="23" width="30" height="30"/><rect x="129" y="23" width="30" height="30"/><rect x="23" y="129" width="30" height="30"/></g>
+    <g fill="#141d2b"><rect x="31" y="31" width="14" height="14"/><rect x="137" y="31" width="14" height="14"/><rect x="31" y="137" width="14" height="14"/></g>
+  </g>
+
+  <!-- numbered badges sit outside the label so they never read as label content -->
+  <g font-size="22" font-weight="700" text-anchor="middle" fill="#003262">
+    <circle cx="76" cy="108" r="16" fill="#FDB515" stroke="#003262" stroke-width="2"/><text x="76" y="116">1</text>
+    <circle cx="76" cy="154" r="16" fill="#FDB515" stroke="#003262" stroke-width="2"/><text x="76" y="162">2</text>
+    <circle cx="76" cy="194" r="16" fill="#FDB515" stroke="#003262" stroke-width="2"/><text x="76" y="202">3</text>
+    <circle cx="76" cy="231" r="16" fill="#FDB515" stroke="#003262" stroke-width="2"/><text x="76" y="239">4</text>
+    <circle cx="76" cy="268" r="16" fill="#FDB515" stroke="#003262" stroke-width="2"/><text x="76" y="276">5</text>
+    <circle cx="863" cy="50" r="16" fill="#FDB515" stroke="#003262" stroke-width="2"/><text x="863" y="58">6</text>
+  </g>
+  <line x1="863" y1="66" x2="863" y2="92" stroke="#003262" stroke-width="2"/>
+
+  <!-- legend -->
+  <g font-size="22">
+    <g font-weight="700" text-anchor="middle" fill="#003262">
+      <circle cx="46" cy="352" r="16" fill="#FDB515" stroke="#003262" stroke-width="2"/><text x="46" y="360">1</text>
+      <circle cx="46" cy="420" r="16" fill="#FDB515" stroke="#003262" stroke-width="2"/><text x="46" y="428">2</text>
+      <circle cx="46" cy="488" r="16" fill="#FDB515" stroke="#003262" stroke-width="2"/><text x="46" y="496">3</text>
+      <circle cx="46" cy="556" r="16" fill="#FDB515" stroke="#003262" stroke-width="2"/><text x="46" y="564">4</text>
+      <circle cx="46" cy="624" r="16" fill="#FDB515" stroke="#003262" stroke-width="2"/><text x="46" y="632">5</text>
+      <circle cx="46" cy="664" r="16" fill="#FDB515" stroke="#003262" stroke-width="2"/><text x="46" y="672">6</text>
+    </g>
+    <text x="76" y="360"><tspan font-weight="700">Name</tspan>, uppercase, leads: 14 pt on one line. A long name takes two</text>
+    <text x="76" y="388">lines at 13 pt or smaller.</text>
+    <text x="76" y="428"><tspan font-weight="700">ID</tspan>, 9.5 pt, at most 14 characters: the one row that never truncates,</text>
+    <text x="76" y="456">so the R&amp;D box rides here, right of the ID.</text>
+    <text x="76" y="496"><tspan font-weight="700">Key line</tspan>, bold: the identifying fact (§7.6). The stack on a part, the</text>
+    <text x="76" y="524">sealing record on a mold, ratio · role on a resin lot.</text>
+    <text x="76" y="564"><tspan font-weight="700">Detail line</tspan>. On a lot, the vendor lot. Folds into the footer when</text>
+    <text x="76" y="592">the name takes two lines.</text>
+    <text x="76" y="632"><tspan font-weight="700">Footer</tspan>, with the FEB tag at the right.</text>
+    <text x="76" y="672"><tspan font-weight="700">QR</tspan>: <tspan font-family="ui-monospace, Menlo, monospace">HTTPS://FEB-COMPOSITES.WEB.APP/Q/&lt;ID&gt;</tspan></text>
+    <text x="30" y="722" fill="#515f74">No class word is printed (PART, MOLD…). The scan page shows it; only a</text>
+    <text x="30" y="750" fill="#515f74">storage location's key line reads STORAGE.</text>
+  </g>
+
+  <!-- stock comparison, to scale with each other (3.2 units per mm) -->
+  <text x="30" y="808" font-family="Saira" font-size="26" font-weight="700" fill="#003262">Same layout, two heights</text>
+  <!-- 5161 / DK-2210: 101.6 x 25.4 mm, QR 21.4 -->
+  <rect x="30" y="830" width="325" height="81" rx="5" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <rect x="42" y="843" width="130" height="12" fill="#141d2b"/>
+  <rect x="42" y="862" width="90" height="8" fill="#141d2b"/>
+  <rect x="42" y="876" width="150" height="8" fill="#141d2b"/>
+  <rect x="42" y="890" width="120" height="6" fill="#515f74"/>
+  <rect x="280" y="836" width="68" height="68" fill="#141d2b"/>
+  <text x="30" y="944" font-size="22">Avery 5161, 1 × 4 in, or a DK-2210</text>
+  <text x="30" y="972" font-size="22">29 mm roll cut at 101.6 mm</text>
+  <text x="30" y="1004" font-size="22" font-weight="700">QR 21.4 mm</text>
+  <!-- 5522: 101.6 x 33.9 mm, QR 27 -->
+  <rect x="520" y="830" width="325" height="108" rx="5" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <rect x="532" y="846" width="120" height="13" fill="#141d2b"/>
+  <rect x="532" y="868" width="84" height="9" fill="#141d2b"/>
+  <rect x="532" y="886" width="140" height="9" fill="#141d2b"/>
+  <rect x="532" y="904" width="110" height="7" fill="#515f74"/>
+  <rect x="752" y="841" width="86" height="86" fill="#141d2b"/>
+  <text x="520" y="972" font-size="22">Avery 5522 polyester, 1⅓ × 4 in</text>
+  <text x="520" y="1004" font-size="22" font-weight="700">QR 27 mm</text>
+</svg>

@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1210" font-family="Inter, sans-serif">
+  <!-- CS-013 §4.1 / §7.1-7.2: the records one part makes, read top down.
+       Part on top, its runs under it, the lots the runs consumed under
+       those, and the purchase the lots came from. A study sits apart as a
+       folder of coupons. Grayscale: the part is the heavy dark box, the
+       scrapped run's issue is hatched, the study is a folder shape, links
+       are labelled. IDs are illustrative; formats from fb.js / core.js. -->
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,6 L0,12 z" fill="#141d2b"/>
+    </marker>
+    <pattern id="hatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="12" height="12" fill="#ffffff"/>
+      <line x1="0" y1="0" x2="0" y2="12" stroke="#515f74" stroke-width="4"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="1210" fill="#ffffff"/>
+
+  <text x="40" y="58" font-family="Saira, sans-serif" font-size="38" font-weight="700" fill="#003262">One part and its records</text>
+  <text x="40" y="96" font-size="22" fill="#515f74">An ID names a physical object. WO is the job. IDs are examples.</text>
+
+  <!-- Part -->
+  <rect x="40" y="124" width="520" height="150" rx="10" fill="#003262" stroke="#141d2b" stroke-width="5"/>
+  <text x="64" y="170" font-family="ui-monospace, Menlo, monospace" font-size="30" font-weight="700" fill="#ffffff">P-SN6-007</text>
+  <text x="64" y="206" font-size="24" fill="#ffffff">The part the car needs.</text>
+  <text x="64" y="240" font-size="22" fill="#ffffff">Holds the plan: Layup stack,</text>
+  <text x="64" y="266" font-size="22" fill="#ffffff">Materials (plan).</text>
+
+  <!-- Molds -->
+  <line x1="560" y1="170" x2="676" y2="160" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <line x1="560" y1="230" x2="676" y2="238" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="680" y="128" width="280" height="62" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="820" y="168" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#141d2b" text-anchor="middle">MOLD-SN6-004</text>
+  <rect x="680" y="208" width="280" height="62" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="820" y="248" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#141d2b" text-anchor="middle">MOLD-SN6-005</text>
+  <text x="680" y="304" font-size="22" fill="#141d2b">Split mold: one link per half.</text>
+  <text x="680" y="332" font-size="22" fill="#515f74">Parts pulled counts on each.</text>
+
+  <!-- + New run fork -->
+  <polyline points="300,274 300,372 260,372 260,416" fill="none" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <polyline points="300,372 740,372 740,416" fill="none" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="318" y="356" font-size="24" font-weight="700" fill="#141d2b">+ New run</text>
+
+  <!-- Run 1 -->
+  <rect x="40" y="420" width="440" height="296" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="64" y="462" font-family="ui-monospace, Menlo, monospace" font-size="28" font-weight="700" fill="#141d2b">WO-SN6-012</text>
+  <text x="64" y="498" font-size="22" fill="#141d2b">Laid in <tspan font-family="ui-monospace, Menlo, monospace">MOLD-SN6-004</tspan></text>
+  <text x="64" y="528" font-size="22" fill="#141d2b">Stack &amp; BOM as built</text>
+  <rect x="58" y="548" width="404" height="150" rx="6" fill="url(#hatch)" stroke="#141d2b" stroke-width="2"/>
+  <rect x="70" y="558" width="380" height="130" fill="#ffffff"/>
+  <text x="82" y="588" font-size="24" font-weight="700" fill="#141d2b">Issue: Scrap</text>
+  <text x="82" y="618" font-size="22" fill="#141d2b">What happened: porosity</text>
+  <text x="82" y="648" font-size="22" fill="#141d2b">What was done: why it</text>
+  <text x="82" y="676" font-size="22" fill="#141d2b">could not be saved</text>
+
+  <!-- Run 2 -->
+  <rect x="520" y="420" width="440" height="296" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="544" y="462" font-family="ui-monospace, Menlo, monospace" font-size="28" font-weight="700" fill="#141d2b">WO-SN6-013</text>
+  <text x="544" y="498" font-size="22" fill="#141d2b">Laid in <tspan font-family="ui-monospace, Menlo, monospace">MOLD-SN6-004</tspan></text>
+  <text x="544" y="528" font-size="22" fill="#141d2b">Stack &amp; BOM as built</text>
+  <text x="544" y="588" font-size="24" font-weight="700" fill="#141d2b">The re-lay:</text>
+  <text x="544" y="618" font-size="22" fill="#141d2b">a new run of the same part,</text>
+  <text x="544" y="648" font-size="22" fill="#141d2b">not a new P ID.</text>
+  <text x="544" y="690" font-size="22" fill="#515f74">Issues: none open</text>
+
+  <!-- consumed -->
+  <line x1="260" y1="716" x2="260" y2="788" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <line x1="740" y1="716" x2="740" y2="788" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="276" y="760" font-size="22" fill="#515f74">consumed</text>
+  <text x="756" y="760" font-size="22" fill="#515f74">consumed</text>
+
+  <!-- Lots -->
+  <rect x="40" y="792" width="920" height="102" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="64" y="834" font-size="24" font-weight="700" fill="#141d2b">Lots</text>
+  <text x="140" y="834" font-family="ui-monospace, Menlo, monospace" font-size="24" fill="#141d2b">FAB-SN6-003 · RSN-SN6-011 · CON-SN6-002</text>
+  <text x="64" y="874" font-size="22" fill="#515f74">Picked at the cure buy-off on each run.</text>
+
+  <!-- Purchase -->
+  <line x1="200" y1="944" x2="200" y2="898" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="216" y="928" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#141d2b">buyRef</text>
+  <rect x="40" y="948" width="400" height="128" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="64" y="990" font-family="ui-monospace, Menlo, monospace" font-size="26" font-weight="700" fill="#141d2b">BUY-SN6-009</text>
+  <text x="64" y="1024" font-size="22" fill="#141d2b">The purchase. Lots received</text>
+  <text x="64" y="1052" font-size="22" fill="#141d2b">from it carry its buyRef.</text>
+
+  <!-- Study folder -->
+  <path d="M480,940 h170 l20,24 h290 v180 h-480 z" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="500" y="1000" font-family="ui-monospace, Menlo, monospace" font-size="26" font-weight="700" fill="#141d2b">RDS-SN6-004</text>
+  <text x="706" y="1000" font-size="22" fill="#515f74">study, on the bench</text>
+  <rect x="500" y="1016" width="440" height="50" rx="6" fill="#ffffff" stroke="#515f74" stroke-width="2" stroke-dasharray="6 5"/>
+  <text x="720" y="1050" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#141d2b" text-anchor="middle">CPN-SN6-041 … CPN-SN6-050</text>
+  <text x="500" y="1098" font-size="22" fill="#141d2b">Coupons inherit the study's stack and lots.</text>
+  <text x="500" y="1128" font-size="22" fill="#515f74">May also hold a part. No WO, no cure hold.</text>
+
+  <text x="40" y="1190" font-size="22" fill="#141d2b"><tspan font-weight="700">Never reused:</tspan> an ID stays retired after a delete. A remachined mold keeps its ID.</text>
+</svg>

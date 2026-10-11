@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 980" font-family="Inter">
+  <!-- CS-008 Figure 1, variant b (brief B: rethink). Read across one row:
+       your resin, the datasheet figure (thin solid bar), the FEB hold (heavy
+       hollow bar) and its number in large type where the bar ends. XCR's hold
+       is dashed because no work-order step locks it (CS-008 §5.1). Values from
+       app/resins.js (febHoldH, sheetSays, sheetH), signed off 2026-08-01.
+       Grayscale: solid against hollow, solid against dashed outline. -->
+  <rect width="1000" height="980" fill="#ffffff"/>
+  <text x="20" y="50" font-family="Saira" font-size="34" font-weight="600" fill="#003262">Wait for the FEB hold, not the datasheet</text>
+  <rect x="20" y="98" width="50" height="14" fill="#141d2b"/>
+  <text x="80" y="112" font-size="22" fill="#141d2b">datasheet figure</text>
+  <rect x="292" y="88" width="50" height="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
+  <text x="352" y="112" font-size="22" fill="#141d2b">FEB hold, app locks the step</text>
+  <rect x="690" y="88" width="50" height="28" fill="#ffffff" stroke="#003262" stroke-width="4" stroke-dasharray="9 6"/>
+  <text x="750" y="112" font-size="22" fill="#141d2b">FEB hold, by hand</text>
+  <text x="20" y="146" font-size="22" fill="#515f74">Datasheet figure: demould (IN2), thin-film cure (West),</text>
+  <text x="20" y="174" font-size="22" fill="#515f74">initial cure, handleable at about 9 h (XCR). All at the temperature shown.</text>
+  <line x1="380.0" y1="198" x2="380.0" y2="726" stroke="#141d2b" stroke-width="2"/>
+  <text x="380.0" y="754" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">0 h</text>
+  <line x1="506.2" y1="198" x2="506.2" y2="726" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <text x="506.2" y="754" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">12 h</text>
+  <line x1="632.5" y1="198" x2="632.5" y2="726" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <text x="632.5" y="754" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">24 h</text>
+  <line x1="758.8" y1="198" x2="758.8" y2="726" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <text x="758.8" y="754" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">36 h</text>
+  <line x1="885.0" y1="198" x2="885.0" y2="726" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <text x="885.0" y="754" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">48 h</text>
+  <text x="20" y="754" font-size="22" fill="#515f74">hours from Finished</text>
+  <text x="20" y="780" font-size="22" fill="#515f74">on / at, set at buy-off</text>
+  <text x="20" y="234" font-size="24" font-weight="700" fill="#141d2b">IN2 + AT30 SLOW</text>
+  <text x="20" y="262" font-size="22" fill="#515f74">Infusion, the default</text>
+  <rect x="380" y="212" width="252.5" height="14" fill="#141d2b"/>
+  <text x="642.5" y="227" font-size="22" fill="#141d2b" stroke="#ffffff" stroke-width="7" stroke-linejoin="round" paint-order="stroke">18–24 h @25 °C</text>
+  <rect x="380" y="236" width="505.0" height="40" fill="#ffffff" fill-opacity="0" stroke="#003262" stroke-width="4"/>
+  <text x="897.0" y="270" font-family="Saira" font-size="34" font-weight="700" fill="#003262">48 h</text>
+  <line x1="20" y1="284" x2="980" y2="284" stroke="#dde3ec" stroke-width="1.5"/>
+  <text x="20" y="320" font-size="24" font-weight="700" fill="#141d2b">IN2 + AT30 FAST</text>
+  <text x="20" y="348" font-size="22" fill="#515f74">Small infusions</text>
+  <rect x="380" y="298" width="84.2" height="14" fill="#141d2b"/>
+  <text x="474.2" y="313" font-size="22" fill="#141d2b" stroke="#ffffff" stroke-width="7" stroke-linejoin="round" paint-order="stroke">6–8 h @25 °C</text>
+  <rect x="380" y="322" width="252.5" height="40" fill="#ffffff" fill-opacity="0" stroke="#003262" stroke-width="4"/>
+  <text x="644.5" y="356" font-family="Saira" font-size="34" font-weight="700" fill="#003262">24 h</text>
+  <line x1="20" y1="370" x2="980" y2="370" stroke="#dde3ec" stroke-width="1.5"/>
+  <text x="20" y="406" font-size="24" font-weight="700" fill="#141d2b">West 105 + 206 slow</text>
+  <text x="20" y="434" font-size="22" fill="#515f74">Wet layup, the default</text>
+  <rect x="380" y="384" width="157.8" height="14" fill="#141d2b"/>
+  <text x="547.8" y="399" font-size="22" fill="#141d2b" stroke="#ffffff" stroke-width="7" stroke-linejoin="round" paint-order="stroke">10–15 h @72 °F</text>
+  <rect x="380" y="408" width="252.5" height="40" fill="#ffffff" fill-opacity="0" stroke="#003262" stroke-width="4"/>
+  <text x="644.5" y="442" font-family="Saira" font-size="34" font-weight="700" fill="#003262">24 h</text>
+  <line x1="20" y1="456" x2="980" y2="456" stroke="#dde3ec" stroke-width="1.5"/>
+  <text x="20" y="492" font-size="24" font-weight="700" fill="#141d2b">West 105 + 205 fast</text>
+  <text x="20" y="520" font-size="22" fill="#515f74">Small wet layups, tabs</text>
+  <rect x="380" y="470" width="84.2" height="14" fill="#141d2b"/>
+  <text x="474.2" y="485" font-size="22" fill="#141d2b" stroke="#ffffff" stroke-width="7" stroke-linejoin="round" paint-order="stroke">6–8 h @72 °F</text>
+  <rect x="380" y="494" width="252.5" height="40" fill="#ffffff" fill-opacity="0" stroke="#003262" stroke-width="4"/>
+  <text x="644.5" y="528" font-family="Saira" font-size="34" font-weight="700" fill="#003262">24 h</text>
+  <line x1="20" y1="542" x2="980" y2="542" stroke="#dde3ec" stroke-width="1.5"/>
+  <text x="20" y="578" font-size="24" font-weight="700" fill="#141d2b">West 105 + 209 extra slow</text>
+  <text x="20" y="606" font-size="22" fill="#515f74">Hot ambient, large layups</text>
+  <rect x="380" y="556" width="252.5" height="14" fill="#141d2b"/>
+  <text x="642.5" y="571" font-size="22" fill="#141d2b" stroke="#ffffff" stroke-width="7" stroke-linejoin="round" paint-order="stroke">20–24 h @72 °F</text>
+  <rect x="380" y="580" width="378.8" height="40" fill="#ffffff" fill-opacity="0" stroke="#003262" stroke-width="4"/>
+  <text x="770.8" y="614" font-family="Saira" font-size="34" font-weight="700" fill="#003262">36 h</text>
+  <line x1="20" y1="628" x2="980" y2="628" stroke="#dde3ec" stroke-width="1.5"/>
+  <text x="20" y="664" font-size="24" font-weight="700" fill="#141d2b">XCR coating resin</text>
+  <text x="20" y="692" font-size="22" fill="#515f74">Mold sealing</text>
+  <rect x="380" y="642" width="94.7" height="14" fill="#141d2b"/>
+  <text x="484.7" y="657" font-size="22" fill="#141d2b" stroke="#ffffff" stroke-width="7" stroke-linejoin="round" paint-order="stroke">about 9 h @20 °C</text>
+  <rect x="380" y="666" width="126.2" height="40" fill="#ffffff" fill-opacity="0" stroke="#003262" stroke-width="4" stroke-dasharray="9 6"/>
+  <text x="518.2" y="700" font-family="Saira" font-size="34" font-weight="700" fill="#003262">12 h</text>
+  <line x1="20" y1="790" x2="980" y2="790" stroke="#dde3ec" stroke-width="2"/>
+  <text x="20" y="820" font-size="22" fill="#141d2b"><tspan font-weight="700">24 h</tspan> is come back tomorrow; <tspan font-weight="700">48 h</tspan> is after the weekend.</text>
+  <text x="20" y="848" font-size="22" fill="#141d2b"><tspan font-weight="700">Cold shop?</tspan> It runs long. Test the flange, not the clock.</text>
+  <text x="20" y="876" font-size="22" fill="#141d2b"><tspan font-weight="700">XCR:</tspan> no work-order step locks it. Watch the 12 h yourself (CS-004).</text>
+  <text x="20" y="904" font-size="22" fill="#141d2b"><tspan font-weight="700">The app locks</tspan> “Cure and demould” (“Cure” on Foam wrapped) until the hold ends.</text>
+  <text x="20" y="932" font-size="22" fill="#515f74">Finished = inlet clamped (infusion) or bagging done (wet layup).</text>
+  <text x="20" y="960" font-size="22" fill="#515f74">Holds: code table, 2026-08-01; a lead may change them. The app shows the live one.</text>
+</svg>

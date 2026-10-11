@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 900" font-family="Inter" fill="#141d2b">
+  <!-- CS-001 §7.11 two codes on one container, v2 (brief A). Synthetic tag only: the
+       test fixture code CA00 0000 0000 0000 0024 3F1C on RSN-SN6-001 (tools/test_app.mjs).
+       Grayscale: QR has three square finders, the Data Matrix an L-shaped solid border;
+       the record box is the one heavy box. -->
+  <defs>
+    <marker id="ah" markerWidth="14" markerHeight="12" refX="13" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L14,6 L0,12 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="900" fill="#ffffff"/>
+
+  <!-- the container -->
+  <rect x="80" y="36" width="130" height="44" rx="6" fill="#dde3ec" stroke="#515f74" stroke-width="3"/>
+  <path d="M 760 80 V 52 Q 760 26 790 26 H 900 Q 930 26 930 52 V 80" fill="none" stroke="#515f74" stroke-width="10"/>
+  <rect x="10" y="80" width="980" height="340" rx="36" fill="#dde3ec" stroke="#515f74" stroke-width="3"/>
+
+  <!-- FEB label (v2 layout) -->
+  <rect x="30" y="120" width="480" height="250" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="50" y="166" font-size="32" font-weight="700">WEST 105 RESIN</text>
+  <text x="50" y="204" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700">RSN-SN6-001</text>
+  <text x="50" y="242" font-size="24" font-weight="700">5:1 · RESIN</text>
+  <text x="50" y="278" font-size="22">LOT 24K118</text>
+  <text x="50" y="348" font-size="22">RECD 2026-09-02</text>
+  <text x="366" y="348" font-size="22" font-weight="800" letter-spacing="2" text-anchor="end">FEB</text>
+  <g transform="translate(384 186)">
+    <rect width="110" height="110" fill="#ffffff"/>
+    <g fill="#141d2b">
+      <rect x="0" y="0" width="32" height="32"/><rect x="78" y="0" width="32" height="32"/><rect x="0" y="78" width="32" height="32"/>
+      <rect x="42" y="4" width="10" height="10"/><rect x="58" y="18" width="10" height="10"/><rect x="42" y="42" width="10" height="10"/>
+      <rect x="62" y="44" width="10" height="10"/><rect x="84" y="50" width="10" height="10"/><rect x="6" y="46" width="10" height="10"/>
+      <rect x="44" y="70" width="10" height="10"/><rect x="62" y="86" width="10" height="10"/><rect x="84" y="80" width="10" height="10"/>
+      <rect x="96" y="98" width="10" height="10"/><rect x="46" y="96" width="10" height="10"/><rect x="24" y="60" width="10" height="10"/>
+    </g>
+    <g fill="#ffffff"><rect x="6" y="6" width="20" height="20"/><rect x="84" y="6" width="20" height="20"/><rect x="6" y="84" width="20" height="20"/></g>
+    <g fill="#141d2b"><rect x="11" y="11" width="10" height="10"/><rect x="89" y="11" width="10" height="10"/><rect x="11" y="89" width="10" height="10"/></g>
+  </g>
+  <text x="50" y="112" font-family="Saira" font-size="24" font-weight="700" fill="#003262">FEB label</text>
+
+  <!-- UC EH&S tag -->
+  <text x="530" y="112" font-family="Saira" font-size="24" font-weight="700" fill="#003262">UC EH&amp;S tag</text>
+  <rect x="530" y="120" width="450" height="250" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <!-- Data Matrix, synthetic: solid L on left and bottom, alternating clock on top and right -->
+  <g transform="translate(552 140)">
+    <rect x="0" y="0" width="10" height="150" fill="#141d2b"/>
+    <rect x="0" y="140" width="150" height="10" fill="#141d2b"/>
+    <g fill="#141d2b">
+      <rect x="20" y="0" width="10" height="10"/><rect x="40" y="0" width="10" height="10"/><rect x="60" y="0" width="10" height="10"/><rect x="80" y="0" width="10" height="10"/><rect x="100" y="0" width="10" height="10"/><rect x="120" y="0" width="10" height="10"/><rect x="140" y="0" width="10" height="10"/>
+      <rect x="140" y="20" width="10" height="10"/><rect x="140" y="40" width="10" height="10"/><rect x="140" y="60" width="10" height="10"/><rect x="140" y="80" width="10" height="10"/><rect x="140" y="100" width="10" height="10"/><rect x="140" y="120" width="10" height="10"/>
+      <rect x="20" y="20" width="20" height="10"/><rect x="60" y="20" width="10" height="20"/><rect x="90" y="20" width="30" height="10"/>
+      <rect x="30" y="40" width="10" height="10"/><rect x="80" y="40" width="20" height="20"/><rect x="110" y="50" width="20" height="10"/>
+      <rect x="20" y="60" width="30" height="10"/><rect x="60" y="70" width="10" height="20"/><rect x="100" y="80" width="10" height="20"/>
+      <rect x="20" y="90" width="10" height="20"/><rect x="40" y="100" width="20" height="10"/><rect x="80" y="100" width="10" height="10"/><rect x="120" y="100" width="10" height="20"/>
+      <rect x="30" y="120" width="20" height="10"/><rect x="70" y="120" width="30" height="10"/>
+    </g>
+  </g>
+  <text x="726" y="210" font-size="34" font-weight="800" letter-spacing="2">RSS</text>
+  <text x="726" y="244" font-size="22" fill="#515f74">Data Matrix</text>
+  <text x="548" y="340" font-family="ui-monospace, Menlo, monospace" font-size="22">CA00 0000 0000 0000 0024 3F1C</text>
+  <!-- edge print -->
+  <line x1="944" y1="132" x2="944" y2="356" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 5"/>
+  <text transform="translate(954 244) rotate(90)" font-family="ui-monospace, Menlo, monospace" font-size="22" text-anchor="middle">0000 0024 3F1C</text>
+
+  <!-- connectors -->
+  <line x1="150" y1="372" x2="150" y2="526" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <line x1="440" y1="372" x2="440" y2="526" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <line x1="610" y1="372" x2="610" y2="526" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <line x1="830" y1="372" x2="830" y2="526" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="622" y="462" font-size="22">via the lot's</text>
+  <text x="622" y="490" font-size="22">EH&amp;S barcode</text>
+  <text x="980" y="462" font-size="22" font-weight="700" text-anchor="end">edge print:</text>
+  <text x="980" y="490" font-size="22" text-anchor="end">last 12</text>
+  <line x1="962" y1="372" x2="962" y2="438" stroke="#515f74" stroke-width="1.5"/>
+
+  <!-- what each opens -->
+  <rect data-box="L" x="20" y="530" width="300" height="140" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="170" y="570" font-size="22" font-weight="700" text-anchor="middle">Phone camera</text>
+  <text x="170" y="602" font-size="22" text-anchor="middle">the public page;</text>
+  <text x="170" y="630" font-size="22" text-anchor="middle">no account, needs</text>
+  <text x="170" y="658" font-size="22" text-anchor="middle">a connection</text>
+
+  <rect data-box="C" x="345" y="530" width="350" height="140" rx="10" fill="#ffffff" stroke="#003262" stroke-width="6"/>
+  <text x="520" y="570" font-size="22" font-weight="700" text-anchor="middle">The app's Scan</text>
+  <text x="520" y="602" font-size="22" text-anchor="middle">opens the same record</text>
+  <text x="520" y="640" font-family="ui-monospace, Menlo, monospace" font-size="26" font-weight="700" text-anchor="middle">RSN-SN6-001</text>
+
+  <rect data-box="R" x="720" y="530" width="260" height="140" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2" stroke-dasharray="10 7"/>
+  <text x="850" y="570" font-size="22" font-weight="700" text-anchor="middle">Campus (RSS)</text>
+  <text x="850" y="602" font-size="22" text-anchor="middle">the container's</text>
+  <text x="850" y="630" font-size="22" text-anchor="middle">campus identity</text>
+
+  <!-- notes -->
+  <text x="20" y="722" font-size="22">The QR encodes <tspan font-family="ui-monospace, Menlo, monospace">HTTPS://FEB-COMPOSITES.WEB.APP/Q/RSN-SN6-001</tspan></text>
+  <text x="20" y="772" font-size="22" font-weight="700">A container that already wears an EH&amp;S tag gets no FEB label.</text>
+  <text x="20" y="802" font-size="22">Both codes on one container means it was labelled before campus tagged it;</text>
+  <text x="20" y="830" font-size="22">record the tag and leave the FEB label on (§7.11 step 7).</text>
+  <text x="20" y="874" font-size="22" fill="#515f74">Tag code made up for this figure; FEB never prints one.</text>
+</svg>

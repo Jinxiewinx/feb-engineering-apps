@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <!-- CS-004 §7.1 to §7.4: the release stack built from the board up, with
+       the two clocks that decide when the next layer may go on: the fingernail
+       check between XCR coats (overcoat time about 2 h 50 at 20 °C, R1) and the
+       FEB 12 h hold before wax (CS-008 §5, app/resins.js). Variant b: the stack
+       and the timing in one bottom-up reading order. -->
+  <defs>
+    <pattern id="ss-board" width="16" height="16" patternUnits="userSpaceOnUse">
+      <rect width="16" height="16" fill="#ffffff"/>
+      <circle cx="4" cy="4" r="2" fill="#515f74"/><circle cx="12" cy="11" r="2" fill="#515f74"/>
+    </pattern>
+    <marker id="ss-up" markerWidth="18" markerHeight="16" refX="16" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L18,8 L0,16 z" fill="#515f74"/>
+    </marker>
+    <marker id="ss-a" markerWidth="14" markerHeight="12" refX="13" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L14,6 L0,12 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="1000" fill="#ffffff"/>
+
+  <text x="40" y="50" font-family="Saira" font-size="32" font-weight="700" fill="#003262">Sealing a mold, from the board up</text>
+
+  <!-- build order -->
+  <line x1="44" y1="950" x2="44" y2="104" stroke="#515f74" stroke-width="3" marker-end="url(#ss-up)"/>
+  <text transform="translate(32 530) rotate(-90)" text-anchor="middle" font-family="Inter" font-size="22" fill="#515f74">build order: bottom to top</text>
+
+  <!-- laminate -->
+  <rect x="80" y="100" width="320" height="50" fill="#ffffff" stroke="#141d2b" stroke-width="3" stroke-dasharray="12 8"/>
+  <text x="440" y="122" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">Laminate goes here</text>
+  <text x="440" y="150" font-family="Inter" font-size="22" fill="#515f74">CS-006 infusion, CS-007 wet layup</text>
+
+  <!-- PVA x2 -->
+  <rect x="80" y="190" width="320" height="16" fill="#FDB515" stroke="#141d2b" stroke-width="2"/>
+  <rect x="80" y="210" width="320" height="16" fill="#FDB515" stroke="#141d2b" stroke-width="2"/>
+  <text x="440" y="206" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">Partall #10 PVA film ×2</text>
+  <text x="440" y="234" font-family="Inter" font-size="22" fill="#141d2b">each coat dried to a gloss</text>
+
+  <!-- wax x4 -->
+  <g fill="#ffffff" stroke="#141d2b" stroke-width="2">
+    <rect x="80" y="262" width="320" height="11"/><rect x="80" y="277" width="320" height="11"/>
+    <rect x="80" y="292" width="320" height="11"/><rect x="80" y="307" width="320" height="11"/>
+  </g>
+  <text x="440" y="284" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">Formula Five wax ×4 (new mold)</text>
+  <text x="440" y="312" font-family="Inter" font-size="22" fill="#141d2b">thin film, let it haze, buff between coats</text>
+
+  <!-- the FEB hold -->
+  <rect x="80" y="352" width="880" height="92" fill="#141d2b"/>
+  <text x="104" y="392" font-family="Saira" font-size="28" font-weight="700" fill="#ffffff">HOLD 12 h after the last XCR coat</text>
+  <text x="104" y="426" font-family="Inter" font-size="22" fill="#ffffff">FEB hold. Write the last-coat time on the Seal and release mold step.</text>
+
+  <!-- XCR coat 2 -->
+  <rect x="80" y="484" width="320" height="30" fill="#003262" stroke="#141d2b" stroke-width="2"/>
+  <text x="440" y="500" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">XCR coat 2</text>
+  <text x="440" y="528" font-family="Inter" font-size="22" fill="#141d2b">usually needed on 30 lb board;</text>
+  <text x="440" y="555" font-family="Inter" font-size="22" fill="#141d2b">60 lb board often seals in one</text>
+
+  <!-- fingernail check between coats -->
+  <line x1="240" y1="600" x2="240" y2="522" stroke="#141d2b" stroke-width="3" marker-end="url(#ss-a)"/>
+  <rect x="110" y="600" width="260" height="56" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="240" y="636" text-anchor="middle" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">Fingernail check</text>
+  <line x1="240" y1="738" x2="240" y2="658" stroke="#141d2b" stroke-width="3"/>
+  <text x="440" y="612" font-family="Inter" font-size="24" fill="#141d2b"><tspan font-weight="700">Firm but tacky:</tspan> coat 2 now, no prep</text>
+  <text x="440" y="640" font-family="Inter" font-size="22" fill="#515f74">about 2 h 50 at 20 °C; the state decides</text>
+  <text x="440" y="678" font-family="Inter" font-size="24" fill="#141d2b"><tspan font-weight="700">Tack-free:</tspan> wait ≥ 9 h, 120 grit,</text>
+  <text x="440" y="706" font-family="Inter" font-size="24" fill="#141d2b">blow off, IPA wipe, then recoat</text>
+
+  <!-- XCR coat 1 -->
+  <rect x="80" y="740" width="320" height="30" fill="#003262" stroke="#141d2b" stroke-width="2"/>
+  <text x="440" y="756" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">XCR coat 1, thin, never pooled</text>
+  <text x="440" y="784" font-family="Inter" font-size="22" fill="#141d2b">≤ 150 g batch, 100:41 by weight</text>
+  <text x="440" y="811" font-family="Inter" font-size="22" fill="#141d2b">8 min pot life at 20 °C: brush it on fast</text>
+
+  <!-- board -->
+  <rect x="80" y="830" width="320" height="120" fill="url(#ss-board)" stroke="#141d2b" stroke-width="4"/>
+  <text x="440" y="866" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">Machined tooling board</text>
+  <text x="440" y="894" font-family="Inter" font-size="22" fill="#141d2b">blow off the dust, wipe with IPA</text>
+  <text x="440" y="921" font-family="Inter" font-size="22" fill="#141d2b">never acetone</text>
+</svg>

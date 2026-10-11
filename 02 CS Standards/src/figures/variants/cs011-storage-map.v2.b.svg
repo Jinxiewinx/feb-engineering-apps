@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1110" font-family="Inter, sans-serif">
+  <!-- CS-011 §7.3 / §6: where things live, one card per site, site names
+       exactly as app/shop.js SITES spells them. Grayscale: the Flammables
+       cabinet is the only hatched header; the two never-boxes are crossed
+       with a heavy X; resin/hardener follow §6 as it stands (separate
+       shelves) and are not drawn sharing a cabinet (R-011-01 on hold). -->
+  <defs>
+    <pattern id="hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="14" height="14" fill="#ffffff"/>
+      <line x1="0" y1="0" x2="0" y2="14" stroke="#141d2b" stroke-width="5"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="1110" fill="#ffffff"/>
+
+  <text x="40" y="58" font-family="Saira, sans-serif" font-size="38" font-weight="700" fill="#003262">Where does it go?</text>
+  <text x="40" y="96" font-size="24" fill="#515f74">Site names as the app spells them.</text>
+
+  <!-- Row 1 -->
+  <rect x="40" y="124" width="450" height="214" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <path d="M40,134 a10,10 0 0 1 10,-10 h430 a10,10 0 0 1 10,10 v52 h-450 z" fill="#003262"/>
+  <text x="62" y="167" font-size="28" font-weight="700" fill="#ffffff">RFS container</text>
+  <text x="62" y="226" font-size="26" fill="#141d2b">Molds</text>
+  <text x="62" y="262" font-size="26" fill="#141d2b">Foam and tooling-board stock</text>
+  <text x="62" y="300" font-size="22" fill="#515f74">Molds never in front of the</text>
+  <text x="62" y="326" font-size="22" fill="#515f74">knaack or screw boxes.</text>
+
+  <rect x="510" y="124" width="450" height="214" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <path d="M510,134 a10,10 0 0 1 10,-10 h430 a10,10 0 0 1 10,10 v52 h-450 z" fill="#003262"/>
+  <text x="532" y="167" font-size="28" font-weight="700" fill="#ffffff">Jacobs basement</text>
+  <text x="532" y="226" font-size="26" fill="#141d2b">Finished parts</text>
+  <text x="532" y="262" font-size="22" fill="#515f74">Keycard access.</text>
+
+  <!-- Row 2 -->
+  <rect x="40" y="358" width="450" height="160" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="5"/>
+  <path d="M40,368 a10,10 0 0 1 10,-10 h430 a10,10 0 0 1 10,10 v52 h-450 z" fill="url(#hatch)" stroke="#141d2b" stroke-width="5"/>
+  <rect x="56" y="368" width="304" height="42" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="68" y="399" font-size="28" font-weight="700" fill="#141d2b">Flammables cabinet</text>
+  <text x="62" y="462" font-size="26" fill="#141d2b">Airtac, acetone,</text>
+  <text x="62" y="496" font-size="26" fill="#141d2b">clear coat</text>
+
+  <rect x="510" y="358" width="450" height="160" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <path d="M510,368 a10,10 0 0 1 10,-10 h430 a10,10 0 0 1 10,10 v52 h-450 z" fill="#003262"/>
+  <text x="532" y="401" font-size="28" font-weight="700" fill="#ffffff">Dry sealed bin</text>
+  <text x="532" y="462" font-size="26" fill="#141d2b">Cloth</text>
+
+  <!-- Row 3 -->
+  <rect x="40" y="538" width="450" height="160" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <path d="M40,548 a10,10 0 0 1 10,-10 h430 a10,10 0 0 1 10,10 v52 h-450 z" fill="#003262"/>
+  <text x="62" y="581" font-size="28" font-weight="700" fill="#ffffff">General Box</text>
+  <text x="62" y="642" font-size="26" fill="#141d2b">Consumables</text>
+  <text x="62" y="678" font-size="22" fill="#515f74">At RFS.</text>
+
+  <rect x="510" y="538" width="450" height="160" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <path d="M510,548 a10,10 0 0 1 10,-10 h430 a10,10 0 0 1 10,10 v52 h-450 z" fill="#003262"/>
+  <text x="532" y="581" font-size="28" font-weight="700" fill="#ffffff">Other</text>
+  <text x="532" y="642" font-size="26" fill="#141d2b">Anything else</text>
+  <text x="532" y="678" font-size="22" fill="#515f74">Name it after the place.</text>
+
+  <!-- Resins and hardeners: §6 as it stands -->
+  <rect x="40" y="718" width="920" height="132" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="62" y="760" font-size="28" font-weight="700" fill="#141d2b">Resins and hardeners</text>
+  <text x="62" y="798" font-size="24" fill="#141d2b">Chemical boxes or barrel (CS-011 §6).</text>
+  <text x="62" y="832" font-size="24" fill="#141d2b">Hardeners on a different shelf from resins.</text>
+  <!-- two shelves, one each -->
+  <line x1="700" y1="776" x2="930" y2="776" stroke="#141d2b" stroke-width="5"/>
+  <line x1="700" y1="836" x2="930" y2="836" stroke="#141d2b" stroke-width="5"/>
+  <text x="815" y="766" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">resin</text>
+  <text x="815" y="826" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">hardener</text>
+
+  <!-- NEVER -->
+  <text x="40" y="900" font-family="Saira, sans-serif" font-size="30" font-weight="700" fill="#141d2b">NEVER</text>
+  <g>
+    <rect x="40" y="916" width="450" height="120" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+    <line x1="52" y1="928" x2="140" y2="1024" stroke="#141d2b" stroke-width="7"/>
+    <line x1="140" y1="928" x2="52" y2="1024" stroke="#141d2b" stroke-width="7"/>
+    <text x="164" y="964" font-size="28" font-weight="700" fill="#141d2b">Food fridge</text>
+    <text x="164" y="1002" font-size="24" fill="#141d2b">No chemicals in it.</text>
+  </g>
+  <g>
+    <rect x="510" y="916" width="450" height="120" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+    <line x1="522" y1="928" x2="610" y2="1024" stroke="#141d2b" stroke-width="7"/>
+    <line x1="610" y1="928" x2="522" y2="1024" stroke="#141d2b" stroke-width="7"/>
+    <text x="634" y="964" font-size="28" font-weight="700" fill="#141d2b">Etch locker</text>
+    <text x="634" y="1002" font-size="24" fill="#141d2b">No parts in it.</text>
+  </g>
+
+  <text x="40" y="1080" font-size="22" fill="#515f74">Moving something: scan it, tap Move, scan the shelf (<tspan font-family="ui-monospace, Menlo, monospace" fill="#141d2b">BIN-SN6-###</tspan>).</text>
+</svg>

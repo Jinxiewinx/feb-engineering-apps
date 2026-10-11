@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 880">
+  <!-- CS-003 §7.1: the design rules on a female mold section, numbered in the
+       order of §7.1 steps 2 to 7, with the over-6-in split drawn as an inset
+       (step 6, app/slicer.js MAX_CUT_DEPTH_MM 152.4). Variant b: numbers on the
+       drawing, the words in one list underneath. -->
+  <defs>
+    <marker id="mx-a" markerWidth="14" markerHeight="12" refX="13" refY="6" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L14,6 L0,12 z" fill="#141d2b"/>
+    </marker>
+    <marker id="mx-b" markerWidth="18" markerHeight="16" refX="16" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L18,8 L0,16 z" fill="#003262"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="880" fill="#ffffff"/>
+
+  <text x="40" y="50" font-family="Saira" font-size="32" font-weight="700" fill="#003262">Mold design rules, on a section</text>
+
+  <!-- spindle direction -->
+  <line x1="340" y1="88" x2="340" y2="150" stroke="#003262" stroke-width="6" marker-end="url(#mx-b)"/>
+  <text x="322" y="112" text-anchor="end" font-family="Inter" font-size="24" font-weight="700" fill="#003262">Spindle: from above only</text>
+
+  <!-- the mold block -->
+  <path d="M 40 440 L 40 170 L 223 170 L 248 183.5 L 265 345.5 Q 269 372.5 286 372.5 L 394 372.5 Q 411 372.5 415 345.5 L 432 183.5 L 457 170 L 640 170 L 640 440 Z"
+        fill="#ffffff" stroke="#141d2b" stroke-width="5"/>
+  <!-- glue joints -->
+  <g stroke="#515f74" stroke-width="2" stroke-dasharray="12 8">
+    <line x1="40" y1="260" x2="255" y2="260"/><line x1="425" y1="260" x2="640" y2="260"/>
+    <line x1="40" y1="345" x2="263" y2="345"/><line x1="417" y1="345" x2="640" y2="345"/>
+    <line x1="40" y1="410" x2="640" y2="410"/>
+  </g>
+
+  <!-- 1 flange -->
+  <line x1="42" y1="146" x2="221" y2="146" stroke="#141d2b" stroke-width="2" marker-start="url(#mx-a)" marker-end="url(#mx-a)"/>
+  <line x1="40" y1="134" x2="40" y2="166" stroke="#141d2b" stroke-width="1.5"/>
+  <line x1="223" y1="134" x2="223" y2="166" stroke="#141d2b" stroke-width="1.5"/>
+  <line x1="132" y1="148" x2="132" y2="196" stroke="#141d2b" stroke-width="1.5"/>
+  <circle cx="132" cy="214" r="18" fill="#141d2b"/>
+  <text x="132" y="222" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#ffffff">1</text>
+
+  <!-- 2 scribes -->
+  <path d="M 205 170 l 6 10 l 6 -10" fill="none" stroke="#141d2b" stroke-width="3"/>
+  <path d="M 463 170 l 6 10 l 6 -10" fill="none" stroke="#141d2b" stroke-width="3"/>
+  <line x1="469" y1="168" x2="500" y2="128" stroke="#141d2b" stroke-width="1.5"/>
+  <circle cx="512" cy="118" r="18" fill="#141d2b"/>
+  <text x="512" y="126" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#ffffff">2</text>
+
+  <!-- 3 draft -->
+  <line x1="248" y1="185" x2="248" y2="345" stroke="#141d2b" stroke-width="2" stroke-dasharray="6 5"/>
+  <path d="M 248 250 A 70 70 0 0 1 256 251" fill="none" stroke="#141d2b" stroke-width="2"/>
+  <line x1="262" y1="250" x2="292" y2="250" stroke="#141d2b" stroke-width="1.5"/>
+  <circle cx="310" cy="250" r="18" fill="#141d2b"/>
+  <text x="310" y="258" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#ffffff">3</text>
+
+  <!-- 4 minimum section (cavity floor) -->
+  <line x1="380" y1="375" x2="380" y2="438" stroke="#141d2b" stroke-width="2" marker-start="url(#mx-a)" marker-end="url(#mx-a)"/>
+  <line x1="380" y1="440" x2="380" y2="472" stroke="#141d2b" stroke-width="1.5"/>
+  <circle cx="380" cy="490" r="18" fill="#141d2b"/>
+  <text x="380" y="498" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#ffffff">4</text>
+
+  <!-- 5 fillet -->
+  <circle cx="282" cy="358" r="20" fill="none" stroke="#141d2b" stroke-width="2" stroke-dasharray="5 4"/>
+  <line x1="276" y1="377" x2="240" y2="472" stroke="#141d2b" stroke-width="1.5"/>
+  <circle cx="240" cy="490" r="18" fill="#141d2b"/>
+  <text x="240" y="498" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#ffffff">5</text>
+
+  <!-- 7 divot -->
+  <path d="M 324 372.5 l 6 9 l 6 -9 z" fill="#141d2b"/>
+  <line x1="330" y1="382" x2="310" y2="472" stroke="#141d2b" stroke-width="1.5"/>
+  <circle cx="310" cy="490" r="18" fill="#141d2b"/>
+  <text x="310" y="498" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#ffffff">7</text>
+
+  <!-- 6 height -->
+  <line x1="668" y1="172" x2="668" y2="438" stroke="#141d2b" stroke-width="2" marker-start="url(#mx-a)" marker-end="url(#mx-a)"/>
+  <line x1="644" y1="170" x2="680" y2="170" stroke="#141d2b" stroke-width="1.5"/>
+  <line x1="644" y1="440" x2="680" y2="440" stroke="#141d2b" stroke-width="1.5"/>
+  <circle cx="668" cy="305" r="18" fill="#141d2b"/>
+  <text x="668" y="313" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#ffffff">6</text>
+
+  <!-- split inset -->
+  <rect x="712" y="88" width="268" height="404" fill="none" stroke="#dde3ec" stroke-width="2"/>
+  <text x="728" y="122" font-family="Saira" font-size="24" font-weight="700" fill="#003262">Over 6 in: split</text>
+  <rect x="756" y="160" width="180" height="125" fill="#ffffff" stroke="#141d2b" stroke-width="4"/>
+  <rect x="756" y="285" width="180" height="125" fill="#ffffff" stroke="#141d2b" stroke-width="4"/>
+  <line x1="740" y1="285" x2="952" y2="285" stroke="#141d2b" stroke-width="9"/>
+  <g fill="#ffffff" stroke="#141d2b" stroke-width="3">
+    <rect x="782" y="250" width="16" height="70" rx="3"/>
+    <rect x="894" y="250" width="16" height="70" rx="3"/>
+  </g>
+  <text x="846" y="230" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">section 2</text>
+  <text x="846" y="355" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">section 1</text>
+  <text x="846" y="444" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">SPLIT + dowels,</text>
+  <text x="846" y="472" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">designed in CAD</text>
+
+  <!-- the key -->
+  <line x1="40" y1="530" x2="960" y2="530" stroke="#dde3ec" stroke-width="2"/>
+  <g font-family="Inter" font-size="24" fill="#141d2b">
+    <g fill="#141d2b"><circle cx="58" cy="562" r="18"/><circle cx="58" cy="600" r="18"/><circle cx="58" cy="638" r="18"/><circle cx="58" cy="676" r="18"/><circle cx="58" cy="714" r="18"/><circle cx="58" cy="752" r="18"/><circle cx="58" cy="790" r="18"/></g>
+    <g fill="#ffffff" font-size="22" font-weight="700" text-anchor="middle">
+      <text x="58" y="570">1</text><text x="58" y="608">2</text><text x="58" y="646">3</text><text x="58" y="684">4</text><text x="58" y="722">5</text><text x="58" y="760">6</text><text x="58" y="798">7</text>
+    </g>
+    <text x="90" y="570"><tspan font-weight="700">Flange ≥ 75 mm</tspan> flat past the part edge, all round</text>
+    <text x="90" y="608"><tspan font-weight="700">Scribe V-grooves:</tspan> trim line plus two datums</text>
+    <text x="90" y="646"><tspan font-weight="700">≥ 2° draft</tspan> on deep walls; no overhang seen from above</text>
+    <text x="90" y="684"><tspan font-weight="700">No section under 15 mm</tspan> left unsupported</text>
+    <text x="90" y="722"><tspan font-weight="700">Inside fillets ≥</tspan> the finishing tool's radius</text>
+    <text x="90" y="760"><tspan font-weight="700">Over 6 in tall:</tspan> split, with dowels and datums in CAD, unless waived</text>
+    <text x="90" y="798"><tspan font-weight="700">Conical divots</tspan> mark hole locations</text>
+  </g>
+  <text x="40" y="852" font-family="Inter" font-size="22" fill="#515f74">Dashed lines in the block: glue joints. Numbered in the order of CS-003 §7.1.</text>
+</svg>

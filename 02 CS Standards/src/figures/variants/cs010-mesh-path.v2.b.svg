@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 880" font-family="Inter">
+  <!-- CS-010 mesh-path figure, variant b (brief B: rethink). Plan view at
+       1 unit = 1 mm (part 600 x 300), so the 100 mm grid and the 30 mm
+       overlap are drawn to scale. Probe points are two shapes, not two
+       colours: hollow circles for the 100 mm grid, solid squares for the
+       four edge midpoints, a heavy ringed dot for the grounding point.
+       The pass rule and the §7.3 measuring method follow as one strip.
+       Facts from CS-010 §7.2-7.4. -->
+  <rect width="1000" height="880" fill="#ffffff"/>
+  <defs>
+    <pattern id="meshA" width="12" height="12" patternUnits="userSpaceOnUse">
+      <path d="M0 0.5 H12 M0.5 0 V12" stroke="#515f74" stroke-width="1.2"/>
+    </pattern>
+    <pattern id="meshB" width="12" height="12" patternUnits="userSpaceOnUse" x="6" y="6">
+      <path d="M0 0.5 H12 M0.5 0 V12" stroke="#515f74" stroke-width="1.2"/>
+    </pattern>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,5 L0,10 z" fill="#003262"/>
+    </marker>
+    <marker id="ahbs" markerWidth="12" markerHeight="10" refX="1" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M12,0 L0,5 L12,10 z" fill="#003262"/>
+    </marker>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,5 L0,10 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="50" font-family="Saira" font-size="34" font-weight="600" fill="#003262">Mesh path and probe points, in plan</text>
+
+  <!-- part outline -->
+  <rect x="40" y="120" width="600" height="300" rx="12" fill="#ffffff" stroke="#141d2b" stroke-width="4"/>
+
+  <!-- mesh sheets: B's grid is offset, so the overlap reads denser -->
+  <rect x="60" y="140" width="285" height="260" fill="url(#meshA)" stroke="#141d2b" stroke-width="2.5"/>
+  <rect x="315" y="140" width="305" height="260" fill="url(#meshB)" stroke="#141d2b" stroke-width="2.5"/>
+  <!-- tail out to the grounding point -->
+  <rect x="610" y="340" width="96" height="40" fill="url(#meshB)" stroke="#141d2b" stroke-width="2.5"/>
+
+  <rect x="106" y="308" width="168" height="30" fill="#ffffff"/>
+  <rect x="416" y="308" width="168" height="30" fill="#ffffff"/>
+  <text x="190" y="330" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">mesh sheet A</text>
+  <text x="500" y="330" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">mesh sheet B</text>
+  <text x="300" y="106" text-anchor="end" font-size="22" font-weight="700" fill="#003262">≥ 25 mm overlap</text>
+  <line x1="304" y1="100" x2="329" y2="150" stroke="#003262" stroke-width="2"/>
+
+  <!-- grid probe points, 100 mm -->
+  <g fill="#ffffff" stroke="#141d2b" stroke-width="3">
+    <circle cx="90" cy="170" r="9"/><circle cx="190" cy="170" r="9"/><circle cx="290" cy="170" r="9"/><circle cx="390" cy="170" r="9"/><circle cx="490" cy="170" r="9"/><circle cx="590" cy="170" r="9"/>
+    <circle cx="90" cy="270" r="9"/><circle cx="190" cy="270" r="9"/><circle cx="290" cy="270" r="9"/><circle cx="390" cy="270" r="9"/><circle cx="490" cy="270" r="9"/><circle cx="590" cy="270" r="9"/>
+    <circle cx="90" cy="370" r="9"/><circle cx="190" cy="370" r="9"/><circle cx="290" cy="370" r="9"/><circle cx="390" cy="370" r="9"/><circle cx="490" cy="370" r="9"/><circle cx="590" cy="370" r="9"/>
+  </g>
+  <!-- edge midpoints -->
+  <g fill="#141d2b">
+    <rect x="332" y="112" width="16" height="16"/>
+    <rect x="332" y="412" width="16" height="16"/>
+    <rect x="32" y="262" width="16" height="16"/>
+    <rect x="632" y="262" width="16" height="16"/>
+  </g>
+
+  <!-- 100 mm dimension under the part -->
+  <line x1="90" y1="380" x2="90" y2="458" stroke="#003262" stroke-width="1.5"/>
+  <line x1="190" y1="380" x2="190" y2="458" stroke="#003262" stroke-width="1.5"/>
+  <line x1="92" y1="450" x2="188" y2="450" stroke="#003262" stroke-width="2.5" marker-start="url(#ahbs)" marker-end="url(#ahb)"/>
+  <text x="140" y="482" text-anchor="middle" font-size="22" font-weight="700" fill="#003262">100 mm</text>
+
+  <!-- grounding point -->
+  <circle cx="734" cy="360" r="24" fill="#ffffff" stroke="#003262" stroke-width="6"/>
+  <circle cx="734" cy="360" r="8" fill="#141d2b"/>
+  <text x="776" y="300" font-size="24" font-weight="700" fill="#003262">grounding point</text>
+  <text x="776" y="368" font-size="22" fill="#141d2b">bare mesh tail,</text>
+  <text x="776" y="394" font-size="22" fill="#141d2b">protected during</text>
+  <text x="776" y="420" font-size="22" fill="#141d2b">infusion</text>
+  <line x1="770" y1="306" x2="748" y2="340" stroke="#003262" stroke-width="2"/>
+
+  <!-- legend -->
+  <circle cx="264" cy="474" r="9" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="282" y="482" font-size="22" fill="#141d2b">grid point</text>
+  <rect x="426" y="466" width="16" height="16" fill="#141d2b"/>
+  <text x="452" y="482" font-size="22" fill="#141d2b">edge midpoint</text>
+
+  <!-- pass rule -->
+  <rect x="20" y="512" width="960" height="96" rx="8" fill="#003262"/>
+  <text x="44" y="552" font-size="28" font-weight="700" fill="#ffffff">Pass = every point ≤ target</text>
+  <text x="44" y="588" font-size="22" fill="#ffffff">Each point to the grounding point. Default &lt; 5 Ω. One good point is not a pass.</text>
+
+  <!-- method -->
+  <text x="20" y="660" font-family="Saira" font-size="28" font-weight="600" fill="#003262">Measure the same way every time</text>
+  <rect x="20" y="680" width="222" height="86" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="131" y="716" text-anchor="middle" font-size="24" font-weight="700" fill="#141d2b">Zero the leads</text>
+  <text x="131" y="746" text-anchor="middle" font-size="22" fill="#141d2b">note the offset</text>
+  <line x1="244" y1="723" x2="264" y2="723" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="266" y="680" width="222" height="86" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="377" y="716" text-anchor="middle" font-size="24" font-weight="700" fill="#141d2b">Fasten hardware</text>
+  <text x="377" y="746" text-anchor="middle" font-size="22" fill="#141d2b">as it will fly</text>
+  <line x1="490" y1="723" x2="510" y2="723" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="512" y="680" width="222" height="86" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="623" y="716" text-anchor="middle" font-size="24" font-weight="700" fill="#141d2b">Probe every point</text>
+  <text x="623" y="746" text-anchor="middle" font-size="22" fill="#141d2b">to the ground</text>
+  <line x1="736" y1="723" x2="756" y2="723" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="758" y="680" width="222" height="86" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="869" y="716" text-anchor="middle" font-size="24" font-weight="700" fill="#141d2b">Write them all</text>
+  <text x="869" y="746" text-anchor="middle" font-size="22" fill="#141d2b">worst = the Actual</text>
+
+  <text x="20" y="812" font-size="22" fill="#141d2b"><tspan font-weight="700">A point over target:</tspan> report an issue on the measuring step,</text>
+  <text x="20" y="840" font-size="22" fill="#141d2b">fix it (§7.4), then measure the whole pattern again.</text>
+</svg>

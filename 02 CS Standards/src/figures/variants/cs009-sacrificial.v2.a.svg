@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 680" font-family="Inter" font-size="22" fill="#141d2b">
+  <!-- CS-009 §7.2: what sanding is allowed to eat (v2, variant a). Faithful
+       redraw of cs009-sacrificial with the register fixes: CS-002 §7.1 step 3,
+       "stop, report an issue on the step", edge finish cited as §7.2 step 3.
+       Grayscale: sacrificial ply solid light fill, structural plies and the
+       CF skin diagonal hatch, aluminum wall horizontal hatch, damage drawn as
+       a heavy break line. -->
+  <defs>
+    <pattern id="c9cf" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="10" height="10" fill="#ffffff"/>
+      <line x1="0" y1="0" x2="0" y2="10" stroke="#141d2b" stroke-width="1.6"/>
+    </pattern>
+    <pattern id="c9al" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" fill="#ffffff"/>
+      <line x1="0" y1="4" x2="8" y2="4" stroke="#515f74" stroke-width="1.4"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="680" fill="#ffffff"/>
+
+  <!-- divider -->
+  <line x1="490" y1="24" x2="490" y2="476" stroke="#dde3ec" stroke-width="2"/>
+
+  <!-- LEFT: the sanding budget -->
+  <text x="40" y="48" font-family="Saira" font-size="28" font-weight="700" fill="#003262">The sanding budget</text>
+  <text x="40" y="96" font-weight="700" fill="#003262">88 spread-tow sacrificial ply</text>
+  <text x="40" y="122">sand into this ply, no further</text>
+  <text x="40" y="148" fill="#515f74">(CS-002 §7.1 step 3)</text>
+
+  <rect x="40" y="212" width="410" height="32" fill="url(#c9cf)" stroke="#141d2b" stroke-width="1.5"/>
+  <rect x="40" y="244" width="410" height="32" fill="url(#c9cf)" stroke="#141d2b" stroke-width="1.5"/>
+  <rect x="40" y="276" width="410" height="32" fill="url(#c9cf)" stroke="#141d2b" stroke-width="1.5"/>
+  <path d="M 40 212 L 40 172 L 200 172 Q 262 172 306 190 L 450 198 L 450 212 Z" fill="#dde3ec" stroke="#141d2b" stroke-width="2"/>
+
+  <text x="40" y="342" font-weight="700">structural plies:</text>
+  <text x="40" y="368">not a sanding allowance</text>
+
+  <text x="40" y="416" font-weight="700">Structural weave showing?</text>
+  <text x="40" y="442">Stop, and report an issue (⚑)</text>
+  <text x="40" y="468">on the step (§7.2 steps 4–7).</text>
+
+  <!-- RIGHT: the catch-can failure -->
+  <text x="530" y="48" font-family="Saira" font-size="28" font-weight="700" fill="#141d2b">The catch-can failure (R2)</text>
+  <text x="530" y="96">machine sander on thin laminate</text>
+  <text x="530" y="122">at a taper: <tspan font-weight="700">through the skin</tspan></text>
+  <text x="530" y="148" font-weight="700">and into the can wall</text>
+
+  <!-- aluminum wall: flat, then the taper -->
+  <path d="M 530 240 L 770 240 L 970 316 L 970 362 L 770 286 L 530 286 Z" fill="url(#c9al)" stroke="#141d2b" stroke-width="2"/>
+  <rect x="540" y="249" width="200" height="30" fill="#ffffff"/>
+  <text x="545" y="271">aluminum can wall</text>
+  <!-- CF skin over it, broken at the knee -->
+  <path d="M 530 226 L 752 226 L 752 240 L 530 240 Z" fill="url(#c9cf)" stroke="#141d2b" stroke-width="1.5"/>
+  <path d="M 792 234 L 970 302 L 970 316 L 792 248 Z" fill="url(#c9cf)" stroke="#141d2b" stroke-width="1.5"/>
+  <!-- damage: gouge through the skin into the wall -->
+  <path d="M 752 226 L 766 254 L 780 250 L 792 234" fill="#ffffff" stroke="#141d2b" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- sander pad -->
+  <g transform="rotate(12 772 196)">
+    <rect x="712" y="180" width="120" height="26" rx="4" fill="#141d2b"/>
+    <rect x="760" y="156" width="24" height="24" fill="#515f74"/>
+  </g>
+
+  <line x1="890" y1="279" x2="860" y2="372" stroke="#515f74" stroke-width="1.5"/>
+  <text x="980" y="398" text-anchor="end">CF skin, under 3 plies</text>
+  <text x="980" y="424" text-anchor="end" fill="#515f74">thin laminate at the taper</text>
+
+  <!-- rules strip -->
+  <rect x="20" y="506" width="960" height="154" fill="#ffffff" stroke="#141d2b" stroke-width="1.5"/>
+  <text x="40" y="542"><tspan font-weight="700">Read the run’s stack</tspan> before sanding anything (§7.2 step 1).</text>
+  <text x="40" y="576"><tspan font-weight="700">Under 3 plies:</tspan> hand-sand only, count strokes, check often (§7.2 step 2).</text>
+  <text x="40" y="610"><tspan font-weight="700">Edges:</tspan> 120 → 400 grit, then a thin resin wipe where sealing or</text>
+  <text x="40" y="640">cosmetics matter (§7.2 step 3).</text>
+</svg>

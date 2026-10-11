@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 830" font-family="Inter" fill="#141d2b">
+  <!-- CS-002 §7.4: the plan lives on the part; + New run copies it into each
+       run; a run's edits make it as-built; Adopt as the part's plan and ↩ plan
+       carry changes back; Stack frozen stops later plan edits reaching a run.
+       Labels from core.js stackEdit/stackDrift/openStackCompare,
+       workorders.js woSecStack/woBomPushBtn, parts.js. -->
+  <rect width="1000" height="830" fill="#ffffff"/>
+  <defs>
+    <marker id="pa-solid" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,5 L0,10 z" fill="#003262"/>
+    </marker>
+    <marker id="pa-open" markerWidth="16" markerHeight="14" refX="14" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M1,1 L14,7 L1,13 z" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    </marker>
+    <pattern id="pa-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="8" height="8" fill="#FDB515"/>
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#141d2b" stroke-width="2"/>
+    </pattern>
+  </defs>
+
+  <text x="30" y="50" font-family="Saira" font-size="32" font-weight="600" fill="#003262">Plan on the part, as-built on each run</text>
+
+  <!-- ===== The part ===== -->
+  <rect x="30" y="90" width="300" height="640" fill="#ffffff" stroke="#003262" stroke-width="3"/>
+  <text x="48" y="124" font-family="ui-monospace, Menlo, monospace" font-size="23" font-weight="700">P-SN6-###</text>
+  <text x="48" y="152" font-size="22" fill="#515f74">the part, Parts tab</text>
+
+  <text x="48" y="194" font-size="22" font-weight="600">Layup stack</text>
+  <g font-size="22">
+    <rect x="48" y="206" width="264" height="34" fill="#ffffff" stroke="#141d2b" stroke-width="1.5"/>
+    <text x="58" y="230">P1  88 spread-tow</text>
+    <rect x="48" y="240" width="264" height="34" fill="#ffffff" stroke="#141d2b" stroke-width="1.5"/>
+    <text x="58" y="264">P2  195 twill</text>
+    <rect x="48" y="274" width="264" height="34" fill="#ffffff" stroke="#141d2b" stroke-width="1.5"/>
+    <text x="58" y="298">P3  Cu mesh</text>
+    <rect x="48" y="308" width="264" height="34" fill="#ffffff" stroke="#141d2b" stroke-width="1.5"/>
+    <text x="58" y="332">P4  core</text>
+    <rect x="48" y="342" width="264" height="34" fill="#ffffff" stroke="#141d2b" stroke-width="1.5"/>
+    <text x="58" y="366">P5  195 twill</text>
+  </g>
+
+  <text x="48" y="424" font-size="22" font-weight="600">Materials (plan)</text>
+  <g font-size="22">
+    <rect x="48" y="436" width="264" height="34" fill="#ffffff" stroke="#141d2b" stroke-width="1.5"/>
+    <text x="58" y="460">195 twill</text>
+    <rect x="48" y="470" width="264" height="34" fill="#ffffff" stroke="#141d2b" stroke-width="1.5"/>
+    <text x="58" y="494">resin + hardener</text>
+  </g>
+  <text x="48" y="560" font-size="22" fill="#515f74">the plan: what the</text>
+  <text x="48" y="586" font-size="22" fill="#515f74">next run starts from</text>
+
+  <!-- ===== Run A: still follows the plan ===== -->
+  <rect x="640" y="90" width="330" height="150" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="656" y="124" font-family="ui-monospace, Menlo, monospace" font-size="23" font-weight="700">WO-SN6-###</text>
+  <text x="656" y="160" font-size="22" fill="#515f74">follows the plan on</text>
+  <text x="656" y="188" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#515f74">P-SN6-###</text>
+  <text x="656" y="224" font-size="22" fill="#515f74">Stack &amp; BOM</text>
+  <g fill="#ffffff" stroke="#141d2b" stroke-width="1.5">
+    <rect x="880" y="104" width="76" height="22"/><rect x="880" y="126" width="76" height="22"/>
+    <rect x="880" y="148" width="76" height="22"/><rect x="880" y="170" width="76" height="22"/>
+    <rect x="880" y="192" width="76" height="22"/>
+  </g>
+
+  <!-- ===== Run B: edited, as built ===== -->
+  <rect x="640" y="270" width="330" height="230" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="656" y="304" font-family="ui-monospace, Menlo, monospace" font-size="23" font-weight="700">WO-SN6-###</text>
+  <text x="656" y="332" font-size="22" font-style="italic">as built on this run</text>
+  <g stroke="#141d2b" stroke-width="1.5">
+    <rect x="656" y="344" width="104" height="18" fill="#ffffff"/>
+    <rect x="656" y="362" width="104" height="18" fill="url(#pa-hatch)"/>
+    <rect x="656" y="380" width="104" height="18" fill="#ffffff"/>
+    <rect x="656" y="398" width="104" height="18" fill="url(#pa-hatch)"/>
+    <rect x="656" y="416" width="104" height="18" fill="#ffffff"/>
+  </g>
+  <text x="774" y="372" font-size="22" font-weight="700">2 plies differ</text>
+  <text x="774" y="402" font-size="22" fill="#003262" text-decoration="underline">Compare</text>
+  <rect x="656" y="452" width="196" height="34" fill="#ffffff" stroke="#141d2b" stroke-width="1.5"/>
+  <text x="666" y="476" font-size="22">BOM: used ▲</text>
+  <rect x="862" y="452" width="96" height="34" rx="5" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="910" y="476" font-size="22" text-anchor="middle" font-weight="600">↩ plan</text>
+
+  <!-- ===== Run C: stack frozen ===== -->
+  <rect x="640" y="560" width="330" height="170" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="656" y="594" font-family="ui-monospace, Menlo, monospace" font-size="23" font-weight="700">WO-SN6-###</text>
+  <text x="656" y="630" font-size="22" fill="#515f74">the bench is working</text>
+  <text x="656" y="656" font-size="22" fill="#515f74">to this stack</text>
+  <text x="656" y="710" font-size="22" fill="#515f74">Stack &amp; BOM</text>
+  <g fill="#ffffff" stroke="#141d2b" stroke-width="1.5">
+    <rect x="880" y="574" width="76" height="22"/><rect x="880" y="596" width="76" height="22"/>
+    <rect x="880" y="618" width="76" height="22"/><rect x="880" y="640" width="76" height="22"/>
+    <rect x="880" y="662" width="76" height="22"/>
+  </g>
+  <!-- the frozen bar -->
+  <rect x="598" y="620" width="16" height="104" fill="#141d2b"/>
+
+  <!-- ===== Copy arrows: + New run (solid) ===== -->
+  <g stroke="#003262" stroke-width="3.5" fill="none" marker-end="url(#pa-solid)">
+    <line x1="330" y1="165" x2="638" y2="165"/>
+    <line x1="330" y1="300" x2="638" y2="300"/>
+    <line x1="330" y1="586" x2="638" y2="586"/>
+  </g>
+  <g font-size="22" font-weight="600" fill="#003262" text-anchor="middle">
+    <text x="484" y="153">+ New run</text>
+    <text x="484" y="288">+ New run</text>
+    <text x="484" y="574">+ New run</text>
+  </g>
+  <text x="484" y="194" font-size="22" fill="#515f74" text-anchor="middle">copies stack and BOM</text>
+
+  <!-- ===== Return arrows (hollow heads) ===== -->
+  <g stroke="#141d2b" stroke-width="2.5" fill="none" marker-end="url(#pa-open)">
+    <line x1="640" y1="352" x2="334" y2="352"/>
+    <line x1="640" y1="469" x2="334" y2="469"/>
+  </g>
+  <g font-size="22" text-anchor="middle">
+    <text x="484" y="380" font-weight="600">Adopt as the part's plan</text>
+    <text x="484" y="406" fill="#515f74">from Compare</text>
+    <text x="484" y="457" font-weight="600">↩ plan</text>
+    <text x="484" y="496" fill="#515f74">one BOM line, shown only</text>
+    <text x="484" y="520" fill="#515f74">when used differs from plan</text>
+  </g>
+
+  <!-- ===== Blocked: later plan edit stops at Stack frozen ===== -->
+  <line x1="330" y1="672" x2="596" y2="672" stroke="#141d2b" stroke-width="2.5" stroke-dasharray="10 7"/>
+  <g font-size="22" text-anchor="middle">
+    <text x="466" y="660" font-weight="600">later edit to the plan</text>
+    <text x="466" y="702" fill="#515f74">no longer reaches</text>
+    <text x="466" y="726" fill="#515f74">this run</text>
+  </g>
+  <text x="606" y="758" font-size="22" font-weight="700" text-anchor="middle">Stack frozen</text>
+
+  <!-- ===== Legend ===== -->
+  <rect x="30" y="782" width="44" height="22" fill="url(#pa-hatch)" stroke="#141d2b" stroke-width="1.5"/>
+  <text x="86" y="801" font-size="22">ply rows that differ from the part's plan</text>
+</svg>

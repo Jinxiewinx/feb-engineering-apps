@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" font-family="Inter" fill="#141d2b">
+  <!-- CS-000 status lifecycle, v2 (brief A). States differ by border: Draft dashed,
+       Released heavy solid, Under Revision medium solid, Retired grey fill.
+       Draft <-> Under Revision added: a revision can be opened on a Draft (§4 Status, §7.2 step 2). -->
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,5 L0,10 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="600" fill="#ffffff"/>
+
+  <!-- entry -->
+  <circle cx="60" cy="58" r="11" fill="#141d2b"/>
+  <line x1="60" y1="69" x2="60" y2="166" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <text x="84" y="55" font-size="22">first draft: row added to CS-INDEX,</text>
+  <text x="84" y="83" font-size="22">and it never leaves (§7.1 step 2)</text>
+
+  <!-- Draft -> Retired, over the top -->
+  <path d="M 200 168 V 128 H 885 V 166" fill="none" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <text x="880" y="116" font-size="22" text-anchor="end">a Draft can be retired too</text>
+
+  <!-- Draft -->
+  <rect data-box="draft" x="20" y="170" width="230" height="120" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2.5" stroke-dasharray="10 7"/>
+  <text x="135" y="210" font-family="Saira" font-size="30" font-weight="700" text-anchor="middle" fill="#003262">Draft</text>
+  <text x="135" y="242" font-size="22" text-anchor="middle">usable as guidance,</text>
+  <text x="135" y="270" font-size="22" text-anchor="middle">not yet the rule</text>
+
+  <!-- Released -->
+  <rect data-box="released" x="395" y="170" width="230" height="120" rx="10" fill="#ffffff" stroke="#003262" stroke-width="6"/>
+  <text x="510" y="210" font-family="Saira" font-size="30" font-weight="700" text-anchor="middle" fill="#003262">Released</text>
+  <text x="510" y="242" font-size="22" text-anchor="middle">current practice;</text>
+  <text x="510" y="270" font-size="22" text-anchor="middle">Approver row signed</text>
+
+  <!-- Retired -->
+  <rect data-box="retired" x="790" y="170" width="190" height="120" rx="10" fill="#dde3ec" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="885" y="210" font-family="Saira" font-size="30" font-weight="700" text-anchor="middle">Retired</text>
+  <text x="885" y="242" font-size="22" text-anchor="middle">kept for history;</text>
+  <text x="885" y="270" font-size="22" text-anchor="middle">do not follow</text>
+  <text x="885" y="322" font-size="22" text-anchor="middle">header names the</text>
+  <text x="885" y="350" font-size="22" text-anchor="middle">replacement; never</text>
+  <text x="885" y="378" font-size="22" text-anchor="middle">deleted (§7.3)</text>
+
+  <!-- Under Revision -->
+  <rect data-box="ur" x="370" y="430" width="280" height="120" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3.5"/>
+  <text x="510" y="470" font-family="Saira" font-size="30" font-weight="700" text-anchor="middle" fill="#003262">Under Revision</text>
+  <text x="510" y="502" font-size="22" text-anchor="middle">follow it; changes coming</text>
+  <text x="510" y="530" font-size="22" text-anchor="middle">written in CS-INDEX only</text>
+
+  <!-- Draft -> Released -->
+  <line x1="252" y1="230" x2="391" y2="230" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <text x="322" y="214" font-size="22" text-anchor="middle">reviewed,</text>
+  <text x="322" y="258" font-size="22" text-anchor="middle">Lead signs</text>
+  <text x="322" y="284" font-size="22" text-anchor="middle">(§7.1)</text>
+
+  <!-- Released -> Retired -->
+  <line x1="628" y1="230" x2="786" y2="230" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <text x="707" y="214" font-size="22" text-anchor="middle">superseded</text>
+  <text x="707" y="258" font-size="22" text-anchor="middle">or practice</text>
+  <text x="707" y="284" font-size="22" text-anchor="middle">discontinued</text>
+
+  <!-- Released <-> Under Revision -->
+  <line x1="460" y1="293" x2="460" y2="426" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <text x="446" y="350" font-size="22" text-anchor="end">revision</text>
+  <text x="446" y="378" font-size="22" text-anchor="end">started (§7.2)</text>
+  <line x1="560" y1="428" x2="560" y2="296" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <text x="574" y="350" font-size="22">lands with</text>
+  <text x="574" y="378" font-size="22">Lead's signature</text>
+
+  <!-- Draft <-> Under Revision -->
+  <path d="M 180 292 V 470 H 366" fill="none" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <text x="196" y="458" font-size="22">revision started</text>
+  <path d="M 368 520 H 90 V 296" fill="none" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <text x="108" y="552" font-size="22">lands unsigned:</text>
+  <text x="108" y="580" font-size="22">still Draft</text>
+
+  <!-- the rule -->
+  <text x="690" y="560" font-size="22" font-weight="700">A blank Approver row</text>
+  <text x="690" y="588" font-size="22" font-weight="700">is never Released.</text>
+</svg>

@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 860" font-family="Inter" fill="#141d2b">
+  <!-- CS-001 §7.12 scan resolution chain, v2 (brief A). Source: scan.js scanResolve,
+       scanManual, scanToOpen; core.js ehsResolveTyped (EHS_TAIL = 12).
+       Grayscale: questions have a heavy left bar, outcomes are plain boxes,
+       the refusal is a dashed arrow into a dashed box. -->
+  <defs>
+    <marker id="ah" markerWidth="14" markerHeight="12" refX="13" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L14,6 L0,12 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="860" fill="#ffffff"/>
+
+  <!-- start -->
+  <rect data-box="start" x="110" y="20" width="350" height="60" rx="30" fill="#141d2b"/>
+  <text x="285" y="58" font-size="22" font-weight="700" text-anchor="middle" fill="#ffffff">A scanned or typed code</text>
+  <line x1="285" y1="80" x2="285" y2="116" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+
+  <!-- Q1 -->
+  <rect data-box="q1" x="30" y="120" width="510" height="100" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="30" y="120" width="12" height="100" fill="#003262"/>
+  <text x="60" y="158" font-size="22" font-weight="700">1  An FEB link or a bare ID?</text>
+  <text x="60" y="196" font-family="ui-monospace, Menlo, monospace" font-size="22">…/Q/MOLD-SN6-004, MOLD-SN6-004</text>
+  <line x1="540" y1="170" x2="606" y2="170" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="573" y="158" font-size="22" text-anchor="middle">yes</text>
+  <rect data-box="a1" x="610" y="106" width="370" height="146" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="630" y="142" font-size="22" font-weight="700">Opens that record</text>
+  <text x="630" y="174" font-size="22">A deleted one says who</text>
+  <text x="630" y="202" font-size="22">deleted it; restore under</text>
+  <text x="630" y="230" font-size="22">Reports → Recently deleted</text>
+
+  <line x1="285" y1="220" x2="285" y2="286" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="300" y="260" font-size="22" fill="#515f74">no</text>
+
+  <!-- Q2 -->
+  <rect data-box="q2" x="30" y="290" width="510" height="100" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="30" y="290" width="12" height="100" fill="#003262"/>
+  <text x="60" y="330" font-size="22" font-weight="700">2  Exactly a stored EH&amp;S barcode?</text>
+  <text x="60" y="364" font-size="22" fill="#515f74">the whole tag code</text>
+  <line x1="540" y1="340" x2="606" y2="340" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="573" y="328" font-size="22" text-anchor="middle">yes</text>
+  <rect data-box="a2" x="610" y="296" width="370" height="88" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="630" y="332" font-size="22" font-weight="700">Opens that lot or</text>
+  <text x="630" y="362" font-size="22" font-weight="700">storage location</text>
+
+  <line x1="285" y1="390" x2="285" y2="456" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="300" y="430" font-size="22" fill="#515f74">no</text>
+
+  <!-- Q3 -->
+  <rect data-box="q3" x="30" y="460" width="510" height="130" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="30" y="460" width="12" height="130" fill="#003262"/>
+  <text x="60" y="498" font-size="22" font-weight="700">3  At least 12 characters that end</text>
+  <text x="80" y="528" font-size="22" font-weight="700">a stored tag?</text>
+  <text x="60" y="566" font-size="22" fill="#515f74">the edge print, read off the tag</text>
+  <line x1="540" y1="490" x2="606" y2="490" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="573" y="478" font-size="22" text-anchor="middle">one</text>
+  <rect data-box="a3" x="610" y="456" width="370" height="64" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="630" y="496" font-size="22" font-weight="700">Opens that container</text>
+  <path d="M 540 562 H 606" stroke="#141d2b" stroke-width="3" stroke-dasharray="9 6" marker-end="url(#ah)"/>
+  <text x="573" y="598" font-size="22" text-anchor="middle">two+</text>
+  <rect data-box="r3" x="610" y="536" width="370" height="96" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2.5" stroke-dasharray="10 7"/>
+  <text x="630" y="574" font-size="22" font-weight="700">Refused, nothing opens:</text>
+  <text x="630" y="608" font-size="22">“type more of the code”</text>
+
+  <line x1="285" y1="590" x2="285" y2="666" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="300" y="636" font-size="22" fill="#515f74">no match</text>
+
+  <!-- Q4 -->
+  <rect data-box="q4" x="30" y="670" width="510" height="100" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="30" y="670" width="12" height="100" fill="#003262"/>
+  <text x="60" y="710" font-size="22" font-weight="700">4  An unknown tag</text>
+  <text x="60" y="744" font-size="22" fill="#515f74">no record wears it</text>
+  <line x1="540" y1="720" x2="606" y2="720" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <rect data-box="a4" x="610" y="656" width="370" height="150" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="630" y="670" width="100" height="40" rx="8" fill="#FDB515" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="680" y="698" font-size="22" font-weight="700" text-anchor="middle">Log it</text>
+  <text x="744" y="698" font-size="22">is offered:</text>
+  <text x="630" y="740" font-size="22">the Receiving desk opens</text>
+  <text x="630" y="768" font-size="22">with the code already in</text>
+  <text x="630" y="796" font-size="22">the EH&amp;S tag cell</text>
+
+  <!-- key -->
+  <line x1="30" y1="830" x2="90" y2="830" stroke="#141d2b" stroke-width="3"/>
+  <text x="102" y="838" font-size="22">opens or offers</text>
+  <line x1="300" y1="830" x2="360" y2="830" stroke="#141d2b" stroke-width="3" stroke-dasharray="9 6"/>
+  <text x="372" y="838" font-size="22">refused: opening the wrong jug is worse</text>
+</svg>

@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 750">
+  <!-- CS-005 §7.4 steps 1 and 2: Z is zeroed once per setup from the top of
+       the stock at the highest point of the finished stack, never the bed; a
+       split stack is one setup per section; tool changes are the ATC's job.
+       Variant b: a big right panel and a smaller wrong one, marked with a drawn
+       tick and cross rather than colour. -->
+  <defs>
+    <pattern id="zz-spoil" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="14" height="14" fill="#ffffff"/>
+      <line x1="0" y1="0" x2="0" y2="14" stroke="#515f74" stroke-width="2.5"/>
+    </pattern>
+    <marker id="zz-a" markerWidth="18" markerHeight="16" refX="16" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L18,8 L0,16 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="750" fill="#ffffff"/>
+
+  <!-- ===== RIGHT ===== -->
+  <circle cx="62" cy="52" r="24" fill="#003262"/>
+  <path d="M 50 53 l 8 9 l 16 -19" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="100" y="62" font-family="Saira" font-size="28" font-weight="700" fill="#003262">Right: Z = 0 on the stock top</text>
+
+  <rect x="50" y="470" width="470" height="28" fill="url(#zz-spoil)" stroke="#141d2b" stroke-width="2"/>
+  <text x="285" y="532" text-anchor="middle" font-family="Inter" font-size="22" fill="#515f74">spoilboard, vacuum zones under the part open</text>
+  <path d="M 110 470 L 110 340 L 260 340 L 260 250 L 420 250 L 420 470 Z" fill="#ffffff" stroke="#141d2b" stroke-width="4"/>
+  <line x1="110" y1="405" x2="420" y2="405" stroke="#515f74" stroke-width="2" stroke-dasharray="12 8"/>
+  <line x1="260" y1="340" x2="420" y2="340" stroke="#515f74" stroke-width="2" stroke-dasharray="12 8"/>
+  <text x="126" y="398" font-family="Inter" font-size="22" fill="#515f74">glue lines</text>
+
+  <!-- spindle touching off at the highest point -->
+  <rect x="330" y="118" width="44" height="70" fill="#dde3ec" stroke="#141d2b" stroke-width="3"/>
+  <path d="M 340 188 L 364 188 L 352 222 Z" fill="#141d2b"/>
+  <line x1="352" y1="224" x2="352" y2="246" stroke="#141d2b" stroke-width="3" marker-end="url(#zz-a)"/>
+  <text x="310" y="140" text-anchor="end" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">Touch off at the</text>
+  <text x="310" y="170" text-anchor="end" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">highest point,</text>
+  <text x="310" y="200" text-anchor="end" font-family="Inter" font-size="24" fill="#141d2b">once per setup</text>
+
+  <!-- Z0 datum: heavy solid -->
+  <line x1="60" y1="250" x2="500" y2="250" stroke="#003262" stroke-width="6"/>
+  <text x="60" y="238" font-family="Inter" font-size="26" font-weight="700" fill="#003262">Z = 0</text>
+
+  <!-- divider -->
+  <line x1="560" y1="30" x2="560" y2="590" stroke="#dde3ec" stroke-width="2"/>
+
+  <!-- ===== WRONG ===== -->
+  <circle cx="612" cy="52" r="24" fill="#ffffff" stroke="#141d2b" stroke-width="4"/>
+  <path d="M 602 42 L 622 62 M 622 42 L 602 62" stroke="#141d2b" stroke-width="5" stroke-linecap="round"/>
+  <text x="650" y="62" font-family="Saira" font-size="28" font-weight="700" fill="#141d2b">Wrong: Z = 0 on the bed</text>
+
+  <path d="M 690 470 L 690 340 L 800 340 L 800 250 L 930 250 L 930 470 Z" fill="#ffffff" stroke="#141d2b" stroke-width="4"/>
+  <line x1="690" y1="405" x2="930" y2="405" stroke="#515f74" stroke-width="2" stroke-dasharray="12 8"/>
+  <rect x="600" y="470" width="360" height="28" fill="url(#zz-spoil)" stroke="#141d2b" stroke-width="2"/>
+  <!-- Z0 at the bed: heavy dashed -->
+  <line x1="600" y1="470" x2="960" y2="470" stroke="#141d2b" stroke-width="6" stroke-dasharray="16 10"/>
+  <text x="600" y="458" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Z = 0</text>
+
+  <!-- plunge -->
+  <rect x="848" y="118" width="44" height="70" fill="#dde3ec" stroke="#141d2b" stroke-width="3"/>
+  <path d="M 858 188 L 882 188 L 870 222 Z" fill="#141d2b"/>
+  <line x1="870" y1="224" x2="870" y2="330" stroke="#141d2b" stroke-width="5" marker-end="url(#zz-a)"/>
+  <g stroke="#141d2b" stroke-width="4" stroke-linecap="round">
+    <line x1="870" y1="340" x2="840" y2="310"/><line x1="870" y1="340" x2="900" y2="310"/>
+    <line x1="870" y1="340" x2="834" y2="346"/><line x1="870" y1="340" x2="906" y2="346"/>
+    <line x1="870" y1="340" x2="852" y2="372"/><line x1="870" y1="340" x2="888" y2="372"/>
+  </g>
+  <text x="790" y="532" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">A wrong stack height plunges</text>
+  <text x="790" y="560" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">the tool into the part</text>
+  <text x="790" y="588" text-anchor="middle" font-family="Inter" font-size="22" fill="#515f74">Feb 2026, old Shopbot (R4)</text>
+
+  <!-- the two follow-on rules -->
+  <line x1="40" y1="610" x2="960" y2="610" stroke="#dde3ec" stroke-width="2"/>
+  <text x="40" y="652" font-family="Inter" font-size="24" fill="#141d2b"><tspan font-weight="700">Split stack?</tspan> Each section is its own setup, with its own zero.</text>
+  <text x="40" y="690" font-family="Inter" font-size="24" fill="#141d2b"><tspan font-weight="700">Tool change?</tspan> No re-zero: the ATC measures each tool.</text>
+  <text x="40" y="724" font-family="Inter" font-size="24" fill="#141d2b">Your job is a tool table that matches the rack.</text>
+</svg>

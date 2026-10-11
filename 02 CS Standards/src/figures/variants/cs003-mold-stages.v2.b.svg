@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 925">
+  <!-- CS-003 §7.1: a mold's stages as a vertical track (app/shop.js MOLD_STAGE),
+       what moves the mold onto each one, who sets it (the app or you), and the
+       Mold design review blocker before Tooling cut. Variant b: one column,
+       read top to bottom. -->
+  <defs>
+    <marker id="ms-up" markerWidth="16" markerHeight="14" refX="14" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L16,7 L0,14 z" fill="#515f74"/>
+    </marker>
+    <pattern id="ms-hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="14" height="14" fill="#FDB515"/>
+      <line x1="0" y1="0" x2="0" y2="14" stroke="#141d2b" stroke-width="5"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="925" fill="#ffffff"/>
+
+  <text x="40" y="52" font-family="Saira" font-size="32" font-weight="700" fill="#003262">A mold's stages, and what moves it on</text>
+  <text x="80" y="98" font-family="Inter" font-size="22" font-weight="700" fill="#515f74" letter-spacing="1">STAGE</text>
+  <text x="330" y="98" font-family="Inter" font-size="22" font-weight="700" fill="#515f74" letter-spacing="1">SET BY</text>
+  <text x="440" y="98" font-family="Inter" font-size="22" font-weight="700" fill="#515f74" letter-spacing="1">WHAT MOVES IT</text>
+  <line x1="40" y1="110" x2="960" y2="110" stroke="#dde3ec" stroke-width="2"/>
+
+  <!-- the track spine -->
+  <line x1="185" y1="160" x2="185" y2="720" stroke="#003262" stroke-width="8"/>
+
+  <!-- back-a-stage arrow on the left margin -->
+  <line x1="40" y1="780" x2="40" y2="330" stroke="#515f74" stroke-width="3" stroke-dasharray="10 7" marker-end="url(#ms-up)"/>
+  <text transform="translate(30 560) rotate(-90)" text-anchor="middle" font-family="Inter" font-size="22" fill="#515f74">moving back a stage: the app asks first</text>
+
+  <!-- Designed -->
+  <g>
+    <rect x="65" y="132" width="240" height="56" rx="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
+    <text x="185" y="169" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Designed</text>
+    <rect x="325" y="141" width="86" height="38" rx="6" fill="#003262"/>
+    <text x="368" y="168" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#ffffff">APP</text>
+    <text x="440" y="157" font-family="Inter" font-size="24" fill="#141d2b">+ Mold or Plan from Fusion creates it</text>
+    <text x="440" y="185" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#515f74">CS-003 §7.1 step 8</text>
+  </g>
+
+  <!-- the blocker gate -->
+  <g>
+    <rect x="65" y="214" width="895" height="92" fill="#ffffff" stroke="#141d2b" stroke-width="5"/>
+    <rect x="65" y="214" width="240" height="92" fill="url(#ms-hatch)" stroke="#141d2b" stroke-width="5"/>
+    <rect x="100" y="243" width="170" height="36" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    <text x="185" y="269" text-anchor="middle" font-family="Saira" font-size="24" font-weight="700" fill="#141d2b">BLOCKER</text>
+    <text x="330" y="252" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">Mold design review, signed on the run</text>
+    <text x="330" y="288" font-family="Inter" font-size="24" fill="#141d2b">No initials, no cutting, no glue, no booking.</text>
+  </g>
+
+  <!-- Tooling cut -->
+  <g>
+    <rect x="65" y="332" width="240" height="56" rx="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
+    <text x="185" y="369" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Tooling cut</text>
+    <rect x="325" y="341" width="86" height="38" rx="6" fill="#003262"/>
+    <text x="368" y="368" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#ffffff">APP</text>
+    <text x="440" y="357" font-family="Inter" font-size="24" fill="#141d2b">Mark these boards cut…, then Mark cut</text>
+    <text x="440" y="385" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#515f74">CS-003 §7.3 step 4</text>
+  </g>
+
+  <!-- Board glued -->
+  <g>
+    <rect x="65" y="422" width="240" height="56" rx="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
+    <text x="185" y="459" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Board glued</text>
+    <rect x="325" y="431" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+    <text x="368" y="458" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">YOU</text>
+    <text x="440" y="447" font-family="Inter" font-size="24" fill="#141d2b">Set it once the stack is clamped</text>
+    <text x="440" y="475" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#515f74">CS-003 §7.3 step 15</text>
+  </g>
+
+  <!-- Machined -->
+  <g>
+    <rect x="65" y="512" width="240" height="56" rx="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
+    <text x="185" y="549" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Machined</text>
+    <rect x="325" y="521" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+    <text x="368" y="548" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">YOU</text>
+    <text x="440" y="537" font-family="Inter" font-size="24" fill="#141d2b">Set it at the machine, with Home location</text>
+    <text x="440" y="565" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#515f74">CS-005 §7.5 step 6</text>
+  </g>
+
+  <!-- Sealed -->
+  <g>
+    <rect x="65" y="602" width="240" height="56" rx="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
+    <text x="185" y="639" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Sealed</text>
+    <rect x="325" y="611" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+    <text x="368" y="638" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">YOU</text>
+    <text x="440" y="627" font-family="Inter" font-size="24" fill="#141d2b">Set it with Sealing system and Sealed on</text>
+    <text x="440" y="655" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#515f74">CS-004 §7.4 step 4</text>
+  </g>
+
+  <!-- Ready for layup -->
+  <g>
+    <rect x="65" y="692" width="240" height="56" rx="28" fill="#003262" stroke="#003262" stroke-width="4"/>
+    <text x="185" y="729" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#ffffff">Ready for layup</text>
+    <rect x="325" y="701" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+    <text x="368" y="728" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">YOU</text>
+    <text x="440" y="717" font-family="Inter" font-size="24" fill="#141d2b">Set it once the mold label is on</text>
+    <text x="440" y="745" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#515f74">CS-004 §7.5 step 5</text>
+  </g>
+
+  <!-- Retired: off the track -->
+  <line x1="40" y1="814" x2="960" y2="814" stroke="#dde3ec" stroke-width="2"/>
+  <g>
+    <rect x="65" y="842" width="240" height="56" rx="28" fill="#ffffff" stroke="#515f74" stroke-width="3" stroke-dasharray="10 7"/>
+    <text x="185" y="879" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#515f74">Retired</text>
+    <rect x="325" y="851" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+    <text x="368" y="878" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">YOU</text>
+    <text x="440" y="867" font-family="Inter" font-size="24" fill="#141d2b">Off the track, from any stage. Never delete.</text>
+    <text x="440" y="895" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#515f74">CS-003 §7.4 step 3</text>
+  </g>
+</svg>

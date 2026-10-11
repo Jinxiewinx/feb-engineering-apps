@@ -802,3 +802,17 @@ applies the draft-standard rows; Claude applies the code rows before R7.
 | R-STV-08 | functions/context.js searchCatalog | missing | Read the `cat` field: never return safety-ppe or solvents-catalysts; gelcoat-colour only when the query says gel coat, colour or RAL | steve/catalog-categories.json; R4 critic | do |
 | R-OTH-34 | tools/build_ai_corpus.mjs | wrong | Skip the H1 "Introduction" section of a QR (the header table and a lead-in carry nothing a search should land on) | R4 retrieval test | do |
 | R-OTH-35 | functions/context.js score | wrong | Terms of 3 characters or fewer match whole words only ("lot" matched "pilot", "slot", "bottle") | R4 retrieval test | do |
+
+## Rows added in Round 3 (figures)
+
+The Round 3 integrator found places where the draft text, not the figure,
+needs fixing (`src/figures/variants/CHOICES.md`). Round 6 applies them.
+
+| ID | § | Type | Change | Evidence | Decision |
+|---|---|---|---|---|---|
+| R-001-30 | CS-001 §4, §7.4 | wrong | The draft gives a 40 mm flange keep-out in one place and "25 mm inboard of the outline" in another; settle on one rule (the figure draws the 40 mm keep-out, which satisfies both) | cs001-mold-identity.v2 | do |
+| R-003-31 | CS-003 §5 | missing | The board table lists 30 and 60 lb/ft³ only; the app and cs005-feed-density.v2 use 45 lb too. Add 45 or say why not | stock.js; packer.js | do |
+| R-011-31 | CS-011 storage table | missing | No Flammables cabinet row, and resins/hardeners have no app Site; the figure says "No app Site names them yet". Add the row (the §6 contents stay held) | cs011-storage-map.v2 | do |
+| R-013-30 | CS-013 | style | Text still says "gate"/"gated" where the figures and app say blocker/hold; use the app's words | cs013-issue-path.v2 | do |
+| R-008-31 | CS-008 | wrong | "48 h is after the weekend" holds only for a Friday infusion; reword | cs008-holds.v2 | do |
+| R-010-30 | CS-010 | missing | The draft does not say what the catch can ended up with; the figure no longer claims copper paths. State the outcome or leave it out | cs010-path-decision.v2 | do |

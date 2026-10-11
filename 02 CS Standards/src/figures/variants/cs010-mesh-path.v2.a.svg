@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" font-family="Inter" font-size="22" fill="#141d2b">
+  <!-- CS-010 §7.2/§7.3: the mesh-in-stack path in plan and the default probe
+       pattern (v2, variant a). Faithful redraw of cs010-mesh-path: evenly
+       spaced 100 mm grid, the four edge midpoints drawn on the part outline
+       and kept clear of the mesh tail, which now leaves the part off the
+       midpoint. Grayscale: grid points hollow circles, edge midpoints solid
+       diamonds, overlap band hatched on top of the mesh grid, grounding point
+       a heavy ring. -->
+  <defs>
+    <pattern id="c10mesh" width="10" height="10" patternUnits="userSpaceOnUse">
+      <rect width="10" height="10" fill="#ffffff"/>
+      <path d="M0 5 H10 M5 0 V10" stroke="#dde3ec" stroke-width="1.6"/>
+    </pattern>
+    <pattern id="c10lap" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="9" stroke="#515f74" stroke-width="2"/>
+    </pattern>
+    <marker id="c10arr" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L11,5 L0,10 z" fill="#003262"/>
+    </marker>
+    <marker id="c10arrs" markerWidth="12" markerHeight="10" refX="1" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M11,0 L0,5 L11,10 z" fill="#003262"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="700" fill="#ffffff"/>
+
+  <text x="40" y="40" font-family="Saira" font-size="28" font-weight="700" fill="#003262">Mesh in the stack, in plan, and the probe pattern</text>
+
+  <!-- part outline -->
+  <rect x="40" y="100" width="600" height="400" rx="12" fill="#ffffff" stroke="#141d2b" stroke-width="3.5"/>
+
+  <!-- mesh sheets, overlapping -->
+  <rect x="60" y="120" width="240" height="360" fill="url(#c10mesh)" stroke="#141d2b" stroke-width="2"/>
+  <rect x="270" y="120" width="350" height="360" fill="url(#c10mesh)" stroke="#141d2b" stroke-width="2"/>
+  <rect x="270" y="120" width="30" height="360" fill="url(#c10lap)" stroke="#141d2b" stroke-width="2"/>
+  <line x1="300" y1="120" x2="300" y2="480" stroke="#141d2b" stroke-width="2"/>
+
+  <!-- overlap dimension -->
+  <line x1="270" y1="78" x2="270" y2="118" stroke="#003262" stroke-width="1.5"/>
+  <line x1="300" y1="78" x2="300" y2="118" stroke="#003262" stroke-width="1.5"/>
+  <line x1="236" y1="86" x2="268" y2="86" stroke="#003262" stroke-width="2" marker-end="url(#c10arr)"/>
+  <line x1="334" y1="86" x2="302" y2="86" stroke="#003262" stroke-width="2" marker-end="url(#c10arr)"/>
+  <text x="228" y="80" text-anchor="end" font-weight="700" fill="#003262">≥25 mm overlap</text>
+
+  <!-- mesh tail to the grounding point, off the edge midpoint -->
+  <rect x="620" y="384" width="80" height="32" fill="url(#c10mesh)" stroke="#141d2b" stroke-width="2"/>
+  <circle cx="726" cy="400" r="22" fill="#ffffff" stroke="#003262" stroke-width="5"/>
+  <circle cx="726" cy="400" r="7" fill="#141d2b"/>
+
+  <!-- probe points -->
+  <circle cx="90" cy="150" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="190" cy="150" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="290" cy="150" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="390" cy="150" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="490" cy="150" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="590" cy="150" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="90" cy="250" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="190" cy="250" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="290" cy="250" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="390" cy="250" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="490" cy="250" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="590" cy="250" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="90" cy="350" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="190" cy="350" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="290" cy="350" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="390" cy="350" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="490" cy="350" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="590" cy="350" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="90" cy="450" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="190" cy="450" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="290" cy="450" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="390" cy="450" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="490" cy="450" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <circle cx="590" cy="450" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <path d="M 340 87 L 353 100 L 340 113 L 327 100 Z" fill="#141d2b" stroke="#ffffff" stroke-width="2"/>
+  <path d="M 340 487 L 353 500 L 340 513 L 327 500 Z" fill="#141d2b" stroke="#ffffff" stroke-width="2"/>
+  <path d="M 40 287 L 53 300 L 40 313 L 27 300 Z" fill="#141d2b" stroke="#ffffff" stroke-width="2"/>
+  <path d="M 640 287 L 653 300 L 640 313 L 627 300 Z" fill="#141d2b" stroke="#ffffff" stroke-width="2"/>
+
+  <!-- labels on the mesh, haloed -->
+  <g stroke="#ffffff" stroke-width="7" paint-order="stroke" stroke-linejoin="round" font-weight="700">
+    <text x="165" y="308" text-anchor="middle">mesh sheet A</text>
+    <text x="450" y="308" text-anchor="middle">mesh sheet B</text>
+  </g>
+  <line x1="92" y1="180" x2="188" y2="180" stroke="#003262" stroke-width="2" marker-start="url(#c10arrs)" marker-end="url(#c10arr)"/>
+  <text x="140" y="212" text-anchor="middle" fill="#003262" font-weight="700" stroke="#ffffff" stroke-width="7" paint-order="stroke" stroke-linejoin="round">100 mm</text>
+
+  <!-- grounding point notes -->
+  <text x="764" y="300" font-weight="700" fill="#003262">grounding point</text>
+  <text x="764" y="330">bare, terminable</text>
+  <text x="764" y="356">mesh tail; peel-ply</text>
+  <text x="764" y="382">window or masked</text>
+  <text x="764" y="408">zone in infusion</text>
+  <text x="764" y="444">hardware torqued</text>
+  <text x="764" y="470">as it will fly</text>
+
+  <!-- legend and pass rule -->
+  <circle cx="54" cy="552" r="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="78" y="560">100 mm grid point, over the conductive zones</text>
+  <path d="M 590 539 L 603 552 L 590 565 L 577 552 Z" fill="#141d2b"/>
+  <text x="614" y="560">every edge midpoint</text>
+  <text x="40" y="606"><tspan font-weight="700">Every point</tspan> measures to the grounding point, and every point ≤ target</text>
+  <text x="40" y="636">(default &lt;5 Ω, or the rules value on the run). <tspan font-family="ui-monospace, Menlo, monospace">WO-SN5-006</tspan>, the diffuser: &lt;1 Ω.</text>
+  <text x="40" y="670" font-weight="700" fill="#003262">One good point is not a pass.</text>
+</svg>

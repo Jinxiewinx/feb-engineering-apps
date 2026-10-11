@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1090" font-family="Inter, sans-serif">
+  <!-- CS-010 §7.1: choosing the conductive path. Three questions down the
+       left; any NO exits right. Outcomes told apart without colour:
+       mesh = solid dark fill, surface path = heavy solid outline,
+       no CF = heavy dashed outline. Questions = thin outline. -->
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,6 L0,12 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="1090" fill="#ffffff"/>
+
+  <text x="40" y="58" font-family="Saira, sans-serif" font-size="38" font-weight="700" fill="#003262">Which conductive path?</text>
+  <text x="40" y="96" font-size="24" fill="#515f74">Decide before any layup work. Start at 1.</text>
+
+  <!-- Q1 -->
+  <rect x="40" y="124" width="500" height="176" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="62" y="164" font-size="26" font-weight="700" fill="#141d2b">1 Large, open laminate where</text>
+  <text x="80" y="196" font-size="26" font-weight="700" fill="#141d2b">mesh lies flat in the stack?</text>
+  <text x="62" y="236" font-size="22" fill="#515f74">Yes: the diffuser, flat panels.</text>
+  <text x="62" y="264" font-size="22" fill="#515f74">No: thin-walled, tapered or wrapped</text>
+  <text x="62" y="290" font-size="22" fill="#515f74">metal, like the catch can.</text>
+
+  <!-- Q1 NO fork -->
+  <line x1="540" y1="212" x2="600" y2="212" stroke="#141d2b" stroke-width="3"/>
+  <line x1="600" y1="212" x2="636" y2="212" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <polyline points="600,212 600,392 636,392" fill="none" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="569" y="200" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">NO</text>
+
+  <!-- NO CF -->
+  <rect x="640" y="150" width="320" height="124" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="5" stroke-dasharray="16 10"/>
+  <text x="664" y="194" font-family="Saira, sans-serif" font-size="30" font-weight="700" fill="#141d2b">NO CF</text>
+  <text x="664" y="228" font-size="22" fill="#141d2b">Does the part need</text>
+  <text x="664" y="256" font-size="22" fill="#141d2b">carbon at all?</text>
+
+  <!-- Q1 -> Q2 -->
+  <line x1="290" y1="300" x2="290" y2="352" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="306" y="334" font-size="22" font-weight="700" fill="#141d2b">YES</text>
+
+  <!-- Q2 -->
+  <rect x="40" y="356" width="500" height="150" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="62" y="396" font-size="26" font-weight="700" fill="#141d2b">2 Can a bare mesh tail reach</text>
+  <text x="80" y="428" font-size="26" font-weight="700" fill="#141d2b">the grounding point?</text>
+  <text x="62" y="468" font-size="22" fill="#515f74">A terminable tail at an accessible</text>
+  <text x="62" y="494" font-size="22" fill="#515f74">flange or fastener.</text>
+  <line x1="540" y1="440" x2="636" y2="440" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="569" y="428" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">NO</text>
+
+  <!-- Q2 -> Q3 -->
+  <line x1="290" y1="506" x2="290" y2="558" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="306" y="540" font-size="22" font-weight="700" fill="#141d2b">YES</text>
+
+  <!-- Q3 -->
+  <rect x="40" y="562" width="500" height="150" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="62" y="602" font-size="26" font-weight="700" fill="#141d2b">3 Is mesh light enough</text>
+  <text x="80" y="634" font-size="26" font-weight="700" fill="#141d2b">for this part?</text>
+  <text x="62" y="674" font-size="22" fill="#515f74">Mesh is heavy on a large part</text>
+  <text x="62" y="700" font-size="22" fill="#515f74">like the undertray.</text>
+  <line x1="540" y1="646" x2="636" y2="646" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="569" y="634" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">NO</text>
+
+  <!-- SURFACE PATH -->
+  <rect x="640" y="330" width="320" height="358" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="5"/>
+  <text x="664" y="376" font-family="Saira, sans-serif" font-size="30" font-weight="700" fill="#141d2b">SURFACE PATH</text>
+  <text x="664" y="410" font-size="22" fill="#515f74">applied after cure:</text>
+  <text x="664" y="470" font-size="24" fill="#141d2b">copper strip or braid,</text>
+  <text x="664" y="500" font-size="24" fill="#141d2b">bonded with epoxy</text>
+  <text x="664" y="552" font-size="24" fill="#141d2b">copper tape</text>
+  <text x="664" y="604" font-size="24" fill="#141d2b">conductive paint</text>
+  <line x1="664" y1="522" x2="936" y2="522" stroke="#dde3ec" stroke-width="2"/>
+  <line x1="664" y1="574" x2="936" y2="574" stroke="#dde3ec" stroke-width="2"/>
+
+  <!-- Q3 -> MESH -->
+  <line x1="290" y1="712" x2="290" y2="770" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="306" y="748" font-size="22" font-weight="700" fill="#141d2b">YES</text>
+
+  <!-- MESH IN THE STACK -->
+  <rect x="40" y="774" width="920" height="160" rx="10" fill="#003262" stroke="#141d2b" stroke-width="5"/>
+  <text x="66" y="822" font-family="Saira, sans-serif" font-size="32" font-weight="700" fill="#ffffff">MESH IN THE STACK</text>
+  <text x="934" y="822" font-size="22" fill="#ffffff" text-anchor="end">e.g. UT diffuser</text>
+  <text x="66" y="862" font-size="24" fill="#ffffff">Copper mesh ply, bare tail to the grounding point.</text>
+  <text x="66" y="902" font-size="24" fill="#ffffff"><tspan font-weight="700">Infused: permeable mesh only.</tspan> Foil, sheet or paint film block resin.</text>
+
+  <!-- Side notes -->
+  <rect x="40" y="964" width="8" height="96" fill="#FDB515" stroke="#141d2b" stroke-width="1"/>
+  <text x="66" y="990" font-size="24" font-weight="700" fill="#141d2b">Path not proven by the team yet?</text>
+  <text x="66" y="1020" font-size="24" fill="#141d2b">Prove it on a first article by §7.3 first.</text>
+  <text x="66" y="1052" font-size="22" fill="#515f74">Write the answer and a one-line why in the note on Stack frozen.</text>
+</svg>

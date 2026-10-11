@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 880" font-family="Inter, sans-serif">
+  <!-- CS-012 §7.1: one purchase, two status tracks (budget.js BUY_STATUS and
+       REIMB_STATUS). Read top to bottom: what you do on the left, which
+       status each track shows on the right. Grayscale: goods = solid lane
+       and solid pills, money = dashed lane and dashed pills; the STOP bar
+       is a heavy black bar across the goods lane; a dotted leader ties it to
+       Approved on the money lane. -->
+  <rect width="1000" height="880" fill="#ffffff"/>
+
+    <text x="40" y="52" font-size="22" fill="#515f74"><tspan font-weight="700" fill="#141d2b">+ New Purchase</tspan> on the Budget tab makes <tspan font-family="ui-monospace, Menlo, monospace" fill="#141d2b">BUY-SN6-###</tspan>.</text>
+  <text x="40" y="82" font-size="22" fill="#515f74">Write the bot's <tspan font-family="ui-monospace, Menlo, monospace" fill="#141d2b">REQ</tspan> number in Notes.</text>
+
+  <!-- lane headers -->
+  <text x="590" y="152" font-family="Saira, sans-serif" font-size="26" font-weight="700" fill="#141d2b" text-anchor="middle">THE GOODS</text>
+  <text x="590" y="180" font-size="22" fill="#515f74" text-anchor="middle">Order status</text>
+  <text x="850" y="152" font-family="Saira, sans-serif" font-size="26" font-weight="700" fill="#141d2b" text-anchor="middle">THE MONEY</text>
+  <text x="850" y="180" font-size="22" fill="#515f74" text-anchor="middle">Reimbursement</text>
+
+  <!-- row rules -->
+  <g stroke="#dde3ec" stroke-width="2">
+    <line x1="40" y1="198" x2="960" y2="198"/>
+    <line x1="40" y1="330" x2="960" y2="330"/>
+    <line x1="40" y1="546" x2="960" y2="546"/>
+    <line x1="40" y1="642" x2="960" y2="642"/>
+  </g>
+
+  <!-- lanes -->
+  <line x1="590" y1="206" x2="590" y2="746" stroke="#141d2b" stroke-width="6"/>
+  <line x1="850" y1="206" x2="850" y2="814" stroke="#003262" stroke-width="6" stroke-dasharray="18 12"/>
+
+  <!-- R1 request -->
+  <text x="40" y="254" font-size="26" font-weight="700" fill="#141d2b">1  Request it</text>
+  <text x="40" y="290" font-size="22" fill="#141d2b"><tspan font-family="ui-monospace, Menlo, monospace" font-weight="700">/purchase</tspan> in #purchasing-slackbot</text>
+  <rect x="500" y="238" width="180" height="52" rx="26" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="590" y="272" font-size="24" font-weight="700" fill="#141d2b" text-anchor="middle">Submitted</text>
+  <rect x="760" y="238" width="180" height="52" rx="26" fill="#ffffff" stroke="#003262" stroke-width="3" stroke-dasharray="9 6"/>
+  <text x="850" y="272" font-size="24" font-weight="700" fill="#141d2b" text-anchor="middle">Submitted</text>
+
+  <!-- R2 approval -->
+  <text x="40" y="384" font-size="26" font-weight="700" fill="#141d2b">2  The bot's approval DM</text>
+  <text x="40" y="418" font-size="22" fill="#515f74">routed to the approver for the amount;</text>
+  <text x="40" y="444" font-size="22" fill="#515f74">under $50 still needs the subteam lead</text>
+  <rect x="760" y="368" width="180" height="52" rx="26" fill="#ffffff" stroke="#003262" stroke-width="3" stroke-dasharray="9 6"/>
+  <text x="850" y="402" font-size="24" font-weight="700" fill="#141d2b" text-anchor="middle">Approved</text>
+
+  <!-- STOP bar -->
+  <rect x="478" y="482" width="224" height="20" fill="#141d2b"/>
+  <text x="40" y="488" font-size="24" font-weight="700" fill="#141d2b">STOP: buy only after</text>
+  <text x="40" y="518" font-size="24" font-weight="700" fill="#141d2b">the approval DM</text>
+  <line x1="300" y1="492" x2="470" y2="492" stroke="#141d2b" stroke-width="2" stroke-dasharray="4 6"/>
+
+  <!-- the DM is what lifts the STOP -->
+  <path d="M 760 404 L 704 484" fill="none" stroke="#141d2b" stroke-width="2" stroke-dasharray="3 5"/>
+
+  <!-- R3 buy -->
+  <text x="40" y="590" font-size="26" font-weight="700" fill="#141d2b">3  Buy it</text>
+  <rect x="500" y="562" width="180" height="52" rx="26" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="590" y="596" font-size="24" font-weight="700" fill="#141d2b" text-anchor="middle">Purchased</text>
+
+  <!-- R4 later -->
+  <text x="40" y="680" font-size="26" font-weight="700" fill="#141d2b">4  Later, in either order</text>
+  <text x="40" y="738" font-size="22" fill="#141d2b">Receive it into Inventory (CS-014),</text>
+  <text x="40" y="766" font-size="22" fill="#141d2b">then set Arrived by hand</text>
+  <rect x="500" y="720" width="180" height="52" rx="26" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="590" y="754" font-size="24" font-weight="700" fill="#141d2b" text-anchor="middle">Arrived</text>
+  <text x="590" y="802" font-size="22" fill="#515f74" text-anchor="middle">set by hand; receiving</text>
+  <text x="590" y="830" font-size="22" fill="#515f74" text-anchor="middle">does not change it</text>
+
+  <text x="40" y="826" font-size="22" fill="#141d2b"><tspan font-family="ui-monospace, Menlo, monospace" font-weight="700">/reimburse</tspan> within a month of buying</text>
+  <text x="40" y="854" font-size="22" fill="#515f74">with the reference ID and amount</text>
+  <rect x="760" y="788" width="180" height="52" rx="26" fill="#ffffff" stroke="#003262" stroke-width="3" stroke-dasharray="9 6"/>
+  <text x="850" y="822" font-size="24" font-weight="700" fill="#141d2b" text-anchor="middle">Reimbursed</text>
+</svg>

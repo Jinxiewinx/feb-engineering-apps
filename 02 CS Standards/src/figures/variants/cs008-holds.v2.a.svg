@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 880" font-family="Inter" font-size="22" fill="#141d2b">
+  <!-- CS-008 §5.1: datasheet cure figure against the FEB hold, per system, on
+       one 0-48 h axis (v2, variant a). Faithful redraw of cs008-holds with the
+       register corrections: no "Demould" title (West rows are thin-film cure),
+       XCR datasheet bar ends at 9 h (resins.js sheetH), holds labelled as the
+       code table of 2026-08-01, axis to 48 h, no false XCR lock claim.
+       Values copied from app/resins.js RESINS. 17.5 units per hour, 0 h at x=40.
+       Grayscale: datasheet figure is a solid dark bar, the hold a hollow
+       outlined bar. -->
+  <rect width="1000" height="880" fill="#ffffff"/>
+  <text x="40" y="48" font-family="Saira" font-size="32" font-weight="700" fill="#003262">Datasheet cure figure against the FEB hold</text>
+  <!-- legend -->
+  <rect x="40" y="74" width="44" height="22" fill="#003262"/>
+  <text x="98" y="93">datasheet figure, at its own reference temperature</text>
+  <rect x="40" y="110" width="44" height="22" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="98" y="129"><tspan font-weight="700">FEB hold that governs:</tspan> code table, 2026-08-01; a lead may change it</text>
+  <!-- hour gridlines, broken at each row heading so they never cross text -->
+  <line x1="40" y1="182" x2="40" y2="240" stroke="#515f74" stroke-width="1.5"/>
+  <line x1="40" y1="268" x2="40" y2="326" stroke="#515f74" stroke-width="1.5"/>
+  <line x1="40" y1="354" x2="40" y2="412" stroke="#515f74" stroke-width="1.5"/>
+  <line x1="40" y1="440" x2="40" y2="498" stroke="#515f74" stroke-width="1.5"/>
+  <line x1="40" y1="526" x2="40" y2="584" stroke="#515f74" stroke-width="1.5"/>
+  <line x1="40" y1="612" x2="40" y2="658" stroke="#515f74" stroke-width="1.5"/>
+  <line x1="250" y1="182" x2="250" y2="240" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="250" y1="268" x2="250" y2="326" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="250" y1="354" x2="250" y2="412" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="250" y1="440" x2="250" y2="498" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="250" y1="526" x2="250" y2="584" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="250" y1="612" x2="250" y2="658" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="460" y1="182" x2="460" y2="240" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="460" y1="268" x2="460" y2="326" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="460" y1="354" x2="460" y2="412" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="460" y1="440" x2="460" y2="498" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="460" y1="526" x2="460" y2="584" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="460" y1="612" x2="460" y2="658" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="670" y1="182" x2="670" y2="240" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="670" y1="268" x2="670" y2="326" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="670" y1="354" x2="670" y2="412" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="670" y1="440" x2="670" y2="498" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="670" y1="526" x2="670" y2="584" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="670" y1="612" x2="670" y2="658" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="880" y1="182" x2="880" y2="240" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="880" y1="268" x2="880" y2="326" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="880" y1="354" x2="880" y2="412" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="880" y1="440" x2="880" y2="498" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="880" y1="526" x2="880" y2="584" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <line x1="880" y1="612" x2="880" y2="658" stroke="#515f74" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <!-- IN2 + AT30 SLOW: datasheet 18-24 h, hold 48 h -->
+  <text x="40" y="178"><tspan font-weight="700">IN2 + AT30 SLOW</tspan><tspan fill="#515f74">  ·  demould 18–24 h at 25 °C</tspan></text>
+  <rect x="40" y="190" width="840" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <rect x="355" y="190" width="105" height="32" fill="#003262"/>
+  <text x="890" y="214" font-weight="700" font-size="24" fill="#003262">48 h</text>
+  <!-- IN2 + AT30 FAST: datasheet 6-8 h, hold 24 h -->
+  <text x="40" y="264"><tspan font-weight="700">IN2 + AT30 FAST</tspan><tspan fill="#515f74">  ·  demould 6–8 h at 25 °C</tspan></text>
+  <rect x="40" y="276" width="420" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <rect x="145" y="276" width="35" height="32" fill="#003262"/>
+  <text x="470" y="300" font-weight="700" font-size="24" fill="#003262">24 h</text>
+  <!-- West 105 + 206 slow: datasheet 10-15 h, hold 24 h -->
+  <text x="40" y="350"><tspan font-weight="700">West 105 + 206 slow</tspan><tspan fill="#515f74">  ·  thin film solid 10–15 h at 72 °F</tspan></text>
+  <rect x="40" y="362" width="420" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <rect x="215" y="362" width="87.5" height="32" fill="#003262"/>
+  <text x="470" y="386" font-weight="700" font-size="24" fill="#003262">24 h</text>
+  <!-- West 105 + 205 fast: datasheet 6-8 h, hold 24 h -->
+  <text x="40" y="436"><tspan font-weight="700">West 105 + 205 fast</tspan><tspan fill="#515f74">  ·  thin film solid 6–8 h at 72 °F</tspan></text>
+  <rect x="40" y="448" width="420" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <rect x="145" y="448" width="35" height="32" fill="#003262"/>
+  <text x="470" y="472" font-weight="700" font-size="24" fill="#003262">24 h</text>
+  <!-- West 105 + 209 extra slow: datasheet 20-24 h, hold 36 h -->
+  <text x="40" y="522"><tspan font-weight="700">West 105 + 209 extra slow</tspan><tspan fill="#515f74">  ·  thin film solid 20–24 h at 72 °F</tspan></text>
+  <rect x="40" y="534" width="630" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <rect x="390" y="534" width="70" height="32" fill="#003262"/>
+  <text x="680" y="558" font-weight="700" font-size="24" fill="#003262">36 h</text>
+  <!-- XCR coating resin: datasheet 8.5-9 h, hold 12 h -->
+  <text x="40" y="608"><tspan font-weight="700">XCR coating resin</tspan><tspan fill="#515f74">  ·  initial cure 8 h 30, handleable about 9 h at 20 °C</tspan></text>
+  <rect x="40" y="620" width="210" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <rect x="188.75" y="620" width="8.75" height="32" fill="#003262"/>
+  <text x="260" y="644" font-weight="700" font-size="24" fill="#003262">12 h</text>
+  <!-- axis -->
+  <text x="40" y="686" text-anchor="start">0 h</text>
+  <text x="250" y="686" text-anchor="middle">12 h</text>
+  <text x="460" y="686" text-anchor="middle">24 h</text>
+  <text x="670" y="686" text-anchor="middle">36 h</text>
+  <text x="880" y="686" text-anchor="end">48 h</text>
+  <text x="460" y="713" text-anchor="middle" fill="#515f74">tomorrow</text>
+  <text x="880" y="713" text-anchor="end" fill="#515f74">after the weekend</text>
+  <text x="40" y="748" fill="#515f74">hours from the finish time recorded when the cure step is signed</text>
+  <!-- footer -->
+  <text x="40" y="794"><tspan font-weight="700" fill="#003262">Both FAST systems still hold 24 h:</tspan> FAST hardener does not buy a same-day demould.</text>
+  <text x="40" y="824">The app locks “Cure and demould” (“Cure” on Foam wrapped) until the hold has run.</text>
+  <text x="40" y="854">XCR mold sealing has no work-order step: its 12 h is watched by hand (CS-004).</text>
+</svg>

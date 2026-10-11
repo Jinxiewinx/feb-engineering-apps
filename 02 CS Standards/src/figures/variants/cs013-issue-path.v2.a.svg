@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1010" font-family="Inter" fill="#141d2b">
+  <!-- CS-013 §7.6 the issue path on a run, v2 (brief A). Labels from
+       workorders.js (⚠ Raise an issue, ⚑ Report an issue on this step,
+       Cancel ticket (false alarm), Resolve all & complete work order) and
+       projects.js (RESOLUTION_METHODS, DISPO_WORDS, reopenIssue). Main path
+       solid; Reopen loop and the Cancel exit dashed; the gate a heavy bar. -->
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,5 L0,10 z" fill="#141d2b"/>
+    </marker>
+    <pattern id="hatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="12" height="12" fill="#FDB515"/>
+      <line x1="0" y1="0" x2="0" y2="12" stroke="#141d2b" stroke-width="4"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="1010" fill="#ffffff"/>
+
+  <!-- raise -->
+  <rect x="120" y="20" width="360" height="80" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="300" y="54" font-size="22" font-weight="700" text-anchor="middle">⚠ Raise an issue</text>
+  <text x="300" y="84" font-size="22" text-anchor="middle">foot of the Issues section</text>
+  <rect x="520" y="20" width="360" height="80" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="700" y="54" font-size="22" font-weight="700" text-anchor="middle">⚑ on a step row</text>
+  <text x="700" y="84" font-size="22" text-anchor="middle">Report an issue on this step</text>
+  <line x1="300" y1="100" x2="428" y2="156" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <line x1="700" y1="100" x2="572" y2="156" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+
+  <!-- open -->
+  <rect x="300" y="160" width="400" height="80" rx="10" fill="#ffffff" stroke="#003262" stroke-width="4"/>
+  <text x="500" y="194" font-family="Saira" font-size="26" font-weight="700" fill="#003262" text-anchor="middle">Issue open</text>
+  <text x="500" y="224" font-size="22" text-anchor="middle">the run cannot complete</text>
+
+  <!-- cancel exit -->
+  <line x1="700" y1="200" x2="762" y2="200" stroke="#141d2b" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#ah)"/>
+  <rect x="765" y="145" width="220" height="110" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2.5" stroke-dasharray="10 7"/>
+  <text x="875" y="178" font-size="22" font-weight="700" text-anchor="middle">Cancel ticket</text>
+  <text x="875" y="207" font-size="22" font-weight="700" text-anchor="middle">(false alarm)</text>
+  <text x="875" y="237" font-size="22" font-style="italic" fill="#515f74" text-anchor="middle">not a disposition</text>
+
+  <line x1="500" y1="240" x2="500" y2="288" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+
+  <!-- the three fields -->
+  <rect x="260" y="290" width="580" height="320" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="280" y="324" font-family="Saira" font-size="24" font-weight="700" fill="#003262">On the issue's page, fill all three</text>
+  <line x1="260" y1="338" x2="840" y2="338" stroke="#dde3ec" stroke-width="2"/>
+  <text x="280" y="368" font-size="22" font-weight="700">1  Disposition</text>
+  <text x="310" y="396" font-size="22">UAI (Use As Is), Corrective Action,</text>
+  <text x="310" y="424" font-size="22">Rework, Scrap or Other</text>
+  <line x1="260" y1="440" x2="840" y2="440" stroke="#dde3ec" stroke-width="2"/>
+  <text x="280" y="468" font-size="22" font-weight="700">2  What happened</text>
+  <text x="310" y="496" font-size="22">the root cause</text>
+  <line x1="260" y1="512" x2="840" y2="512" stroke="#dde3ec" stroke-width="2"/>
+  <text x="280" y="540" font-size="22" font-weight="700">3  What was done</text>
+  <text x="310" y="568" font-size="22">asked to fit the Disposition; Scrap:</text>
+  <text x="310" y="592" font-size="22" font-style="italic" fill="#515f74">“Why could it not be saved?”</text>
+
+  <line x1="500" y1="610" x2="500" y2="648" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <text x="515" y="637" font-size="22" font-weight="700">Resolve</text>
+
+  <!-- closed -->
+  <rect x="300" y="650" width="400" height="70" rx="10" fill="#dde3ec" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="500" y="694" font-family="Saira" font-size="26" font-weight="700" fill="#003262" text-anchor="middle">Issue closed</text>
+
+  <!-- Reopen loop -->
+  <path d="M 300 685 H 60 V 200 H 296" fill="none" stroke="#141d2b" stroke-width="3" stroke-dasharray="12 7" marker-end="url(#ah)"/>
+  <text x="76" y="330" font-size="22" font-weight="700">Reopen</text>
+  <text x="76" y="360" font-size="22">clears</text>
+  <text x="76" y="388" font-size="22">Disposition</text>
+  <text x="76" y="416" font-size="22">and What</text>
+  <text x="76" y="444" font-size="22">was done;</text>
+  <text x="76" y="472" font-size="22">keeps What</text>
+  <text x="76" y="500" font-size="22">happened</text>
+
+  <!-- gate on the way to Complete -->
+  <line x1="500" y1="720" x2="500" y2="788" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <rect x="420" y="744" width="160" height="20" fill="url(#hatch)" stroke="#141d2b" stroke-width="3"/>
+  <text x="600" y="762" font-size="22" font-weight="700">closeout gate</text>
+
+  <!-- complete -->
+  <rect x="300" y="790" width="400" height="70" rx="10" fill="#ffffff" stroke="#003262" stroke-width="6"/>
+  <rect x="303" y="793" width="12" height="64" fill="#FDB515"/>
+  <text x="508" y="834" font-family="Saira" font-size="26" font-weight="700" fill="#003262" text-anchor="middle">Run may be set Complete</text>
+
+  <!-- gate explained -->
+  <rect x="15" y="884" width="970" height="112" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <rect x="18" y="887" width="18" height="106" fill="url(#hatch)"/>
+  <text x="52" y="916" font-size="22"><tspan font-weight="700">Closeout gate.</tspan> Complete is refused while any issue on the run is open.</text>
+  <text x="52" y="946" font-size="22">It opens the closeout list instead: Resolve on each issue,</text>
+  <text x="52" y="976" font-size="22">or Resolve all &amp; complete work order at the foot.</text>
+</svg>

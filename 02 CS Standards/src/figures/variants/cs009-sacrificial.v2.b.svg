@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 750" font-family="Inter">
+  <!-- CS-009 Figure 1, variant b (brief B: rethink). Left: the sanding
+       budget in section, with a heavy stop line under the sacrificial ply.
+       Right: the catch-can failure. Bottom: what to do when weave shows,
+       in the order CS-009 §7.2 steps 4-7 give it, using the app's words
+       (the flag button is "Report an issue on this step", the photo field
+       "Photos of the defect"). Grayscale: sacrificial ply pale and plain,
+       structural plies hatched, stop line heaviest stroke on the page, CF
+       skin solid dark over a pale can wall. -->
+  <rect width="1000" height="750" fill="#ffffff"/>
+  <defs>
+    <pattern id="hatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="12" height="12" fill="#ffffff"/>
+      <line x1="0" y1="0" x2="0" y2="12" stroke="#141d2b" stroke-width="2.2"/>
+    </pattern>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,5 L0,10 z" fill="#141d2b"/>
+    </marker>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,5 L0,10 z" fill="#003262"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="50" font-family="Saira" font-size="34" font-weight="600" fill="#003262">Sand the sacrificial ply, nothing else</text>
+  <text x="20" y="84" font-size="22" fill="#515f74">Read the run's stack before you sand.</text>
+
+  <!-- ===== left: the budget ===== -->
+  <text x="20" y="140" font-family="Saira" font-size="26" font-weight="600" fill="#141d2b">Your sanding budget</text>
+  <rect x="40" y="160" width="260" height="55" fill="#dde3ec" stroke="#141d2b" stroke-width="2"/>
+  <rect x="40" y="222" width="260" height="40" fill="url(#hatch)" stroke="#141d2b" stroke-width="2"/>
+  <rect x="40" y="266" width="260" height="40" fill="url(#hatch)" stroke="#141d2b" stroke-width="2"/>
+  <rect x="40" y="310" width="260" height="40" fill="url(#hatch)" stroke="#141d2b" stroke-width="2"/>
+  <line x1="28" y1="218" x2="312" y2="218" stroke="#003262" stroke-width="7"/>
+
+  <text x="322" y="196" font-size="24" font-weight="700" fill="#141d2b">sand this ply</text>
+  <line x1="350" y1="218" x2="318" y2="218" stroke="#003262" stroke-width="3" marker-end="url(#ahb)"/>
+  <text x="356" y="226" font-size="24" font-weight="700" fill="#003262">stop line</text>
+  <text x="322" y="288" font-size="24" font-weight="700" fill="#141d2b">structural:</text>
+  <text x="322" y="316" font-size="24" font-weight="700" fill="#141d2b">no sanding</text>
+
+  <text x="40" y="392" font-size="22" fill="#515f74">Sacrificial = the 88 spread-tow</text>
+  <text x="40" y="418" font-size="22" fill="#515f74">outer ply (CS-002 §7.1 step 3)</text>
+
+  <!-- ===== right: the catch can ===== -->
+  <text x="530" y="140" font-family="Saira" font-size="26" font-weight="600" fill="#141d2b">How the catch cans died</text>
+  <!-- can wall -->
+  <path d="M 550 332 Q 750 212 950 332 L 950 372 Q 750 252 550 372 Z" fill="#dde3ec" stroke="#141d2b" stroke-width="2"/>
+  <!-- thin CF skin -->
+  <path d="M 550 320 Q 750 200 950 320 L 950 332 Q 750 212 550 332 Z" fill="#141d2b"/>
+  <!-- sander -->
+  <rect x="714" y="188" width="86" height="52" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <rect x="706" y="240" width="102" height="14" fill="#515f74" stroke="#141d2b" stroke-width="2"/>
+  <text x="818" y="222" font-size="22" fill="#141d2b">machine sander</text>
+  <!-- the hole -->
+  <path d="M 736 258 L 764 258 L 750 302 Z" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="530" y="192" font-size="22" font-weight="700" fill="#141d2b">sanded through</text>
+  <text x="530" y="218" font-size="22" font-weight="700" fill="#141d2b">into the can</text>
+  <line x1="660" y1="228" x2="738" y2="272" stroke="#141d2b" stroke-width="1.8"/>
+
+  <text x="530" y="412" font-size="22" fill="#141d2b">thin CF at a taper</text>
+  <line x1="590" y1="392" x2="600" y2="302" stroke="#141d2b" stroke-width="1.8"/>
+  <text x="980" y="412" text-anchor="end" font-size="22" fill="#141d2b">aluminum can wall</text>
+  <line x1="900" y1="392" x2="900" y2="336" stroke="#141d2b" stroke-width="1.8"/>
+
+  <text x="530" y="456" font-size="24" font-weight="700" fill="#003262">Under 3 plies: hand-sand only,</text>
+  <text x="530" y="484" font-size="24" font-weight="700" fill="#003262">count strokes, check often.</text>
+
+  <!-- ===== the stop sequence ===== -->
+  <line x1="20" y1="514" x2="980" y2="514" stroke="#dde3ec" stroke-width="2"/>
+  <text x="20" y="552" font-family="Saira" font-size="28" font-weight="600" fill="#003262">Weave showing past the plan?</text>
+
+  <rect x="20" y="572" width="216" height="96" rx="8" fill="#003262" stroke="#003262" stroke-width="3"/>
+  <text x="128" y="612" text-anchor="middle" font-size="26" font-weight="700" fill="#ffffff">Stop</text>
+  <text x="128" y="642" text-anchor="middle" font-size="22" fill="#ffffff">sanding</text>
+  <line x1="238" y1="620" x2="264" y2="620" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+
+  <rect x="268" y="572" width="216" height="96" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="380" y="612" text-anchor="end" font-size="24" font-weight="700" fill="#141d2b">Press</text>
+  <line x1="390" y1="590" x2="390" y2="616" stroke="#141d2b" stroke-width="2.5"/>
+  <path d="M 391 591 L 410 597 L 391 604 Z" fill="#141d2b"/>
+  <text x="376" y="644" text-anchor="middle" font-size="22" fill="#141d2b">on Trim and finish</text>
+  <line x1="486" y1="620" x2="512" y2="620" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+
+  <rect x="516" y="572" width="216" height="96" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="624" y="612" text-anchor="middle" font-size="24" font-weight="700" fill="#141d2b">Add photos</text>
+  <text x="624" y="642" text-anchor="middle" font-size="22" fill="#141d2b">of the defect</text>
+  <line x1="734" y1="620" x2="760" y2="620" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+
+  <rect x="764" y="572" width="216" height="96" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="872" y="600" text-anchor="middle" font-size="22" fill="#141d2b">Leave the</text>
+  <text x="872" y="628" text-anchor="middle" font-size="24" font-weight="700" fill="#141d2b">Disposition</text>
+  <text x="872" y="655" text-anchor="middle" font-size="22" fill="#141d2b">to engineer or lead</text>
+
+  <text x="20" y="716" font-size="22" fill="#141d2b"><tspan font-weight="700">Edges:</tspan> 120 → 400 grit, then a thin resin wipe where sealing or looks matter.</text>
+</svg>

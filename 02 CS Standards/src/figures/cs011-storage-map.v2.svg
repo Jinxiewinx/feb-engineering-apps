@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1184" font-family="Inter, sans-serif">
+  <!-- CS-011 §7.3 / §6: where things live, one card per site, site names
+       exactly as app/shop.js SITES spells them. Grayscale: headers are a pale band with navy names; the Flammables
+       cabinet is the only hatched header; the two never-boxes are crossed
+       with a heavy X; resin/hardener follow §6 as it stands (separate
+       shelves) and are not drawn sharing a cabinet (R-011-01 on hold). -->
+  <defs>
+    <pattern id="hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="14" height="14" fill="#ffffff"/>
+      <line x1="0" y1="0" x2="0" y2="14" stroke="#141d2b" stroke-width="5"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="1184" fill="#ffffff"/>
+
+  <text x="40" y="58" font-family="Saira, sans-serif" font-size="38" font-weight="700" fill="#003262">Where does it go?</text>
+  <text x="40" y="96" font-size="24" fill="#515f74">Site names as the app spells them.</text>
+
+  <!-- Row 1 -->
+  <rect x="40" y="124" width="450" height="240" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <path d="M40,134 a10,10 0 0 1 10,-10 h430 a10,10 0 0 1 10,10 v52 h-450 z" fill="#dde3ec"/>
+  <text x="62" y="167" font-size="28" font-weight="700" fill="#003262">RFS container</text>
+  <text x="62" y="226" font-size="26" fill="#141d2b">Molds</text>
+  <text x="62" y="262" font-size="26" fill="#141d2b">Foam and tooling-board stock</text>
+  <text x="62" y="298" font-size="22" fill="#515f74">Molds never in front of the</text>
+  <text x="62" y="324" font-size="22" fill="#515f74">knaack or screw boxes.</text>
+  <text x="62" y="350" font-size="22" fill="#515f74">Boards go on Inventory → Boards.</text>
+
+  <rect x="510" y="124" width="450" height="240" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <path d="M510,134 a10,10 0 0 1 10,-10 h430 a10,10 0 0 1 10,10 v52 h-450 z" fill="#dde3ec"/>
+  <text x="532" y="167" font-size="28" font-weight="700" fill="#003262">Jacobs basement</text>
+  <text x="532" y="226" font-size="26" fill="#141d2b">Finished parts</text>
+  <text x="532" y="262" font-size="22" fill="#515f74">Keycard access.</text>
+
+  <!-- Row 2 -->
+  <rect x="40" y="384" width="450" height="160" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="5"/>
+  <path d="M40,394 a10,10 0 0 1 10,-10 h430 a10,10 0 0 1 10,10 v52 h-450 z" fill="url(#hatch)" stroke="#141d2b" stroke-width="5"/>
+  <rect x="56" y="394" width="304" height="42" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="68" y="425" font-size="28" font-weight="700" fill="#141d2b">Flammables cabinet</text>
+  <text x="62" y="488" font-size="26" fill="#141d2b">Airtac, acetone,</text>
+  <text x="62" y="522" font-size="26" fill="#141d2b">clear coat</text>
+
+  <rect x="510" y="384" width="450" height="160" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <path d="M510,394 a10,10 0 0 1 10,-10 h430 a10,10 0 0 1 10,10 v52 h-450 z" fill="#dde3ec"/>
+  <text x="532" y="427" font-size="28" font-weight="700" fill="#003262">Dry sealed bin</text>
+  <text x="532" y="488" font-size="26" fill="#141d2b">Cloth</text>
+
+  <!-- Row 3 -->
+  <rect x="40" y="564" width="450" height="160" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <path d="M40,574 a10,10 0 0 1 10,-10 h430 a10,10 0 0 1 10,10 v52 h-450 z" fill="#dde3ec"/>
+  <text x="62" y="607" font-size="28" font-weight="700" fill="#003262">General Box</text>
+  <text x="62" y="668" font-size="26" fill="#141d2b">Consumables</text>
+  <text x="62" y="704" font-size="22" fill="#515f74">At RFS.</text>
+
+  <rect x="510" y="564" width="450" height="160" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <path d="M510,574 a10,10 0 0 1 10,-10 h430 a10,10 0 0 1 10,10 v52 h-450 z" fill="#dde3ec"/>
+  <text x="532" y="607" font-size="28" font-weight="700" fill="#003262">Other</text>
+  <text x="532" y="668" font-size="26" fill="#141d2b">Anything else</text>
+  <text x="532" y="704" font-size="22" fill="#515f74">Name it after the place.</text>
+
+  <!-- Resins and hardeners: §6 as it stands -->
+  <rect x="40" y="744" width="920" height="156" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="62" y="786" font-size="28" font-weight="700" fill="#141d2b">Resins and hardeners</text>
+  <text x="62" y="824" font-size="24" fill="#141d2b">Chemical boxes or barrel (§6).</text>
+  <text x="62" y="858" font-size="24" fill="#141d2b">Hardeners on a different shelf from resins.</text>
+  <text x="62" y="888" font-size="22" fill="#515f74">No app Site names them yet.</text>
+  <!-- two shelves, one each -->
+  <line x1="700" y1="802" x2="930" y2="802" stroke="#141d2b" stroke-width="5"/>
+  <line x1="700" y1="862" x2="930" y2="862" stroke="#141d2b" stroke-width="5"/>
+  <text x="815" y="792" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">resin</text>
+  <text x="815" y="852" font-size="22" font-weight="700" fill="#141d2b" text-anchor="middle">hardener</text>
+
+  <!-- NEVER -->
+  <text x="40" y="950" font-family="Saira, sans-serif" font-size="30" font-weight="700" fill="#141d2b">NEVER</text>
+  <g>
+    <rect x="40" y="966" width="450" height="120" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+    <line x1="52" y1="978" x2="140" y2="1074" stroke="#141d2b" stroke-width="7"/>
+    <line x1="140" y1="978" x2="52" y2="1074" stroke="#141d2b" stroke-width="7"/>
+    <text x="164" y="1014" font-size="28" font-weight="700" fill="#141d2b">Food fridge</text>
+    <text x="164" y="1048" font-size="24" fill="#141d2b">No chemicals in it.</text>
+    <text x="164" y="1076" font-size="22" fill="#515f74">2026-02-17 incident</text>
+  </g>
+  <g>
+    <rect x="510" y="966" width="450" height="120" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+    <line x1="522" y1="978" x2="610" y2="1074" stroke="#141d2b" stroke-width="7"/>
+    <line x1="610" y1="978" x2="522" y2="1074" stroke="#141d2b" stroke-width="7"/>
+    <text x="634" y="1014" font-size="28" font-weight="700" fill="#141d2b">Etch locker</text>
+    <text x="634" y="1048" font-size="24" fill="#141d2b">No finished parts in it.</text>
+    <text x="634" y="1076" font-size="22" fill="#515f74">2026-04-20 agreement</text>
+  </g>
+
+  <text x="40" y="1158" font-size="22" fill="#515f74">Sites still need a field check against the real shelves (§7.3).</text>
+  <text x="40" y="1128" font-size="22" fill="#515f74">Moving something: scan it, tap Move, scan the shelf (<tspan font-family="ui-monospace, Menlo, monospace" fill="#141d2b">BIN-SN6-###</tspan>).</text>
+</svg>

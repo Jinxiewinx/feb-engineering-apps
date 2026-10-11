@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 950">
+  <!-- CS-002 §7.2 steps 4 to 6 and §7.4: the part holds the plan (Layup stack,
+       Materials (plan)); + New run copies it into each run's Stack & BOM. Labels
+       from the app: "follows the plan on", "as built on this run", "N plies
+       differ", Compare, "Adopt as the part's plan" (core.js), "↩ plan"
+       (workorders.js, shown only on a BOM line whose used differs from plan),
+       Stack frozen (core.js stackFrozen). Plan edits reach a run still on the
+       plan and stop at a frozen one (core.js stackEdit). Ply names are the
+       CS-002 §7.3 example.
+       Grayscale: differing plies are hatched; copies are heavy solid arrows,
+       plan edits dashed, carry-backs open-headed; the frozen run has a solid
+       bar down its left edge. -->
+  <defs>
+    <pattern id="pa-drift" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="12" height="12" fill="#FDB515"/>
+      <line x1="0" y1="0" x2="0" y2="12" stroke="#141d2b" stroke-width="3"/>
+    </pattern>
+    <marker id="pa-copy" markerWidth="20" markerHeight="18" refX="18" refY="9" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L20,9 L0,18 z" fill="#003262"/>
+    </marker>
+    <marker id="pa-back" markerWidth="18" markerHeight="18" refX="16" refY="9" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M2,1 L16,9 L2,17" fill="none" stroke="#141d2b" stroke-width="3"/>
+    </marker>
+    <marker id="pa-edit" markerWidth="16" markerHeight="16" refX="14" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L16,8 L0,16 z" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="950" fill="#ffffff"/>
+  <text x="30" y="50" font-family="Saira" font-size="32" font-weight="700" fill="#003262">The plan lives on the part; each run is as built</text>
+  <rect x="30" y="90" width="280" height="830" fill="#ffffff" stroke="#003262" stroke-width="5"/>
+  <text x="48" y="124" font-family="Inter" font-size="22" font-weight="700" fill="#515f74" letter-spacing="1">PART · Parts tab</text>
+  <text x="48" y="160" font-family="ui-monospace, Menlo, monospace" font-size="26" font-weight="700" fill="#141d2b">P-SN6-007</text>
+  <text x="48" y="222" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">Layup stack</text>
+  <rect x="48" y="238" width="244" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="58" y="261" font-family="Inter" font-size="22" fill="#141d2b"><tspan font-family="ui-monospace, Menlo, monospace" font-weight="700">P1</tspan>  88 spread-tow</text>
+  <rect x="48" y="276" width="244" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="58" y="299" font-family="Inter" font-size="22" fill="#141d2b"><tspan font-family="ui-monospace, Menlo, monospace" font-weight="700">P2</tspan>  195 twill</text>
+  <rect x="48" y="314" width="244" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="58" y="337" font-family="Inter" font-size="22" fill="#141d2b"><tspan font-family="ui-monospace, Menlo, monospace" font-weight="700">P3</tspan>  Cu mesh</text>
+  <rect x="48" y="352" width="244" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="58" y="375" font-family="Inter" font-size="22" fill="#141d2b"><tspan font-family="ui-monospace, Menlo, monospace" font-weight="700">P4</tspan>  core</text>
+  <rect x="48" y="390" width="244" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="58" y="413" font-family="Inter" font-size="22" fill="#141d2b"><tspan font-family="ui-monospace, Menlo, monospace" font-weight="700">P5</tspan>  195 twill</text>
+  <text x="48" y="456" font-family="Inter" font-size="22" fill="#515f74">P1 is the mold side</text>
+  <text x="48" y="530" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">Materials (plan)</text>
+  <rect x="48" y="546" width="244" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="58" y="569" font-family="Inter" font-size="22" fill="#141d2b">195 twill</text>
+  <rect x="48" y="584" width="244" height="32" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="58" y="607" font-family="Inter" font-size="22" fill="#141d2b">88 spread-tow</text>
+  <text x="48" y="672" font-family="Inter" font-size="22" fill="#515f74">what we intend to lay</text>
+  <rect x="610" y="90" width="360" height="232" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="630" y="124" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#141d2b">WO-SN6-011</text>
+  <text x="950" y="124" text-anchor="end" font-family="Inter" font-size="22" fill="#515f74">Stack &amp; BOM</text>
+  <text x="630" y="154" font-family="Inter" font-size="22" fill="#515f74">follows the plan on <tspan font-family="ui-monospace, Menlo, monospace">P-SN6-007</tspan></text>
+  <text x="630" y="184" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">not frozen yet</text>
+  <rect x="630" y="196" width="320" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="630" y="220" width="320" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="630" y="244" width="320" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="630" y="268" width="320" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="630" y="292" width="320" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="610" y="350" width="360" height="300" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="630" y="384" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#141d2b">WO-SN6-012</text>
+  <text x="630" y="414" font-family="Inter" font-size="22" fill="#515f74">as built on this run</text>
+  <rect x="630" y="424" width="320" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="630" y="448" width="320" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="630" y="472" width="320" height="20" fill="url(#pa-drift)" stroke="#141d2b" stroke-width="2"/>
+  <rect x="630" y="496" width="320" height="20" fill="url(#pa-drift)" stroke="#141d2b" stroke-width="2"/>
+  <rect x="630" y="520" width="320" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <path d="M 641 551 L 653 572 L 629 572 Z" fill="#ffffff" stroke="#141d2b" stroke-width="2.5" stroke-linejoin="round"/>
+  <line x1="641" y1="558" x2="641" y2="565" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="662" y="571" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">2 plies differ</text>
+  <rect x="822" y="549" width="120" height="30" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="882" y="571" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">Compare</text>
+  <rect x="630" y="590" width="320" height="44" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="642" y="619" font-family="Inter" font-size="22" fill="#141d2b">195 twill ≠ plan</text>
+  <rect x="852" y="597" width="90" height="30" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="897" y="619" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">↩ plan</text>
+  <rect x="610" y="680" width="360" height="240" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <rect x="610" y="680" width="22" height="240" fill="#141d2b"/>
+  <text x="648" y="714" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#141d2b">WO-SN6-013</text>
+  <text x="648" y="744" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">Stack frozen</text>
+  <text x="648" y="772" font-family="Inter" font-size="22" fill="#515f74">the bench is working to this</text>
+  <rect x="648" y="786" width="302" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="648" y="810" width="302" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="648" y="834" width="302" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="648" y="858" width="302" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="648" y="882" width="302" height="20" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <line x1="312" y1="150" x2="606" y2="150" stroke="#003262" stroke-width="6" marker-end="url(#pa-copy)"/>
+  <text x="460" y="136" text-anchor="middle" font-family="Inter" font-size="24" font-weight="700" fill="#003262">+ New run</text>
+  <line x1="312" y1="390" x2="606" y2="390" stroke="#003262" stroke-width="6" marker-end="url(#pa-copy)"/>
+  <text x="460" y="376" text-anchor="middle" font-family="Inter" font-size="24" font-weight="700" fill="#003262">+ New run</text>
+  <line x1="312" y1="720" x2="606" y2="720" stroke="#003262" stroke-width="6" marker-end="url(#pa-copy)"/>
+  <text x="460" y="706" text-anchor="middle" font-family="Inter" font-size="24" font-weight="700" fill="#003262">+ New run</text>
+  <line x1="312" y1="250" x2="604" y2="250" stroke="#141d2b" stroke-width="3" stroke-dasharray="14 9" marker-end="url(#pa-edit)"/>
+  <text x="460" y="284" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">plan edits reach it</text>
+  <line x1="312" y1="812" x2="576" y2="812" stroke="#141d2b" stroke-width="3" stroke-dasharray="14 9"/>
+  <line x1="584" y1="790" x2="584" y2="834" stroke="#141d2b" stroke-width="6"/>
+  <text x="450" y="798" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">plan edits</text>
+  <text x="450" y="848" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">stop at the freeze</text>
+  <line x1="608" y1="496" x2="316" y2="496" stroke="#141d2b" stroke-width="3" marker-end="url(#pa-back)"/>
+  <text x="460" y="456" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">Compare, then</text>
+  <text x="460" y="482" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">Adopt as the part's plan</text>
+  <line x1="628" y1="612" x2="316" y2="612" stroke="#141d2b" stroke-width="3" marker-end="url(#pa-back)"/>
+  <text x="460" y="599" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">↩ plan, one BOM line</text>
+  <text x="460" y="641" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">shown only when</text>
+  <text x="460" y="667" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">used ≠ plan</text>
+  <rect x="48" y="840" width="40" height="22" fill="url(#pa-drift)" stroke="#141d2b" stroke-width="2"/>
+  <text x="98" y="858" font-family="Inter" font-size="22" fill="#141d2b">ply rows that</text>
+  <text x="48" y="888" font-family="Inter" font-size="22" fill="#141d2b">differ from the plan</text>
+</svg>

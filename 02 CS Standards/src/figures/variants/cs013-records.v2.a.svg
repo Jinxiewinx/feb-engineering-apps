@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1160" font-family="Inter" fill="#141d2b">
+  <!-- CS-013 §4.1 record graph, v2 (brief A). The part is the parent of its
+       runs (R-013-01: a re-lay is a new run, no "supersedes"); a split mold is
+       two links on the part, each run points at one mold (§7.2 step 5); lots
+       point at their purchase by buyRef; a study holds coupons that inherit
+       its Materials and may hold a part. Example IDs are illustrative.
+       Part: heavy blue border. Issue: hatched-edge inset. Optional filed part:
+       dashed border. Study: folder shape. -->
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,5 L0,10 z" fill="#141d2b"/>
+    </marker>
+    <pattern id="hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="10" height="10" fill="#FDB515"/>
+      <line x1="0" y1="0" x2="0" y2="10" stroke="#141d2b" stroke-width="3.5"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="1160" fill="#ffffff"/>
+
+  <!-- part -->
+  <rect x="200" y="20" width="400" height="150" rx="10" fill="#ffffff" stroke="#003262" stroke-width="6"/>
+  <text x="400" y="60" font-family="ui-monospace, Menlo, monospace" font-size="26" font-weight="700" fill="#003262" text-anchor="middle">P-SN6-007</text>
+  <text x="400" y="92" font-size="22" text-anchor="middle">the part the car needs</text>
+  <text x="400" y="120" font-size="22" text-anchor="middle">Layup stack, Materials (plan)</text>
+  <text x="400" y="152" font-size="22" font-style="italic" fill="#515f74" text-anchor="middle">keeps its ID across re-lays</text>
+
+  <!-- molds -->
+  <line x1="600" y1="60" x2="678" y2="57" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <line x1="600" y1="130" x2="678" y2="142" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <rect x="680" y="20" width="305" height="75" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="700" y="52" font-family="ui-monospace, Menlo, monospace" font-size="22" font-weight="700">MOLD-SN6-004</text>
+  <text x="700" y="80" font-size="22">Parts pulled</text>
+  <rect x="680" y="105" width="305" height="75" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="700" y="137" font-family="ui-monospace, Menlo, monospace" font-size="22" font-weight="700">MOLD-SN6-005</text>
+  <text x="700" y="165" font-size="22">Parts pulled</text>
+  <text x="700" y="212" font-size="22" font-weight="700">split mold: two links</text>
+  <text x="700" y="240" font-size="22" font-style="italic" fill="#515f74">remachined: same ID,</text>
+  <text x="700" y="268" font-size="22" font-style="italic" fill="#515f74">new revision</text>
+
+  <!-- part -> runs -->
+  <line x1="330" y1="170" x2="175" y2="326" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <line x1="400" y1="170" x2="485" y2="326" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <line x1="520" y1="170" x2="750" y2="326" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <text x="15" y="230" font-size="22" font-weight="700">+ New run</text>
+  <text x="15" y="258" font-size="22">copies the plan</text>
+
+  <!-- run 1: scrapped -->
+  <rect x="15" y="330" width="305" height="260" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="35" y="364" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#003262">WO-SN6-012</text>
+  <text x="35" y="394" font-size="22">in <tspan font-family="ui-monospace, Menlo, monospace">MOLD-SN6-004</tspan></text>
+  <text x="35" y="422" font-size="22">Stack &amp; BOM as built</text>
+  <text x="35" y="450" font-size="22">lots consumed</text>
+  <rect x="30" y="468" width="275" height="108" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <rect x="31" y="469" width="12" height="106" fill="url(#hatch)"/>
+  <text x="54" y="498" font-size="22">issue <tspan font-family="ui-monospace, Menlo, monospace">PROJ-SN6-031</tspan></text>
+  <text x="54" y="528" font-size="22"><tspan font-weight="700">Scrap</tspan>: why it could</text>
+  <text x="54" y="556" font-size="22">not be saved</text>
+
+  <!-- run 2: the re-lay -->
+  <rect x="347" y="330" width="306" height="260" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="367" y="364" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#003262">WO-SN6-015</text>
+  <text x="367" y="394" font-size="22">in <tspan font-family="ui-monospace, Menlo, monospace">MOLD-SN6-004</tspan></text>
+  <text x="367" y="422" font-size="22">Stack &amp; BOM as built</text>
+  <text x="367" y="450" font-size="22">lots consumed</text>
+  <text x="367" y="482" font-size="22">issues: none open</text>
+  <text x="367" y="530" font-size="22" font-style="italic" fill="#515f74">the re-lay: same part,</text>
+  <text x="367" y="558" font-size="22" font-style="italic" fill="#515f74">no new P ID</text>
+
+  <!-- run 3: other half -->
+  <rect x="680" y="330" width="305" height="260" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="700" y="364" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#003262">WO-SN6-016</text>
+  <text x="700" y="394" font-size="22">in <tspan font-family="ui-monospace, Menlo, monospace">MOLD-SN6-005</tspan></text>
+  <text x="700" y="422" font-size="22">Stack &amp; BOM as built</text>
+  <text x="700" y="450" font-size="22">lots consumed</text>
+  <text x="700" y="482" font-size="22">issues: none open</text>
+  <text x="700" y="530" font-size="22" font-style="italic" fill="#515f74">the other half of</text>
+  <text x="700" y="558" font-size="22" font-style="italic" fill="#515f74">the split mold</text>
+
+  <!-- runs -> lots -->
+  <line x1="167" y1="590" x2="200" y2="648" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <line x1="480" y1="590" x2="420" y2="648" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <line x1="740" y1="590" x2="530" y2="652" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+
+  <!-- lots -->
+  <rect x="15" y="650" width="525" height="180" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="35" y="682" font-family="Saira" font-size="24" font-weight="700" fill="#003262">Material lots</text>
+  <text x="210" y="682" font-size="22" font-style="italic" fill="#515f74">picked at the cure buy-off</text>
+  <text x="35" y="716" font-size="22"><tspan font-family="ui-monospace, Menlo, monospace">FAB-SN6-003</tspan>  fabric roll</text>
+  <text x="35" y="744" font-size="22"><tspan font-family="ui-monospace, Menlo, monospace">RSN-SN6-011</tspan>  resin</text>
+  <text x="35" y="772" font-size="22"><tspan font-family="ui-monospace, Menlo, monospace">RSN-SN6-012</tspan>  hardener</text>
+  <text x="35" y="800" font-size="22"><tspan font-family="ui-monospace, Menlo, monospace">CON-SN6-002</tspan>  consumable, a count</text>
+
+  <!-- lots -> purchase -->
+  <line x1="540" y1="740" x2="658" y2="740" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <text x="599" y="728" font-family="ui-monospace, Menlo, monospace" font-size="22" text-anchor="middle">buyRef</text>
+  <rect x="660" y="650" width="325" height="180" rx="10" fill="#dde3ec" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="680" y="686" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#003262">BUY-SN6-009</text>
+  <text x="680" y="718" font-size="22">the purchase, one line</text>
+  <text x="680" y="746" font-size="22">item per shelf thing</text>
+  <text x="680" y="784" font-size="22" font-style="italic" fill="#515f74">not a physical object;</text>
+  <text x="680" y="812" font-size="22" font-style="italic" fill="#515f74">never labelled</text>
+
+  <!-- study folder -->
+  <path d="M15 1060 V880 a8 8 0 0 1 8 -8 H260 l22 22 H977 a8 8 0 0 1 8 8 V1060 a8 8 0 0 1 -8 8 H23 a8 8 0 0 1 -8 -8 z" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="35" y="900" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#003262">RDS-SN6-004</text>
+  <text x="35" y="934" font-size="22">a study: Materials declared once (stack and lots)</text>
+  <rect x="35" y="952" width="180" height="48" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="125" y="983" font-family="ui-monospace, Menlo, monospace" font-size="22" text-anchor="middle">CPN-SN6-041</text>
+  <rect x="227" y="952" width="180" height="48" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="317" y="983" font-family="ui-monospace, Menlo, monospace" font-size="22" text-anchor="middle">CPN-SN6-042</text>
+  <rect x="419" y="952" width="180" height="48" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="509" y="983" font-family="ui-monospace, Menlo, monospace" font-size="22" text-anchor="middle">CPN-SN6-043</text>
+  <text x="35" y="1034" font-size="22">coupons inherit the study's Materials</text>
+  <rect x="630" y="950" width="335" height="98" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="2.5" stroke-dasharray="10 7"/>
+  <text x="650" y="980" font-size="22"><tspan font-family="ui-monospace, Menlo, monospace" font-weight="700">P-SN6-020</tspan> (optional)</text>
+  <text x="650" y="1008" font-size="22">a part filed here; filing</text>
+  <text x="650" y="1036" font-size="22">does not make it R&amp;D</text>
+
+  <!-- rules -->
+  <text x="15" y="1110" font-size="22"><tspan font-weight="700" fill="#003262">Every ID:</tspan> names a physical object (WO, PROJ, STK, BUY, DOC excepted),</text>
+  <text x="15" y="1140" font-size="22">is never reused, and is at most 14 characters (the QR budget).</text>
+</svg>

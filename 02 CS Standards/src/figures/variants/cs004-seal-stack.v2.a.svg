@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 830" font-family="Inter" fill="#141d2b">
+  <!-- CS-004 §7.3-7.4: what ends up on the mold surface, in order, and the
+       XCR clock at 20 °C. Numbers from the draft's XCR table (R1, the XCR TDS)
+       and the FEB 12 h hold (CS-008 §5, app/resins.js XCR row). The time axis
+       is to scale from 0 to 12 h (60 units per hour), then broken. -->
+  <rect width="1000" height="830" fill="#ffffff"/>
+  <defs>
+    <pattern id="sk-board" width="14" height="14" patternUnits="userSpaceOnUse">
+      <rect width="14" height="14" fill="#ffffff"/>
+      <circle cx="3.5" cy="3.5" r="1.3" fill="#515f74"/><circle cx="10.5" cy="10.5" r="1.3" fill="#515f74"/>
+    </pattern>
+  </defs>
+
+  <text x="30" y="46" font-family="Saira" font-size="32" font-weight="600" fill="#003262">On the mold surface, in order</text>
+
+  <!-- the stack -->
+  <rect x="40" y="76" width="600" height="46" fill="#ffffff" stroke="#141d2b" stroke-width="2" stroke-dasharray="12 7"/>
+  <text x="340" y="107" font-size="22" font-style="italic" text-anchor="middle">laminate goes here (CS-006, CS-007)</text>
+  <rect x="40" y="122" width="600" height="42" fill="#dde3ec" stroke="#141d2b" stroke-width="1.8"/>
+  <text x="340" y="151" font-size="22" text-anchor="middle">Partall #10 PVA film, 2 coats, each dried</text>
+  <rect x="40" y="164" width="600" height="42" fill="#ffffff" stroke="#141d2b" stroke-width="1.8"/>
+  <text x="340" y="193" font-size="22" text-anchor="middle">Formula Five wax, 4 coats min on a new mold</text>
+  <rect x="40" y="210" width="600" height="46" fill="#FDB515" stroke="#141d2b" stroke-width="1.8"/>
+  <text x="340" y="241" font-size="22" font-weight="600" text-anchor="middle">XCR seal coats (100:41 by weight, thin)</text>
+  <rect x="40" y="256" width="600" height="110" fill="url(#sk-board)" stroke="#141d2b" stroke-width="3"/>
+  <rect x="150" y="294" width="380" height="36" fill="#ffffff"/>
+  <text x="340" y="320" font-size="22" font-weight="700" text-anchor="middle">machined tooling board</text>
+  <!-- the 12 h hold sits between the seal and the release system -->
+  <line x1="30" y1="208" x2="670" y2="208" stroke="#141d2b" stroke-width="6"/>
+  <line x1="670" y1="208" x2="676" y2="214" stroke="#141d2b" stroke-width="2"/>
+
+  <!-- callouts -->
+  <path d="M650 126 L660 126 L660 204 L650 204" fill="none" stroke="#141d2b" stroke-width="1.5"/>
+  <g font-size="22">
+    <text x="680" y="140" font-weight="700">release system (§7.4)</text>
+    <text x="680" y="166" fill="#515f74">re-used: Clean 'N Glaze,</text>
+    <text x="680" y="192" fill="#515f74">then 1–2 wax coats + PVA</text>
+    <text x="680" y="230" font-weight="700">12 h FEB hold after the</text>
+    <text x="680" y="256" font-weight="700">last coat, then release</text>
+    <text x="680" y="304">seals the cells so resin</text>
+    <text x="680" y="330">cannot soak in and lock</text>
+    <text x="680" y="356">the part on</text>
+  </g>
+
+  <!-- ===== the clock ===== -->
+  <line x1="30" y1="400" x2="970" y2="400" stroke="#dde3ec" stroke-width="2"/>
+  <text x="30" y="444" font-family="Saira" font-size="28" font-weight="600" fill="#003262">The XCR clock at 20 °C, from when a coat goes on</text>
+  <text x="30" y="478" font-size="22" fill="#515f74">Mix ≤150 g: pot life 8 min. At 30 °C: pot life 4 min, overcoat about 1 h 30.</text>
+
+  <!-- axis: 0 h at x=60, 60 units per hour to 12 h at x=780; break; 14 days -->
+  <line x1="60" y1="620" x2="840" y2="620" stroke="#141d2b" stroke-width="2.5"/>
+  <line x1="874" y1="620" x2="960" y2="620" stroke="#141d2b" stroke-width="2.5"/>
+  <path d="M846 634 L858 606 M858 634 L870 606" stroke="#141d2b" stroke-width="2"/>
+
+  <!-- t = 0 -->
+  <line x1="60" y1="604" x2="60" y2="636" stroke="#141d2b" stroke-width="2.5"/>
+  <!-- about 2 h 50: an estimate, so a dashed tick -->
+  <line x1="230" y1="560" x2="230" y2="646" stroke="#003262" stroke-width="3" stroke-dasharray="7 5"/>
+  <!-- datasheet: initial cure 8 h 30, handleable about 9 h -->
+  <line x1="570" y1="606" x2="570" y2="634" stroke="#141d2b" stroke-width="1.5"/>
+  <line x1="600" y1="606" x2="600" y2="634" stroke="#141d2b" stroke-width="1.5"/>
+  <!-- the FEB hold, 12 h -->
+  <rect x="775" y="570" width="10" height="80" fill="#141d2b"/>
+  <!-- 14 days -->
+  <line x1="930" y1="604" x2="930" y2="636" stroke="#141d2b" stroke-width="2.5"/>
+
+  <g font-size="22" text-anchor="middle">
+    <text x="230" y="526" font-weight="700" fill="#003262">overcoat when</text>
+    <text x="230" y="552" font-weight="700" fill="#003262">firm but tacky</text>
+    <text x="585" y="546" fill="#515f74">datasheet: initial cure</text>
+    <text x="585" y="572" fill="#515f74">8 h 30, handleable ≈9 h</text>
+    <text x="780" y="532" font-weight="700">FEB hold</text>
+    <text x="780" y="558" font-weight="700">12 h</text>
+
+    <text x="70" y="672">coat on</text>
+    <text x="230" y="672">≈2 h 50</text>
+    <text x="230" y="698" fill="#515f74">fingernail decides</text>
+    <text x="780" y="672">then wax</text>
+    <text x="780" y="698">+ PVA</text>
+    <text x="930" y="672">≥14 days</text>
+    <text x="930" y="698" fill="#515f74">full props</text>
+  </g>
+
+  <!-- tack-free path -->
+  <path d="M236 726 L236 740 L600 740 L600 726" fill="none" stroke="#141d2b" stroke-width="2" stroke-dasharray="3 5"/>
+  <g font-size="22" text-anchor="middle">
+    <text x="418" y="770">gone tack-free instead? wait ≥9 h,</text>
+    <text x="418" y="796">key with 120 grit, blow off, IPA, recoat</text>
+  </g>
+</svg>

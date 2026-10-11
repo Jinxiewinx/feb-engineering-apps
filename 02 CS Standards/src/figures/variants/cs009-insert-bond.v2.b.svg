@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 910" font-family="Inter">
+  <!-- CS-009 new figure for §7.6, variant b (brief B: rethink). Top: the
+       joint in section so the member can see what each step protects (the
+       bond faces, the threads, the tube behind). Bottom: the steps as one
+       numbered list in the order §7.6 gives them, ending on the no-load
+       hold, which stays [lead input needed] because the draft sets no
+       number. Numbers: DP420 TDS (R1) only: test bondline 0.13-0.20 mm,
+       open time 20 min, handling strength 2.5 h at 23 °C. 120 grit is the
+       team value (§7.3 step 2). Grayscale: CF hatched, metal pale and plain,
+       adhesive solid dark, dam cross-hatched, tape light with an outline,
+       the last step reversed out of a dark box. Bondline drawn far thicker
+       than life and says so. -->
+  <rect width="1000" height="910" fill="#ffffff"/>
+  <defs>
+    <pattern id="cf" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="12" height="12" fill="#ffffff"/>
+      <line x1="0" y1="0" x2="0" y2="12" stroke="#141d2b" stroke-width="2.2"/>
+    </pattern>
+    <pattern id="dam" width="14" height="14" patternUnits="userSpaceOnUse">
+      <rect width="14" height="14" fill="#ffffff"/>
+      <path d="M0 0 L14 14 M14 0 L0 14" stroke="#141d2b" stroke-width="1.6"/>
+    </pattern>
+  </defs>
+
+  <text x="20" y="50" font-family="Saira" font-size="34" font-weight="600" fill="#003262">Bonding an insert into CF tube</text>
+  <text x="20" y="84" font-size="22" fill="#141d2b"><tspan font-weight="700">Load-carrying bonds: DP420 only.</tspan> Never 5-minute epoxy or superglue.</text>
+
+  <!-- ===== section ===== -->
+  <text x="40" y="156" font-size="22" font-weight="700" fill="#141d2b">CF tube</text>
+  <!-- tube walls with a break line at the left end -->
+  <path d="M 40 170 L 620 170 L 620 206 L 40 206 L 48 194 L 34 182 Z" fill="url(#cf)" stroke="#141d2b" stroke-width="2.5"/>
+  <path d="M 40 346 L 620 346 L 620 382 L 40 382 L 48 370 L 34 358 Z" fill="url(#cf)" stroke="#141d2b" stroke-width="2.5"/>
+
+  <!-- dam -->
+  <rect x="290" y="206" width="44" height="140" fill="url(#dam)" stroke="#141d2b" stroke-width="2.5"/>
+
+  <!-- adhesive in the bondline -->
+  <rect x="360" y="206" width="260" height="12" fill="#141d2b"/>
+  <rect x="360" y="334" width="260" height="12" fill="#141d2b"/>
+
+  <!-- insert and threaded stud -->
+  <rect x="360" y="218" width="290" height="116" fill="#dde3ec" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="490" y="284" text-anchor="middle" font-size="22" fill="#141d2b">metal insert</text>
+  <rect x="650" y="252" width="232" height="48" fill="#dde3ec" stroke="#141d2b" stroke-width="2.5"/>
+  <path d="M 650 252 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7" fill="none" stroke="#141d2b" stroke-width="2"/>
+  <path d="M 650 300 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7 l 8 -7 l 8 7" fill="none" stroke="#141d2b" stroke-width="2"/>
+  <!-- masking tape over the threads -->
+  <rect x="662" y="240" width="190" height="72" rx="4" fill="#FDB515" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="757" y="284" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">tape</text>
+  <text x="757" y="346" text-anchor="middle" font-size="22" fill="#141d2b">threads masked</text>
+
+  <!-- bondline callout -->
+  <text x="360" y="128" font-size="22" font-weight="700" fill="#141d2b">DP420 TDS test bondline</text>
+  <text x="360" y="154" font-size="22" font-weight="700" fill="#141d2b">0.13 to 0.20 mm (5 to 8 mil)</text>
+  <line x1="520" y1="162" x2="520" y2="210" stroke="#141d2b" stroke-width="1.8"/>
+  <text x="708" y="154" font-size="22" fill="#515f74">gap not to scale</text>
+
+  <!-- under the section -->
+  <text x="312" y="424" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">dam</text>
+  <line x1="312" y1="404" x2="312" y2="346" stroke="#141d2b" stroke-width="1.8"/>
+  <text x="400" y="424" font-size="22" fill="#141d2b"><tspan font-weight="700">both faces:</tspan> IPA → 120 grit → IPA</text>
+  <line x1="470" y1="404" x2="470" y2="346" stroke="#141d2b" stroke-width="1.8"/>
+
+  <!-- ===== steps ===== -->
+  <line x1="20" y1="456" x2="980" y2="456" stroke="#dde3ec" stroke-width="2"/>
+
+  <circle cx="40" cy="500" r="20" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="40" y="508" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">1</text>
+  <text x="76" y="509" font-size="26" font-weight="700" fill="#141d2b">Prep</text>
+  <text x="290" y="509" font-size="22" fill="#141d2b">IPA, 120 grit, IPA on both faces. Gloves on, hands off.</text>
+
+  <circle cx="40" cy="558" r="20" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="40" y="566" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">2</text>
+  <text x="76" y="567" font-size="26" font-weight="700" fill="#141d2b">Mask, dam</text>
+  <text x="290" y="567" font-size="22" fill="#141d2b">Tape the threads. Dam the tube behind the insert.</text>
+
+  <circle cx="40" cy="616" r="20" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="40" y="624" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">3</text>
+  <text x="76" y="625" font-size="26" font-weight="700" fill="#141d2b">Bond</text>
+  <text x="290" y="625" font-size="22" fill="#141d2b">Purge, then fit the nozzle. Close the joint <tspan font-weight="700">within 20 min</tspan>.</text>
+
+  <circle cx="40" cy="674" r="20" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="40" y="682" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">4</text>
+  <text x="76" y="683" font-size="26" font-weight="700" fill="#141d2b">Clamp</text>
+  <text x="290" y="683" font-size="22" fill="#141d2b">Clamp or fixture until handling strength, <tspan font-weight="700">2.5 h at 23 °C</tspan>.</text>
+
+  <rect x="20" y="712" width="960" height="104" rx="8" fill="#003262"/>
+  <circle cx="54" cy="764" r="26" fill="#ffffff"/>
+  <line x1="54" y1="764" x2="54" y2="746" stroke="#003262" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="54" y1="764" x2="68" y2="772" stroke="#003262" stroke-width="3.5" stroke-linecap="round"/>
+  <text x="96" y="773" font-size="26" font-weight="700" fill="#ffffff">No load</text>
+  <text x="290" y="756" font-size="22" fill="#ffffff">Not on the car, no torque, no driving before the</text>
+  <text x="290" y="786" font-size="22" fill="#ffffff">team hold: <tspan font-weight="700" fill="#FDB515">[lead input needed]</tspan></text>
+
+  <text x="20" y="860" font-size="22" fill="#141d2b"><tspan font-weight="700">Step note:</tspan> adhesive and lot, prep, time bonded, time first loaded.</text>
+  <text x="20" y="888" font-size="22" fill="#515f74">The app does not enforce the no-load hold. The person bonding does.</text>
+</svg>

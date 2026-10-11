@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 886">
+  <!-- CS-003 §7.1: a mold's stages as a vertical track (app/shop.js MOLD_STAGE),
+       what moves the mold onto each one, who sets it (the app or you), and the
+       Mold design review blocker before Tooling cut. Back moves, skips and
+       Retired all confirm first (molds.js confirm-back / confirm-jump /
+       confirm-retire).
+       Grayscale: APP chip filled, YOU chip hollow; the blocker is a heavy
+       full-width row with a hatched tag; Retired is dashed and off the spine. -->
+  <defs>
+    <marker id="ms-up" markerWidth="16" markerHeight="14" refX="14" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L16,7 L0,14 z" fill="#515f74"/>
+    </marker>
+    <pattern id="ms-hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="14" height="14" fill="#FDB515"/>
+      <line x1="0" y1="0" x2="0" y2="14" stroke="#141d2b" stroke-width="5"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="886" fill="#ffffff"/>
+  <text x="40" y="52" font-family="Saira" font-size="32" font-weight="700" fill="#003262">A mold's stages, and what moves it on</text>
+  <text x="80" y="98" font-family="Inter" font-size="22" font-weight="700" fill="#515f74" letter-spacing="1">STAGE</text>
+  <text x="330" y="98" font-family="Inter" font-size="22" font-weight="700" fill="#515f74" letter-spacing="1">SET BY</text>
+  <text x="440" y="98" font-family="Inter" font-size="22" font-weight="700" fill="#515f74" letter-spacing="1">WHAT MOVES IT</text>
+  <line x1="40" y1="110" x2="960" y2="110" stroke="#dde3ec" stroke-width="2"/>
+  <line x1="185" y1="160" x2="185" y2="660" stroke="#003262" stroke-width="8"/>
+  <rect x="65" y="132" width="240" height="56" rx="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
+  <text x="185" y="169" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Designed</text>
+  <rect x="325" y="141" width="86" height="38" rx="6" fill="#003262"/>
+  <text x="368" y="168" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#ffffff">APP</text>
+  <text x="440" y="157" font-family="Inter" font-size="24" fill="#141d2b">+ Mold or Plan from Fusion creates it</text>
+  <text x="440" y="185" font-family="Inter" font-size="22" fill="#515f74">CS-003 §7.1 step 8</text>
+  <rect x="65" y="208" width="895" height="92" fill="#ffffff" stroke="#141d2b" stroke-width="5"/>
+  <rect x="65" y="208" width="240" height="92" fill="url(#ms-hatch)" stroke="#141d2b" stroke-width="5"/>
+  <rect x="100" y="237" width="170" height="36" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="185" y="263" text-anchor="middle" font-family="Saira" font-size="24" font-weight="700" fill="#141d2b">BLOCKER</text>
+  <text x="330" y="246" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">Mold design review, signed on the run</text>
+  <text x="330" y="282" font-family="Inter" font-size="24" fill="#141d2b">No initials, no cutting, no glue, no booking.</text>
+  <rect x="65" y="320" width="240" height="56" rx="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
+  <text x="185" y="357" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Tooling cut</text>
+  <rect x="325" y="329" width="86" height="38" rx="6" fill="#003262"/>
+  <text x="368" y="356" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#ffffff">APP</text>
+  <text x="440" y="345" font-family="Inter" font-size="24" fill="#141d2b">You press Mark cut after fixing offcut sizes;</text>
+  <text x="440" y="373" font-family="Inter" font-size="22" fill="#515f74">the app moves it · CS-003 §7.3 step 4</text>
+  <rect x="65" y="402" width="240" height="56" rx="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
+  <text x="185" y="439" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Board glued</text>
+  <rect x="325" y="411" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="368" y="438" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">YOU</text>
+  <text x="440" y="427" font-family="Inter" font-size="24" fill="#141d2b">Once clamped and the stack is marked</text>
+  <text x="440" y="455" font-family="Inter" font-size="22" fill="#515f74">CS-003 §7.3 steps 14–15</text>
+  <rect x="65" y="484" width="240" height="56" rx="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
+  <text x="185" y="521" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Machined</text>
+  <rect x="325" y="493" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="368" y="520" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">YOU</text>
+  <text x="440" y="509" font-family="Inter" font-size="24" fill="#141d2b">At the machine, with Home location</text>
+  <text x="440" y="537" font-family="Inter" font-size="22" fill="#515f74">CS-005 §7.5 step 6</text>
+  <rect x="65" y="566" width="240" height="56" rx="28" fill="#ffffff" stroke="#003262" stroke-width="4"/>
+  <text x="185" y="603" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#141d2b">Sealed</text>
+  <rect x="325" y="575" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="368" y="602" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">YOU</text>
+  <text x="440" y="591" font-family="Inter" font-size="24" fill="#141d2b">With Sealing system, Sealed on, Sealed by</text>
+  <text x="440" y="619" font-family="Inter" font-size="22" fill="#515f74">CS-004 §7.4 step 4</text>
+  <rect x="65" y="648" width="240" height="56" rx="28" fill="#003262" stroke="#003262" stroke-width="4"/>
+  <text x="185" y="685" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#ffffff">Ready for layup</text>
+  <rect x="325" y="657" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="368" y="684" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">YOU</text>
+  <text x="440" y="673" font-family="Inter" font-size="24" fill="#141d2b">Once the mold label is on</text>
+  <text x="440" y="701" font-family="Inter" font-size="22" fill="#515f74">CS-004 §7.5 step 5</text>
+  <line x1="40" y1="736" x2="960" y2="736" stroke="#dde3ec" stroke-width="2"/>
+  <rect x="65" y="758" width="240" height="56" rx="28" fill="#ffffff" stroke="#515f74" stroke-width="3" stroke-dasharray="10 7"/>
+  <text x="185" y="795" text-anchor="middle" font-family="Inter" font-size="26" font-weight="700" fill="#515f74">Retired</text>
+  <rect x="325" y="767" width="86" height="38" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="368" y="794" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">YOU</text>
+  <text x="440" y="783" font-family="Inter" font-size="24" fill="#141d2b">Off the track, from any stage. Never delete.</text>
+  <text x="440" y="811" font-family="Inter" font-size="22" fill="#515f74">CS-003 §7.4 step 3</text>
+  <text x="65" y="860" font-family="Inter" font-size="22" fill="#141d2b">Moving back, skipping ahead, or to Retired: the app asks first.</text>
+</svg>

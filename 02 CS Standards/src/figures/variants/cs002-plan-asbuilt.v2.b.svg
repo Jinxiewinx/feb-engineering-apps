@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 960">
+  <!-- CS-002 §7.2 steps 4 to 6 and §7.4: the part holds the plan (Layup stack,
+       Materials (plan)); + New run copies it into each run's Stack & BOM. Labels
+       from the app: "follows the plan on", "as built on this run", "N plies
+       differ", Compare, "Adopt as the part's plan" (core.js), "↩ plan"
+       (workorders.js), Stack frozen (core.js stackFrozen). Plan edits reach a run
+       still on the plan and stop at a frozen one (core.js stackEdit). Variant b:
+       one part on the left, three runs on the right, every arrow labelled. -->
+  <defs>
+    <pattern id="pa-drift" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="12" height="12" fill="#FDB515"/>
+      <line x1="0" y1="0" x2="0" y2="12" stroke="#141d2b" stroke-width="3"/>
+    </pattern>
+    <marker id="pa-copy" markerWidth="20" markerHeight="18" refX="18" refY="9" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L20,9 L0,18 z" fill="#003262"/>
+    </marker>
+    <marker id="pa-back" markerWidth="18" markerHeight="18" refX="16" refY="9" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M2,1 L16,9 L2,17" fill="none" stroke="#141d2b" stroke-width="3"/>
+    </marker>
+    <marker id="pa-edit" markerWidth="16" markerHeight="16" refX="14" refY="8" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L16,8 L0,16 z" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="960" fill="#ffffff"/>
+
+  <text x="30" y="50" font-family="Saira" font-size="32" font-weight="700" fill="#003262">The plan lives on the part; each run is as built</text>
+
+  <!-- ===== the part ===== -->
+  <rect x="30" y="90" width="280" height="840" fill="#ffffff" stroke="#003262" stroke-width="5"/>
+  <text x="48" y="124" font-family="Inter" font-size="22" font-weight="700" fill="#515f74" letter-spacing="1">PART · Parts tab</text>
+  <text x="48" y="160" font-family="ui-monospace, Menlo, monospace" font-size="26" font-weight="700" fill="#141d2b">P-SN6-007</text>
+  <text x="48" y="246" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">Layup stack</text>
+  <g fill="#ffffff" stroke="#141d2b" stroke-width="2">
+    <rect x="48" y="262" width="244" height="32"/><rect x="48" y="300" width="244" height="32"/>
+    <rect x="48" y="338" width="244" height="32"/><rect x="48" y="376" width="244" height="32"/>
+    <rect x="48" y="414" width="244" height="32"/>
+  </g>
+  <g font-family="ui-monospace, Menlo, monospace" font-size="22" font-weight="700" fill="#141d2b">
+    <text x="60" y="285">P1</text><text x="60" y="323">P2</text><text x="60" y="361">P3</text><text x="60" y="399">P4</text><text x="60" y="437">P5</text>
+  </g>
+  <text x="48" y="560" font-family="Inter" font-size="24" font-weight="700" fill="#141d2b">Materials (plan)</text>
+  <g fill="#ffffff" stroke="#141d2b" stroke-width="2">
+    <rect x="48" y="576" width="244" height="32"/><rect x="48" y="614" width="244" height="32"/>
+  </g>
+  <g font-family="Inter" font-size="22" fill="#141d2b">
+    <text x="60" y="599">line 1</text><text x="60" y="637">line 2</text>
+  </g>
+  <text x="48" y="880" font-family="Inter" font-size="22" fill="#515f74">what we intend</text>
+  <text x="48" y="906" font-family="Inter" font-size="22" fill="#515f74">to lay</text>
+
+  <!-- ===== run 1: still on the plan ===== -->
+  <rect x="610" y="90" width="360" height="220" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="630" y="124" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#141d2b">WO-SN6-011</text>
+  <text x="630" y="154" font-family="Inter" font-size="22" fill="#515f74">follows the plan on <tspan font-family="ui-monospace, Menlo, monospace">P-SN6-007</tspan></text>
+  <g fill="#ffffff" stroke="#141d2b" stroke-width="2">
+    <rect x="630" y="172" width="320" height="20"/><rect x="630" y="198" width="320" height="20"/>
+    <rect x="630" y="224" width="320" height="20"/><rect x="630" y="250" width="320" height="20"/>
+    <rect x="630" y="276" width="320" height="20"/>
+  </g>
+
+  <!-- ===== run 2: as built ===== -->
+  <rect x="610" y="340" width="360" height="305" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="630" y="374" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#141d2b">WO-SN6-012</text>
+  <text x="630" y="404" font-family="Inter" font-size="22" fill="#515f74">as built on this run</text>
+  <g stroke="#141d2b" stroke-width="2">
+    <rect x="630" y="422" width="320" height="20" fill="#ffffff"/><rect x="630" y="448" width="320" height="20" fill="#ffffff"/>
+    <rect x="630" y="474" width="320" height="20" fill="url(#pa-drift)"/><rect x="630" y="500" width="320" height="20" fill="url(#pa-drift)"/>
+    <rect x="630" y="526" width="320" height="20" fill="#ffffff"/>
+  </g>
+  <path d="M 641 552 L 653 573 L 629 573 Z" fill="#ffffff" stroke="#141d2b" stroke-width="2.5" stroke-linejoin="round"/>
+  <line x1="641" y1="559" x2="641" y2="566" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="662" y="572" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">2 plies differ · Compare</text>
+  <rect x="630" y="588" width="320" height="42" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="642" y="616" font-family="Inter" font-size="22" fill="#141d2b">line 1 used ≠ plan</text>
+  <rect x="852" y="594" width="90" height="30" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="897" y="616" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">↩ plan</text>
+
+  <!-- ===== run 3: stack frozen ===== -->
+  <rect x="610" y="690" width="360" height="240" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <rect x="610" y="690" width="22" height="240" fill="#141d2b"/>
+  <text x="648" y="724" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="700" fill="#141d2b">WO-SN6-013</text>
+  <text x="648" y="754" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">Stack frozen</text>
+  <text x="648" y="782" font-family="Inter" font-size="22" fill="#515f74">the bench is working to this</text>
+  <g fill="#ffffff" stroke="#141d2b" stroke-width="2">
+    <rect x="648" y="800" width="302" height="20"/><rect x="648" y="826" width="302" height="20"/>
+    <rect x="648" y="852" width="302" height="20"/><rect x="648" y="878" width="302" height="20"/>
+    <rect x="648" y="904" width="302" height="20"/>
+  </g>
+
+  <text x="950" y="124" text-anchor="end" font-family="Inter" font-size="22" fill="#515f74">Stack &amp; BOM</text>
+  <text x="950" y="374" text-anchor="end" font-family="Inter" font-size="22" fill="#515f74">Stack &amp; BOM</text>
+  <text x="950" y="724" text-anchor="end" font-family="Inter" font-size="22" fill="#515f74">Stack &amp; BOM</text>
+
+  <!-- ===== copies: + New run (heavy solid) ===== -->
+  <g stroke="#003262" stroke-width="6" marker-end="url(#pa-copy)">
+    <line x1="312" y1="150" x2="606" y2="150"/>
+    <line x1="312" y1="380" x2="606" y2="380"/>
+    <line x1="312" y1="730" x2="606" y2="730"/>
+  </g>
+  <g font-family="Inter" font-size="24" font-weight="700" fill="#003262" text-anchor="middle">
+    <text x="460" y="136">+ New run</text>
+    <text x="460" y="366">+ New run</text>
+    <text x="460" y="716">+ New run</text>
+  </g>
+
+  <!-- ===== later plan edits (dashed) ===== -->
+  <line x1="312" y1="240" x2="604" y2="240" stroke="#141d2b" stroke-width="3" stroke-dasharray="14 9" marker-end="url(#pa-edit)"/>
+  <text x="460" y="274" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">plan edits reach it</text>
+  <line x1="312" y1="820" x2="576" y2="820" stroke="#141d2b" stroke-width="3" stroke-dasharray="14 9"/>
+  <line x1="584" y1="798" x2="584" y2="842" stroke="#141d2b" stroke-width="6"/>
+  <text x="450" y="806" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">plan edits</text>
+  <text x="450" y="856" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">stop at the freeze</text>
+
+  <!-- ===== back to the plan (open arrowheads, pointing left) ===== -->
+  <line x1="608" y1="486" x2="316" y2="486" stroke="#141d2b" stroke-width="3" marker-end="url(#pa-back)"/>
+  <text x="460" y="446" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">Compare, then</text>
+  <text x="460" y="472" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">Adopt as the part's plan</text>
+  <line x1="628" y1="609" x2="316" y2="609" stroke="#141d2b" stroke-width="3" marker-end="url(#pa-back)"/>
+  <text x="460" y="596" text-anchor="middle" font-family="Inter" font-size="22" font-weight="700" fill="#141d2b">↩ plan</text>
+  <text x="460" y="638" text-anchor="middle" font-family="Inter" font-size="22" fill="#141d2b">one BOM line</text>
+</svg>

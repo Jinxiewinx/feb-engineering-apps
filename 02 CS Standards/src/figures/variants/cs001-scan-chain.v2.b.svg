@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 860" font-family="Inter">
+  <!-- CS-001 §7.12: the order the app's Scan tries a code in, variant b
+       (Round 3, brief B). Source: scan.js scanResolve / scanManual /
+       scanToOpen, core.js ehsResolveTyped (EHS_TAIL = 12). Read down the
+       left: the first test that says yes decides.
+       Grayscale: an "opens" result is a heavy solid box; the refusal is a
+       dashed box with a cross; "Log it" is a pill-shaped button; "no" arrows
+       run down, "yes" arrows run right. -->
+  <defs>
+    <marker id="ar" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,6 L0,12 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="860" fill="#ffffff"/>
+
+  <!-- start -->
+  <rect x="40" y="24" width="480" height="58" rx="29" fill="#003262"/>
+  <text x="280" y="62" text-anchor="middle" font-size="26" font-weight="700" fill="#ffffff">Scan a code, or type it</text>
+  <line x1="280" y1="82" x2="280" y2="112" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+
+  <!-- 1 FEB label -->
+  <rect x="40" y="116" width="480" height="96" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="62" y="156" font-size="26" font-weight="700" fill="#141d2b"><tspan font-family="Saira">1</tspan>   An FEB label?</text>
+  <text x="62" y="192" font-size="22" fill="#141d2b"><tspan font-family="ui-monospace, Menlo, monospace">/Q/&lt;ID&gt;</tspan> link or a bare ID</text>
+  <line x1="520" y1="164" x2="634" y2="164" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <text x="577" y="152" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">yes</text>
+  <rect x="640" y="100" width="320" height="140" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="5"/>
+  <text x="660" y="138" font-size="26" font-weight="700" fill="#141d2b">Opens that record</text>
+  <text x="660" y="172" font-size="22" fill="#141d2b">Deleted? It says who.</text>
+  <text x="660" y="200" font-size="22" fill="#515f74">Restore: Reports →</text>
+  <text x="660" y="226" font-size="22" fill="#515f74">Recently deleted</text>
+
+  <line x1="280" y1="212" x2="280" y2="270" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <text x="294" y="248" font-size="22" fill="#515f74">no</text>
+
+  <!-- 2 exact EH&S tag -->
+  <rect x="40" y="274" width="480" height="96" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="62" y="314" font-size="26" font-weight="700" fill="#141d2b"><tspan font-family="Saira">2</tspan>   A UC EH&amp;S tag?</text>
+  <text x="62" y="350" font-size="22" fill="#141d2b">the whole code matches a stored tag</text>
+  <line x1="520" y1="322" x2="634" y2="322" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <text x="577" y="310" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">yes</text>
+  <rect x="640" y="274" width="320" height="96" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="5"/>
+  <text x="660" y="314" font-size="26" font-weight="700" fill="#141d2b">Opens that lot</text>
+  <text x="660" y="348" font-size="22" fill="#141d2b">or storage location</text>
+
+  <line x1="280" y1="370" x2="280" y2="428" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <text x="294" y="406" font-size="22" fill="#515f74">no</text>
+
+  <!-- 3 edge print -->
+  <rect x="40" y="432" width="480" height="128" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="62" y="472" font-size="26" font-weight="700" fill="#141d2b"><tspan font-family="Saira">3</tspan>   The edge print?</text>
+  <text x="62" y="508" font-size="22" fill="#141d2b">12 or more characters typed,</text>
+  <text x="62" y="538" font-size="22" fill="#141d2b">the end of a stored tag</text>
+  <line x1="520" y1="466" x2="634" y2="466" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <text x="577" y="454" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">one tag</text>
+  <rect x="640" y="430" width="320" height="72" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="5"/>
+  <text x="660" y="476" font-size="26" font-weight="700" fill="#141d2b">Opens it</text>
+
+  <line x1="520" y1="540" x2="634" y2="540" stroke="#141d2b" stroke-width="3" stroke-dasharray="9 6" marker-end="url(#ar)"/>
+  <text x="572" y="526" text-anchor="middle" font-size="22" font-weight="600" fill="#141d2b">2 or more</text>
+  <rect x="640" y="518" width="320" height="104" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3" stroke-dasharray="12 8"/>
+  <path d="M664 538 l24 24 M688 538 l-24 24" stroke="#141d2b" stroke-width="4" stroke-linecap="round"/>
+  <text x="704" y="560" font-size="26" font-weight="700" fill="#141d2b">Refused</text>
+  <text x="660" y="600" font-size="22" fill="#141d2b">“type more of the code”</text>
+
+  <line x1="280" y1="560" x2="280" y2="650" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <text x="294" y="612" font-size="22" fill="#515f74">no</text>
+
+  <!-- 4 unknown tag -->
+  <rect x="40" y="654" width="480" height="96" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="62" y="694" font-size="26" font-weight="700" fill="#141d2b"><tspan font-family="Saira">4</tspan>   A tag nobody wears</text>
+  <text x="62" y="730" font-size="22" fill="#141d2b">not on any record yet</text>
+  <line x1="520" y1="702" x2="634" y2="702" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <rect x="640" y="672" width="170" height="60" rx="30" fill="#FDB515" stroke="#141d2b" stroke-width="3"/>
+  <text x="725" y="711" text-anchor="middle" font-size="26" font-weight="700" fill="#141d2b">Log it</text>
+  <text x="640" y="776" font-size="22" fill="#141d2b">opens the Receiving desk</text>
+  <text x="640" y="804" font-size="22" fill="#141d2b">with the code already in</text>
+  <text x="640" y="832" font-size="22" fill="#141d2b">the EH&amp;S tag cell</text>
+</svg>

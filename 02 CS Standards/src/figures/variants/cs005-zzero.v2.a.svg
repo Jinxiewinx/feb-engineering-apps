@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 730" font-family="Inter" fill="#141d2b">
+  <!-- CS-005 §7.4 step 1: Z is zeroed once per setup from the top of the
+       stock at its highest point, never the bed. Right panel shows the wrong
+       way. Each section of a split stack is its own setup (R-005-04). -->
+  <rect width="1000" height="730" fill="#ffffff"/>
+  <defs>
+    <marker id="zz-a" markerWidth="14" markerHeight="12" refX="13" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L14,6 L0,12 z" fill="#141d2b"/>
+    </marker>
+    <pattern id="zz-spoil" width="14" height="14" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <rect width="14" height="14" fill="#ffffff"/>
+      <line x1="0" y1="0" x2="0" y2="14" stroke="#515f74" stroke-width="2"/>
+    </pattern>
+  </defs>
+
+  <!-- ===== RIGHT ===== -->
+  <text x="255" y="46" font-family="Saira" font-size="28" font-weight="700" fill="#003262" text-anchor="middle">RIGHT: zero Z at the stock top</text>
+  <text x="325" y="92" font-size="22" text-anchor="middle">touch off here,</text>
+  <text x="325" y="118" font-size="22" font-weight="700" text-anchor="middle">once per setup</text>
+  <rect x="311" y="130" width="28" height="50" fill="#dde3ec" stroke="#141d2b" stroke-width="2"/>
+  <path d="M317 180 L333 180 L325 204 Z" fill="#141d2b"/>
+  <line x1="325" y1="206" x2="325" y2="238" stroke="#141d2b" stroke-width="2.5" marker-end="url(#zz-a)"/>
+
+  <path d="M100 440 L100 310 L250 310 L250 240 L400 240 L400 440 Z" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <line x1="100" y1="375" x2="400" y2="375" stroke="#141d2b" stroke-width="1.5" stroke-dasharray="9 6"/>
+  <text x="250" y="414" font-size="22" fill="#515f74" text-anchor="middle">glued stack</text>
+  <line x1="50" y1="240" x2="420" y2="240" stroke="#003262" stroke-width="3.5" stroke-dasharray="14 7"/>
+  <text x="426" y="248" font-size="23" font-weight="700" fill="#003262">Z = 0</text>
+
+  <rect x="50" y="440" width="410" height="30" fill="url(#zz-spoil)" stroke="#141d2b" stroke-width="2"/>
+  <text x="255" y="502" font-size="22" fill="#515f74" text-anchor="middle">spoilboard, vacuum zones</text>
+  <text x="255" y="528" font-size="22" fill="#515f74" text-anchor="middle">under the part open</text>
+
+  <text x="255" y="572" font-size="22" text-anchor="middle">Each section of a split stack is</text>
+  <text x="255" y="598" font-size="22" text-anchor="middle">its own setup, with its own zero.</text>
+
+  <!-- divider -->
+  <line x1="500" y1="20" x2="500" y2="610" stroke="#dde3ec" stroke-width="2"/>
+
+  <!-- ===== WRONG ===== -->
+  <text x="745" y="46" font-family="Saira" font-size="28" font-weight="700" text-anchor="middle">WRONG: zero Z at the bed</text>
+  <path d="M590 440 L590 310 L740 310 L740 240 L890 240 L890 440 Z" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <rect x="801" y="130" width="28" height="50" fill="#dde3ec" stroke="#141d2b" stroke-width="2"/>
+  <path d="M807 180 L823 180 L815 204 Z" fill="#141d2b"/>
+  <line x1="815" y1="206" x2="815" y2="356" stroke="#141d2b" stroke-width="3.5" marker-end="url(#zz-a)"/>
+
+  <!-- crash -->
+  <g stroke="#141d2b" stroke-width="3" stroke-linecap="round">
+    <line x1="815" y1="366" x2="785" y2="340"/><line x1="815" y1="366" x2="845" y2="340"/>
+    <line x1="815" y1="366" x2="780" y2="372"/><line x1="815" y1="366" x2="850" y2="372"/>
+    <line x1="815" y1="366" x2="798" y2="396"/><line x1="815" y1="366" x2="832" y2="396"/>
+  </g>
+  <rect x="540" y="440" width="410" height="30" fill="url(#zz-spoil)" stroke="#141d2b" stroke-width="2"/>
+  <line x1="530" y1="440" x2="900" y2="440" stroke="#141d2b" stroke-width="3.5" stroke-dasharray="14 7"/>
+  <text x="904" y="434" font-size="23" font-weight="700">Z = 0</text>
+
+  <text x="745" y="502" font-size="22" text-anchor="middle">any error in the assumed stack</text>
+  <text x="745" y="528" font-size="22" text-anchor="middle">height plunges the tool into the part</text>
+  <text x="745" y="572" font-size="22" fill="#515f74" text-anchor="middle">The Feb 2026 plunges were</text>
+  <text x="745" y="598" font-size="22" fill="#515f74" text-anchor="middle">zeroing mistakes (R4).</text>
+
+  <!-- ===== tool changes ===== -->
+  <line x1="30" y1="636" x2="970" y2="636" stroke="#dde3ec" stroke-width="2"/>
+  <text x="500" y="674" font-size="22" font-weight="700" fill="#003262" text-anchor="middle">Tool changes need no re-zero: the ATC measures each tool.</text>
+  <text x="500" y="702" font-size="22" text-anchor="middle">Your job is a tool table that matches the rack (§7.4 step 2).</text>
+</svg>

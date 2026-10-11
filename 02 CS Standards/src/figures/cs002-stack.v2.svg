@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 930" font-family="Inter">
+  <!-- CS-002 §7.3 example stack, variant b (Round 3, brief B). One row per
+       ply, read from the bottom up in lay-up order, P1 on the mold. P5 and
+       P6 are separate plies with their own orientations (R-002-12).
+       Grayscale: orientation is the fill pattern (square grid = 0/90,
+       diagonal grid = ±45), cloth weight is bar thickness (88 thin, 195
+       thick), the mesh is solid dark with open dots in a short bar, the core is dotted
+       with chamfered ends; partial coverage is a shorter bar. -->
+<defs>
+  <pattern id="g090" width="12" height="12" patternUnits="userSpaceOnUse">
+    <rect width="12" height="12" fill="#ffffff"/><path d="M0 0 H12 M0 0 V12" stroke="#141d2b" stroke-width="2"/></pattern>
+  <pattern id="g45" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="12" height="12" fill="#ffffff"/><path d="M0 0 H12 M0 0 V12" stroke="#141d2b" stroke-width="2"/></pattern>
+  <pattern id="mesh" width="10" height="10" patternUnits="userSpaceOnUse">
+    <rect width="10" height="10" fill="#141d2b"/><circle cx="5" cy="5" r="2.2" fill="#ffffff"/></pattern>
+  <pattern id="foam" width="10" height="10" patternUnits="userSpaceOnUse">
+    <rect width="10" height="10" fill="#ffffff"/><circle cx="5" cy="5" r="1.8" fill="#141d2b"/></pattern>
+  <marker id="ar" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M0,0 L14,7 L0,14 z" fill="#003262"/></marker>
+</defs>
+<rect width="1000" height="930" fill="#ffffff"/>
+<text x="40" y="46" font-family="Saira" font-size="32" font-weight="700" fill="#003262">Lay up from the mold: P1 first</text>
+<text x="40" y="80" font-size="22" fill="#515f74">The format of the §7.3 table, not a recommended stack</text>
+<text x="96" y="171" text-anchor="middle" font-family="Saira" font-size="32" font-weight="700" fill="#141d2b">P7</text>
+<rect x="150" y="150.0" width="410" height="20" fill="url(#g090)" stroke="#141d2b" stroke-width="2.5"/>
+<text x="600" y="156" font-size="25" font-weight="700" fill="#141d2b">88 spread-tow</text>
+<text x="600" y="184" font-size="22" fill="#141d2b">0/90 · full · bag side</text>
+<text x="96" y="266" text-anchor="middle" font-family="Saira" font-size="32" font-weight="700" fill="#141d2b">P6</text>
+<rect x="150" y="238.0" width="410" height="34" fill="url(#g45)" stroke="#141d2b" stroke-width="2.5"/>
+<text x="600" y="251" font-size="25" font-weight="700" fill="#141d2b">195 twill</text>
+<text x="600" y="279" font-size="22" fill="#141d2b">±45 · full</text>
+<text x="96" y="361" text-anchor="middle" font-family="Saira" font-size="32" font-weight="700" fill="#141d2b">P5</text>
+<rect x="150" y="333.0" width="410" height="34" fill="url(#g090)" stroke="#141d2b" stroke-width="2.5"/>
+<text x="600" y="346" font-size="25" font-weight="700" fill="#141d2b">195 twill</text>
+<text x="600" y="374" font-size="22" fill="#141d2b">0/90 · full</text>
+<text x="96" y="646" text-anchor="middle" font-family="Saira" font-size="32" font-weight="700" fill="#141d2b">P2</text>
+<rect x="150" y="618.0" width="410" height="34" fill="url(#g45)" stroke="#141d2b" stroke-width="2.5"/>
+<text x="600" y="631" font-size="25" font-weight="700" fill="#141d2b">195 twill</text>
+<text x="600" y="659" font-size="22" fill="#141d2b">±45 · full</text>
+<text x="96" y="741" text-anchor="middle" font-family="Saira" font-size="32" font-weight="700" fill="#141d2b">P1</text>
+<rect x="150" y="720.0" width="410" height="20" fill="url(#g090)" stroke="#141d2b" stroke-width="2.5"/>
+<text x="600" y="726" font-size="25" font-weight="700" fill="#141d2b">88 spread-tow</text>
+<text x="600" y="754" font-size="22" fill="#141d2b">0/90 · full · sacrificial / finish</text>
+<text x="96" y="456" text-anchor="middle" font-family="Saira" font-size="32" font-weight="700" fill="#141d2b">P4</text>
+<path d="M200 465 L309.9 425 H410.1 L520 465 Z" fill="url(#foam)" stroke="#141d2b" stroke-width="2.5"/>
+<path d="M246 465 A46 46 0 0 0 243.2 449.3" fill="none" stroke="#141d2b" stroke-width="2"/>
+<text x="206" y="491" font-size="22" font-weight="700" fill="#141d2b">20°</text>
+<text x="600" y="427" font-size="25" font-weight="700" fill="#141d2b">Rohacell 31 IG-F 3 mm</text>
+<text x="600" y="455" font-size="22" fill="#141d2b">core zone · chamfer 20°</text>
+<text x="600" y="482" font-size="22" fill="#141d2b">grooves per CS-006</text>
+<text x="96" y="551" text-anchor="middle" font-family="Saira" font-size="32" font-weight="700" fill="#141d2b">P3</text>
+<rect x="200" y="532" width="300" height="16" fill="url(#mesh)" stroke="#141d2b" stroke-width="2.5"/>
+<text x="600" y="522" font-size="25" font-weight="700" fill="#141d2b">Cu mesh</text>
+<text x="600" y="550" font-size="22" fill="#141d2b">zones A–B · grounding</text>
+<text x="600" y="577" font-size="22" fill="#141d2b">25 mm overlap onto P2</text>
+<rect x="130" y="778" width="450" height="58" fill="#dde3ec" stroke="#141d2b" stroke-width="4"/>
+<text x="355" y="815" text-anchor="middle" font-size="25" font-weight="700" fill="#141d2b">MOLD <tspan font-weight="400" font-size="22">(sealed, CS-004)</tspan></text>
+<text x="600" y="800" font-size="25" font-weight="700" fill="#141d2b">P1 touches the mold</text>
+<text x="600" y="828" font-size="22" fill="#141d2b">and becomes the show face</text>
+<text x="40" y="878" font-size="22" fill="#515f74">Square grid = 0/90 · diagonal grid = ±45 · thin bar = 88, thick bar = 195</text>
+<text x="40" y="908" font-size="22" fill="#515f74">Dark with open dots = Cu mesh · dotted, chamfered = core · not to scale</text>
+</svg>

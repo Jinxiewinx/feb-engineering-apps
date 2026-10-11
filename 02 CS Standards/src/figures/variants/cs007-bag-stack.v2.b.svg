@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 860" font-family="Inter">
+  <!-- CS-007 Figure 1, variant b (brief B: rethink). The wet-layup bag as an
+       exploded stack in placement order, with the two part edges carried
+       through every layer as dashed guides, so the one rule people get wrong
+       (breather stops short of every part edge) reads as a visible gap.
+       Facts from CS-007 Rev §7.4-7.5. Grayscale: each layer has its own
+       fill (pale, solid dark, hollow, dotted, a heavy line), the part edges
+       are dashed, the gap is dimensioned and labelled. -->
+  <rect width="1000" height="860" fill="#ffffff"/>
+  <defs>
+    <pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse">
+      <rect width="12" height="12" fill="#ffffff"/>
+      <circle cx="6" cy="6" r="2.6" fill="#141d2b"/>
+    </pattern>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,5 L0,10 z" fill="#141d2b"/>
+    </marker>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,5 L0,10 z" fill="#003262"/>
+    </marker>
+    <marker id="ahbs" markerWidth="12" markerHeight="10" refX="1" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M12,0 L0,5 L12,10 z" fill="#003262"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="50" font-family="Saira" font-size="34" font-weight="600" fill="#003262">Wet-layup bag, layer by layer</text>
+  <text x="20" y="92" font-size="22" fill="#515f74">Lay in number order, 1 first</text>
+
+  <!-- part edges carried through every layer -->
+  <line x1="470" y1="112" x2="470" y2="590" stroke="#141d2b" stroke-width="2" stroke-dasharray="10 7"/>
+  <line x1="870" y1="112" x2="870" y2="590" stroke="#141d2b" stroke-width="2" stroke-dasharray="10 7"/>
+  <text x="470" y="98" text-anchor="middle" font-size="22" fill="#141d2b">part edge</text>
+  <text x="870" y="98" text-anchor="middle" font-size="22" fill="#141d2b">part edge</text>
+
+  <!-- 5: bag and tacky tape -->
+  <circle cx="40" cy="146" r="20" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="40" y="154" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">5</text>
+  <text x="74" y="154" font-size="26" font-weight="700" fill="#141d2b">VB160 bag</text>
+  <text x="74" y="182" font-size="22" fill="#141d2b">pleats at corners, and</text>
+  <text x="74" y="208" font-size="22" fill="#141d2b">300–400 mm on curves</text>
+  <line x1="390" y1="150" x2="950" y2="150" stroke="#141d2b" stroke-width="5"/>
+  <rect x="390" y="153" width="34" height="18" fill="#141d2b"/>
+  <rect x="916" y="153" width="34" height="18" fill="#141d2b"/>
+  <text x="407" y="200" text-anchor="middle" font-size="22" fill="#141d2b">tape</text>
+
+  <!-- 4: breather, held back -->
+  <circle cx="40" cy="256" r="20" fill="#003262" stroke="#003262" stroke-width="3"/>
+  <text x="40" y="264" text-anchor="middle" font-size="22" font-weight="700" fill="#ffffff">4</text>
+  <text x="74" y="264" font-size="26" font-weight="700" fill="#003262">Breather</text>
+  <text x="74" y="292" font-size="22" font-weight="700" fill="#003262">stops short of</text>
+  <text x="74" y="318" font-size="22" font-weight="700" fill="#003262">every part edge</text>
+  <rect x="525" y="244" width="290" height="30" fill="url(#dots)" stroke="#141d2b" stroke-width="2"/>
+  <line x1="473" y1="259" x2="522" y2="259" stroke="#003262" stroke-width="2.5" marker-start="url(#ahbs)" marker-end="url(#ahb)"/>
+  <line x1="818" y1="259" x2="867" y2="259" stroke="#003262" stroke-width="2.5" marker-start="url(#ahbs)" marker-end="url(#ahb)"/>
+  <text x="497" y="234" text-anchor="middle" font-size="22" font-weight="700" fill="#003262">gap</text>
+  <text x="843" y="234" text-anchor="middle" font-size="22" font-weight="700" fill="#003262">gap</text>
+
+  <!-- 3: peel ply, past the edges -->
+  <circle cx="40" cy="366" r="20" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="40" y="374" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">3</text>
+  <text x="74" y="374" font-size="26" font-weight="700" fill="#141d2b">Peel ply</text>
+  <text x="74" y="402" font-size="22" fill="#141d2b">past every edge</text>
+  <rect x="430" y="362" width="480" height="14" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+
+  <!-- 2: wet laminate -->
+  <circle cx="40" cy="456" r="20" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="40" y="464" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">2</text>
+  <text x="74" y="464" font-size="26" font-weight="700" fill="#141d2b">Wet laminate</text>
+  <text x="74" y="492" font-size="22" fill="#141d2b">ply by ply, WO ply table</text>
+  <rect x="470" y="442" width="400" height="30" fill="#141d2b"/>
+
+  <!-- 1: mold, plate or foam core -->
+  <circle cx="40" cy="546" r="20" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="40" y="554" text-anchor="middle" font-size="22" font-weight="700" fill="#141d2b">1</text>
+  <text x="74" y="554" font-size="26" font-weight="700" fill="#141d2b">Mold, plate or core</text>
+  <text x="74" y="582" font-size="22" fill="#141d2b">mold prepped per CS-004</text>
+  <rect x="390" y="530" width="560" height="56" fill="#dde3ec" stroke="#141d2b" stroke-width="2.5"/>
+
+  <!-- why -->
+  <text x="20" y="636" font-size="22" fill="#141d2b"><tspan font-weight="700">Why the gap:</tspan> resin that wicks into breather at an edge glues it to the part.</text>
+  <text x="20" y="664" font-size="22" fill="#515f74">The WO may swap peel ply for release film or mylar, or add a caul plate (under test).</text>
+
+  <!-- vacuum strip -->
+  <line x1="20" y1="690" x2="980" y2="690" stroke="#dde3ec" stroke-width="2"/>
+  <rect x="20" y="708" width="250" height="74" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="145" y="738" text-anchor="middle" font-size="24" fill="#141d2b">Pull vacuum</text>
+  <text x="145" y="766" text-anchor="middle" font-size="24" font-weight="700" fill="#141d2b">to ≥ 25 inHg</text>
+  <line x1="272" y1="745" x2="316" y2="745" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="320" y="708" width="250" height="74" rx="8" fill="#ffffff" stroke="#141d2b" stroke-width="3"/>
+  <text x="445" y="738" text-anchor="middle" font-size="24" fill="#141d2b">Close valve,</text>
+  <text x="445" y="766" text-anchor="middle" font-size="24" font-weight="700" fill="#141d2b">wait 10 min</text>
+  <line x1="572" y1="745" x2="616" y2="745" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <rect x="620" y="708" width="360" height="74" rx="8" fill="#003262" stroke="#003262" stroke-width="3"/>
+  <text x="800" y="738" text-anchor="middle" font-size="24" font-weight="700" fill="#ffffff">Lost ≤ 2 inHg?</text>
+  <text x="800" y="766" text-anchor="middle" font-size="22" fill="#ffffff">then you may walk away</text>
+  <text x="20" y="814" font-size="22" fill="#141d2b">Trap between bag and pump, as in CS-006 §7.3.</text>
+  <text x="20" y="842" font-size="22" fill="#141d2b">Light foam core dents? Lower the vacuum and write the level that held on the WO.</text>
+</svg>

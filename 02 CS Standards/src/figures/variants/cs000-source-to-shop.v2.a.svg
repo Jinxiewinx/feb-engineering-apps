@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800" font-family="Inter" fill="#141d2b">
+  <!-- CS-000 §7.2 source to shop, v2 (brief A). Steps from §7.2 steps 5-7 and tools/README.md:
+       build_docx.py makes the .docx, gen_docs_manifest.py the in-app PDF (and bundles src/QR-*.md),
+       build_ai_corpus.mjs the corpus. Deploy gates are heavy black bars with the deploy's name
+       knocked out in white, so they survive grayscale. -->
+  <defs>
+    <marker id="ah" markerWidth="14" markerHeight="12" refX="13" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L14,6 L0,12 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="800" fill="#ffffff"/>
+
+  <!-- headers -->
+  <text x="50" y="44" font-family="Saira" font-size="26" font-weight="700" fill="#003262">Source</text>
+  <text x="156" y="44" font-family="ui-monospace, Menlo, monospace" font-size="22" fill="#515f74">src/</text>
+  <text x="290" y="44" font-family="Saira" font-size="26" font-weight="700" fill="#003262">Rebuild, from repo root</text>
+  <text x="630" y="44" font-family="Saira" font-size="26" font-weight="700" fill="#003262">Outputs</text>
+  <text x="874" y="44" font-family="Saira" font-size="26" font-weight="700" fill="#003262">Reaches</text>
+
+  <!-- sources -->
+  <rect data-box="md" x="50" y="70" width="220" height="60" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="160" y="108" font-family="ui-monospace, Menlo, monospace" font-size="22" font-weight="700" text-anchor="middle">CS-0xx.md</text>
+  <rect data-box="svg" x="50" y="146" width="220" height="60" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="160" y="184" font-family="ui-monospace, Menlo, monospace" font-size="22" font-weight="700" text-anchor="middle">figures/*.svg</text>
+  <rect data-box="qr" x="50" y="276" width="220" height="70" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <text x="160" y="306" font-family="ui-monospace, Menlo, monospace" font-size="22" font-weight="700" text-anchor="middle">QR-0xx.md</text>
+  <text x="160" y="334" font-size="22" text-anchor="middle" fill="#515f74">a quick reference</text>
+  <!-- the Checked against tag, hanging off the QR -->
+  <line x1="160" y1="346" x2="160" y2="362" stroke="#141d2b" stroke-width="2"/>
+  <path d="M 74 362 H 246 L 264 380 V 432 H 56 V 380 Z" fill="#ffffff" stroke="#141d2b" stroke-width="2.5"/>
+  <circle cx="160" cy="374" r="5" fill="none" stroke="#141d2b" stroke-width="2"/>
+  <text x="160" y="402" font-size="22" text-anchor="middle">Checked against</text>
+  <text x="160" y="426" font-family="ui-monospace, Menlo, monospace" font-size="22" font-weight="700" text-anchor="middle">CS-0xx Rev X</text>
+  <!-- loop: a new parent revision re-checks the tag -->
+  <path d="M 50 112 H 26 V 406 H 52" fill="none" stroke="#141d2b" stroke-width="3" marker-end="url(#ah)"/>
+  <text x="50" y="474" font-size="22" font-weight="700">New parent Rev:</text>
+  <text x="50" y="502" font-size="22">re-check the QR,</text>
+  <text x="50" y="530" font-size="22">move its tag in</text>
+  <text x="50" y="558" font-size="22">the same change</text>
+  <text x="50" y="586" font-size="22">(§7.2 step 5)</text>
+
+  <!-- sources into the rebuild -->
+  <line x1="272" y1="100" x2="282" y2="100" stroke="#141d2b" stroke-width="3"/>
+  <line x1="272" y1="176" x2="282" y2="176" stroke="#141d2b" stroke-width="3"/>
+  <line x1="272" y1="311" x2="282" y2="311" stroke="#141d2b" stroke-width="3"/>
+  <line x1="282" y1="98" x2="282" y2="313" stroke="#141d2b" stroke-width="3"/>
+
+  <!-- rebuild chain -->
+  <g font-size="22">
+    <rect data-box="s1" x="290" y="70" width="310" height="72" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    <text x="304" y="100" font-family="ui-monospace, Menlo, monospace" font-weight="700">render_figures.mjs</text>
+    <text x="304" y="130" fill="#515f74">only if an SVG changed</text>
+    <line x1="445" y1="142" x2="445" y2="154" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+    <rect data-box="s2" x="290" y="156" width="310" height="72" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    <text x="304" y="186" font-family="ui-monospace, Menlo, monospace" font-weight="700">build_docx.py --all</text>
+    <text x="304" y="216" fill="#515f74">the .docx</text>
+    <line x1="445" y1="228" x2="445" y2="240" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+    <rect data-box="s3" x="290" y="242" width="310" height="72" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    <text x="304" y="272" font-family="ui-monospace, Menlo, monospace" font-weight="700">gen_docs_manifest.py</text>
+    <text x="304" y="302" fill="#515f74">the in-app PDF</text>
+    <line x1="445" y1="314" x2="445" y2="326" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+    <rect data-box="s4" x="290" y="328" width="310" height="72" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    <text x="304" y="358" font-family="ui-monospace, Menlo, monospace" font-weight="700">build_ai_corpus.mjs</text>
+    <text x="304" y="388" fill="#515f74">Paul's corpus</text>
+    <line x1="445" y1="400" x2="445" y2="412" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+    <rect data-box="s5" x="290" y="414" width="310" height="72" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+    <text x="304" y="444" font-family="ui-monospace, Menlo, monospace" font-weight="700">check_traceability.py</text>
+    <text x="304" y="474" fill="#515f74">--strict; must pass</text>
+    <line x1="445" y1="486" x2="445" y2="500" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+    <rect data-box="commit" x="290" y="502" width="310" height="60" rx="30" fill="#dde3ec" stroke="#141d2b" stroke-width="2"/>
+    <text x="445" y="540" font-weight="700" text-anchor="middle">commit all, then push</text>
+  </g>
+
+  <!-- outputs -->
+  <line x1="600" y1="192" x2="626" y2="192" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <rect data-box="docx" x="630" y="152" width="360" height="74" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="646" y="182" font-size="22" font-weight="700">Word .docx</text>
+  <text x="646" y="212" font-family="ui-monospace, Menlo, monospace" font-size="22">02 CS Standards/</text>
+
+  <line x1="600" y1="278" x2="626" y2="278" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <rect data-box="pdf" x="630" y="236" width="212" height="108" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="640" y="268" font-size="22" font-weight="700">In-app PDF</text>
+  <text x="640" y="298" font-family="ui-monospace, Menlo, monospace" font-size="22">docs/standards/</text>
+  <text x="640" y="328" font-family="ui-monospace, Menlo, monospace" font-size="22">CS-0xx.pdf</text>
+
+  <line x1="600" y1="364" x2="626" y2="364" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <rect data-box="corpus" x="630" y="356" width="212" height="108" rx="6" fill="#ffffff" stroke="#141d2b" stroke-width="2"/>
+  <text x="640" y="388" font-size="22" font-weight="700">Paul's corpus</text>
+  <text x="640" y="418" font-family="ui-monospace, Menlo, monospace" font-size="22">functions/</text>
+  <text x="640" y="448" font-family="ui-monospace, Menlo, monospace" font-size="22">corpus.json</text>
+
+  <!-- deploy gates -->
+  <line x1="842" y1="290" x2="886" y2="290" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <rect x="848" y="236" width="32" height="108" fill="#141d2b"/>
+  <text transform="translate(871 290) rotate(-90)" font-size="22" font-weight="700" text-anchor="middle" fill="#ffffff">hosting</text>
+  <text x="890" y="298" font-size="22" font-weight="700">members</text>
+
+  <line x1="842" y1="410" x2="886" y2="410" stroke="#141d2b" stroke-width="2.5" marker-end="url(#ah)"/>
+  <rect x="848" y="356" width="32" height="108" fill="#141d2b"/>
+  <text transform="translate(871 410) rotate(-90)" font-size="22" font-weight="600" text-anchor="middle" fill="#ffffff">functions</text>
+  <text x="890" y="418" font-size="22" font-weight="700">Paul</text>
+
+  <!-- gate key and the question it answers -->
+  <rect x="290" y="604" width="32" height="30" fill="#141d2b"/>
+  <text x="346" y="628" font-size="22"><tspan font-weight="700">hosting</tspan> <tspan font-family="ui-monospace, Menlo, monospace">firebase deploy --only hosting</tspan></text>
+  <text x="346" y="656" font-size="22" fill="#515f74">from 06 Composites App/, after the push</text>
+  <rect x="290" y="680" width="32" height="30" fill="#141d2b"/>
+  <text x="346" y="704" font-size="22"><tspan font-weight="700">functions</tspan> <tspan font-family="ui-monospace, Menlo, monospace">firebase deploy --only functions</tspan></text>
+  <text x="346" y="732" font-size="22" fill="#515f74">a separate deploy; hosting does not carry it</text>
+  <text x="30" y="784" font-size="22" font-weight="700">Paul still says the old thing? The functions deploy has not run yet.</text>
+</svg>

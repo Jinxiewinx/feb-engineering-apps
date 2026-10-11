@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 712" font-family="Inter">
+  <!-- CS-000 status lifecycle, variant b (Round 3, brief B).
+       Each status box answers the member's question "do I follow this?".
+       Grayscale: Draft = dashed white box; Released = solid dark fill;
+       Under Revision = solid heavy white box; Retired = light grey band with a
+       thin border. The blank-Approver rule is carried by the box lines
+       "Approver row blank" / "Approver row signed". -->
+  <defs>
+    <marker id="ar" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L12,6 L0,12 z" fill="#141d2b"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="712" fill="#ffffff"/>
+
+  <!-- Entry -->
+  <text x="40" y="44" font-size="23" fill="#141d2b"><tspan font-weight="700">First draft:</tspan> number reserved in CS-INDEX, and it never leaves (§7.1 step 2)</text>
+  <line x1="120" y1="56" x2="120" y2="92" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+
+  <!-- Draft -->
+  <rect x="40" y="96" width="360" height="160" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="3" stroke-dasharray="14 9"/>
+  <text x="220" y="146" text-anchor="middle" font-family="Saira" font-size="38" font-weight="700" fill="#003262">Draft</text>
+  <text x="220" y="190" text-anchor="middle" font-size="25" font-weight="600" fill="#141d2b">Guidance, not yet the rule</text>
+  <text x="220" y="228" text-anchor="middle" font-size="23" fill="#515f74">Approver row blank</text>
+
+  <!-- Released -->
+  <rect x="600" y="96" width="360" height="160" rx="10" fill="#003262" stroke="#141d2b" stroke-width="5"/>
+  <text x="780" y="146" text-anchor="middle" font-family="Saira" font-size="38" font-weight="700" fill="#ffffff">Released</text>
+  <text x="780" y="190" text-anchor="middle" font-size="25" font-weight="600" fill="#ffffff">The rule</text>
+  <text x="780" y="228" text-anchor="middle" font-size="23" fill="#ffffff">Approver row signed</text>
+
+  <!-- Draft -> Released -->
+  <line x1="404" y1="176" x2="592" y2="176" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <text x="498" y="130" text-anchor="middle" font-size="23" font-weight="700" fill="#141d2b">Reviewed,</text>
+  <text x="498" y="160" text-anchor="middle" font-size="23" font-weight="700" fill="#141d2b">Lead signs</text>
+  <text x="498" y="206" text-anchor="middle" font-size="22" fill="#515f74">§7.1 steps 5–6</text>
+
+  <!-- Under Revision -->
+  <rect x="270" y="370" width="460" height="140" rx="10" fill="#ffffff" stroke="#141d2b" stroke-width="5"/>
+  <rect x="270" y="370" width="16" height="140" fill="#FDB515"/>
+  <text x="508" y="416" text-anchor="middle" font-family="Saira" font-size="36" font-weight="700" fill="#003262">Under Revision</text>
+  <text x="508" y="456" text-anchor="middle" font-size="25" font-weight="600" fill="#141d2b">Follow it; changes coming</text>
+  <text x="508" y="490" text-anchor="middle" font-size="22" fill="#515f74">shown in CS-INDEX only</text>
+
+  <!-- Draft <-> Under Revision -->
+  <line x1="300" y1="260" x2="300" y2="362" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <line x1="370" y1="366" x2="370" y2="264" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <text x="286" y="296" text-anchor="end" font-size="22" fill="#141d2b">↓ revise (§7.2)</text>
+  <text x="286" y="326" text-anchor="end" font-size="22" fill="#141d2b">↑ lands unsigned</text>
+
+  <!-- Released <-> Under Revision -->
+  <line x1="630" y1="260" x2="630" y2="362" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <line x1="700" y1="366" x2="700" y2="264" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <text x="716" y="296" font-size="22" fill="#141d2b">↓ revise (§7.2)</text>
+  <text x="716" y="326" font-size="22" fill="#141d2b">↑ signed again,</text>
+  <text x="738" y="352" font-size="22" fill="#141d2b">letter bumps</text>
+
+  <!-- The one bolded rule of CS-000 §4 -->
+  <text font-size="23" font-weight="700" fill="#141d2b"><tspan x="748" y="420">A blank</tspan><tspan x="748" y="448">Approver row</tspan><tspan x="748" y="476">is never</tspan><tspan x="748" y="504">Released.</tspan></text>
+
+  <!-- To Retired -->
+  <line x1="70" y1="260" x2="70" y2="562" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <line x1="948" y1="260" x2="948" y2="562" stroke="#141d2b" stroke-width="3" marker-end="url(#ar)"/>
+  <text x="84" y="546" font-size="22" fill="#141d2b">retire (§7.3)</text>
+  <text x="934" y="546" text-anchor="end" font-size="22" fill="#141d2b">retire (§7.3)</text>
+
+  <!-- Retired -->
+  <rect x="40" y="568" width="920" height="124" rx="10" fill="#dde3ec" stroke="#515f74" stroke-width="2"/>
+  <text x="70" y="640" font-family="Saira" font-size="36" font-weight="700" fill="#141d2b">Retired</text>
+  <text x="230" y="604" font-size="25" font-weight="600" fill="#141d2b">Do not follow. Never deleted; kept for history.</text>
+  <text x="230" y="638" font-size="23" fill="#141d2b">The header names the replacement,</text>
+  <text x="230" y="670" font-size="23" fill="#141d2b">or says practice discontinued (§7.3 step 1).</text>
+</svg>
