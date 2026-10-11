@@ -248,6 +248,8 @@ number live". None of them are derivable from the code that reads them.
 | `config/resins` | Per-resin cure-hold overrides. Never below the datasheet floor — see below |
 | `config/tracker` | The sheet feed's secret token. Never in source |
 | `config/labels` | The team's default label media. Only seeds a device nobody has set — the operative setting is per-device in `localStorage` |
+| `config/ai` | The AI brakes and settings: `enabled` (a lead's off switch for every ✨ job, Paul and Steve), `spend_<yyyy-mm>` (the month's spend, mirrored by the functions for the ⋯ menu) and `paulPhoto` / `paulPhotoPath` (Paul's picture, if a lead set one) |
+| `config/budget` | Lead-set spending targets: `categories` (name and goal each, replacing the fixed purpose list once defined) and `total` (base and contingency). Paul reads it as the `BUDGET-GOALS` reference record |
 
 Three field names carry more weight than they look:
 
@@ -726,8 +728,8 @@ the one place that forgot it produced a duplicate nobody could see.
 
 ## The receipt parser
 
-`✨ Fill from receipt` is the app's one Cloud Function (`functions/index.js`,
-`parseReceipt`): the client sends the storage path, the function checks the
+`✨ Fill from receipt` was the app's first Cloud Function and set the pattern
+the others follow (`functions/index.js`, `parseReceipt`): the client sends the storage path, the function checks the
 caller against the roster, downloads the photo or PDF, asks Claude Haiku 5.5 at
 low effort for the line items, and returns them. The Anthropic API key lives in
 a Functions secret, server-side only — a key readable by the roster would be an
@@ -778,12 +780,36 @@ Simon's Max plan carries $100 a month; the other $20 is headroom.
 
 **Ask Paul** (`askPaul`, `functions/context.js`, `app/paul.js`) is the one that
 comes closest to the "general endpoint" the rule forbids, and stays on the right
-side of it because the *server* decides what it can see. Four read-only tools
-(search and open records; search and read doc sections) over the team
-collections a member can already read, never roster, config, aiUsage,
+side of it because the *server* decides what it can see. Six read-only tools
+(`search_records`, `app_overview`, `get_record`, `search_docs`,
+`read_doc_section`, `search_my_chats`) plus a capped `web_search`, over the
+team collections a member can already read, never roster, config, aiUsage,
 notifications, pub, tracker or meta, with binned records skipped and emails cut
 to names. Documents are `functions/corpus.json`, built from `app/docs/` by
-`tools/build_ai_corpus.mjs`, so it can only quote what the app ships.
+`tools/build_ai_corpus.mjs` (standards, the QR-xxx quick references derived
+from them, and the datasheets), so it can only quote what the app ships. The
+prompt says a standard wins over its quick reference when the two differ.
+
+**Steve** is the same callable with `agent: "steve"`: the team's joke helper
+"from Fibreglast", always a little wrong and always selling. He gets Paul's six
+tools without web search, plus `search_fibreglast` (the store snapshot in
+`functions/steve_catalog.json`) and `search_steve_notes` (his talking points,
+`functions/steve_kb.json`, built from `steve/*.md` by `tools/build_steve_kb.mjs`).
+The loop only runs a tool the asking agent was given, so Paul never reaches the
+store or the notes. Steve's notes are never a source: their refs are kept out
+of the citation set. His catalog search never returns PPE or solvents and only
+returns gel coat colours when asked, by the `cat` field the same builder
+writes. A sentence of his with a number next to a unit is replaced by
+`steveGuard` unless the number is inside the title of a product he was handed.
+His chats are saved like Paul's but marked `agent: "steve"`, and they never
+feed the memory notes.
+
+**paulRemember** (`onDocumentWritten` on `paulUsers/{email}/chats/{chatId}`)
+runs after each new exchange: one small model call decides whether anything is
+worth keeping about the person and edits a short list of notes on
+`paulUsers/{email}`. The person sees the list in Paul's Chats view and can
+delete any note; askPaul shows them to the model as background, never as
+instructions. It respects the off switch and the monthly ceiling.
 
 - **Why tools, not the whole lot in the prompt.** Standards plus datasheets plus
   live data is ~150k tokens and growing; past 100k Haiku 5.5's input price goes
@@ -791,7 +817,7 @@ to names. Documents are `functions/corpus.json`, built from `app/docs/` by
   worst month would blow the budget. With tools a question is 2–3 calls of
   5–15k tokens, about a cent at medium effort.
 - **Why keyword search, not embeddings.** People ask about ids and lot codes,
-  which keyword search is good at; a few thousand records and ~450 sections
+  which keyword search is good at; a few thousand records and ~800 sections
   score in milliseconds; there is no index to keep in sync.
 - **Citations are checked, not trusted.** Every ref a tool returned is
   collected; a `[ref]` in the answer that no tool returned is deleted before the
@@ -804,7 +830,9 @@ to names. Documents are `functions/corpus.json`, built from `app/docs/` by
 - **A panel, not a modal**, so a source can open without losing the chat: a
   third column of `#app` on a wide screen (340px under 1200px), a full-screen
   sheet on a phone that steps aside on a source tap, with a floating button
-  back. The thread is in `sessionStorage`, per tab.
+  back. Chats live in Firestore (`paulUsers/{email}/chats/{chatId}`), so they
+  follow the person across devices; `sessionStorage` only caches the open
+  thread for a fast reload.
 - **On a phone the sheet follows the visual viewport** (`paulViewport`,
   `--paul-top` / `--paul-h`), because iOS shrinks and pans only the visual
   viewport for the keyboard and pushed Paul's header off the top. The text box
@@ -844,8 +872,10 @@ to names. Documents are `functions/corpus.json`, built from `app/docs/` by
 - **The open record rides along** as `about`, id-shaped only, offered as
   context ("I'm looking at X"), never as an instruction.
 - Medium effort (the photo jobs are low): this one reasons over what it found.
-  At most 4 tool rounds, then a forced answer. Re-run `tools/eval_askpaul.js`
-  in the live app whenever the prompt or tools change.
+  At most 6 tool rounds for Paul and 3 for Steve (who runs at low effort with
+  thinking off), inside a 75-second budget, then a forced answer. Re-run
+  `tools/eval_askpaul.js` and `tools/eval_steve.js` in the live app whenever
+  a prompt or a tool changes.
 
 Functions deploy separately (`firebase deploy --only functions`, after
 `firebase functions:secrets:set ANTHROPIC_API_KEY`) and never ride along on a
