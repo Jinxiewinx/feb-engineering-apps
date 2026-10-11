@@ -209,7 +209,30 @@ def build(src: Path, out: Path):
 
     out.parent.mkdir(parents=True, exist_ok=True)
     doc.save(out)
+    _pin_docx(out)
     print(f"built {out.relative_to(ROOT) if out.is_relative_to(ROOT) else out}")
+
+
+def _pin_docx(path):
+    """Make an unchanged source build a byte-identical docx. python-docx stamps
+    the core properties and every zip entry with the current time, so each
+    rebuild used to rewrite all sixteen files and bury the one real change."""
+    import datetime, io, re as _re, zipfile
+    fixed = (2026, 1, 1, 0, 0, 0)
+    src = zipfile.ZipFile(path)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as dst:
+        for info in src.infolist():
+            data = src.read(info.filename)
+            if info.filename == "docProps/core.xml":
+                data = _re.sub(rb"(<dcterms:(created|modified)[^>]*>)[^<]*(</dcterms:)",
+                               rb"\g<1>2026-01-01T00:00:00Z\g<3>", data)
+            zi = zipfile.ZipInfo(info.filename, date_time=fixed)
+            zi.compress_type = zipfile.ZIP_DEFLATED
+            zi.external_attr = info.external_attr
+            dst.writestr(zi, data)
+    src.close()
+    path.write_bytes(buf.getvalue())
 
 
 KNOWN = [

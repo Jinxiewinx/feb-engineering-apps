@@ -16,8 +16,12 @@ because other parts of the app deep-link them by path.
   2026-08-18  datasheets and CS standards unlisted, at Simon's request.
   2026-08-26  datasheets listed again, at Simon's request. Shop Printables
               unlisted the same day. Standards stay unlisted.
+  2026-10-10  quick references (src/QR-*.md) join the standards: copied and
+              rendered to PDF so Paul's source chips open them, and unlisted
+              like the standards. A PDF that fails to render now fails the
+              run instead of silently shipping the raw markdown.
 """
-import json, re, shutil, subprocess
+import json, os, re, shutil, subprocess, sys
 from pathlib import Path
 
 RES = Path(__file__).resolve().parent.parent          # SN6 Resources/
@@ -43,7 +47,7 @@ manifest = []
 # "Guides" is only ever Shop Printables (section 4 below). If a second guide is
 # ever added it will be unlisted too, silently — split the category before
 # adding one, rather than wondering later why it never appeared.
-UNLISTED = {"Standards", "Guides"}
+UNLISTED = {"Standards", "Quick reference", "Guides"}
 
 
 def add(entry):
@@ -65,13 +69,34 @@ def prettify(fn):
     return re.sub(r"\s+", " ", s).strip()
 
 
+# Reproducible PDFs: without these every rebuild stamps a new creation date
+# into every PDF, so an unchanged standard shows up as a changed file and the
+# corpus freshness check cannot tell real edits from churn.
+PDF_ENV = dict(os.environ, SOURCE_DATE_EPOCH="1767225600", FORCE_SOURCE_DATE="1")
+pdf_failures = []
+
+
+def _pin_pdf_id(pdf_path):
+    """xdvipdfmx derives the trailer /ID from pandoc's random temp directory,
+    so even with the dates pinned two builds differ in 32 hex digits. Replace
+    it with a hash of the content (same length, so the xref offsets hold)."""
+    import hashlib
+    b = pdf_path.read_bytes()
+    pat = re.compile(rb"/ID\[<([0-9a-fA-F]{32})><([0-9a-fA-F]{32})>\]")
+    zeroed = pat.sub(b"/ID[<" + b"0" * 32 + b"><" + b"0" * 32 + b">]", b)
+    h = hashlib.md5(zeroed).hexdigest().encode()
+    pdf_path.write_bytes(pat.sub(b"/ID[<" + h + b"><" + h + b">]", b))
+
+
 def md_to_pdf(md_path, pdf_path):
-    """Render a CS/pain-points markdown to PDF via pandoc + xelatex (has the
-    Unicode glyphs §/≤/° our docs use). Returns True on success. Best-effort:
-    if pandoc/xelatex isn't available or errors, the caller falls back to the
-    in-app markdown renderer."""
+    """Render a CS/QR/pain-points markdown to PDF via pandoc + xelatex (has the
+    Unicode glyphs §/≤/° our docs use). Returns True on success. A failure is
+    recorded in pdf_failures and fails the run at the end: falling back to the
+    markdown used to leave the previous PDF on disk, which the corpus then
+    kept pointing at, so a broken build looked like a stale-but-fine one."""
     # xelatex's default (Latin Modern) has the §/≤/°/→ glyphs our docs use; don't
     # override the font (Helvetica lacks the arrows).
+    last = ["empty PDF"]
     for engine in ("xelatex", "pdflatex"):
         try:
             subprocess.run(
@@ -81,11 +106,15 @@ def md_to_pdf(md_path, pdf_path):
                  # pandoc resolves them against the CWD unless told otherwise
                  "--resource-path", str(md_path.parent),
                  "-V", "colorlinks=true"],
-                check=True, capture_output=True, timeout=120)
+                check=True, capture_output=True, timeout=120, env=PDF_ENV)
             if pdf_path.exists() and pdf_path.stat().st_size > 0:
+                _pin_pdf_id(pdf_path)
                 return True
-        except Exception:
+        except Exception as e:
+            err = getattr(e, "stderr", b"") or str(e).encode()
+            last = err.decode(errors="ignore").strip().splitlines()[-1:] or [""]
             continue
+    pdf_failures.append(f"{md_path.name}: {last[0]}")
     return False
 
 
@@ -111,16 +140,21 @@ if fig_src.exists():
     fig_dst.mkdir(parents=True, exist_ok=True)
     for png in sorted(fig_src.glob("*.png")):
         shutil.copy2(png, fig_dst / png.name)
-for md in sorted(cs_src.glob("CS-*.md")):
+for md in sorted(cs_src.glob("CS-*.md")) + sorted(cs_src.glob("QR-*.md")):
     shutil.copy2(md, DOCS / "standards" / md.name)
-    entry = {"category": "Standards", "title": title_from_md(md), "kind": "md",
+    category = "Quick reference" if md.name.startswith("QR-") else "Standards"
+    entry = {"category": category, "title": title_from_md(md), "kind": "md",
              "src": f"docs/standards/{md.name}", "size": md.stat().st_size}
     pdf = DOCS / "standards" / (md.stem + ".pdf")
     if md_to_pdf(md, pdf):
         n_pdf += 1
         entry.update(kind="pdf", src=f"docs/standards/{pdf.name}", size=pdf.stat().st_size)
     csid = md.stem  # e.g. CS-004
-    docx = next((d for d in cs_docx_dir.glob(f"{csid}*.docx")), None)
+    # The docx build names its output "<H1>.docx", so pick by that exact name
+    # first: a title change leaves the old docx behind, and a bare glob could
+    # grab it.
+    exact = cs_docx_dir / (re.sub(r"[/:]", "-", title_from_md(md)) + ".docx")
+    docx = exact if exact.exists() else next((d for d in sorted(cs_docx_dir.glob(f"{csid} *.docx"))), None)
     if docx:
         shutil.copy2(docx, DOCS / "standards" / docx.name)
         entry["docx"] = f"docs/standards/{docx.name}"
@@ -153,7 +187,7 @@ if pr.exists():
          "size": pr.stat().st_size})
 
 # stable order: category then title
-order = {"Datasheets": 0, "Standards": 1, "Guides": 2}
+order = {"Datasheets": 0, "Standards": 1, "Quick reference": 2, "Guides": 3}
 manifest.sort(key=lambda m: (order.get(m["category"], 9), m["title"]))
 (DOCS / "manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8", newline="\n")
 
@@ -164,3 +198,9 @@ total = sum(m["size"] for m in manifest)
 print(f"docs manifest: {len(manifest)} docs -> app/docs/  ({total/1e6:.1f} MB); {n_pdf} standards rendered to PDF")
 for c, n in by_cat.items():
     print(f"  {c}: {n}")
+
+if pdf_failures:
+    print("PDF render FAILED for:", file=sys.stderr)
+    for f in pdf_failures:
+        print("  " + f, file=sys.stderr)
+    sys.exit(1)
