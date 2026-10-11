@@ -391,6 +391,7 @@ ok("the thinking streams to the client as it comes", chunks.filter(c => c.type =
 const steps = chunks.filter(c => c.type === "step").map(c => c.text);
 ok("each tool call is announced in plain words", JSON.stringify(steps) === JSON.stringify(['Searching the app for "diffuser"', 'Searching the standards and datasheets for "peel ply"', "Opening WO-SN6-003"]), JSON.stringify(steps));
 ok("with the six read-only tools and a capped web search", JSON.stringify(calls[0].tools.map(t => t.name)) === JSON.stringify(["search_records", "app_overview", "get_record", "search_docs", "read_doc_section", "search_my_chats", "web_search"]) && calls[0].tools.at(-1).type === "web_search_20250305" && calls[0].tools.at(-1).max_uses === 3, JSON.stringify(calls[0].tools.map(t => t.name)));
+ok("Paul never gets Steve's notes or the store", !calls[0].tools.some(t => t.name === "search_steve_notes" || t.name === "search_fibreglast"));
 ok("the assistant turn goes back unchanged, thinking block included", calls[1].messages.at(-2).role === "assistant" && calls[1].messages.at(-2).content[0].type === "thinking");
 const results = calls[1].messages.at(-1).content;
 ok("both tool calls answered in one user message", results.length === 2 && results.every(x => x.type === "tool_result"));
@@ -686,7 +687,8 @@ const sc = state.sent.slice(ns);
 ok("Steve gets his own prompt with the catchphrase", /Hi, I'm Steve, from Fibreglast!/.test(SYS(sc[0])) && !/You are "Paul"/.test(SYS(sc[0])), SYS(sc[0]).slice(0, 120));
 ok("and the no-number rule, and the joke isn't on the store", /NEVER give a number for a mix ratio/.test(SYS(sc[0])) && /Never disparage Fibreglast/.test(SYS(sc[0])));
 ok("low effort, thinking off", sc.every((b) => b.output_config.effort === "low" && b.thinking.type === "disabled"));
-ok("records, docs, his chats and the store; no web search", JSON.stringify(sc[0].tools.map((t) => t.name)) === JSON.stringify(["search_records", "app_overview", "get_record", "search_docs", "read_doc_section", "search_my_chats", "search_fibreglast"]), JSON.stringify(sc[0].tools.map((t) => t.name)));
+ok("records, docs, his chats, the store and his notes; no web search", JSON.stringify(sc[0].tools.map((t) => t.name)) === JSON.stringify(["search_records", "app_overview", "get_record", "search_docs", "read_doc_section", "search_my_chats", "search_fibreglast", "search_steve_notes"]), JSON.stringify(sc[0].tools.map((t) => t.name)));
+ok("his no-go topics are named and sent to Paul (R-STV-01)", ["PPE and safety data sheets", "grounding and electrical bonding", "co-storage", "CNC operation", "exotherm and waste", "different resin systems", "skipping or thinning mold release", "failed its drop test", "ask Paul"].every((x) => SYS(sc[0]).includes(x)), SYS(sc[0]).slice(0, 200));
 ok("the store search is announced", chunks.some((c) => c.type === "step" && c.text === 'Browsing the Fibreglast store for "sealant tape"'));
 ok("a real product becomes a source with its store link", r.ok && r.out.sources[0].type === "product" && r.out.sources[0].ref === fgRef && /^https:\/\/www\.fibreglast\.com\/products\/[a-z0-9-]+$/.test(r.out.sources[0].url) && r.out.sources[0].checked, JSON.stringify(r.out && r.out.sources));
 ok("a product he made up is dropped", !/made-up-thing/.test(JSON.stringify(r.out)) && r.out.sources.length === 1);
@@ -705,6 +707,33 @@ await paulRemember({ params: { email: "member@berkeley.edu", chatId: "steveChat0
   data: { before: { exists: true, data: () => ({ agent: "steve", turns: [] }) }, after: { exists: true, data: () => ({ agent: "steve", turns: [{ q: "remember I love tape", answer: "Buy more." }] }) } } });
 ok("Steve's chats don't feed Paul's notes", state.sent.length === n5 && !state.docs.has("paulUsers/member@berkeley.edu"));
 
+// His notes: searchable by him, never a source. A product title with a
+// number in it is his to say; a number of his own is not (R-STV-04, -06).
+let noteHits = null;
+state.replies = (b) => {
+  const last = b.messages.at(-1);
+  if (!Array.isArray(last.content)) return toolUse([["search_steve_notes", { query: "bag leak" }], ["search_fibreglast", { query: "shrink tape" }]]);
+  noteHits = JSON.parse(last.content[0].content);
+  return answer("My notes say tape fixes everything [STEVE-1]. Wrap it in 20% Shrink Tape [FG:shrink-tape], best tape going. Then lay 3 plies of it over the leak.");
+};
+r = await ask({ question: "how do I fix a bag leak?", agent: "steve" });
+ok("Steve's notes search returns his sections", Array.isArray(noteHits) && noteHits.length && noteHits.every((h) => /^STEVE-\d+$/.test(h.ref) && h.text), JSON.stringify(noteHits).slice(0, 200));
+ok("the notes search is announced", chunks.some((c) => c.type === "step" && c.text === 'Checking Steve\'s notes for "bag leak"'), JSON.stringify(chunks.filter((c) => c.type === "step")));
+ok("a [STEVE-n] citation is dropped: his notes are never a source", r.ok && !/STEVE-/.test(JSON.stringify(r.out)) && r.out.sources.every((x) => x.type === "product"), JSON.stringify(r.out).slice(0, 300));
+ok("the guard keeps a cited product title with a number in it", /20% Shrink Tape \[\[0\]\], best tape going\./.test(r.out.answer), r.out.answer);
+ok("and still strips a ply count of his own", !/3 plies/.test(r.out.answer) && /Steve tried to give you a number here/.test(r.out.answer), r.out.answer);
+ok("the product source carries its category", r.out.sources[0] && r.out.sources[0].cat === "bagging-films-tapes", JSON.stringify(r.out.sources));
+let paulGot = null;
+state.replies = (b) => {
+  const last = b.messages.at(-1);
+  if (!Array.isArray(last.content)) return toolUse([["search_steve_notes", { query: "sealant tape" }]]);
+  paulGot = last.content[0].content;
+  return answer("Nothing there.");
+};
+r = await ask({ question: "what does Steve think about tape?" });
+ok("Paul calling Steve's notes by name gets nothing", r.ok && /Unknown tool/.test(paulGot) && !/STEVE-/.test(paulGot), String(paulGot));
+state.replies = null;
+
 // The catalog snapshot: one Shopify product in, one row out, no network.
 const { toRow } = await import("./build_steve_catalog.mjs");
 const row = toRow({ handle: "yellow-sealant-tape", title: " Yellow Sealant Tape ", product_type: "Supplies & Tools", tags: ["promo-true", "vacuum-bagging", "non-promo"],
@@ -712,6 +741,36 @@ const row = toRow({ handle: "yellow-sealant-tape", title: " Yellow Sealant Tape 
 ok("a catalog row keeps what Steve needs and drops Shopify's promo tags", JSON.stringify(row) === JSON.stringify({ handle: "yellow-sealant-tape", title: "Yellow Sealant Tape", type: "Supplies & Tools", tags: ["vacuum-bagging"], price: 9.75, available: true, blurb: "Tacky tape & more" }), JSON.stringify(row));
 const shipped = req(path.join(path.dirname(FN), "steve_catalog.json"));
 ok("the shipped catalog is real and dated", shipped.products.length > 400 && /^\d{4}-\d{2}-\d{2}$/.test(shipped.fetchedAt) && shipped.store === "https://www.fibreglast.com");
+
+/* ---------- Steve's material stays Steve's ---------- */
+{
+  const fnDir = path.dirname(FN);
+  const corpusJson = req(path.join(fnDir, "corpus.json"));
+  ok("no corpus section comes from steve/ (Paul never finds Steve's notes)", corpusJson.sections.every((x) => !/steve/i.test(String(x.src || "")) && !/^STEVE/i.test(String(x.doc || ""))),
+    JSON.stringify(corpusJson.sections.filter((x) => /steve/i.test(String(x.src || x.doc))).map((x) => x.ref)));
+  const kb = req(path.join(fnDir, "steve_kb.json"));
+  ok("Steve's notes are built, sectioned and numbered STEVE-n", kb.sections.length >= 20 && kb.sections.every((x, i) => x.ref === `STEVE-${i + 1}` && x.title && x.section && x.text));
+  ok("his notes carry no numbers outside product handles", kb.sections.every((x) => !/\d/.test(x.text.replace(/FG:[a-z0-9-]+/g, ""))),
+    JSON.stringify(kb.sections.filter((x) => /\d/.test(x.text.replace(/FG:[a-z0-9-]+/g, ""))).map((x) => x.ref)));
+  const cat = req(path.join(fnDir, "steve_catalog.json"));
+  ok("every catalog product has a category", cat.products.every((x) => typeof x.cat === "string" && x.cat));
+  ok("catalog titles have their HTML entities decoded", cat.products.every((x) => !/&#?\w+;/.test(x.title)) && cat.products.some((x) => x.title === "20% Shrink Tape"));
+  const sctx = req(path.join(fnDir, "context.js"));
+  const banned = (q) => sctx.searchCatalog(q).filter((h) => h.cat === "safety-ppe" || h.cat === "solvents-catalysts");
+  for (const q of ["gloves", "acetone", "respirator", "nitrile gloves", "MEKP hardener"]) ok(`"${q}" never puts PPE or a solvent in front of Steve`, !banned(q).length, JSON.stringify(banned(q).map((h) => h.title)));
+  ok('"copper mesh" brings no gel coat colour', !sctx.searchCatalog("copper mesh").some((h) => h.cat === "gelcoat-colour"), JSON.stringify(sctx.searchCatalog("copper mesh").map((h) => h.title)));
+  ok("a gel coat colour question still finds the colours", sctx.searchCatalog("RAL red gel coat colour").some((h) => h.cat === "gelcoat-colour"));
+  // On raw score the thermometer beats the scale and the Vac Checker; demoted, it comes after both.
+  const tc = sctx.searchCatalog("digital thermometer scale", 20);
+  const firstLow = tc.findIndex((h) => h.cat === "instruments-heat");
+  ok("instruments rank below the shop families", firstLow > 0 && tc.slice(firstLow).every((h) => h.cat === "instruments-heat" || /wind/.test(h.ref)), JSON.stringify(tc.map((h) => h.cat)));
+  // R-OTH-35: three characters or fewer match whole words only.
+  const recs = [{ id: "A", title: "pilot run", kind: "R&D study", key: "", body: "", hay: "pilot run slot bottle" },
+    { id: "B", title: "IN2 lot", kind: "material lot", key: "", body: "", hay: "in2 lot rsn-sn6-001 lots" }];
+  ok('"lot" does not match "pilot", "slot" or "bottle"', JSON.stringify(sctx.searchRecords(recs, "lot").map((h) => h.ref)) === JSON.stringify(["B"]), JSON.stringify(sctx.searchRecords(recs, "lot")));
+  ok("a short term still matches inside a hyphenated code and its plural", sctx.score("in2-at30 slow", "", ["in2"]) > 0 && sctx.score("two bags", "", ["bag"]) > 0 && sctx.score("bagging", "", ["bag"]) === 0);
+  ok("a longer term is still a substring (demould finds demoulding)", sctx.score("before demoulding", "", ["demould"]) > 0);
+}
 
 /* ---------- document search: safety sheets know their place ---------- */
 {

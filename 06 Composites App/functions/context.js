@@ -1,6 +1,8 @@
 "use strict";
 /* What "Ask Paul" can see, and how it finds things. Read-only, and the only
- * door: askPaul's tools call these four functions and nothing else.
+ * door: askPaul's tools call the functions here and nothing else. Steve
+ * (the joke helper) reads the same records and documents, plus two files
+ * only he gets: the Fibreglast catalog and his own notes (steve_kb.json).
  *
  * RECORDS. The team collections a roster member can already read in the app
  * (fb.js COLLECTIONS), loaded through the Admin SDK once per question and
@@ -267,14 +269,40 @@ function overview(raw, woIsRnd, season, code) {
 const STOP = new Set("a an the of and or to in on for is are was were what which who where when how why do does did be it this that with at by from as any all my our we i me you there their them".split(" "));
 const terms = (q) => [...new Set(String(q || "").toLowerCase().split(/[^a-z0-9#.-]+/).map((t) => t.replace(/^[.-]+|[.-]+$/g, "")).filter((t) => t && !STOP.has(t)))];
 
+/* A term of three characters or fewer matches whole words only (R-OTH-35):
+ * as a substring "lot" hit "pilot", "slot" and "bottle", and "ut" hit every
+ * "but". A plain plural still counts ("lot" finds "lots", "bag" finds
+ * "bags"). Longer terms stay substrings, so a stem like "demould" still finds
+ * "demoulding". */
+const WORD_RE = new Map();
+function wordRe(t) {
+  let re = WORD_RE.get(t);
+  if (!re) {
+    if (WORD_RE.size > 500) WORD_RE.clear();
+    re = new RegExp(`(?<![a-z0-9])${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}s?(?![a-z0-9])`, "g");
+    WORD_RE.set(t, re);
+  }
+  re.lastIndex = 0;
+  return re;
+}
+function hits(hay, t, max = 20) {
+  let n = 0;
+  if (t.length > 3) {
+    let i = -1;
+    while (n < max && (i = hay.indexOf(t, i + 1)) !== -1) n++;
+    return n;
+  }
+  const re = wordRe(t);
+  while (n < max && re.exec(hay)) n++;
+  return n;
+}
 function score(hay, head, ts) {
   let s = 0;
   for (const t of ts) {
-    if (!hay.includes(t)) continue;
-    let n = 0, i = -1;
-    while ((i = hay.indexOf(t, i + 1)) !== -1 && n < 20) n++;
+    const n = hits(hay, t);
+    if (!n) continue;
     s += 1 + Math.log(n);
-    if (head.includes(t)) s += 3;           // a hit in the id or title is worth more
+    if (hits(head, t, 1)) s += 3;           // a hit in the id or title is worth more
   }
   return s;
 }
@@ -297,9 +325,20 @@ function getRecord(records, id) {
   return { ref: r.id, kind: r.kind, title: r.title, text: r.body.slice(0, 6000), ...(r.src ? { src: r.src } : {}) };
 }
 
-/* Steve's shelf: the Fibreglast catalog snapshot (tools/build_steve_catalog.mjs).
- * Same scoring as the records; the URL is built from the handle, never taken
- * from the model. */
+/* Steve's shelf: the Fibreglast catalog snapshot (tools/build_steve_catalog.mjs),
+ * each product carrying a `cat` from steve/catalog-categories.json
+ * (tools/build_steve_kb.mjs). Same scoring as the records; the URL is built
+ * from the handle, never taken from the model.
+ *
+ * The categories decide what Steve may be shown at all (R-STV-03, R-STV-08):
+ * - safety-ppe (gloves, respirators, goggles) and solvents-catalysts
+ *   (acetone, MEKP, thinners) never reach him. PPE is Paul's, always, and a
+ *   solvent or catalyst upsell is the one kind of wrong that can hurt;
+ * - gelcoat-colour (190 RAL rows, a third of the catalog, none of them FEB's
+ *   work) only when the query asks for gel coat, colour or RAL, or "copper
+ *   mesh" comes back as RAL 8004 Copper Brown;
+ * - instruments-heat and wind-turbine-only rows stay findable but rank below
+ *   every shop-family match. */
 let CATALOG = null;
 function catalog() {
   if (!CATALOG) {
@@ -309,17 +348,45 @@ function catalog() {
   }
   return CATALOG;
 }
+const NEVER_FOR_STEVE = new Set(["safety-ppe", "solvents-catalysts"]);
+const ASKS_COLOUR = /gel\s*-?coat|colou?r|\bral\b/i;
+const demoted = (p) => p.cat === "instruments-heat"
+  || (p.tags.includes("wind-turbine-blade-repair") && p.tags.length === 1);
 function searchCatalog(query, limit = 6) {
   const ts = terms(query);
   const c = catalog();
   if (!ts.length) return [];
+  const colour = ASKS_COLOUR.test(String(query || ""));
   return c.items
-    .map((p) => ({ p, s: score(p.hay, p.title.toLowerCase(), ts) + (p.available ? 0.5 : 0) }))
+    .filter((p) => !NEVER_FOR_STEVE.has(p.cat) && (colour || p.cat !== "gelcoat-colour"))
+    .map((p) => ({ p, low: demoted(p) ? 1 : 0, s: score(p.hay, p.title.toLowerCase(), ts) + (p.available ? 0.5 : 0) }))
     .filter((x) => x.s > 0.5)
-    .sort((a, b) => b.s - a.s)
+    .sort((a, b) => a.low - b.low || b.s - a.s)
     .slice(0, limit)
-    .map(({ p }) => ({ ref: "FG:" + p.handle, title: p.title, type: p.type || undefined, price: p.price, in_stock: p.available,
+    .map(({ p }) => ({ ref: "FG:" + p.handle, title: p.title, type: p.type || undefined, cat: p.cat, price: p.price, in_stock: p.available,
       url: `${c.store}/products/${p.handle}`, blurb: p.blurb }));
+}
+
+/* Steve's own notes (steve_kb.json, built from steve/*.md by
+ * tools/build_steve_kb.mjs): his talking points per product family and what
+ * he may push per shop topic. Background for his voice, never a source: the
+ * caller does not add these refs to the citation set, so a [STEVE-n] he
+ * writes is dropped. Same scoring as searchDocs. Paul has no tool that
+ * reaches this. */
+let STEVE_KB = null;
+function steveNotes() {
+  if (!STEVE_KB) STEVE_KB = require("./steve_kb.json").sections.map((s) => ({ ...s, hay: (s.title + " " + s.section + " " + s.text).toLowerCase() }));
+  return STEVE_KB;
+}
+function searchSteveNotes(query, limit = 3) {
+  const ts = terms(query);
+  if (!ts.length) return [];
+  return steveNotes()
+    .map((s) => ({ s, sc: score(s.hay, (s.title + " " + s.section).toLowerCase(), ts) }))
+    .filter((x) => x.sc > 0)
+    .sort((a, b) => b.sc - a.sc)
+    .slice(0, limit)
+    .map(({ s }) => ({ ref: s.ref, section: s.section, text: s.text }));
 }
 
 let CORPUS = null, CORPUS_FILE = null;
@@ -363,7 +430,10 @@ function readDocSection(ref) {
 }
 function docSource(ref) {
   const s = corpus().find((x) => x.ref === ref);
-  return s ? { type: "doc", ref: s.ref, doc: s.doc, title: s.title, section: s.section, src: s.src } : null;
+  // kind and parent ride along so a client (and eval_askpaul.js) can tell a
+  // quick reference from its standard and see which standard it summarises.
+  return s ? { type: "doc", ref: s.ref, doc: s.doc, title: s.title, section: s.section, src: s.src,
+    ...(s.kind ? { kind: s.kind } : {}), ...(s.parent ? { parent: s.parent } : {}) } : null;
 }
 
 const KINDS = [...COLLS, "people", "reference"];
@@ -391,4 +461,4 @@ function personalContext(ctxData, email) {
   return out.join("\n");
 }
 
-module.exports = { COLLS, KINDS, KIND, overview, loadRecords, searchRecords, getRecord, searchDocs, readDocSection, docSource, flatten, plain, terms, personalContext, searchCatalog, catalog };
+module.exports = { COLLS, KINDS, KIND, overview, loadRecords, searchRecords, getRecord, searchDocs, readDocSection, docSource, flatten, plain, terms, personalContext, searchCatalog, catalog, searchSteveNotes, score };
