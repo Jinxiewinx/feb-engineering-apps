@@ -111,7 +111,7 @@ Twelve tabs, grouped in the sidebar by who is asking:
   PDF invoice reads itself into line items (Claude Haiku 5.5, through the app's
   one Cloud Function), and a Charged to field covers spend that belongs to
   another team's budget.
-- **Documents:** the 25 datasheets, member uploads, and pinned Google Docs in
+- **Documents:** the datasheets (TDS, SDS and glove charts from `03 Datasheets/`), member uploads, and pinned Google Docs in
   one filterable shelf.
 - **Ask Paul:** a question box in the topbar that answers from the app's own
   records, the CS standards and the datasheets, with a source chip for every

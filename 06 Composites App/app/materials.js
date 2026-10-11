@@ -43,14 +43,17 @@ const MATERIALS = [
     src: "EC TDS IN2 — the IN2 sheet states the AT30 ratio and the shared shelf life" },
   { matKey: "WEST-209", label: "West System 209 extra slow hardener", aliases: ["209 extra slow", "209 hardener"],
     doc: "docs/datasheets/105-209-Epoxy-Resin-1.pdf",
+    sds: "docs/datasheets/WEST-SDS-209-Extra-Slow-Hardener.pdf",
     ratio: "3:1 with 105, by volume (3.68:1 by weight)",
     src: "West System 105/209 TDS (3 parts resin : 1 part hardener by volume, 300 Mini Pump ratio; 3.68:1 by weight)" },
   { matKey: "WEST-206", label: "West System 206 slow hardener", aliases: ["206 slow", "206 hardener"],
     doc: "docs/datasheets/west-system_slow-epoxy-hardener_206_tds.pdf",
+    sds: "docs/datasheets/WEST-SDS-206-Slow-Hardener.pdf",
     ratio: "5:1 with 105, by volume",
     src: "West System 206 TDS (5 parts resin : 1 part hardener, 300 Mini Pump ratio)" },
   { matKey: "WEST-105", label: "West System 105 resin", aliases: ["west system 105", "105 epoxy resin", "west 105"],
     doc: "docs/datasheets/WestSystems-105-205-Epoxy-Resin.pdf",
+    sds: "docs/datasheets/WEST-SDS-105-Epoxy-Resin.pdf",
     src: "ratio depends on the hardener — see its entry" },
   { matKey: "XCR", label: "XCR mold coating resin", aliases: ["xcr"],
     doc: "docs/datasheets/EC-TDS-XCR-Epoxy-Coating-Resin.pdf",
@@ -75,21 +78,34 @@ const MATERIALS = [
     doc: "docs/datasheets/PARTALL-Film-10.pdf",
     sds: "docs/datasheets/SDS-PF10-5.5-en-NA-2025-01-28.pdf" },
   { matKey: "DP420", label: "3M DP420 epoxy adhesive", aliases: ["dp420", "dp 420"],
-    doc: "docs/datasheets/3m-scotch-weld-epoxy-adhesive-dp420-black.pdf" },
+    doc: "docs/datasheets/3m-scotch-weld-epoxy-adhesive-dp420-black.pdf",
+    sds: "docs/datasheets/3M-SDS-DP420-Black.pdf" },
   { matKey: "URE-BOND-90", label: "Ure-Bond 90 urethane adhesive", aliases: ["ure-bond", "ure bond"],
     doc: "docs/datasheets/URE_BOND_90_TB.pdf",
     sds: "docs/datasheets/1386A_2-1386B_2.pdf" },
-  /* No datasheets bundled for these — the alias rows exist so the containers
-     still group and count under one key. Specific concentrations above the
-     generic isopropyl row, first match wins. */
-  { matKey: "IPA-91", label: "Isopropyl alcohol 91%", aliases: ["91% isopropyl"] },
-  { matKey: "IPA-70", label: "Isopropyl rubbing alcohol 70%", aliases: ["rubbing alcohol"] },
+  /* Solvents and shop chemicals. The SDS files for these (added 2026-10-10)
+     are STAND-INS where 03 Datasheets/INDEX.md says so: the right kind of
+     product, not confirmed to be the brand on the shelf. A solvent's hazards
+     do not change with the brand, so the safety sheet is still the right
+     thing to open; no numbers are read from a stand-in. Specific
+     concentrations above the generic isopropyl row, first match wins. */
+  { matKey: "IPA-91", label: "Isopropyl alcohol 91%", aliases: ["91% isopropyl"],
+    sds: "docs/datasheets/SDS-Isopropyl-Alcohol-91-Alliance.pdf" },
+  { matKey: "IPA-70", label: "Isopropyl rubbing alcohol 70%", aliases: ["rubbing alcohol"],
+    sds: "docs/datasheets/SDS-Isopropyl-Alcohol-70-Fisher-A459.pdf" },
   { matKey: "IPA", label: "Isopropyl alcohol", aliases: ["isopropyl", "2-propanol"] },
-  { matKey: "ACETONE", label: "Acetone", aliases: ["acetone"] },
-  { matKey: "BONDO", label: "Bondo body filler", aliases: ["bondo"] },
-  { matKey: "FREKOTE", label: "Frekote 700-NC release agent", aliases: ["frekote"] },
-  { matKey: "PUMP-OIL", label: "Vacuum pump oil", aliases: ["vacuum pump oil"] },
-  { matKey: "WEST-404", label: "West System 404 high-density filler", aliases: ["404 high-density", "404 high density"] },
+  { matKey: "ACETONE", label: "Acetone", aliases: ["acetone"],
+    sds: "docs/datasheets/SDS-Acetone-Fisher-A18.pdf" },
+  { matKey: "BONDO", label: "Bondo body filler", aliases: ["bondo"],
+    doc: "docs/datasheets/3M-TDS-Bondo-Original-Filler.pdf",
+    sds: "docs/datasheets/3M-SDS-Bondo-Original-Filler.pdf" },
+  { matKey: "FREKOTE", label: "Frekote 700-NC release agent", aliases: ["frekote"],
+    doc: "docs/datasheets/HENKEL-TDS-Frekote-700-NC.pdf" },
+  { matKey: "PUMP-OIL", label: "Vacuum pump oil", aliases: ["vacuum pump oil"],
+    sds: "docs/datasheets/SDS-Robinair-Vacuum-Pump-Oil.pdf" },
+  { matKey: "WEST-404", label: "West System 404 high-density filler", aliases: ["404 high-density", "404 high density"],
+    doc: "docs/datasheets/WEST-TDS-404-High-Density-Filler.pdf",
+    sds: "docs/datasheets/WEST-SDS-404-High-Density-Filler.pdf" },
 ];
 
 /* name → MATERIALS entry, or null. Case-blind substring over the alias list,

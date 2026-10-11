@@ -22,10 +22,101 @@
  },
  {
   "category": "Datasheets",
+  "title": "3DCORE SDS PET",
+  "kind": "pdf",
+  "src": "docs/datasheets/3DCORE-SDS-PET.pdf",
+  "size": 186024
+ },
+ {
+  "category": "Datasheets",
+  "title": "3DCORE TDS PET 100",
+  "kind": "pdf",
+  "src": "docs/datasheets/3DCORE-TDS-PET-100.pdf",
+  "size": 1623637
+ },
+ {
+  "category": "Datasheets",
+  "title": "3M SDS Bondo Original Filler",
+  "kind": "pdf",
+  "src": "docs/datasheets/3M-SDS-Bondo-Original-Filler.pdf",
+  "size": 380520
+ },
+ {
+  "category": "Datasheets",
+  "title": "3M SDS DP420 Black",
+  "kind": "pdf",
+  "src": "docs/datasheets/3M-SDS-DP420-Black.pdf",
+  "size": 413779
+ },
+ {
+  "category": "Datasheets",
+  "title": "3M TDS Bondo Original Filler",
+  "kind": "pdf",
+  "src": "docs/datasheets/3M-TDS-Bondo-Original-Filler.pdf",
+  "size": 270624
+ },
+ {
+  "category": "Datasheets",
+  "title": "3M spec 60921 OV P100 Cartridge",
+  "kind": "pdf",
+  "src": "docs/datasheets/3M-spec-60921-OV-P100-Cartridge.pdf",
+  "size": 208372
+ },
+ {
+  "category": "Datasheets",
   "title": "3m scotch weld epoxy adhesive dp420 black",
   "kind": "pdf",
   "src": "docs/datasheets/3m-scotch-weld-epoxy-adhesive-dp420-black.pdf",
   "size": 126446
+ },
+ {
+  "category": "Datasheets",
+  "title": "AIRTECH SDS Sealant Tapes",
+  "kind": "pdf",
+  "src": "docs/datasheets/AIRTECH-SDS-Sealant-Tapes.pdf",
+  "size": 110820
+ },
+ {
+  "category": "Datasheets",
+  "title": "AIRTECH TDS AT 200Y Sealant Tape",
+  "kind": "pdf",
+  "src": "docs/datasheets/AIRTECH-TDS-AT-200Y-Sealant-Tape.pdf",
+  "size": 302181
+ },
+ {
+  "category": "Datasheets",
+  "title": "AIRTECH TDS Airweave N10",
+  "kind": "pdf",
+  "src": "docs/datasheets/AIRTECH-TDS-Airweave-N10.pdf",
+  "size": 201940
+ },
+ {
+  "category": "Datasheets",
+  "title": "AIRTECH TDS Greenflow 75",
+  "kind": "pdf",
+  "src": "docs/datasheets/AIRTECH-TDS-Greenflow-75.pdf",
+  "size": 313058
+ },
+ {
+  "category": "Datasheets",
+  "title": "AIRTECH TDS PE Spiral Tube",
+  "kind": "pdf",
+  "src": "docs/datasheets/AIRTECH-TDS-PE-Spiral-Tube.pdf",
+  "size": 233251
+ },
+ {
+  "category": "Datasheets",
+  "title": "ANSELL chart TouchNTuff 92 500 93 250",
+  "kind": "pdf",
+  "src": "docs/datasheets/ANSELL-chart-TouchNTuff-92-500-93-250.pdf",
+  "size": 1987350
+ },
+ {
+  "category": "Datasheets",
+  "title": "ANSELL chart TouchNTuff 93 800",
+  "kind": "pdf",
+  "src": "docs/datasheets/ANSELL-chart-TouchNTuff-93-800.pdf",
+  "size": 1948801
  },
  {
   "category": "Datasheets",
@@ -50,10 +141,24 @@
  },
  {
   "category": "Datasheets",
+  "title": "EC TDS FM100 Infusion Mesh",
+  "kind": "pdf",
+  "src": "docs/datasheets/EC-TDS-FM100-Infusion-Mesh.pdf",
+  "size": 83513
+ },
+ {
+  "category": "Datasheets",
   "title": "EC TDS IN2 Infusion Resin",
   "kind": "pdf",
   "src": "docs/datasheets/EC-TDS-IN2-Infusion-Resin.pdf",
   "size": 173823
+ },
+ {
+  "category": "Datasheets",
+  "title": "EC TDS ML3 Multi Layer Infusion Media",
+  "kind": "pdf",
+  "src": "docs/datasheets/EC-TDS-ML3-Multi-Layer-Infusion-Media.pdf",
+  "size": 46158
  },
  {
   "category": "Datasheets",
@@ -92,10 +197,52 @@
  },
  {
   "category": "Datasheets",
+  "title": "HENKEL TDS Frekote 700 NC",
+  "kind": "pdf",
+  "src": "docs/datasheets/HENKEL-TDS-Frekote-700-NC.pdf",
+  "size": 86381
+ },
+ {
+  "category": "Datasheets",
+  "title": "LIMELINE SDS UC4 1 Clearcoat Part A",
+  "kind": "pdf",
+  "src": "docs/datasheets/LIMELINE-SDS-UC4-1-Clearcoat-Part-A.pdf",
+  "size": 503032
+ },
+ {
+  "category": "Datasheets",
+  "title": "LIMELINE TDS UC4 1 Urethane Clearcoat",
+  "kind": "pdf",
+  "src": "docs/datasheets/LIMELINE-TDS-UC4-1-Urethane-Clearcoat.pdf",
+  "size": 133035
+ },
+ {
+  "category": "Datasheets",
   "title": "PARTALL Film 10",
   "kind": "pdf",
   "src": "docs/datasheets/PARTALL-Film-10.pdf",
   "size": 107096
+ },
+ {
+  "category": "Datasheets",
+  "title": "PRECISIONBOARD SDS PBLT",
+  "kind": "pdf",
+  "src": "docs/datasheets/PRECISIONBOARD-SDS-PBLT.pdf",
+  "size": 115567
+ },
+ {
+  "category": "Datasheets",
+  "title": "PRECISIONBOARD TDS PBLT 30",
+  "kind": "pdf",
+  "src": "docs/datasheets/PRECISIONBOARD-TDS-PBLT-30.pdf",
+  "size": 136505
+ },
+ {
+  "category": "Datasheets",
+  "title": "PRECISIONBOARD TDS PBLT 60",
+  "kind": "pdf",
+  "src": "docs/datasheets/PRECISIONBOARD-TDS-PBLT-60.pdf",
+  "size": 136042
  },
  {
   "category": "Datasheets",
@@ -113,6 +260,13 @@
  },
  {
   "category": "Datasheets",
+  "title": "SDS Acetone Fisher A18",
+  "kind": "pdf",
+  "src": "docs/datasheets/SDS-Acetone-Fisher-A18.pdf",
+  "size": 121965
+ },
+ {
+  "category": "Datasheets",
   "title": "SDS CG 5.3 en NA 2025 01 28",
   "kind": "pdf",
   "src": "docs/datasheets/SDS-CG-5.3-en-NA-2025-01-28.pdf",
@@ -127,10 +281,31 @@
  },
  {
   "category": "Datasheets",
+  "title": "SDS Isopropyl Alcohol 70 Fisher A459",
+  "kind": "pdf",
+  "src": "docs/datasheets/SDS-Isopropyl-Alcohol-70-Fisher-A459.pdf",
+  "size": 121151
+ },
+ {
+  "category": "Datasheets",
+  "title": "SDS Isopropyl Alcohol 91 Alliance",
+  "kind": "pdf",
+  "src": "docs/datasheets/SDS-Isopropyl-Alcohol-91-Alliance.pdf",
+  "size": 70121
+ },
+ {
+  "category": "Datasheets",
   "title": "SDS PF10 5.5 en NA 2025 01 28",
   "kind": "pdf",
   "src": "docs/datasheets/SDS-PF10-5.5-en-NA-2025-01-28.pdf",
   "size": 129044
+ },
+ {
+  "category": "Datasheets",
+  "title": "SDS Robinair Vacuum Pump Oil",
+  "kind": "pdf",
+  "src": "docs/datasheets/SDS-Robinair-Vacuum-Pump-Oil.pdf",
+  "size": 1153310
  },
  {
   "category": "Datasheets",
@@ -141,10 +316,52 @@
  },
  {
   "category": "Datasheets",
+  "title": "WEST SDS 105 Epoxy Resin",
+  "kind": "pdf",
+  "src": "docs/datasheets/WEST-SDS-105-Epoxy-Resin.pdf",
+  "size": 174212
+ },
+ {
+  "category": "Datasheets",
+  "title": "WEST SDS 205 Fast Hardener",
+  "kind": "pdf",
+  "src": "docs/datasheets/WEST-SDS-205-Fast-Hardener.pdf",
+  "size": 238208
+ },
+ {
+  "category": "Datasheets",
+  "title": "WEST SDS 206 Slow Hardener",
+  "kind": "pdf",
+  "src": "docs/datasheets/WEST-SDS-206-Slow-Hardener.pdf",
+  "size": 204816
+ },
+ {
+  "category": "Datasheets",
+  "title": "WEST SDS 209 Extra Slow Hardener",
+  "kind": "pdf",
+  "src": "docs/datasheets/WEST-SDS-209-Extra-Slow-Hardener.pdf",
+  "size": 239143
+ },
+ {
+  "category": "Datasheets",
+  "title": "WEST SDS 404 High Density Filler",
+  "kind": "pdf",
+  "src": "docs/datasheets/WEST-SDS-404-High-Density-Filler.pdf",
+  "size": 181200
+ },
+ {
+  "category": "Datasheets",
   "title": "WEST SYSTEM 105 Epoxy Resin with 206 Slow Hardener",
   "kind": "pdf",
   "src": "docs/datasheets/WEST_SYSTEM_105_Epoxy_Resin_with_206_Slow_Hardener.pdf",
   "size": 75106
+ },
+ {
+  "category": "Datasheets",
+  "title": "WEST TDS 404 High Density Filler",
+  "kind": "pdf",
+  "src": "docs/datasheets/WEST-TDS-404-High-Density-Filler.pdf",
+  "size": 73639
  },
  {
   "category": "Datasheets",

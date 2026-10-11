@@ -3187,12 +3187,15 @@ await t("the shipped manifest lists the datasheets, and nothing that is unlisted
 
      As of 2026-08-26: datasheets in, CS standards and Shop Printables out. */
   const real = JSON.parse(readFileSync(join(root, "docs/manifest.json"), "utf8"));
-  const bad = real.filter(d => d.category === "Standards" || d.category === "Guides");
+  const bad = real.filter(d => ["Standards", "Quick reference", "Guides"].includes(d.category));
   assert(!bad.length, "unlisted categories are in the manifest: " +
     bad.map(d => d.category + "/" + d.title).join(", "));
 
   const sheets = real.filter(d => d.category === "Datasheets");
-  assert(sheets.length === 25, "all 25 datasheets should be listed, got " + sheets.length);
+  // Counted from the source folder, not hard-coded: a fixed number broke
+  // every time a datasheet was added (25 until 2026-10-10, 56 after).
+  const onDisk = readdirSync(join(root, "..", "..", "03 Datasheets")).filter(f => f.endsWith(".pdf")).length;
+  assert(sheets.length === onDisk, `all ${onDisk} datasheets in 03 Datasheets should be listed, got ` + sheets.length);
 
   /* Every listed entry has to resolve to a file that is actually shipped, at
      the size claimed. A manifest naming a missing PDF is a row that opens a
