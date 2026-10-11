@@ -31,9 +31,15 @@ never holds a half-updated standard. Round status:
   check_traceability, materials.js Airtac/209/Ure-Bond fixes + SDS test).
   The corpus changed (materials facts) but functions are NOT redeployed:
   Paul still says 209 is 3:1 by weight until the R7 functions deploy.
-- R1 gap audit: next.
-- Gates that wait on Simon: the datasheet download list (R5), the
-  `functions:askPaul` deploy (R7), the CS-011 §6 co-storage proposal (R2
+- v6.8.1 shipped the R0 materials fixes (hosting only, verified live).
+- R5 datasheets: 31 downloaded (approved), in 03 Datasheets + INDEX
+  "Added 2026-10-10" table + materials.js links; pushed, NOT yet deployed
+  (next release). Stand-ins are marked "confirm against the container".
+  Still wanted by hand: Frekote SDS, LiME LiNE activator SDS, Supercool
+  pump oil SDS, Sigmatex/ACP sheets (ask sponsors).
+- R1 gap audit: workflow running; output in overhaul/R1-audit/ and
+  overhaul/REGISTER.md.
+- Gates that wait on Simon: the `functions:askPaul` deploy (R7), the CS-011 §6 co-storage proposal (R2
   drafts it into `overhaul/proposals/`, not into CS-011).
 - `04 Printables/printables.html` cards pin CS revs that are already stale
   (Rev A/B); refresh them in R7 or they will name revisions twice gone.
