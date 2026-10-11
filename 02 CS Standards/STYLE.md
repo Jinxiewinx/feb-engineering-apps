@@ -32,7 +32,8 @@ sections a keyword search can find.
   "boasts") and the "it's not X, it's Y" pivot. State the thing.
 - Vary sentence length. A short sentence after a long one is how a rule lands.
 - **Normative verbs** (CS-000 §4). **Shall** is a requirement. **Should** is the
-  default you could defend out loud at the Monday meeting. **May** is an
+  default you could defend out loud at the weekly meeting (Wednesdays
+  since 2026-09-20). **May** is an
   allowed option. A numbered step in a §7 procedure is a requirement even
   without "shall". Changing a shall to a should, or the reverse, is a
   process-rule change: it needs its own line in the overhaul register and in
@@ -61,7 +62,9 @@ sections a keyword search can find.
 
 - Every standard keeps CS-Template's nine sections in order. §6 Safety is
   mandatory, even when it only says "no physical hazards".
-- A `>` blockquote renders as a CAUTION callout. Use it for cautions only.
+- A `>` blockquote is a CAUTION callout. Use it for cautions only. (The
+  .docx shows it as CAUTION today; the in-app PDF shows plain indented text
+  until the build adds a filter for it, register R-OTH-04.)
 - Headings are `##` and `###`, numbered `n.` and `n.n`. Nothing deeper: the
   search splits at `###` and no lower.
 - **Phrase headings with the words people ask with.** "7.3 Degassing the
@@ -132,7 +135,9 @@ carry no approval table.
 
 - **Header**: Doc ID, title, `Parent` (the standard and section it is drawn
   from, e.g. `CS-008 §5.1`), and `Checked against` (the parent's revision,
-  e.g. `CS-008 Rev E`). A quick reference about using the app names the code
+  e.g. `CS-008 Rev E`). A quick reference drawn from several standards lists
+  them separated by semicolons, in the same order in both fields:
+  `CS-006 §7.4; CS-007 §7.2` and `CS-006 Rev D; CS-007 Rev D`. A quick reference about using the app names the code
   it describes instead: `Covers: app/receiving.js`.
 - **The parent wins.** If a quick reference and its standard ever disagree,
   the standard is right and the quick reference is fixed. The check fails a

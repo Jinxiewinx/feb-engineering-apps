@@ -32,10 +32,11 @@ var APP_VERSION = "6.8.1";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "West 209 hardener: the materials table now says 3:1 by volume (3.68:1 by weight). It said \"by weight\" before, which was wrong.",
-  "Airtac 2: the datasheet button opens the datasheet now, and the safety sheet has its own button.",
-  "Ure-Bond 90's safety sheet is linked from its material.",
-  "The standards' PDF and Word copies point at the right folders again.",
+  "31 new datasheets in Documents: safety sheets for West 105/205/206/209/404, DP420, acetone, IPA, Bondo and pump oil.",
+  "Also new: tooling board (Precision Board), flow mesh, breather, sealant tape, 3D-core and the clear coat.",
+  "Glove charts from Ansell: thin nitrile does not hold up to acetone for long. Check before a big cleanup.",
+  "Materials now open their safety sheet from the SDS button where we have one.",
+  "A few sheets stand in for the brand on our shelf (solvents, Bondo, pump oil). Check the container label too.",
 ];
 
 
