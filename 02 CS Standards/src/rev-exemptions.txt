@@ -1,0 +1,7 @@
+# Body changes that are allowed without a revision bump (STYLE.md §4).
+# One line each: "<doc> <rev letter>  <reason, with date and who said so>".
+# The exemption lasts only while the doc stays at that letter; the next bump
+# makes it moot. tools/check_traceability.py reads this file.
+#
+# The 2026-09-02 folder renumbering (path fixes in ten standards, Simon:
+# "a path fix rides free") predates the v6.8.0 base tag, so it needs no line.
