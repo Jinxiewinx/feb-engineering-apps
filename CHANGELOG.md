@@ -38,6 +38,35 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.9.0 — 2026-10-10
+
+- Search tests follow the quick references: safety questions land on QR-008 first
+- Side docs for the overhaul, printables marked superseded, WHATS_NEW for 6.9.0
+- Doc overhaul R7: promote CS-000..014, CS-INDEX and QR-001..015; rebuild everything
+- In-app PDFs mark ">" blockquotes as CAUTION, like the docx always did
+- Steve reads records only, and never sells a resin, hardener or adhesive
+- Doc overhaul R6: adversarial fact-check of every draft, quick reference, figure and Steve note
+
+<details><summary>13 more</summary>
+
+- Docs: tools README rows for Steve's builder and evals; DESIGN-NOTES on Paul, Steve and memory (R-OTH-14)
+- Corpus skips a QR's opening; Paul and Steve evals get the audit cases (R-OTH-34, R-OTH-30)
+- Steve's notes tool, catalog filter, guard fixes; Paul's QR rule and search hint
+- Steve's notes and catalog categories built offline (R-STV-02, R-STV-06)
+- SESSION-STATE: doc overhaul R3/R4 done, R6 running
+- Doc overhaul R3: all 26 figures redrawn in the app's type, chosen from competing variants
+- Doc overhaul R4: 15 quick references for Paul, Steve's notes and catalog categories
+- Supply data checked against the datasheets; human datasheet titles (R-OTH-10, -21, -22, -23)
+- Self-review keys on the Mold Engineer; label, scan page and tooltip wording (R-OTH-25, -28, -29, -32)
+- Paul ignores a resin override the app would ignore (R-OTH-07, R-OTH-20)
+- SESSION-STATE: doc overhaul R1-R2 done, R3/R4 running
+- Doc overhaul R2: drafts of CS-000..014, INDEX, templates, and the CS-011 §6 proposal
+- Paul's document search: safety sheets stop burying how-to answers
+
+</details>
+
+---
+
 ## v6.8.2 — 2026-10-10
 
 - Doc overhaul R1: gap audit (8 audits) and the change register
