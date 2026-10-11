@@ -171,7 +171,9 @@ def md_to_pdf(md_path, pdf_path):
                  # figures are named relative to the markdown (figures/*.png);
                  # pandoc resolves them against the CWD unless told otherwise
                  "--resource-path", str(md_path.parent),
-                 "-V", "colorlinks=true"],
+                 "-V", "colorlinks=true",
+                 # ">" blockquotes are CAUTION callouts in our sources
+                 "--lua-filter", str(RES / "tools" / "lib" / "caution.lua")],
                 check=True, capture_output=True, timeout=120, env=PDF_ENV)
             if pdf_path.exists() and pdf_path.stat().st_size > 0:
                 _pin_pdf_id(pdf_path)
