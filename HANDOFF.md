@@ -24,7 +24,7 @@ needs photos, a real application form and someone checking the copy; its
 README lists all of it.
 
 **The documents**: the CS standards (`02`), the pain-points review (`01`), the
-datasheets (`04`), the printables (`05`). The standards are the team's process
+datasheets (`03`), the printables (`04`). The standards are the team's process
 memory. The app enforces some of them (cure holds, blocker steps, lot
 capture); the rest only work if people can find and trust them.
 
@@ -115,7 +115,8 @@ figure or without a name on it. Changing a hold is editing that file and
 deploying; adding a resin means having its TDS in `03 Datasheets/` first.
 
 **The standards** are edited in `02 CS Standards/src/` (the markdown is
-canonical; the .docx is built). Then:
+canonical; the .docx is built; the August Google Docs copies are retired).
+`02 CS Standards/STYLE.md` is the house style. Then:
 
 ```bash
 tools/.venv/bin/python tools/build_docx.py --all

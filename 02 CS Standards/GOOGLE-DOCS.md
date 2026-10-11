@@ -1,4 +1,12 @@
-# The standards on Google Docs
+# The standards on Google Docs (historical)
+
+**Retired 2026-10-10.** Simon dropped Google Docs as the editing surface: the
+markdown in `src/` is canonical again, and the Drive copies below are left
+as they are, frozen at the August revisions. Nobody edited them after
+2026-09-03, so nothing needed syncing back. Do not edit them and do not
+re-import into them; edit `src/*.md` and follow `STYLE.md`. The rest of this
+file is kept as the record of what was there.
+
 
 As of 2026-08-29 the CS standards live as Google Docs in Simon's Drive, in a
 folder at his My Drive root, and **that is where the team edits them from now

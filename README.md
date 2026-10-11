@@ -208,9 +208,11 @@ confirm the ShopSabre's exact model against CS-005 §5; field-verify the CS-011
 storage map at RFS; sign the approval tables. HANDOFF.md carries the full
 list.
 
-**Maintenance:** the standards are edited as Google Docs
-(`02 CS Standards/GOOGLE-DOCS.md` has the folder and per-doc links); edits
-sync back into `02 CS Standards/src/` with a revision bump, then rebuild with
+**Maintenance:** the standards are edited as markdown in
+`02 CS Standards/src/`, following `02 CS Standards/STYLE.md` (wording,
+formatting, revision tracking, figures). The August Google Docs copies are
+retired (`GOOGLE-DOCS.md` says why). A content change takes a revision bump,
+then rebuild with
 `tools/.venv/bin/python tools/build_docx.py --all`, then
 `python3 tools/gen_docs_manifest.py` and `python3 tools/check_traceability.py`.
 Figures are edited as SVG in `src/figures/` and re-rendered with

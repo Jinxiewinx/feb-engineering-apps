@@ -20,6 +20,18 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**Documentation overhaul (started 2026-10-10).** Plan:
+`02 CS Standards/overhaul/PLAN.md` (rounds 0-7; house rules in
+`02 CS Standards/STYLE.md`). Google Docs are retired: markdown is canonical.
+Drafts stay in `overhaul/` until Round 7 promotes them, so the live app
+never holds a half-updated standard. Round status:
+- R0 tooling and baseline: in progress.
+- Gates that wait on Simon: the datasheet download list (R5), the
+  `functions:askPaul` deploy (R7), the CS-011 §6 co-storage proposal (R2
+  drafts it into `overhaul/proposals/`, not into CS-011).
+- `04 Printables/printables.html` cards pin CS revs that are already stale
+  (Rev A/B); refresh them in R7 or they will name revisions twice gone.
+
 **Paul round 3 (2026-10-10).** Plan: `~/.claude/plans/i-have-paul-tested-misty-otter.md`.
 v6.6.2: the "isn't available" fix (empty forced last round on long
 questions; now 6 rounds + 75s budget + fresh rescue call, readable errors,
