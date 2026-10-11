@@ -38,6 +38,14 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.8.2 — 2026-10-10
+
+- Doc overhaul R1: gap audit (8 audits) and the change register
+- SESSION-STATE: doc overhaul R0 done, v6.8.1 out, R5 datasheets in, R1 running
+- Doc overhaul R5: 31 new datasheets (West SDSs, solvents, gloves, tooling board, consumables)
+
+---
+
 ## v6.8.1 — 2026-10-10
 
 - WHATS_NEW for 6.8.1: the 209 ratio, Airtac's buttons, Ure-Bond's SDS, rebuilt standard copies
