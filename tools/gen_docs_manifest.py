@@ -69,6 +69,72 @@ def prettify(fn):
     return re.sub(r"\s+", " ", s).strip()
 
 
+# Datasheet titles, by file name. The names on disk are whatever the
+# manufacturer called the download ("1386A_2-1386B_2.pdf" is the Ure-Bond 90
+# SDS), and a cleaned-up file name is what the Documents tab and Paul's source
+# chips used to show. Names come from 03 Datasheets/INDEX.md. A PDF with no
+# entry is still listed, under prettify(), but the run warns, so a new
+# datasheet cannot slip in under its download name unnoticed.
+DATASHEET_TITLES = {
+    "105-209-Epoxy-Resin-1.pdf": "West System 105/209 TDS",
+    "105_205-207-Combined.pdf": "West System 105 with 205/206/207/209 TDS (combined)",
+    "1386A_2-1386B_2.pdf": "Ure-Bond 90 SDS (Smooth-On)",
+    "3DCORE-SDS-PET.pdf": "3D|CORE PET foam core SDS",
+    "3DCORE-TDS-PET-100.pdf": "3D|CORE PET GR foam core TDS",
+    "3M-SDS-Bondo-Original-Filler.pdf": "Bondo Original Filler SDS (3M)",
+    "3M-SDS-DP420-Black.pdf": "3M DP420 SDS",
+    "3M-TDS-Bondo-Original-Filler.pdf": "Bondo Original Filler TDS (3M)",
+    "3M-spec-60921-OV-P100-Cartridge.pdf": "3M 60921 OV/P100 cartridge instructions",
+    "3m-scotch-weld-epoxy-adhesive-dp420-black.pdf": "3M Scotch-Weld DP420 TDS",
+    "AIRTECH-SDS-Sealant-Tapes.pdf": "Airtech sealant tape safety sheet",
+    "AIRTECH-TDS-AT-200Y-Sealant-Tape.pdf": "Airtech AT-200Y sealant tape TDS",
+    "AIRTECH-TDS-Airweave-N10.pdf": "Airtech Airweave N10 breather TDS",
+    "AIRTECH-TDS-Greenflow-75.pdf": "Airtech Greenflow 75 flow mesh TDS",
+    "AIRTECH-TDS-PE-Spiral-Tube.pdf": "Airtech PE spiral tube TDS",
+    "ANSELL-chart-TouchNTuff-92-500-93-250.pdf": "Ansell TouchNTuff 92-500 / 93-250 glove chemical chart",
+    "ANSELL-chart-TouchNTuff-93-800.pdf": "Ansell TouchNTuff 93-800 glove chemical chart",
+    "EC-SDS-IN2-Epoxy-Infusion-Resin-and-Hardener.pdf": "IN2 resin and AT30 hardener SDS (Easy Composites)",
+    "EC-SDS-VB160-Vacuum-Bagging-Film.pdf": "VB160 bagging film SDS (Easy Composites)",
+    "EC-SDS-XCR-Epoxy-Coating-Resin-Combined.pdf": "XCR coating resin SDS (Easy Composites)",
+    "EC-TDS-FM100-Infusion-Mesh.pdf": "FM100 infusion mesh TDS (Easy Composites)",
+    "EC-TDS-IN2-Infusion-Resin.pdf": "IN2 infusion resin TDS (Easy Composites)",
+    "EC-TDS-ML3-Multi-Layer-Infusion-Media.pdf": "ML3 multi-layer infusion media TDS (Easy Composites)",
+    "EC-TDS-PP180-Peel-Ply.pdf": "PP180 peel ply TDS (Easy Composites)",
+    "EC-TDS-VB160-Vacuum-Bagging-Film.pdf": "VB160 bagging film TDS (Easy Composites)",
+    "EC-TDS-XCR-Epoxy-Coating-Resin.pdf": "XCR coating resin TDS (Easy Composites)",
+    "FORMULA-FIVE-Clean-N-Glaze.pdf": "Formula Five Clean 'N Glaze guide (Rexco)",
+    "FORMULA-FIVE-Mold-Release-Wax.pdf": "Formula Five Mold Release Wax guide (Rexco)",
+    "HENKEL-TDS-Frekote-700-NC.pdf": "Frekote 700-NC TDS (Henkel)",
+    "LIMELINE-SDS-UC4-1-Clearcoat-Part-A.pdf": "LiME LiNE UC4:1 clearcoat Part A SDS",
+    "LIMELINE-TDS-UC4-1-Urethane-Clearcoat.pdf": "LiME LiNE UC4:1 urethane clearcoat TDS",
+    "PARTALL-Film-10.pdf": "Partall Film #10 PVA guide (Rexco)",
+    "PRECISIONBOARD-SDS-PBLT.pdf": "Precision Board PBLT SDS (Coastal)",
+    "PRECISIONBOARD-TDS-PBLT-30.pdf": "Precision Board PBLT-30 TDS (Coastal)",
+    "PRECISIONBOARD-TDS-PBLT-60.pdf": "Precision Board PBLT-60 TDS (Coastal)",
+    "ROHACELL_IG_F_2022_April_EN_243534.pdf": "Rohacell IG-F foam TDS (Evonik)",
+    "Rohacell-IG-F-SDS.pdf": "Rohacell IG-F foam SDS (Evonik)",
+    "SDS-Acetone-Fisher-A18.pdf": "Acetone SDS (Fisher A18)",
+    "SDS-CG-5.3-en-NA-2025-01-28.pdf": "Formula Five Clean 'N Glaze SDS (Rexco)",
+    "SDS-F5MRW-5.3-en-NA-2025-01-28.pdf": "Formula Five Mold Release Wax SDS (Rexco)",
+    "SDS-Isopropyl-Alcohol-70-Fisher-A459.pdf": "Isopropyl alcohol 70% SDS (Fisher A459)",
+    "SDS-Isopropyl-Alcohol-91-Alliance.pdf": "Isopropyl alcohol 91% SDS (Alliance Chemical)",
+    "SDS-PF10-5.5-en-NA-2025-01-28.pdf": "Partall Film #10 PVA SDS (Rexco)",
+    "SDS-Robinair-Vacuum-Pump-Oil.pdf": "Vacuum pump oil SDS (Robinair)",
+    "URE_BOND_90_TB.pdf": "Ure-Bond 90 TDS (Smooth-On)",
+    "WEST-SDS-105-Epoxy-Resin.pdf": "West System 105 resin SDS",
+    "WEST-SDS-205-Fast-Hardener.pdf": "West System 205 SDS",
+    "WEST-SDS-206-Slow-Hardener.pdf": "West System 206 SDS",
+    "WEST-SDS-209-Extra-Slow-Hardener.pdf": "West System 209 SDS",
+    "WEST-SDS-404-High-Density-Filler.pdf": "West System 404 filler SDS",
+    "WEST-TDS-404-High-Density-Filler.pdf": "West System 404 filler TDS",
+    "WEST_SYSTEM_105_Epoxy_Resin_with_206_Slow_Hardener.pdf": "West System 105/206 TDS (UK sheet)",
+    "WestSystems-105-205-Epoxy-Resin.pdf": "West System 105/205 TDS",
+    "airtac2imp.pdf": "Airtac 2 spray adhesive TDS (Airtech)",
+    "airtac2spray.pdf": "Airtac 2 SDS (Airtech)",
+    "west-system_slow-epoxy-hardener_206_tds.pdf": "West System 105/206 TDS",
+}
+
+
 # Reproducible PDFs: without these every rebuild stamps a new creation date
 # into every PDF, so an unchanged standard shows up as a changed file and the
 # corpus freshness check cannot tell real edits from churn.
@@ -120,12 +186,28 @@ def md_to_pdf(md_path, pdf_path):
 
 # 1. Datasheets (PDF)
 ds_dir = RES / "03 Datasheets"
+untitled = []
+ds_names = set()
 for pdf in sorted(ds_dir.glob("*.pdf")):
     dst = DOCS / "datasheets" / pdf.name
     shutil.copy2(pdf, dst)
-    add({"category": "Datasheets", "title": prettify(pdf.name),
+    ds_names.add(pdf.name)
+    title = DATASHEET_TITLES.get(pdf.name)
+    if not title:
+        untitled.append(pdf.name)
+        title = prettify(pdf.name)
+    add({"category": "Datasheets", "title": title,
          "kind": "pdf", "src": f"docs/datasheets/{pdf.name}",
          "size": dst.stat().st_size})
+if untitled:
+    print("WARNING: no DATASHEET_TITLES entry, listed under the file name instead:", file=sys.stderr)
+    for n in untitled:
+        print("  " + n, file=sys.stderr)
+stale = sorted(set(DATASHEET_TITLES) - ds_names)
+if stale:
+    print("WARNING: DATASHEET_TITLES names files that are not in 03 Datasheets/:", file=sys.stderr)
+    for n in stale:
+        print("  " + n, file=sys.stderr)
 
 # 2. CS Standards — render to PDF (open in-app like datasheets), keep md as a
 #    fallback + docx for download.

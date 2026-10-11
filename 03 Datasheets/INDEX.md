@@ -59,6 +59,8 @@ the brand; the numbers on a tooling board or a breather do.
 ## Adding a datasheet
 
 Drop the PDF in this folder, add a row above (product, files, which CS standard
-cites it), then run `python3 tools/gen_docs_manifest.py` from the repo root so
-the app's Documents tab picks it up. If a standard starts citing it, run
+cites it), give it a title in `DATASHEET_TITLES` in `tools/gen_docs_manifest.py`
+(the name the Documents tab and Paul's source chips show), then run
+`python3 tools/gen_docs_manifest.py` from the repo root so the app's Documents
+tab picks it up. The script warns about a PDF with no title. If a standard starts citing it, run
 `python3 tools/check_traceability.py` too.

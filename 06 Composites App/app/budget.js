@@ -535,7 +535,7 @@ function renderBuyList() {
       const opts = (cats.some(c => c.toLowerCase() === String(b.purpose || "").toLowerCase()) || !b.purpose ? cats : [b.purpose, ...cats]);
       return `<tr data-open="${b.id}" class="${pickIs("budget", b.id) ? "picked" : ""}" onclick="${pickClick("budget", b.id, `view={...view,mode:'detail',id:'${b.id}',edit:false};render()`)}">
       ${pickOn("budget") ? `<td class="pickcell">${pickBox("budget", b.id)}</td>` : ""}
-      <td><b>${esc(b.item || b.id)}</b>${b.retro ? ' <span class="pill retro">retro</span>' : ""}${isOffBudget(b) ? ` <span class="pill offbudget" title="Charged to ${esc(chargedToLabel(b))} — cost tracked, not counted against the composites budget">${esc(chargedToLabel(b))}</span>` : ""}${needsApproval(b) ? ' <span class="pill OnHold" title="Over $50 — needs #purchasing sign-off before ordering">needs approval</span>' : ""}</td>
+      <td><b>${esc(b.item || b.id)}</b>${b.retro ? ' <span class="pill retro">retro</span>' : ""}${isOffBudget(b) ? ` <span class="pill offbudget" title="Charged to ${esc(chargedToLabel(b))} — cost tracked, not counted against the composites budget">${esc(chargedToLabel(b))}</span>` : ""}${needsApproval(b) ? ' <span class="pill OnHold" title="Not approved yet. Request it with /purchase in #purchasing-slackbot and order after the bot DMs its approval">needs approval</span>' : ""}</td>
       <td>${personChip(personRef(b, "purchaser"), { empty: "—" })}</td>
       <td onclick="event.stopPropagation()"><select class="buy-cat" onchange="setBuyField('${b.id}','purpose',this.value)" aria-label="Category of ${esc(b.item || b.id)}">
         ${opts.map(o => `<option ${String(b.purpose || "") === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></td>
@@ -594,7 +594,7 @@ function renderBuyDetail() {
     <div class="muted">${esc(b.id)} · <span class="pill ${buyStatusClass(buyStatus(b))}" title="Where the goods are">${esc(buyStatus(b))}</span>
       <span class="pill ${buyStatusClass(reimbStatus(b))}" title="Where the money is">${esc(reimbStatus(b))}</span>
       ${isOffBudget(b) ? `<span class="pill offbudget" title="Cost tracked here, counted against ${esc(chargedToLabel(b))} rather than composites">${esc(chargedToLabel(b))}</span>` : ""}${b.updatedAt ? " · saved " + fmtWhen(b.updatedAt) + " by " + esc(b.updatedBy || "?") : ""}</div>
-    ${needsApproval(b) ? `<p class="warn">Over $50 — needs #purchasing sign-off before it's ordered.</p>` : ""}
+    ${needsApproval(b) ? `<p class="warn">Not approved yet. Request it with /purchase in #purchasing-slackbot and order only after the bot's approval DM.</p>` : ""}
     ${isOffBudget(b) ? `<p class="muted tny">Charged to ${esc(chargedToLabel(b))}. The cost is tracked and ${esc(personName(b, "purchaser") || "whoever paid")} still gets reimbursed; it does not count against the composites season total or any goal.</p>` : ""}
     ${(() => { const gw = buyGoalWarning(b); return gw ? `<p class="warn">${esc(gw)}</p>` : ""; })()}
     <h3>Details</h3>

@@ -2649,9 +2649,9 @@ await t("a Details-grid change repaints a beat later, so Tab lands before the pa
   view = { ...view, tab: "budget", mode: "detail", id: "BUY-TB-2", edit: true };
   render();
   updBuy("cost", "80");
-  assert(!main.innerHTML.includes("Over $50"), "no synchronous repaint on the change event");
+  assert(!main.innerHTML.includes("Not approved yet"), "no synchronous repaint on the change event");
   await new Promise(r => setTimeout(r, 1));
-  assert(main.innerHTML.includes("Over $50"), "the approval warning arrives one tick later, after focus settled");
+  assert(main.innerHTML.includes("Not approved yet"), "the approval warning arrives one tick later, after focus settled");
 });
 
 await t("part plan qty edits also update in place instead of repainting", () => {
@@ -6893,8 +6893,11 @@ await t("the seed is CS-011 §5, and every rule carries a threshold and a reason
   assert(tape && tape.minCount === 6 && tape.unit === "roll", "tacky tape: 6 rolls, per §5");
   const in2 = restockRuleFor("IN2");
   assert(in2.leadDays === 42, "Easy Composites is six weeks, per CS-012 §7.4");
-  assert(in2.hazard === "flammable" && in2.role === "resin",
-    "the rule carries what a received lot should inherit");
+  assert(in2.hazard === "not flammable" && in2.role === "resin",
+    "the rule carries what a received lot should inherit; IN2's SDS flash point is 140 °C, not a flammable liquid");
+  for (const k of ["AT30", "WEST-105", "WEST-206", "XCR"])
+    assert(restockRuleFor(k).hazard === "not flammable", k + ": SDS flash point above 93 °C, so not a flammable liquid");
+  assert(tape.supplier === "Airtech", "tacky tape is Airtech AT-200Y (Simon, 2026-10-10)");
 });
 
 await t("a lead override moves one threshold without restating the table", () => {

@@ -47,20 +47,29 @@ function invActiveBins() { return invBins().filter(b => b.stage !== "Retired"); 
  * unit is the noun the count picker says out loud ("How many boxes"), because
  * "1" meaning one box and "100" meaning a hundred gloves is the ambiguity that
  * makes a count untrustworthy. leadDays is CS-012 §7.4's supplier lead time,
- * and it is what turns "you are low" into "order now to have it by the 4th". */
+ * and it is what turns "you are low" into "order now to have it by the 4th".
+ *
+ * hazard is what each material's SDS says, not a guess from the word "resin".
+ * The five epoxies are "not flammable": none carries a flammable-liquid class
+ * in SDS section 2, and the section 9 flash points all sit above the 93 °C
+ * GHS cut-off for even Category 4 (IN2 140 °C and AT30 Slow 150 °C in
+ * EC-SDS-IN2-Epoxy-Infusion-Resin-and-Hardener.pdf; XCR "FP > 100°C" and
+ * "Non-flammable" in EC-SDS-XCR-Epoxy-Coating-Resin-Combined.pdf; West 105
+ * ">205°F (96°C)" and 206 ">200°F (93°C)" in WEST-SDS-105 and WEST-SDS-206).
+ * The same answer ehsHazard() gives for AT30's H-codes. */
 const RESTOCK_SEED = [
   { matKey: "IN2", label: "IN2 infusion resin", minCount: 2, unit: "kit", supplier: "Easy Composites", leadDays: 42,
-    hazard: "flammable", role: "resin",
+    hazard: "not flammable", role: "resin",
     why: "Every infusion. §5 triggers at the opened kit plus one unopened — one unopened kit is about one peak week, so it is the alarm, not the buffer." },
   { matKey: "AT30", label: "AT30 slow hardener", minCount: 2, unit: "kit", supplier: "Easy Composites", leadDays: 42,
-    hazard: "flammable", role: "hardener",
+    hazard: "not flammable", role: "hardener",
     why: "Pairs with IN2; same 6-week Easy Composites lead." },
   { matKey: "WEST-105", label: "West 105 resin", minCount: 1, unit: "tank", supplier: "West System", leadDays: 14,
-    hazard: "flammable", role: "resin", why: "Every wet layup. CS-011 §5 wants half a tank plus a can." },
+    hazard: "not flammable", role: "resin", why: "Every wet layup. CS-011 §5 wants half a tank plus a can." },
   { matKey: "WEST-206", label: "West 206 hardener", minCount: 1, unit: "can", supplier: "West System", leadDays: 14,
-    hazard: "flammable", role: "hardener", why: "Every wet layup." },
+    hazard: "not flammable", role: "hardener", why: "Every wet layup." },
   { matKey: "XCR", label: "XCR mold coating", minCount: 2, unit: "kit", supplier: "Easy Composites", leadDays: 42,
-    hazard: "flammable", role: "resin",
+    hazard: "not flammable", role: "resin",
     why: "Every mold. One kit seals two or three sections and molds queue two a week in peak." },
   { matKey: "VB160", label: "VB160 bagging film", minCount: 1, unit: "roll", supplier: "Easy Composites", leadDays: 42,
     why: "Everything bagged." },
@@ -68,7 +77,7 @@ const RESTOCK_SEED = [
     why: "Everything bagged." },
   { matKey: "FLOW-MESH", label: "Flow mesh", minCount: 1, unit: "roll", supplier: "Easy Composites", leadDays: 42,
     why: "Everything infused." },
-  { matKey: "TACKY-TAPE", label: "Tacky tape", minCount: 6, unit: "roll", supplier: "Easy Composites", leadDays: 7,
+  { matKey: "TACKY-TAPE", label: "Tacky tape (Airtech AT-200Y)", minCount: 6, unit: "roll", supplier: "Airtech", leadDays: 7,
     why: "Everything bagged, and the team burns it fast: about three rolls a week in peak, one-week lead." },
   { matKey: "GLOVES-NITRILE", label: "Nitrile gloves", minCount: 2, unit: "box per size", supplier: "McMaster", leadDays: 7,
     why: "Everything." },
@@ -286,7 +295,7 @@ function openRestockPurchase() {
         <option value="">A new purchase</option>
         ${open.map(b => `<option value="${esc(b.id)}">${esc(b.id)} · ${esc(b.item || "")}${b.source ? " · " + esc(b.source) : ""}</option>`).join("")}
       </select></div>
-    <p class="muted tny">Over $50 still needs #purchasing sign-off before anyone orders it (CS-012 §7.1).</p>
+    <p class="muted tny">Every purchase, at any amount, needs approval through /purchase in #purchasing-slackbot before anyone orders it (CS-012 §7.1).</p>
     <div class="foot">
       <button onclick="closeModal()">Cancel</button>
       <button class="primary" onclick="submitRestockPurchase()">Add to purchase</button>
