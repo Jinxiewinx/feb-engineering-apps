@@ -324,10 +324,28 @@ function corpus() {
   }
   return CORPUS;
 }
+/* A safety question is the one time a safety sheet should win. Otherwise an
+   SDS (forty pages that all say "epoxy", "hardener", "resin") outscores the
+   one datasheet or standard section that answers the question. */
+const SAFETY_TERMS = /^(safety|sds|msds|ppe|glove|gloves|nitrile|respirator|cartridge|hazard|hazards|hazardous|toxic|fire|flammable|flash|first|aid|spill|exposure|skin|eye|eyes|burn|inhal|ventilation|disposal|dispose|sensitizer|allergy|allergic|rash|poison|osha|ghs)/;
+function docHead(s) {
+  // A datasheet's title is on every page; count it as a title hit on page 1
+  // only, or every page of the matching sheet gets the same +3 per term.
+  if (s.kind === "sds" || s.kind === "datasheet") {
+    return (/^page 1\b/.test(s.section) ? s.doc + " " + s.title + " " : "") + s.section;
+  }
+  return s.doc + " " + s.title + " " + s.section;
+}
 function searchDocs(query, limit = 6) {
   const ts = terms(query);
+  const safety = ts.some((t) => SAFETY_TERMS.test(t));
+  const weigh = (s, sc) => {
+    if (s.kind === "sds" && !safety) sc *= 0.4;
+    if (s.kind === "quickref") sc *= 1.15;   // the short answer, written for this search
+    return sc;
+  };
   return corpus()
-    .map((s) => ({ s, sc: ts.length ? score(s.hay, (s.doc + " " + s.title + " " + s.section).toLowerCase(), ts) : 0 }))
+    .map((s) => ({ s, sc: ts.length ? weigh(s, score(s.hay, docHead(s).toLowerCase(), ts)) : 0 }))
     .filter((x) => x.sc > 0)
     .sort((a, b) => b.sc - a.sc)
     .slice(0, limit)

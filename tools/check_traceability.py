@@ -239,17 +239,25 @@ for doc, t in qr_texts.items():
             lint((ROOT / "06 Composites App" / path).exists() or (ROOT / path).exists(),
                  f"{doc}: Covers names a file that exists ({path})")
         continue
-    m = re.match(r"(CS-\d{3})\s*§\s*([\d.]+)", parent or "")
-    lint(bool(m), f"{doc}: header names a Parent like 'CS-008 §5.1' (got {parent!r})")
-    if not m:
-        continue
-    pdoc, psec = m.group(1), m.group(2).rstrip(".")
-    lint(pdoc in texts and psec in headings(texts.get(pdoc, "")),
-         f"{doc}: Parent {pdoc} §{psec} resolves to a heading")
-    prev = header_field(texts.get(pdoc, ""), "Revision")
-    cm = re.match(r"(CS-\d{3})\s+Rev\s+([A-Z])", checked or "")
-    lint(bool(cm) and cm.group(1) == pdoc and cm.group(2) == prev,
-         f"{doc}: checked against {checked!r}, parent is now {pdoc} Rev {prev}")
+    # Several parents are separated by semicolons, in the same order in both
+    # fields: "CS-006 §7.4; CS-007 §7.2" / "CS-006 Rev D; CS-007 Rev D".
+    parents = [x.strip() for x in (parent or "").split(";") if x.strip()]
+    checks = [x.strip() for x in (checked or "").split(";") if x.strip()]
+    lint(bool(parents), f"{doc}: header names a Parent like 'CS-008 §5.1' (got {parent!r})")
+    lint(len(parents) == len(checks),
+         f"{doc}: one 'Checked against' per Parent ({len(parents)} parents, {len(checks)} checked)")
+    for i, one in enumerate(parents):
+        m = re.match(r"(CS-\d{3})\s*§\s*([\d.]+)", one)
+        lint(bool(m), f"{doc}: Parent {one!r} reads like 'CS-008 §5.1'")
+        if not m:
+            continue
+        pdoc, psec = m.group(1), m.group(2).rstrip(".")
+        lint(pdoc in texts and psec in headings(texts.get(pdoc, "")),
+             f"{doc}: Parent {pdoc} §{psec} resolves to a heading")
+        prev = header_field(texts.get(pdoc, ""), "Revision")
+        cm = re.match(r"(CS-\d{3})\s+Rev\s+([A-Z])", checks[i] if i < len(checks) else "")
+        lint(bool(cm) and cm.group(1) == pdoc and cm.group(2) == prev,
+             f"{doc}: checked against {checks[i] if i < len(checks) else None!r}, parent is now {pdoc} Rev {prev}")
 
 # 11. section cross-references
 heads = {doc: headings(t) for doc, t in texts.items()}

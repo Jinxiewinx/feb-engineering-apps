@@ -701,6 +701,21 @@ ok("a catalog row keeps what Steve needs and drops Shopify's promo tags", JSON.s
 const shipped = req(path.join(path.dirname(FN), "steve_catalog.json"));
 ok("the shipped catalog is real and dated", shipped.products.length > 400 && /^\d{4}-\d{2}-\d{2}$/.test(shipped.fetchedAt) && shipped.store === "https://www.fibreglast.com");
 
+/* ---------- document search: safety sheets know their place ---------- */
+{
+  const docsCtx = req(path.join(path.dirname(FN), "context.js"));
+  const top = (q) => docsCtx.searchDocs(q, 3);
+  const isSds = (hit) => /SDS|SAFETY|1386A|AIRTAC2SPRAY/i.test(hit.doc);
+  // 2026-10-10: with 31 new sheets the corpus went from 448 to 766 sections,
+  // most of them SDS pages, and "AT30 hardener ratio" returned four IN2 SDS
+  // pages and nothing else. A how-to question must reach a datasheet or a
+  // standard; a safety question must still reach the safety sheet.
+  ok("a how-to question is not answered by safety sheets", !top("AT30 hardener ratio").every(isSds), JSON.stringify(top("AT30 hardener ratio").map(h => h.ref)));
+  ok("a safety question still reaches the safety sheet", top("IN2 SDS first aid").some(isSds) && top("acetone gloves").some(isSds), JSON.stringify(top("acetone gloves").map(h => h.ref)));
+  ok("the master list is searchable", docsCtx.searchDocs("which standards exist").some(h => h.doc === "CS-INDEX"));
+  ok("revision history is its own section, not the document's opening", docsCtx.searchDocs("bag stack order", 3)[0].doc !== "CS-007" || !/^CS-007 /.test(docsCtx.searchDocs("bag stack order", 3)[0].section));
+}
+
 state.docs.set(dayKey, { ask: 100 });
 const n1 = state.sent.length;
 r = await ask({ question: "one more" });

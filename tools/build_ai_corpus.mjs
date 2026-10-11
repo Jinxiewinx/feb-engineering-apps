@@ -64,12 +64,21 @@ function add(doc, title, src, section, text, extra) {
 /* Standards: the .md copy, split at #/##/### headings. The PDF is what a
    person opens, so it is the src. */
 const stdDir = path.join(DOCS, "standards");
-for (const f of readdirSync(stdDir).filter(f => /^(CS|QR)-\d+\.md$/.test(f)).sort()) {
+/* CS-INDEX is in too (2026-10-10): "which standards exist / what revision is
+   CS-006 at" is a question members ask, and the INDEX is the answer. Every
+   standard's section carries its revision and status, so Paul can say "Draft,
+   pending signature" without opening the header; and the approval and
+   revision-history tables get their own sections, because sitting in the
+   first section they made a document's opening look like its answer to
+   everything (CS-007#1 was the top hit for "bag stack"). */
+const field = (md, name) => (md.match(new RegExp(`^\\|\\s*\\*\\*${name}\\*\\*\\s*\\|\\s*([^|]+?)\\s*\\|`, "m")) || [])[1] || null;
+for (const f of readdirSync(stdDir).filter(f => /^(CS|QR)-(\d+|INDEX)\.md$/.test(f)).sort()) {
   const doc = f.replace(/\.md$/, "");
   const md = readFileSync(path.join(stdDir, f), "utf8");
   // Quick references name their parent in the header table: | **Parent** | CS-008 §5.1 |
-  const parent = (md.match(/^\|\s*\*\*Parent\*\*\s*\|\s*([^|]+?)\s*\|/m) || [])[1];
-  const extra = doc.startsWith("QR-") ? { kind: "quickref", parent: parent || null } : undefined;
+  const extra = doc.startsWith("QR-")
+    ? { kind: "quickref", parent: field(md, "Parent") }
+    : { kind: "standard", rev: field(md, "Revision"), status: field(md, "Status") };
   const h1 = (md.match(/^#\s+(.+)$/m) || [])[1] || doc;
   const title = h1.replace(/\*\*/g, "").trim();
   const pdf = existsSync(path.join(stdDir, doc + ".pdf")) ? `docs/standards/${doc}.pdf` : `docs/standards/${f}`;
@@ -78,6 +87,8 @@ for (const f of readdirSync(stdDir).filter(f => /^(CS|QR)-\d+\.md$/.test(f)).sor
   for (const line of md.split("\n")) {
     const h = line.match(/^#{1,3}\s+(.+)$/);
     if (h) { flush(); heading = h[1].replace(/\*\*/g, "").trim(); continue; }
+    const t = line.match(/^\*\*(Approvals|Revision history)\*\*\s*$/);
+    if (t) { flush(); heading = t[1]; continue; }
     buf.push(line);
   }
   flush();
@@ -93,7 +104,13 @@ for (const f of readdirSync(dsDir).filter(f => f.endsWith(".pdf")).sort()) {
   const doc = "DS-" + f.replace(/\.pdf$/i, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").toUpperCase();
   const title = titleOf(src) || f.replace(/\.pdf$/i, "");
   const raw = execFileSync("pdftotext", ["-layout", "-q", path.join(dsDir, f), "-"], { encoding: "utf8", maxBuffer: 32 << 20 });
-  raw.split("\f").forEach((page, i) => add(doc, title, src, `page ${i + 1}`, page));
+  const pages = raw.split("\f");
+  /* Safety sheet or not, read off page 1's title the way test_app's SDS
+     check does. Search uses it to keep forty SDS pages from burying the
+     one datasheet page that answers a how-to question. */
+  const head = clean(pages[0] || "").slice(0, 300);
+  const kind = /safety data sheet|product information for safe use|safety information sheet/i.test(head) ? "sds" : "datasheet";
+  pages.forEach((page, i) => add(doc, title, src, `page ${i + 1}`, page, { kind }));
 }
 
 /* The app's own reference tables, which live as constants in the browser
