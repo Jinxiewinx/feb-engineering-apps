@@ -37,8 +37,14 @@ never holds a half-updated standard. Round status:
   (next release). Stand-ins are marked "confirm against the container".
   Still wanted by hand: Frekote SDS, LiME LiNE activator SDS, Supercool
   pump oil SDS, Sigmatex/ACP sheets (ask sponsors).
-- R1 gap audit: workflow running; output in overhaul/R1-audit/ and
-  overhaul/REGISTER.md.
+- v6.8.2 shipped the R5 datasheets (verified live).
+- R1 done: overhaul/REGISTER.md (306 rows + Simon's answers section).
+- R2 done: overhaul/drafts/ (CS-000..014, INDEX, templates), trial
+  promotion lints clean except the new .v2 figures.
+- R3 graphics and R4 quick refs + Steve: workflows running. A worktree
+  agent is applying the small R-OTH code fixes on its own branch (merge
+  after review). Paul search fixes (R-OTH-06/08) are on main, not deployed.
+- Next: R6 fact-check, then R7 promote/build/release/functions deploy.
 - Gates that wait on Simon: the `functions:askPaul` deploy (R7), the CS-011 §6 co-storage proposal (R2
   drafts it into `overhaul/proposals/`, not into CS-011).
 - `04 Printables/printables.html` cards pin CS revs that are already stale
