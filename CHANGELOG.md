@@ -38,6 +38,13 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.9.1 — 2026-10-10
+
+- Paul and Steve's panel header in two rows
+- SESSION-STATE: v6.9.0 live, functions deployed; the evals are the open step
+
+---
+
 ## v6.9.0 — 2026-10-10
 
 - Search tests follow the quick references: safety questions land on QR-008 first
