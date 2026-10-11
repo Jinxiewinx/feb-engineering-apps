@@ -8,6 +8,10 @@
  * whether anything is in stock, and a short plain blurb. The URL is built from
  * the handle, so a link can't be made up.
  *
+ * Titles have HTML entities decoded, and each row gets its `cat` from
+ * steve/catalog-categories.json through build_steve_kb.mjs, the offline
+ * builder that also keeps the categories current without a refetch.
+ *
  * Re-run by hand when prices should be fresh, commit, deploy functions. A
  * stale entry costs at worst a 404 link, so release.mjs doesn't gate on it.
  *
@@ -16,6 +20,7 @@
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { decodeEntities, withCategory, loadRules } from "./build_steve_kb.mjs";
 
 export const STORE = "https://www.fibreglast.com";
 
@@ -27,7 +32,7 @@ export function toRow(p) {
   const prices = (p.variants || []).map((v) => Number(v.price)).filter((n) => n > 0);
   return {
     handle: String(p.handle),
-    title: String(p.title || "").trim(),
+    title: decodeEntities(String(p.title || "")).trim(),
     type: String(p.product_type || "").trim(),
     tags: (Array.isArray(p.tags) ? p.tags : String(p.tags || "").split(",")).map((t) => String(t).trim()).filter((t) => t && !/^(non-)?promo/i.test(t)).slice(0, 12),
     price: prices.length ? Math.min(...prices) : null,
@@ -46,8 +51,11 @@ async function main() {
     rows.push(...products.map(toRow).filter((r) => r.handle && r.title));
   }
   if (rows.length < 100) throw new Error(`only ${rows.length} products; not overwriting the catalog`);
+  // The `cat` field (steve/catalog-categories.json) is added here too, so a
+  // refetch never drops it; build_steve_kb.mjs --check would catch it if not.
+  const rules = loadRules();
   const out = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "06 Composites App", "functions", "steve_catalog.json");
-  writeFileSync(out, JSON.stringify({ store: STORE, fetchedAt: new Date().toISOString().slice(0, 10), products: rows }) + "\n");
+  writeFileSync(out, JSON.stringify({ store: STORE, fetchedAt: new Date().toISOString().slice(0, 10), products: rows.map((r) => withCategory(r, rules)) }) + "\n");
   console.log(`${rows.length} products -> ${path.relative(process.cwd(), out)}`);
 }
 

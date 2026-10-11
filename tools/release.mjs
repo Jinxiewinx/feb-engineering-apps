@@ -327,6 +327,20 @@ for (const s of SUITES) {
       die("functions/corpus.json is stale: run node tools/build_ai_corpus.mjs, commit it, deploy functions. Not shipping.");
     }
   }
+  /* Steve's side of the same promise: his notes (functions/steve_kb.json,
+     from steve/*.md) and the catalog's `cat` field (from
+     steve/catalog-categories.json). A category rule edited without a rebuild
+     would let a product the rules now keep from him, PPE or a solvent, reach
+     his answers. Offline and deterministic, unlike the store fetch. */
+  const steveKb = join(ROOT, "tools", "build_steve_kb.mjs");
+  if (existsSync(steveKb)) {
+    try {
+      execFileSync(process.execPath, [steveKb, "--check"], { cwd: ROOT, encoding: "utf8" });
+      say("    ✓ Steve's notes and catalog categories are current");
+    } catch (e) {
+      die("functions/steve_kb.json or steve_catalog.json is stale: run node tools/build_steve_kb.mjs, commit it, deploy functions. Not shipping.");
+    }
+  }
 }
 
 /* ---- 7. commit, tag, push ---------------------------------------------- */

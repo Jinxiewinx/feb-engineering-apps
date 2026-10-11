@@ -19,10 +19,22 @@ by hand, and don't point the corpus build at this folder.
 |---|---|---|
 | `fibreglast-lines.md` | Steve's talking points, a `##` section per product family, each naming real catalog handles and ending with the line he never crosses | Read by a Steve-only search tool (`search_steve_notes`, register R-STV-06). Paul never gets this tool |
 | `upsell-map.md` | For each shop topic: the catalog categories he may push, the handles he likes, and his "Never" lines. Grounding and PPE say "ask Paul" | Read by the same Steve-only tool |
-| `catalog-categories.json` | The ordered rules that give each catalog product a `cat` (first match wins, fallback `other`) | Applied offline to `functions/steve_catalog.json`, not at request time. Steve's search drops `safety-ppe` and `solvents-catalysts` (acetone, MEKP, thinners, reducers, SurfaSolve) always, and `gelcoat-colour` unless the question asks for gel coat, colour or RAL (R-STV-02, R-STV-03). `searchCatalog` in `functions/context.js` does not read `cat` yet, so this drop is still to be wired |
+| `catalog-categories.json` | The ordered rules that give each catalog product a `cat` (first match wins, fallback `other`) | Applied offline to `functions/steve_catalog.json` by `tools/build_steve_kb.mjs`, not at request time. Steve's search drops `safety-ppe` and `solvents-catalysts` (acetone, MEKP, thinners, reducers, SurfaSolve) always, and `gelcoat-colour` unless the question asks for gel coat, colour or RAL (R-STV-02, R-STV-03). `searchCatalog` in `functions/context.js` does not read `cat` yet, so this drop is still to be wired |
 
 `search_steve_notes` reads `fibreglast-lines.md` and `upsell-map.md` and
-nothing else. This README and the JSON carry section marks, register IDs and
+nothing else, through `functions/steve_kb.json`: `tools/build_steve_kb.mjs`
+splits the two files at their `##` headings into sections `STEVE-1`,
+`STEVE-2` and so on, and writes the categorised catalog in the same run.
+After editing anything in this folder, rebuild and commit both outputs:
+
+```bash
+node tools/build_steve_kb.mjs          # from the repo root
+node tools/build_steve_kb.mjs --check  # what release.mjs runs; exits 1 if stale
+```
+
+The section refs are never citable. The server keeps them out of the set of
+refs Steve may cite, so a `[STEVE-3]` in his answer is dropped like a made-up
+id. This README and the JSON carry section marks, register IDs and
 code, and Steve's material has to stay free of numbers, so neither one may be
 added to what the tool reads.
 
