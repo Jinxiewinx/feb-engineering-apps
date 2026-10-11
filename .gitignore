@@ -62,3 +62,8 @@ dist/
 # tsconfig beside each one at every load. Generated per machine, never edited.
 .claude/skills/*/.claude-plugin/types/
 .claude/skills/*/tsconfig.json
+
+# Figure variant renders and the review sheet: regenerate with
+# node tools/render_figures.mjs --variants (the variant SVGs are tracked)
+02 CS Standards/src/figures/variants/png/
+02 CS Standards/src/figures/variants/review.html

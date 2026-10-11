@@ -121,20 +121,24 @@ string to `cmd.exe` and the quotes arrive as part of the filename.
 
 | Script | What it does |
 |---|---|
-| `build_docx.py` | Renders the markdown sources in `02 CS Standards/src/` and `01 Pain Points.../src/` into FEB-styled .docx. No per-document mode; everything churns, commit all of it. |
-| `gen_docs_manifest.py` | Bundles datasheets, standards and printables into `06 Composites App/app/docs/` and writes the manifest the Documents tab reads. Run it after adding a datasheet or rebuilding a standard. |
-| `build_ai_corpus.mjs` | Turns the standards and datasheets in `app/docs/` into `functions/corpus.json`, the sections Ask Paul can search (pdftotext for the PDFs). Run it after `gen_docs_manifest.py`, then deploy functions. `--check` exits 1 when stale, and `release.mjs` refuses to ship a stale one. |
+| `render_figures.mjs` | SVG figures in `02 CS Standards/src/figures/` to 2x PNG, in Saira/Inter injected from `05 Design System/fonts/` (refuses to render if a font fails to load). Writes `figures/.hashes.json` so a PNG older than its SVG is caught. `--variants` renders competing drafts from `figures/variants/` plus a colour-over-grayscale `review.html`; nothing there ships. |
+| `build_docx.py` | Renders the markdown sources in `02 CS Standards/src/` and `01 Pain Points.../src/` into FEB-styled .docx. No per-document mode, but the output is byte-reproducible, so only docs whose source changed show up in git. |
+| `gen_docs_manifest.py` | Bundles datasheets, standards, quick references (`src/QR-*.md`) and printables into `06 Composites App/app/docs/` and writes the manifest the Documents tab reads. PDFs are reproducible; a PDF that fails to render fails the run. Run it after adding a datasheet or rebuilding a standard. |
+| `build_ai_corpus.mjs` | Turns the standards, quick references and datasheets in `app/docs/` into `functions/corpus.json`, the sections Ask Paul can search (pdftotext for the PDFs). Run it after `gen_docs_manifest.py`, then deploy functions. `--check` exits 1 when stale, and `release.mjs` refuses to ship a stale one. |
 | `eval_askpaul.js` | Not a Node script: runs in the live app, signed in, from the browser console. Asks Ask Paul ~15 questions built from today's real records plus fixed standards/datasheet questions, and reports which cited the right source. Bar: 13 of 15. Costs about $0.10–0.20 a run. |
 | `check_traceability.py` | Audits the pain-point-to-standard mapping and every csRef in the retro work orders. Run after any standards change. |
 | `gen_retro_wos.py` | Regenerates the 26 retro SN5 work orders from the Master Tracker extract. Only needed if the source data was wrong. |
 | `gen_sn5_seeds.py` | The other SN5 archives (parts, schedule, stock) from the same sources. |
 | `gen_sample_molds.mjs` | The three sample mold STLs that ship with the stack planner. |
 
-The standards flow, in order: edit `02 CS Standards/src/*.md`, then
+The standards flow, in order: edit `02 CS Standards/src/*.md` (house style in
+`02 CS Standards/STYLE.md`), then
 
 ```bash
+node tools/render_figures.mjs          # only if an SVG changed
 tools/.venv/bin/python tools/build_docx.py --all
 python3 tools/gen_docs_manifest.py
+node tools/build_ai_corpus.mjs
 python3 tools/check_traceability.py
 ```
 

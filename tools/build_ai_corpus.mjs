@@ -2,12 +2,16 @@
  * sections, written to 06 Composites App/functions/corpus.json.
  *
  * WHAT GOES IN. The app's reference tables (see `facts` below), and only
- * documents the app ships in docs/: the CS standards
- * (docs/standards/CS-*.md, split at their headings) and the datasheets
+ * documents the app ships in docs/: the CS standards and the quick
+ * references derived from them (docs/standards/CS-*.md and QR-*.md, split at
+ * their headings; a QR section also carries kind "quickref" and its parent
+ * standard, so a caller can tell a summary from the rule) and the datasheets
  * (docs/datasheets/*.pdf, through pdftotext, split by page). The standards are
  * unlisted in the Documents tab but still served, so a source chip can open
  * them. Nothing from outside the app, which is the whole promise: Paul answers
- * from what the team has, not from what a model remembers.
+ * from what the team has, not from what a model remembers. Steve's notes
+ * (06 Composites App/steve/) are deliberately NOT read here: Paul must never
+ * find one of them.
  *
  * WHY A FILE AND NOT A SEARCH SERVICE. About a thousand sections fit in a few
  * hundred KB, keyword scoring over them takes milliseconds inside the function,
@@ -48,26 +52,29 @@ function splitLong(text) {
 }
 
 const sections = [];
-function add(doc, title, src, section, text) {
+function add(doc, title, src, section, text, extra) {
   const parts = splitLong(clean(text));
   parts.forEach((t, i) => {
     if (t.length < 40) return; // a bare heading or a page number carries nothing
     const sec = parts.length > 1 ? `${section} (${i + 1}/${parts.length})` : section;
-    sections.push({ ref: `${doc}#${sections.filter(s => s.doc === doc).length + 1}`, doc, title, src, section: sec, text: t });
+    sections.push({ ref: `${doc}#${sections.filter(s => s.doc === doc).length + 1}`, doc, title, src, section: sec, text: t, ...extra });
   });
 }
 
 /* Standards: the .md copy, split at #/##/### headings. The PDF is what a
    person opens, so it is the src. */
 const stdDir = path.join(DOCS, "standards");
-for (const f of readdirSync(stdDir).filter(f => /^CS-\d+\.md$/.test(f)).sort()) {
+for (const f of readdirSync(stdDir).filter(f => /^(CS|QR)-\d+\.md$/.test(f)).sort()) {
   const doc = f.replace(/\.md$/, "");
   const md = readFileSync(path.join(stdDir, f), "utf8");
+  // Quick references name their parent in the header table: | **Parent** | CS-008 §5.1 |
+  const parent = (md.match(/^\|\s*\*\*Parent\*\*\s*\|\s*([^|]+?)\s*\|/m) || [])[1];
+  const extra = doc.startsWith("QR-") ? { kind: "quickref", parent: parent || null } : undefined;
   const h1 = (md.match(/^#\s+(.+)$/m) || [])[1] || doc;
   const title = h1.replace(/\*\*/g, "").trim();
   const pdf = existsSync(path.join(stdDir, doc + ".pdf")) ? `docs/standards/${doc}.pdf` : `docs/standards/${f}`;
   let heading = "Introduction", buf = [];
-  const flush = () => { if (buf.length) add(doc, title, pdf, heading, buf.join("\n")); buf = []; };
+  const flush = () => { if (buf.length) add(doc, title, pdf, heading, buf.join("\n"), extra); buf = []; };
   for (const line of md.split("\n")) {
     const h = line.match(/^#{1,3}\s+(.+)$/);
     if (h) { flush(); heading = h[1].replace(/\*\*/g, "").trim(); continue; }
