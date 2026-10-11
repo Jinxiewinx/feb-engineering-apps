@@ -737,3 +737,32 @@ Only what a person has to answer. Each names who and the rows it unblocks.
 18. **Things to read off a container at RFS**: the LiME LiNE Part B can's
     hazard label, the copper mesh wire size and opening, and the tooling
     board grade (PBLT or PBHT). R-009-03, R-010-07, R-003-22.
+
+## Answers from Simon (2026-10-10, after Round 2 started)
+
+Round 2 drafted without these. Round 6's fix pass applies them; a reviewer
+checking a draft against the register reads this section as overriding the
+rows it names.
+
+- **PPE (open question 2): adopt, but no new purchases.** Write the PPE the
+  SDSs require where the shop already has it as a requirement. Where it
+  needs buying (EN 166 goggles for XCR, ABEK cartridges for AT30, anything
+  else not stocked), write it as "should" and add it to a purchase list in
+  the final report for Nick. Rows R-003-02, R-004-02, R-006-03, R-008-04,
+  R-009-06, R-010-05, R-OTH-31 become "do (rule)" on those terms.
+- **Degassing (open question 9): yes, sometimes.** CS-006 §7.8 describes
+  degassing as an optional step (when, how, what to watch), not "we do not
+  degas". Nick confirms the exact setup; the draft marks that one detail
+  for him. R-006-04, QR-002.
+- **Blanks (open question 4): mostly a saw**, as the packer models (1/8 in
+  kerf). The ShopSabre may cut blanks in future; say "a saw (the ShopSabre
+  may be used)". R-003-12, R-OTH-29.
+- **Tacky tape (open question 10): Airtech AT-200Y.** Cite
+  `03 Datasheets/AIRTECH-TDS-AT-200Y-Sealant-Tape.pdf`; the INDEX row's
+  "confirm" note can go; the restock seed's supplier changes to Airtech.
+  R-006-12, R-011-03, R-OTH-22.
+- **Hand-marking (open question 6): no preference; Claude's call.** Blanks
+  yes: mold ID or plan name plus layer tag at Tooling cut, and the mold ID
+  on the glued stack (R-001-17, R-003-25 become "do (rule)"). Recorded
+  containers no: the app record already carries the open date, and a
+  second hand-written copy is one more thing to disagree (R-001-19 drop).
