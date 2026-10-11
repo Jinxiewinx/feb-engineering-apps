@@ -38,6 +38,17 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.8.1 — 2026-10-10
+
+- WHATS_NEW for 6.8.1: the 209 ratio, Airtac's buttons, Ure-Bond's SDS, rebuilt standard copies
+- Doc overhaul R0.5: Airtac and West 209 datasheet errors fixed, SDS links checked
+- Doc overhaul R0.4: document lints in check_traceability (warn-only for now)
+- Doc overhaul R0.3: figures in the app's fonts, variant review sheet, QR in the corpus
+- Doc overhaul R0.2: rebuild the stale docx/PDFs, make the builds reproducible
+- Doc overhaul R0.1: STYLE.md, Google Docs retired, plan in the repo
+
+---
+
 ## v6.8.0 — 2026-10-10
 
 - Define .steve-av so the design-system check passes
