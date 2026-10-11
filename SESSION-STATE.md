@@ -25,12 +25,12 @@ audits, reviews: `02 CS Standards/overhaul/`. House style:
 `02 CS Standards/STYLE.md`. Markdown is canonical; Google Docs retired.
 src/ holds CS-000..014 (CS-014 new), CS-INDEX Rev H, QR-001..015; all
 "Draft, pending Lead signature". v6.9.0 ships them to members.
-- NOT done: the functions deploy (`firebase deploy --only functions`),
-  which carries the new corpus, the search fixes, Steve's notes/tool/
-  filters and the prompt changes. Needs Simon's OK. Until it runs, Paul
-  answers from the August standards and says 209 is 3:1 by weight.
-- After that deploy: run tools/eval_askpaul.js (27 cases, bar 24) and
-  tools/eval_steve.js (12 cases) in a signed-in browser.
+- v6.9.0 live (hosting, verified) and functions deployed 2026-10-10
+  (askPaul revision 00012, ACTIVE): Paul has the new corpus, quick refs and
+  search fixes; Steve has his notes tool, records-only tools and filters.
+- NOT yet run: tools/eval_askpaul.js (27 cases, bar 24) and
+  tools/eval_steve.js (12 cases) in a signed-in browser. Claude cannot sign
+  in, so this is Simon's or a lead's.
 - Open for a lead: REGISTER.md last section (CS-011 §6 proposal,
   back-face engraving, label timing, DP420 no-load hold, NICK TO CONFIRM
   marks in CS-006, and more).
