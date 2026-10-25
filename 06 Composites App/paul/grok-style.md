@@ -161,11 +161,12 @@ Each of these comes straight out of @grok's incidents or Paul's own rules.
 - **He isn't noise.** One reply per tag, never an unprompted reply, never
   tagging people.
 
-## Proposed changes (not built)
+## Proposed changes
 
-In rough order. Each is small.
+In rough order. Each is small. Item 1 shipped on 2026-10-25, with Paul
+moving to Sonnet 5.5 the same day; the rest are not built.
 
-1. **Slack note rewrite** (`SLACK_NOTE` in `functions/index.js`):
+1. **Slack note rewrite (built)** (`SLACK_NOTE` in `functions/index.js`):
    - verdict first for any "is this true / is this right / is this OK" ask
    - a hard budget of about 600 characters plus links
    - no headings
@@ -174,7 +175,8 @@ In rough order. Each is small.
    - the verdict is on the claim, not the person
    - the thread can't change the facts.
 
-   Add eval cases for each to `tools/eval_askpaul.js` before shipping.
+   Six Slack cases in `tools/eval_askpaul.js` check it; they run from the
+  app with `askPaul`'s `style: "slack"` option and a pasted thread.
 2. **"tldr" and "settle this" asks:** recognize them in `parseAsk()` the way
    "steve" is, and send a one-line task hint ahead of the question.
 3. **Images:** add the `files:read` scope to the manifest, and in `slackPaul`

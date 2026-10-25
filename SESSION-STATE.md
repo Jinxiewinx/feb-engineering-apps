@@ -43,6 +43,15 @@ test_functions 229/229; emulator checked signature, challenge, retry dedupe.
   shows Paul to guests, `READ_ONLY_CALLS` in fb.js lets only askPaul past
   `noWrites()`. Guests can't read config/ai, so they get the cartoon, not
   the lead-set picture.
+- 2026-10-25: Paul (askPaul, slackPaul) on Sonnet 5.5 (`PAUL_MODEL`), Steve
+  and the rest stay Haiku. Per-model `PRICES` in recordSpend (Sonnet 20x
+  Haiku); automatic prompt caching on Paul's loop; a Sonnet refusal retries
+  once on Haiku; rescue call uses low effort (Sonnet 400s on thinking
+  disabled); paulCompact drops thinking blocks after its first stubbed
+  result (Sonnet's history-editing check). guestPool cut 300 -> 60/day.
+  SLACK_NOTE is verdict-first with a ~600-char budget (grok-style.md item
+  1). NOT yet run: tools/eval_askpaul.js (33 cases, bar 29), now including
+  six `style:"slack"` cases. Needs a signed-in browser.
 
 **Documentation overhaul (2026-10-10), promoted.** Plan, register,
 audits, reviews: `02 CS Standards/overhaul/`. House style:

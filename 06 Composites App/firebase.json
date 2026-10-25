@@ -1,6 +1,6 @@
 {
   "functions": {
-    "//": "The repo's one backend, all Claude Haiku 5.5: the photo reads (parseReceipt, parsePackingSlip, readContainerLabel), Ask Paul (askPaul, paulRemember) and Paul in Slack (slackEvents, slackPaul; needs SLACK_BOT_TOKEN and SLACK_SIGNING_SECRET too, see the README). Deployed SEPARATELY from hosting — `firebase deploy --only functions` — and never as a rider on a hosting deploy; the hosting-only standing authorization does not cover it. Needs the ANTHROPIC_API_KEY secret set once via `firebase functions:secrets:set ANTHROPIC_API_KEY`.",
+    "//": "The repo's one backend: Paul on Claude Sonnet 5.5, everything else on Claude Haiku 5.5. The photo reads (parseReceipt, parsePackingSlip, readContainerLabel), Ask Paul (askPaul, paulRemember) and Paul in Slack (slackEvents, slackPaul; needs SLACK_BOT_TOKEN and SLACK_SIGNING_SECRET too, see the README). Deployed SEPARATELY from hosting — `firebase deploy --only functions` — and never as a rider on a hosting deploy; the hosting-only standing authorization does not cover it. Needs the ANTHROPIC_API_KEY secret set once via `firebase functions:secrets:set ANTHROPIC_API_KEY`.",
     "source": "functions",
     "runtime": "nodejs22"
   },

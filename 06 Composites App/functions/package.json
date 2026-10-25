@@ -1,6 +1,6 @@
 {
   "name": "feb-composites-functions",
-  "description": "Cloud Functions for the FEB composites app: photo reads, Ask Paul and Paul in Slack (Claude Haiku 5.5).",
+  "description": "Cloud Functions for the FEB composites app: photo reads, Ask Paul and Paul in Slack (Claude Sonnet 5.5 for Paul, Haiku 5.5 for the rest).",
   "engines": {
     "node": "22"
   },

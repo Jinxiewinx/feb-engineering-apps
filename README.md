@@ -115,7 +115,7 @@ Twelve tabs, grouped in the sidebar by who is asking:
   one filterable shelf.
 - **Ask Paul:** a question box in the topbar that answers from the app's own
   records, the CS standards, their quick references and the datasheets, with a source chip for every
-  fact (Claude Haiku 5.5, read-only). Named after the team's running joke about
+  fact (Claude Sonnet 5.5, read-only). Named after the team's running joke about
   Easy Composites' Paul, so he introduces himself with "Hi, I'm Paul, from
   Easy Composites!"; it's a catchphrase, and he isn't him or them. Chats are
   saved and follow you to any device, Paul knows who's asking and what's
