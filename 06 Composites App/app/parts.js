@@ -734,7 +734,9 @@ function renderPartIndex() {
    there the index owns the whole screen. */
 function renderPartOverview() {
   const s = partSummary();
-  const live = railLive(DB.parts);
+  // The season's parts only: R&D lives on the R&D tab (2026-09-18), and
+  // railLive() alone keeps it, so a trial part due soon used to list here.
+  const live = railLive(DB.parts).filter(p => !isRnd(p));
   const late = live.filter(partLate).sort((a, b) => (a.layupDeadline || "").localeCompare(b.layupDeadline || ""));
   const mine = live.filter(p => !partDone(p) && isMineRef(p, ENG_KEYS));
   const soon = live.filter(p => !partDone(p) && !partLate(p) && daysUntil(p.layupDeadline) != null && daysUntil(p.layupDeadline) <= 21)
