@@ -159,7 +159,7 @@ stub("@anthropic-ai/sdk", FakeAnthropic);
 const { parseReceipt, parsePackingSlip, readContainerLabel, askPaul, paulRemember, slackEvents, slackPaul } = req(FN);
 const slackLib = req(path.join(path.dirname(FN), "slack.js"));
 
-const member = { auth: { token: { email: "member@berkeley.edu" } } };
+const member = { auth: { uid: "u-member", token: { email: "member@berkeley.edu" } } };
 const call = async (data, who = member) => {
   try { return { ok: true, out: await parseReceipt({ ...who, data }) }; }
   catch (e) { return { ok: false, code: e.code, msg: e.message }; }
@@ -795,6 +795,32 @@ ok("the shipped catalog is real and dated", shipped.products.length > 400 && /^\
   ok("revision history is its own section, not the document's opening", docsCtx.searchDocs("bag stack order", 3)[0].doc !== "CS-007" || !/^CS-007 /.test(docsCtx.searchDocs("bag stack order", 3)[0].section));
 }
 
+/* Guests (Simon, 2026-10-25): anyone with a session asks the same Paul. */
+{
+  const anon = { auth: { uid: "anon-1", token: { firebase: { sign_in_provider: "anonymous" } } } };
+  const today = new Date().toISOString().slice(0, 10);
+  state.docs.set(`aiUsage/guest_anon-1_${today}`, {}); state.docs.set(`aiUsage/guests_${today}`, {});
+  const before = [...state.docs.keys()].filter(k => k.startsWith("paulUsers/")).length;
+  state.replies = [answer("Hi, I'm Paul, from Easy Composites!")];
+  state.sent.length = 0;
+  r = await ask({ question: "who are you?", save: true, chatId: "guestchat01" }, anon);
+  ok("an app guest gets an answer", r.ok && /Easy Composites/.test(r.out.answer), JSON.stringify(r));
+  ok("a guest's chat isn't saved and no chat id comes back", r.ok && !r.out.chatId && [...state.docs.keys()].filter(k => k.startsWith("paulUsers/")).length === before);
+  ok("a guest's question counts for them and for the guests' pool", (state.docs.get(`aiUsage/guest_anon-1_${today}`) || {}).ask === 1 && (state.docs.get(`aiUsage/guests_${today}`) || {}).guestPool === 1);
+  ok("a guest's Paul has the same tools, minus private chat search", state.sent[0] && state.sent[0].tools.some(t => t.name === "search_docs") && !state.sent[0].tools.some(t => t.name === "search_my_chats"));
+  r = await ask({ question: "hi" }, { auth: { uid: "u-x", token: { email: "stranger@gmail.com" } } });
+  ok("a signed-in account off the roster is a guest, not refused", r.ok || r.code !== "permission-denied", JSON.stringify(r));
+  state.docs.set(`aiUsage/guests_${today}`, { guestPool: 300 });
+  const n0 = state.sent.length;
+  r = await ask({ question: "one more" }, anon);
+  ok("past the guests' pool a guest is told to sign in, before any model call", r.code === "resource-exhausted" && /Sign in/.test(r.msg) && state.sent.length === n0, JSON.stringify(r));
+  ok("and the refused question isn't charged to them", (state.docs.get(`aiUsage/guest_anon-1_${today}`) || {}).ask === 1);
+  r = await ask({ question: "hi" }, { auth: null });
+  ok("no session at all is still refused", r.code === "unauthenticated");
+  state.docs.set(`aiUsage/guests_${today}`, {});
+  state.replies = null;
+}
+
 state.docs.set(dayKey, { ask: 100 });
 const n1 = state.sent.length;
 r = await ask({ question: "one more" });
@@ -905,11 +931,14 @@ console.log("slack");
   ok("its spend shows under slackPaul", Number((state.docs.get(monthKey) || {}).by_slackPaul) > 0, JSON.stringify(state.docs.get(monthKey)));
 
   calls.length = 0; state.sent.length = 0;
+  state.replies = [answer("Paul here. Not per the team hold.")];
   await slackPaul({ data: { data: () => ({ ...job, user: "UOUT" }) } });
-  const no = calls.find(c => c.m === "chat.postMessage");
-  ok("someone off the roster gets one line and no model call", no && /roster/.test(no.p.text) && state.sent.length === 0, JSON.stringify(calls.map(c => c.m)));
+  const out2 = calls.find(c => c.m === "chat.postMessage");
+  ok("someone off the roster gets a real answer, not a refusal", out2 && /Not per the team hold/.test(out2.p.text) && !/roster/.test(out2.p.text), JSON.stringify(out2));
+  ok("their question counts under their Slack id", (state.docs.get(`aiUsage/slack_T1_UOUT_${day}`) || {}).ask === 1);
+  ok("a guest gets no private chat search", state.sent[0] && !state.sent[0].tools.some(t => t.name === "search_my_chats"));
 
-  calls.length = 0;
+  calls.length = 0; state.sent.length = 0;
   mergeInto("config/ai", { enabled: false });
   await slackPaul({ data: { data: () => ({ ...job }) } });
   ok("the off switch covers Slack too", /switched off/.test((calls.find(c => c.m === "chat.postMessage") || { p: {} }).p.text) && state.sent.length === 0);

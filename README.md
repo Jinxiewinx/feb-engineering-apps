@@ -122,7 +122,9 @@ Twelve tabs, grouped in the sidebar by who is asking:
   theirs, and he keeps a few notes about you that you can see and delete
   under Chats. Chats and notes are private to their owner; leads can't read
   them. A question that fails says why and offers Try again, and doesn't
-  count against the day's 100.
+  count against the day's 100. Guests get the same Paul (you don't need to
+  be on the roster), minus the saved chats and notes, which need an account
+  to belong to; all guests together share 300 questions a day.
 - **Steve, from Fibreglast:** the other joke, behind a Paul | Steve switch in
   the same panel. Steve is always a bit wrong and always has a Fibreglast
   product for it, linked from a snapshot of their store. He never gives a
@@ -137,11 +139,12 @@ Twelve tabs, grouped in the sidebar by who is asking:
   ("@Paul is this the right IN2 hold?", or just "@Paul" under a post), and he
   reads the thread, looks it up like he does in the app, and replies in the
   thread with links into the app and the standards. "@Paul steve, …" asks
-  Steve. A DM to Paul works too. Only people on the roster get answers (Slack
-  and the app meet on email), each question counts against the same 100 a
-  day, and the lead's AI switch turns it off with everything else. In a
-  channel he leaves out your private notes and chats, since everyone there
-  reads the reply. Code: `slackEvents` and `slackPaul` in
+  Steve. A DM to Paul works too. Anyone in the workspace gets an answer,
+  roster or not; a roster member (matched on their Slack email) also gets
+  their own notes in a DM. Each question counts against the same 100 a day
+  per person, and the lead's AI switch turns it off with everything else.
+  In a channel he leaves out your private notes and chats, since everyone
+  there reads the reply. Code: `slackEvents` and `slackPaul` in
   `06 Composites App/functions/index.js`, helpers in `functions/slack.js`.
 
   Setting it up (once, needs a Slack workspace admin if the workspace

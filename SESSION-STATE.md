@@ -36,6 +36,13 @@ test_functions 229/229; emulator checked signature, challenge, retry dedupe.
 - Not yet tried live: a real thread, Steve via "@Paul steve", a DM, the
   roster refusal. Phase 2 idea: read images in the thread (files:read).
 - Re-run tools/eval_askpaul.js after the refactor (signed-in browser).
+- 2026-10-25: Paul is open to everyone (Simon: "no difference when talking
+  to Paul regardless if you are on the roster"). `requireAsker()` makes a
+  non-member a guest keyed on uid (app) or Slack id; same tools, no saved
+  chats/notes; app guests share `guestPool` 300/day. Client: `paulOn()`
+  shows Paul to guests, `READ_ONLY_CALLS` in fb.js lets only askPaul past
+  `noWrites()`. Guests can't read config/ai, so they get the cartoon, not
+  the lead-set picture.
 
 **Documentation overhaul (2026-10-10), promoted.** Plan, register,
 audits, reviews: `02 CS Standards/overhaul/`. House style:

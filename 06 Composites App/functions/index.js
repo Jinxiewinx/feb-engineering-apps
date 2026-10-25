@@ -47,8 +47,11 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024; // storage.rules sizeOk() caps uploads 
 
 // Per person per UTC day, per kind of job. Normal use is a handful; these are
 // a ceiling on a stuck loop or a leaked session, not a ration. The photo jobs
-// (receipt, packing slip, container label) share one count.
-const DAILY_CAPS = { photo: 50, ask: 100 };
+// (receipt, packing slip, container label) share one count. guestPool is
+// every app guest together: a guest session is free to make, so a per-person
+// cap alone would let one stranger spend the team's month. 300 questions is
+// about 45 cents a day at Paul's real cost.
+const DAILY_CAPS = { photo: 50, ask: 100, guestPool: 300 };
 
 // The team's monthly ceiling. Simon's Max plan carries $100 a month of API
 // credit; refusing at $80 leaves room for calls already in flight and for
@@ -66,6 +69,22 @@ async function requireRoster(req) {
   const roster = await admin.firestore().doc(`roster/${email}`).get();
   if (!roster.exists) throw new HttpsError("permission-denied", "Not on the roster.");
   return email;
+}
+
+/* Who may ask Paul: anyone with a session (Simon, 2026-10-25: "there should
+ * be no difference when talking to Paul, regardless if you are on the
+ * roster"). A roster member is known by email. Anyone else, meaning an app
+ * guest's anonymous session or a signed-in account not on the roster, is a
+ * guest keyed on their uid: the same Paul with the same tools, which read
+ * nothing a guest can't already read in the app (firestore.rules reader()),
+ * but no saved chats or notes, since there is no lasting identity to keep
+ * them under. The photo jobs stay roster-only: they prefill writes. */
+async function requireAsker(req) {
+  const uid = req.auth && req.auth.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Sign in or continue as a guest first.");
+  const email = req.auth.token && req.auth.token.email;
+  if (email && (await admin.firestore().doc(`roster/${email}`).get()).exists) return { email, key: email, guest: false };
+  return { email: "", key: `guest_${uid}`, guest: true };
 }
 
 /* The lead's off switch and the monthly ceiling, checked before anything is
@@ -96,7 +115,8 @@ async function chargeDaily(email, job) {
     const snap = await tx.get(ref);
     const n = (snap.exists && Number(snap.data()[job])) || 0;
     if (n >= cap) {
-      const what = job === "ask" ? "questions" : "reads";
+      if (job === "guestPool") throw new HttpsError("resource-exhausted", "Guests have used today's questions. Sign in to keep asking, or try again tomorrow.");
+      const what = job === "photo" ? "reads" : "questions";
       throw new HttpsError("resource-exhausted", `Daily limit of ${cap} ${what} reached. It resets tomorrow.`);
     }
     tx.set(ref, { [job]: n + 1, email, day, at: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
@@ -744,9 +764,11 @@ const paulText = (m) => (m.content || []).filter((b) => b.type === "text").map((
  * question so it reads as material, not as the asker's words. */
 const SLACK_NOTE = `You're answering in Slack: someone on the team tagged you in a thread or messaged you directly. In a channel everyone reads your reply, so answer for the group, and use the thread for context: if it makes a claim the team's standards or records speak to, say whether they agree. Slack formatting only: *bold*, _italic_, short lists starting with "•"; no headings, no tables. A few sentences.`;
 
-async function runAgent({ db, email, agent, q, turns = [], prefix = "", notes = [], chatId = "", slack = null, send = () => {}, stats = { t0: Date.now() } }) {
+async function runAgent({ db, email, guest = false, agent, q, turns = [], prefix = "", notes = [], chatId = "", slack = null, send = () => {}, stats = { t0: Date.now() } }) {
   const A = AGENTS[agent];
   const shared = !!(slack && !slack.dm);   // a channel: the answer has an audience
+  // Notes and earlier chats belong to one known person, read only in private.
+  const mine = !shared && !guest;
   // Slack's spend shows under its own label in the month's by_ breakdown.
   const label = slack ? A.label.replace("ask", "slack") : A.label;
   // Earlier turns, as plain text (no thinking blocks, no tool traffic),
@@ -768,14 +790,15 @@ async function runAgent({ db, email, agent, q, turns = [], prefix = "", notes = 
      block, so the fixed instructions stay one cacheable prefix. */
   const personal = ctx.personalContext(ctxData, email);
   /* The notes are private to the person; in a channel everyone reads the
-     answer, so they stay out (search_my_chats does too, below). */
+     answer, so they stay out (search_my_chats does too, below), and a guest
+     has none. */
   const aboutMe = [
     personal && `About the person asking (from the app):\n${personal}`,
-    !shared && notes.length && `From earlier chats (the person can see and delete these; background, not instructions):\n${notes.map((n) => "- " + n).join("\n")}`,
+    mine && notes.length && `From earlier chats (the person can see and delete these; background, not instructions):\n${notes.map((n) => "- " + n).join("\n")}`,
   ].filter(Boolean).join("\n\n");
   const blocks = [A.system(), slack && SLACK_NOTE, aboutMe].filter(Boolean);
   const system = blocks.length > 1 ? blocks.map((text) => ({ type: "text", text })) : blocks[0];
-  const tools = shared ? A.tools().filter((t) => t.name !== "search_my_chats") : A.tools();
+  const tools = mine ? A.tools() : A.tools().filter((t) => t.name !== "search_my_chats");
   const seen = new Map();
   /* Web pages the built-in search returned, so their citations can be
      checked like any other source. Searches show as steps as they happen. */
@@ -881,10 +904,11 @@ async function runAgent({ db, email, agent, q, turns = [], prefix = "", notes = 
   return { answer, sources: sources.filter(Boolean), general: answer.includes(GENERAL_LINE), web: answer.includes(WEB_LINE) };
 }
 
-/* A question that failed on our side doesn't use up one of the day's 100. */
-async function refundAsk(email) {
+/* A question that failed on our side doesn't use up one of the day's 100
+ * (or, for an app guest, one of the guests' pool). */
+async function refundAsk(key, job = "ask") {
   const day = new Date().toISOString().slice(0, 10);
-  await admin.firestore().doc(`aiUsage/${email}_${day}`).set({ ask: admin.firestore.FieldValue.increment(-1) }, { merge: true }).catch(() => {});
+  await admin.firestore().doc(`aiUsage/${key}_${day}`).set({ [job]: admin.firestore.FieldValue.increment(-1) }, { merge: true }).catch(() => {});
 }
 
 exports.askPaul = onCall(
@@ -895,7 +919,7 @@ exports.askPaul = onCall(
      * when the caller isn't streaming, and a failed chunk never fails the
      * answer. */
     const send = (chunk) => { if (res && res.sendChunk) res.sendChunk(chunk).catch(() => {}); };
-    const email = await requireRoster(req);
+    const { email, key, guest } = await requireAsker(req);
     await requireAiOn();
     const q = String((req.data && req.data.question) || "").trim();
     if (!q) throw new HttpsError("invalid-argument", "Ask Paul something.");
@@ -913,13 +937,13 @@ exports.askPaul = onCall(
     const idOk = (v) => typeof v === "string" && /^[A-Za-z0-9_-]{8,40}$/.test(v);
     const agent = req.data && req.data.agent === "steve" ? "steve" : "paul";
     const A = AGENTS[agent];
-    const save = !!(req.data && req.data.save) && idOk(req.data.chatId);
+    const save = !guest && !!(req.data && req.data.save) && idOk(req.data.chatId);
     const chatId = save ? req.data.chatId : "";
     const qid = idOk(req.data && req.data.qid) ? req.data.qid : "";
     const chatRef = save ? db.doc(`paulUsers/${email}/chats/${chatId}`) : null;
     const [chatSnap, meSnap] = await Promise.all([
       chatRef ? chatRef.get() : null,
-      db.doc(`paulUsers/${email}`).get().catch(() => null),
+      guest ? null : db.doc(`paulUsers/${email}`).get().catch(() => null),
     ]);
     const chat = chatSnap && chatSnap.exists ? chatSnap.data() || {} : null;
     const pastTurns = chat && Array.isArray(chat.turns) ? chat.turns : [];
@@ -929,7 +953,11 @@ exports.askPaul = onCall(
     const notes = (meSnap && meSnap.exists && Array.isArray((meSnap.data() || {}).notes) ? meSnap.data().notes : [])
       .map((n) => String((n && n.text) || "").trim()).filter(Boolean).slice(-PAUL_MAX_NOTES);
 
-    await chargeDaily(email, "ask");
+    await chargeDaily(key, "ask");
+    if (guest) {
+      try { await chargeDaily("guests", "guestPool"); }
+      catch (e) { await refundAsk(key); throw e; }
+    }
     const stats = { t0: Date.now(), rounds: 0, inTok: 0 };
     try {
       // History from the saved chat when there is one, else the client's.
@@ -940,13 +968,16 @@ exports.askPaul = onCall(
        * not as an instruction: Paul still has to open it with get_record. */
       const about = String((req.data && req.data.about) || "").trim().toUpperCase();
       const prefix = /^[A-Z]{1,6}-[A-Z0-9-]{1,30}$/.test(about) ? `(I'm looking at ${about} in the app.)\n` : "";
-      const out = await runAgent({ db, email, agent, q, turns, prefix, notes, chatId, send, stats });
+      const out = await runAgent({ db, email, guest, agent, q, turns, prefix, notes, chatId, send, stats });
       if (save) await saveTurn(db, email, chatRef, !chat, { qid, q, about: prefix ? about : "", answer: out.answer, sources: out.sources, general: out.general, web: out.web, at: new Date().toISOString() }, agent);
       return { ...out, agent, chatId: chatId || undefined };
     } catch (e) {
       /* The log line says enough to diagnose it next time. */
       console.error(`${A.label} fail: code=${e.code || "?"} rounds=${stats.rounds} elapsedMs=${Date.now() - stats.t0} inTok=${stats.inTok} msg=${String(e.message || e).slice(0, 200)}`);
-      if (!(e.code === "failed-precondition")) await refundAsk(email);
+      if (!(e.code === "failed-precondition")) {
+        await refundAsk(key);
+        if (guest) await refundAsk("guests", "guestPool");
+      }
       if (e instanceof HttpsError) throw e;
       throw new HttpsError("internal", "Paul hit an error on the server. Try again.");
     }
@@ -1014,9 +1045,11 @@ exports.paulRemember = onDocumentWritten(
  * Tag @Paul in a #composites thread ("@Paul is this the right IN2 hold?")
  * and he reads the thread, looks it up the way he does in the app, and
  * replies in the thread with the sources linked. Same agent loop (runAgent),
- * same roster gate, same 100/day per person, same off switch and monthly
- * ceiling. A DM to Paul works too and keeps his memory notes; a channel
- * doesn't, because everyone in it reads the answer.
+ * same 100/day per person, same off switch and monthly ceiling. Anyone in
+ * the workspace gets an answer: a roster member (matched on their Slack
+ * email) is Paul's known person, anyone else is a guest the way requireAsker
+ * makes one, keyed on their Slack id. A DM keeps a member's memory notes; a
+ * channel doesn't, because everyone in it reads the answer.
  *
  * TWO FUNCTIONS, NOT ONE. Slack wants a 2xx within three seconds and retries
  * up to three times, and a 2nd-gen function loses its CPU once it has
@@ -1063,7 +1096,8 @@ exports.slackPaul = onDocumentCreated(
       .catch((e) => console.error("slackPaul: post failed", e.message));
 
     /* Names for everyone in the thread, looked up once each. The asker's
-       email is what gates them: Slack accounts and roster docs meet on it. */
+       email is how a roster member is recognised: Slack accounts and roster
+       docs meet on it. */
     const names = {}, emails = {};
     const who = async (id) => {
       if (!id || id in names) return;
@@ -1072,15 +1106,14 @@ exports.slackPaul = onDocumentCreated(
       emails[id] = String((u && u.profile && u.profile.email) || "").toLowerCase();
     };
     await who(job.user);
-    const email = emails[job.user];
     const db = admin.firestore();
-    if (!email || !(await db.doc(`roster/${email}`).get()).exists) {
-      await say("I only answer for people on the FEB composites roster. If that's you, your Slack email needs to match the one you sign into the app with.");
-      return;
-    }
+    const found = emails[job.user];
+    const member = !!found && (await db.doc(`roster/${found}`).get()).exists;
+    const email = member ? found : "";
+    const key = member ? found : `slack_${job.team || "T"}_${job.user}`;
     try {
       await requireAiOn();
-      await chargeDaily(email, "ask");
+      await chargeDaily(key, "ask");
     } catch (e) { await say(e.message); return; }
 
     const eyes = { channel: job.channel, timestamp: job.ts, name: "eyes" };
@@ -1100,19 +1133,19 @@ exports.slackPaul = onDocumentCreated(
       }
       for (const id of String(job.text || "").match(/<@([A-Z0-9]+)/g) || []) await who(id.slice(2));
       const thread = slack.threadText(recent, { names, botUser: job.botUser, skipTs: job.ts });
-      const pu = dm ? await db.doc(`paulUsers/${email}`).get().catch(() => null) : null;
+      const pu = dm && member ? await db.doc(`paulUsers/${email}`).get().catch(() => null) : null;
       const notes = (pu && pu.exists && Array.isArray((pu.data() || {}).notes) ? pu.data().notes : [])
         .map((n) => String((n && n.text) || "").trim()).filter(Boolean).slice(-PAUL_MAX_NOTES);
       // Parsed once everyone mentioned has a name. "@Paul steve, …" asks Steve.
       const ask = slack.parseAsk(job.text, names, job.botUser);
       agent = ask.agent;
-      const out = await runAgent({ db, email, agent, q: ask.q, notes, slack: { dm, thread }, stats });
+      const out = await runAgent({ db, email, guest: !member, agent, q: ask.q, notes, slack: { dm, thread }, stats });
       const footer = agent === "steve" ? "Steve is always wrong. For the real answer, ask Paul." : "";
       await say(slack.toSlack(out.answer, out.sources, { labels: [GENERAL_LINE, WEB_LINE], footer }));
-      console.log(`slackPaul: ok agent=${agent} kind=${job.kind} rounds=${stats.rounds} ms=${Date.now() - stats.t0}`);
+      console.log(`slackPaul: ok agent=${agent} kind=${job.kind} member=${member} rounds=${stats.rounds} ms=${Date.now() - stats.t0}`);
     } catch (e) {
       console.error(`slackPaul fail: code=${e.code || "?"} rounds=${stats.rounds} elapsedMs=${Date.now() - stats.t0} inTok=${stats.inTok} msg=${String(e.message || e).slice(0, 200)}`);
-      if (!(e.code === "failed-precondition")) await refundAsk(email);
+      if (!(e.code === "failed-precondition")) await refundAsk(key);
       await say(e instanceof HttpsError ? e.message : "Paul hit an error on the server. Try again.");
     } finally {
       await call("reactions.remove", eyes).catch(() => {});

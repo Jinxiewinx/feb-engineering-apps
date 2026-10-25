@@ -73,6 +73,14 @@ function aiOn() {
   if (!window.fb || fb.guest || !fb.call) return false;
   return !(window.AI_CFG && window.AI_CFG.enabled === false);
 }
+/* Paul is for everybody with a session, guests included (Simon, 2026-10-25:
+   no difference whether you're on the roster). aiOn() still gates the ✨ photo
+   jobs, which prefill writes a guest can't make. A guest can't read config/ai,
+   so for them the lead's switch shows up as the server's refusal instead. */
+function paulOn() {
+  if (!window.fb || !fb.call) return false;
+  return !(window.AI_CFG && window.AI_CFG.enabled === false);
+}
 function aiSpendThisMonth() {
   const m = new Date().toISOString().slice(0, 7);
   return Number(window.AI_CFG && window.AI_CFG["spend_" + m]) || 0;
@@ -3656,7 +3664,7 @@ function renderTopbar() {
             from a physical object to its record. */""}
       <button class="icon-btn" title="Scan a label" aria-label="Scan a label" onclick="scanToOpen()">${icon("scan", 19)}</button>
       <button class="icon-btn" title="Search (⌘K)" aria-label="Search" onclick="openSearch()">${icon("search", 19)}</button>
-      ${aiOn() ? `<button class="icon-btn" title="Ask Paul" aria-label="Ask Paul" onclick="togglePaul()">${icon("message", 19)}</button>` : ""}
+      ${paulOn() ? `<button class="icon-btn" title="Ask Paul" aria-label="Ask Paul" onclick="togglePaul()">${icon("message", 19)}</button>` : ""}
       ${/* No bell for a guest: notifications are per-person and a guest is
             nobody, so the query does not even run. */""}
       ${guest ? "" : `<button class="icon-btn" title="Notifications" aria-label="Notifications" onclick="openNotifs()">${icon("bell", 19)}${unread ? `<span class="badge">${unread}</span>` : ""}</button>`}
@@ -3932,7 +3940,7 @@ function renderSearchResults(q) {
       : `<div class="muted" style="padding:10px">No matches.</div>`;
   /* Search finds records by name; Paul answers questions. The last row always
      offers to ask him what was typed, for when the matches aren't the answer. */
-  if (q.trim() && typeof aiOn === "function" && aiOn()) {
+  if (q.trim() && typeof paulOn === "function" && paulOn()) {
     box.innerHTML += `<div class="gsr"><button class="gsr-go" onclick="paulAskFromSearch(${esc(JSON.stringify(q.trim()))})">
       <span class="gsr-name">${icon("message", 14)} Ask Paul: “${esc(q.trim())}”</span>
       <span class="muted tny">answers from the app, the standards and the datasheets</span></button></div>`;

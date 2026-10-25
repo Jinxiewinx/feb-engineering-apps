@@ -12128,6 +12128,21 @@ await t("fb refuses a guest write even if every client check above is bypassed",
   assert(!/async signIn\([^)]*\) \{\s*noWrites/.test(src), "except the auth methods, which are the way out");
 });
 
+await t("a guest can ask Paul, and only Paul (Simon, 2026-10-25)", () => {
+  signInAsGuest();
+  const hadCall = fb.call;
+  fb.call = fb.call || (async () => ({}));
+  window.AI_CFG = null;
+  renderTopbar();
+  assert(/togglePaul\(\)/.test(topbar.innerHTML), "the Ask Paul button is there for a guest");
+  assert(paulOn() && !aiOn(), "Paul is on while the ✨ photo jobs, which prefill writes, stay off");
+  const src = readFileSync(join(root, "fb.js"), "utf8");
+  const m = src.match(/const READ_ONLY_CALLS = new Set\(\[([^\]]*)\]\)/);
+  assert(m && m[1].trim() === '"askPaul"', "askPaul is the only callable a guest gets past noWrites(): " + (m && m[1]));
+  assert(/save: !\(window\.fb && fb\.guest\)/.test(readFileSync(join(root, "paul.js"), "utf8")), "and a guest's client doesn't ask the server to save");
+  fb.call = hadCall;
+});
+
 fb.guest = false;
 
 /* ---------- what can I actually do right now? ----------

@@ -201,6 +201,10 @@ const unsubs = {}; // collection name -> onSnapshot unsub
    it first. A client bug now has to defeat all three.
 
    Deliberately NOT on signIn / signUp / resetPassword: those are the way out. */
+/* The one callable a guest may use. askPaul only reads, and for a guest the
+   server saves no chat and no notes (requireAsker in functions/index.js);
+   the photo callables prefill writes, so they stay behind noWrites(). */
+const READ_ONLY_CALLS = new Set(["askPaul"]);
 function noWrites() {
   if (!fb.guest) return;
   throw Object.assign(
@@ -587,7 +591,7 @@ const fb = {
      Throws to the caller — the UI's job is to degrade to the manual editor,
      not this file's job to pretend it worked. */
   async call(name, data, opts) {
-    noWrites();
+    if (!READ_ONLY_CALLS.has(name)) noWrites();
     const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-functions.js");
     const res = await httpsCallable(getFunctions(app, "us-central1"), name, opts)(data);
     return res.data;
@@ -596,7 +600,7 @@ const fb = {
      they arrive (Ask Paul's thinking and tool steps). Resolves to the final
      result exactly like call(). */
   async callStream(name, data, onChunk, opts) {
-    noWrites();
+    if (!READ_ONLY_CALLS.has(name)) noWrites();
     const { getFunctions, httpsCallable } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-functions.js");
     const { stream, data: result } = await httpsCallable(getFunctions(app, "us-central1"), name, opts).stream(data, opts);
     for await (const chunk of stream) { try { onChunk && onChunk(chunk); } catch (e) { /* a UI hiccup never drops the answer */ } }

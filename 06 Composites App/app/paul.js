@@ -98,7 +98,8 @@ function paulWatch() {
   // Watched while the panel is open, and while an answer is still owed to a
   // turn whose stream dropped (the phone sheet may be stepped aside).
   const owed = PAUL.turns.some(t => t.pending || t.recovering);
-  const id = (PAUL.open || owed) && PAUL.chatId && window.fb && fb.paulChatWatch && fb.user ? PAUL.chatId : "";
+  // A guest has no saved chats to watch (the server doesn't keep them).
+  const id = (PAUL.open || owed) && PAUL.chatId && window.fb && fb.paulChatWatch && fb.user && !fb.guest ? PAUL.chatId : "";
   if (id === PAUL_WATCH.id) return;
   if (PAUL_WATCH.off) PAUL_WATCH.off();
   PAUL_WATCH = { id, off: id ? fb.paulChatWatch(id, d => paulMerge(id, d)) : null };
@@ -295,7 +296,7 @@ async function clearPaulPhoto() {
 
 /* ---------- open, close, the floating button ---------- */
 function openPaul(opts) {
-  if (!aiOn()) { toast("AI features are switched off by a lead.", "info"); return; }
+  if (!paulOn()) { toast("AI features are switched off by a lead.", "info"); return; }
   PAUL.open = true;
   if (opts && typeof opts.ask === "string") PAUL.draft = opts.ask;
   paulMount();
@@ -312,7 +313,7 @@ function togglePaul() { PAUL.open ? closePaul() : openPaul(); }
    button tracks the AI switch and the "looking at" chip tracks navigation. */
 function paulMount() {
   if (typeof document === "undefined" || !document.body) return;
-  const open = !!PAUL.open && aiOn();
+  const open = !!PAUL.open && paulOn();
   document.body.classList.toggle("paul-open", open);
   if (typeof window.__paulBindVV === "function") window.__paulBindVV();
   paulViewport();
@@ -334,7 +335,7 @@ function paulMount() {
   }
   const fab = document.getElementById("paul-fab");
   if (fab) {
-    const show = !PAUL.open && aiOn() && PAUL.turns.length > 0;
+    const show = !PAUL.open && paulOn() && PAUL.turns.length > 0;
     fab.hidden = !show;
     fab.classList.toggle("paul-busy", !!PAUL.busy);
     if (show) fab.innerHTML = paulAvatar(44) + (PAUL.busy ? `<span class="paul-fab-dot"></span>` : "");
@@ -342,7 +343,7 @@ function paulMount() {
 }
 let PAUL_PHOTO_SHOWN = null;
 function paulSync() {
-  if (PAUL.open && !aiOn()) PAUL.open = false;
+  if (PAUL.open && !paulOn()) PAUL.open = false;
   paulMount();
   // A lead just set or removed the picture: redraw the open panel to match.
   const photo = (window.AI_CFG && window.AI_CFG.paulPhoto) || "";
@@ -391,7 +392,7 @@ function paulHeadHtml() {
           ${["paul", "steve"].map(a => `<button class="${a === paulWho() ? "on" : ""}" aria-pressed="${a === paulWho()}" onclick="paulSwitch('${a}')" ${PAUL.busy ? "disabled" : ""}>${PAUL_WHO[a].name}</button>`).join("")}
         </div>
         <span class="paul-head-gap"></span>
-        ${PAUL.view === "list" ? `<button class="sm" onclick="paulShowChats(false)">Back</button>`
+        ${window.fb && fb.guest ? "" : PAUL.view === "list" ? `<button class="sm" onclick="paulShowChats(false)">Back</button>`
           : `<button class="sm" onclick="paulShowChats(true)" title="Your saved chats and what Paul remembers">Chats</button>`}
         ${PAUL.turns.length || PAUL.view === "list" ? `<button class="sm paul-new" onclick="paulClear()" title="Start a new conversation" aria-label="New chat">${icon("plus", 15)}<span class="paul-btxt">New chat</span></button>` : ""}
       </div>
@@ -619,7 +620,8 @@ async function paulAsk() {
     paulLive(turn);
   };
   try {
-    const data = { question: q, history, about, save: true, chatId, qid: turn.qid, agent: paulWho() };
+    // A guest's chat lives only in this tab: the client sends its history.
+    const data = { question: q, history, about, save: !(window.fb && fb.guest), chatId, qid: turn.qid, agent: paulWho() };
     const out = fb.callStream ? await fb.callStream("askPaul", data, onChunk, PAUL_CALL_OPTS) : await fb.call("askPaul", data, PAUL_CALL_OPTS);
     turn.answer = String((out && out.answer) || "");
     turn.sources = (out && out.sources) || [];
