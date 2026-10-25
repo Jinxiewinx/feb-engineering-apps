@@ -461,6 +461,11 @@ const PAUL_MAX_TOOL_ROUNDS = 6;
 const PAUL_TIME_BUDGET_MS = 75_000;   // of a 180s function; leaves room for a slow last call and the rescue
 const PAUL_CALL_TIMEOUT_MS = 40_000;
 const PAUL_MAX_QUESTION = 4000;
+/* paulCompact only past this many prompt tokens. With caching, stubbing old
+ * tool results breaks the cached prefix, and re-writing it (~6k tokens at
+ * Sonnet's write rate) cost more than reading the untrimmed history did
+ * (first live run, 2026-10-25). Below this the history is cheaper to keep. */
+const PAUL_COMPACT_TOKENS = 40_000;
 const PAUL_LAST_NUDGE = "That was your last lookup. Answer now with what you found, and say plainly what you couldn't find.";
 const GENERAL_LINE = "General composites knowledge, not from the app:";
 const WEB_LINE = "From the web, not from the app:";
@@ -870,7 +875,7 @@ async function runAgent({ db, email, guest = false, agent, q, turns = [], prefix
     stats.rounds = round + 1;
     const last = round >= A.rounds || Date.now() - stats.t0 > PAUL_TIME_BUDGET_MS;
     if (last && round > 0) paulNudge(messages);
-    if (round >= 3) paulCompact(messages);
+    if (round >= 3 && (stats.prompt || 0) > PAUL_COMPACT_TOKENS) paulCompact(messages);
     msg = await modelCall({
       model,
       max_tokens: 8000,
@@ -887,6 +892,7 @@ async function runAgent({ db, email, guest = false, agent, q, turns = [], prefix
       messages,
     }, label, (delta) => send({ type: "thinking", text: delta }), onBlock, { timeout: PAUL_CALL_TIMEOUT_MS });
     stats.inTok = Number((msg.usage || {}).input_tokens) || stats.inTok;
+    { const u = msg.usage || {}; stats.prompt = (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0); }
     if (msg.stop_reason === "refusal") {
       /* Sonnet's safety classifiers can decline benign shop questions
          (resin chemistry is close to some of what they watch for). One retry

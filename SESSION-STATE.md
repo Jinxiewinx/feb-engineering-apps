@@ -52,12 +52,14 @@ test_functions 229/229; emulator checked signature, challenge, retry dedupe.
   SLACK_NOTE is verdict-first with a ~600-char budget (grok-style.md item
   1). NOT yet run: tools/eval_askpaul.js (33 cases, bar 29), now including
   six `style:"slack"` cases. Needs a signed-in browser.
-- Live check 2026-10-25 20:55Z: 4 Slack DMs ran on Sonnet, rounds 2+ read
-  ~6k from cache. Open: (1) no app askPaul call arrived after the deploy
-  (none since 2026-10-25 00:10Z); (2) no channel mention arrived, likely
-  Paul not invited there; (3) Simon's DMs logged member=false, so his Slack
-  email isn't a roster doc id. Fixed same day: first rounds didn't hit the
-  cache, so the fixed system blocks now carry their own cache marker.
+- Live check 2026-10-25: Slack DMs and web-app questions all ran on
+  Sonnet with no errors; caching hits across questions and rounds after
+  two fixes (a cache marker on the fixed system blocks; paulCompact only
+  past 40k prompt tokens, since it broke the cache). About $0.015 for a
+  one-round question, $0.05 for a four-round one, before the compaction
+  fix. Open: (1) no channel mention has arrived yet, likely Paul not
+  invited there; (2) Simon's Slack DMs log member=false, so his Slack email
+  isn't a roster doc id.
 
 **Documentation overhaul (2026-10-10), promoted.** Plan, register,
 audits, reviews: `02 CS Standards/overhaul/`. House style:

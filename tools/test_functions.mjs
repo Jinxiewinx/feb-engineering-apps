@@ -434,9 +434,18 @@ ok("general knowledge is flagged for the client", r.ok && r.out.general === true
 
 // The loop is bounded.
 const n0 = state.sent.length;
-state.replies = (body) => body.tool_choice.type === "none" ? answer("Here's what I found.") : toolUse([["search_records", { query: "x" }]]);
+// A big prompt (50k, mostly cached), so compaction is worth breaking the cache for.
+const bigUse = () => ({ ...toolUse([["search_records", { query: "x" }]]), usage: { input_tokens: 2, cache_read_input_tokens: 50000, output_tokens: 80 } });
+state.replies = (body) => body.tool_choice.type === "none" ? answer("Here's what I found.") : bigUse();
 r = await ask({ question: "loop forever" });
 const loop = state.sent.slice(n0);
+{
+  // A small prompt is cheaper to keep whole: stubbing would only break the cache.
+  const nS = state.sent.length;
+  state.replies = (body) => body.tool_choice.type === "none" ? answer("Done.") : toolUse([["search_records", { query: "x" }]]);
+  await ask({ question: "short loop" });
+  ok("a small prompt is never compacted (it would only break the cache)", !/earlier result, already used/.test(JSON.stringify(state.sent.slice(nS).at(-1).messages)));
+}
 ok("at most 6 tool rounds, then a forced answer", r.ok && loop.length === 7 && loop.at(-1).tool_choice.type === "none" && loop.slice(0, 6).every(b => b.tool_choice.type === "auto"), loop.map(b => b.tool_choice.type).join());
 ok("the forced round is told in words to answer", /last lookup/.test(JSON.stringify(loop.at(-1).messages.at(-1))), JSON.stringify(loop.at(-1).messages.at(-1)).slice(-200));
 ok("old tool results are stubbed on a long run", /earlier result, already used/.test(JSON.stringify(loop.at(-1).messages)) && /"content":"\[\{|No matching/.test(JSON.stringify(loop.at(-1).messages.at(-1))), "");
