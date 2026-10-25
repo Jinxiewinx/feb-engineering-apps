@@ -146,6 +146,9 @@ Twelve tabs, grouped in the sidebar by who is asking:
   In a channel he leaves out your private notes and chats, since everyone
   there reads the reply. Code: `slackEvents` and `slackPaul` in
   `06 Composites App/functions/index.js`, helpers in `functions/slack.js`.
+  Where Paul's Slack side could go next (verdict-first answers, thread
+  summaries, photo reads, and the lines he doesn't cross, from how @grok
+  works and fails on X): `06 Composites App/paul/grok-style.md`.
 
   Setting it up (once, needs a Slack workspace admin if the workspace
   restricts app installs):
