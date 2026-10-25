@@ -1,0 +1,40 @@
+{
+  "_metadata": { "major_version": 1, "minor_version": 1 },
+  "display_information": {
+    "name": "Paul",
+    "description": "FEB Composites helper. Tag @Paul in a thread and he checks the team's standards and records.",
+    "long_description": "Paul is the composites helper from the FEB Composites app (feb-composites.web.app), in Slack. Tag @Paul in a thread, for example \"@Paul is this the right IN2 hold?\", and he reads the thread, looks things up in the app's records, the CS standards and the datasheets, and replies in the thread with the sources linked. Start with \"@Paul steve,\" to ask Steve instead, who is always wrong. Only people on the composites roster get answers, and they count against the same daily limit as Ask Paul in the app.",
+    "background_color": "#003262"
+  },
+  "features": {
+    "app_home": {
+      "home_tab_enabled": false,
+      "messages_tab_enabled": true,
+      "messages_tab_read_only_enabled": false
+    },
+    "bot_user": { "display_name": "Paul", "always_online": true }
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "app_mentions:read",
+        "chat:write",
+        "channels:history",
+        "groups:history",
+        "im:history",
+        "users:read",
+        "users:read.email",
+        "reactions:write"
+      ]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "request_url": "https://us-central1-feb-composites.cloudfunctions.net/slackEvents",
+      "bot_events": ["app_mention", "message.im"]
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}

@@ -67,3 +67,7 @@ dist/
 # node tools/render_figures.mjs --variants (the variant SVGs are tracked)
 02 CS Standards/src/figures/variants/png/
 02 CS Standards/src/figures/variants/review.html
+
+# Local secrets for the functions emulator (Slack signing secret, bot token).
+# Real values live in Firebase Functions secrets, never here.
+.secret.local

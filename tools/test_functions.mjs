@@ -122,6 +122,8 @@ const firestore = {
       ? { exists: state.roster.has(p.slice(7)) }
       : { exists: state.docs.has(p), data: () => state.docs.get(p) },
     set: async (v) => mergeInto(p, v),
+    // create() fails on an existing doc the way Firestore does (gRPC 6).
+    create: async (v) => { if (state.docs.has(p)) throw Object.assign(new Error("exists"), { code: 6 }); state.docs.set(p, { ...v }); },
   }),
   runTransaction: async (fn) => fn({
     get: async (ref) => ({ exists: state.docs.has(ref._p), data: () => state.docs.get(ref._p) }),
@@ -148,13 +150,14 @@ function stub(id, exports) {
   const resolved = req.resolve(id);
   req.cache[resolved] = { id: resolved, filename: resolved, loaded: true, exports };
 }
-stub("firebase-functions/v2/https", { onCall: (_opts, handler) => handler, HttpsError });
-stub("firebase-functions/v2/firestore", { onDocumentWritten: (_opts, handler) => handler });
+stub("firebase-functions/v2/https", { onCall: (_opts, handler) => handler, onRequest: (_opts, handler) => handler, HttpsError });
+stub("firebase-functions/v2/firestore", { onDocumentWritten: (_opts, handler) => handler, onDocumentCreated: (_opts, handler) => handler });
 stub("firebase-functions/params", { defineSecret: () => ({ value: () => "sk-test" }) });
 stub("firebase-admin", admin);
 stub("@anthropic-ai/sdk", FakeAnthropic);
 
-const { parseReceipt, parsePackingSlip, readContainerLabel, askPaul, paulRemember } = req(FN);
+const { parseReceipt, parsePackingSlip, readContainerLabel, askPaul, paulRemember, slackEvents, slackPaul } = req(FN);
+const slackLib = req(path.join(path.dirname(FN), "slack.js"));
 
 const member = { auth: { token: { email: "member@berkeley.edu" } } };
 const call = async (data, who = member) => {
@@ -802,6 +805,124 @@ r = await ask({ question: "hello" });
 ok("the off switch covers Paul", r.code === "failed-precondition" && /switched off/.test(r.msg));
 mergeInto("config/ai", { enabled: true });
 state.replies = null;
+
+/* ---------- Paul in Slack ---------- */
+console.log("slack");
+{
+  const { createHmac } = await import("node:crypto");
+  const SECRET = "sk-test";   // defineSecret's stub value
+  const sign = (raw, ts = Math.floor(Date.now() / 1000)) => ({
+    "x-slack-request-timestamp": String(ts),
+    "x-slack-signature": "v0=" + createHmac("sha256", SECRET).update(`v0:${ts}:${raw}`).digest("hex"),
+  });
+  const raw = '{"type":"url_verification","challenge":"abc"}';
+  ok("a good signature verifies", slackLib.verify(raw, sign(raw), SECRET));
+  ok("a tampered body does not", !slackLib.verify(raw + " ", sign(raw), SECRET));
+  ok("a request over five minutes old does not", !slackLib.verify(raw, sign(raw, Math.floor(Date.now() / 1000) - 400), SECRET));
+  ok("no secret, no entry", !slackLib.verify(raw, sign(raw), ""));
+
+  const hit = async (bodyObj, headers) => {
+    const rawBody = Buffer.from(JSON.stringify(bodyObj));
+    const out = { code: 0, body: null };
+    const res = { status(c) { out.code = c; return this; }, send(b) { out.body = b; if (!out.code) out.code = 200; return this; }, json(b) { out.body = b; out.code = out.code || 200; return this; } };
+    await slackEvents({ method: "POST", rawBody, headers: headers || sign(rawBody.toString()), body: bodyObj }, res);
+    return out;
+  };
+  let o = await hit({ type: "url_verification", challenge: "abc" });
+  ok("url_verification echoes the challenge", o.body && o.body.challenge === "abc", JSON.stringify(o));
+  o = await hit({ type: "url_verification", challenge: "abc" }, { "x-slack-request-timestamp": "1", "x-slack-signature": "v0=00" });
+  ok("a bad signature is 401", o.code === 401, JSON.stringify(o));
+  const mention = {
+    type: "event_callback", event_id: "Ev0SLACK01", team_id: "T1", authorizations: [{ user_id: "UPAUL" }],
+    event: { type: "app_mention", user: "UMAYA", channel: "C092", ts: "200.2", thread_ts: "100.1", text: "<@UPAUL> is this right?" },
+  };
+  o = await hit(mention);
+  const job = state.docs.get("slackJobs/Ev0SLACK01");
+  ok("a mention becomes a job keyed on the event id", o.code === 200 && job && job.kind === "mention" && job.threadTs === "100.1" && job.botUser === "UPAUL", JSON.stringify(job));
+  job.marker = 1;
+  o = await hit(mention);
+  ok("Slack's retry of the same event is a no-op 200", o.code === 200 && state.docs.get("slackJobs/Ev0SLACK01").marker === 1);
+  ok("a bot's own message is not a job", slackLib.jobFrom({ ...mention, event: { ...mention.event, bot_id: "B1" } }) === null);
+  ok("an edit is not a job", slackLib.jobFrom({ ...mention, event: { ...mention.event, subtype: "message_changed" } }) === null);
+  ok("a channel message without a mention is not a job", slackLib.jobFrom({ ...mention, event: { ...mention.event, type: "message", channel_type: "channel" } }) === null);
+  const dmJob = slackLib.jobFrom({ ...mention, event: { type: "message", channel_type: "im", user: "UMAYA", channel: "D1", ts: "5.5", text: "hi" } });
+  ok("a DM is a job that replies in place", dmJob && dmJob.kind === "dm" && dmJob.threadTs === "", JSON.stringify(dmJob));
+  ok("a top-level mention starts a thread under itself", slackLib.jobFrom({ ...mention, event: { ...mention.event, thread_ts: undefined } }).threadTs === "200.2");
+
+  let a = slackLib.parseAsk("<@UPAUL> steve, what tape should I buy?", {}, "UPAUL");
+  ok("'steve' after the mention asks Steve", a.agent === "steve" && a.q === "what tape should I buy?", JSON.stringify(a));
+  a = slackLib.parseAsk("<@UPAUL>", {}, "UPAUL");
+  ok("a bare mention is the @grok ask: weigh in on the thread", a.agent === "paul" && /thread above/.test(a.q));
+  a = slackLib.parseAsk("<@UPAUL> ask <@UNICK> about <https://x.com/a|this> &amp; that", { UNICK: "Nick" }, "UPAUL");
+  ok("Slack markup becomes plain text", a.q === "ask @Nick about this (https://x.com/a) & that", a.q);
+  const tt = slackLib.threadText([
+    { ts: "100.1", user: "UNICK", text: "IN2 demould at 12h is fine", files: [{}] },
+    { ts: "150.0", user: "UPAUL", text: "earlier answer" },
+    { ts: "200.2", user: "UMAYA", text: "<@UPAUL> is this right?" },
+  ], { names: { UNICK: "Nick" }, botUser: "UPAUL", skipTs: "200.2" });
+  ok("the thread is labelled as material, names resolved, the question left out",
+    tt.startsWith(slackLib.THREAD_HEAD) && /Nick: IN2 demould at 12h is fine \(attached 1 file/.test(tt) && /Paul \(you\): earlier answer/.test(tt) && !/is this right/.test(tt), tt);
+
+  const srcs = [
+    { type: "record", ref: "WO-SN6-003" }, { type: "doc", ref: "CS-006#12", src: "docs/standards/CS-006.pdf" },
+    { type: "web", ref: "https://www.easycomposites.co.uk/in2", site: "easycomposites.co.uk" },
+    { type: "record", ref: "PERSON:Nick" }, { type: "chat", ref: "CHAT:abc" },
+  ];
+  const md = slackLib.toSlack("**Hold** it [[0]][[1]]. Web says so [[2]], ask Nick [[3]] <now> & then [[4]].", srcs);
+  ok("records deep-link into the app", md.includes("<https://feb-composites.web.app/#/WO-SN6-003|WO-SN6-003>"), md);
+  ok("doc sections link to the shipped file", md.includes("<https://feb-composites.web.app/docs/standards/CS-006.pdf|CS-006#12>"), md);
+  ok("web sources link to the page", md.includes("<https://www.easycomposites.co.uk/in2|easycomposites.co.uk>"), md);
+  ok("a ref with no page is plain text, a private chat is dropped", md.includes("(PERSON:Nick)") && !md.includes("CHAT:"), md);
+  ok("bold and escaping are Slack's", md.startsWith("*Hold*") && md.includes("&lt;now&gt; &amp; then"), md);
+
+  /* The worker, end to end with Slack's Web API stubbed. */
+  const calls = [];
+  const users = { UMAYA: { name: "maya", profile: { display_name: "Maya", email: "Member@Berkeley.edu" } }, UNICK: { name: "nick", profile: { real_name: "Nick", email: "nick@x.edu" } }, UOUT: { name: "out", profile: { email: "stranger@gmail.com" } } };
+  globalThis.fetch = async (url, init) => {
+    const m = url.split("/api/")[1], p = Object.fromEntries(new URLSearchParams(init.body.toString()));
+    calls.push({ m, p });
+    const body = m === "users.info" ? { ok: !!users[p.user], user: users[p.user], error: "user_not_found" }
+      : m === "conversations.replies" ? { ok: true, messages: [{ ts: "100.1", user: "UNICK", text: "IN2 demould at 12h is fine" }, { ts: "200.2", user: "UMAYA", text: "<@UPAUL> is this right?" }] }
+      : { ok: true };
+    return { status: 200, json: async () => body };
+  };
+  const day = new Date().toISOString().slice(0, 10);
+  state.docs.set(`aiUsage/member@berkeley.edu_${day}`, {});
+  state.colls = { lots: [{ id: "RSN-SN6-001", name: "IN2 resin", matKey: "IN2" }] };
+  state.sent.length = 0;
+  state.replies = [toolUse([["get_record", { ref: "RSN-SN6-001" }]]), answer("Not per the team hold [RSN-SN6-001].")];
+  await slackPaul({ data: { data: () => ({ ...job }) } });
+  const post = calls.find(c => c.m === "chat.postMessage");
+  ok("the worker replies in the thread", post && post.p.thread_ts === "100.1" && post.p.channel === "C092", JSON.stringify(post));
+  ok("the reply carries the checked source", post && /RSN-SN6-001/.test(post.p.text), post && post.p.text);
+  ok("👀 goes on and comes off", calls.some(c => c.m === "reactions.add") && calls.some(c => c.m === "reactions.remove"));
+  const first = state.sent[0];
+  const userBlocks = first && first.messages[first.messages.length - 1].content;
+  ok("the model sees the thread as its own block before the question", Array.isArray(userBlocks) && userBlocks[0].text.startsWith(slackLib.THREAD_HEAD) && /Nick: IN2 demould/.test(userBlocks[0].text) && userBlocks[1].text === "is this right?", JSON.stringify(userBlocks));
+  ok("in a channel Paul can't search private chats", first && !first.tools.some(t => t.name === "search_my_chats"));
+  ok("the Slack note is in the system prompt", first && Array.isArray(first.system) && first.system.some(b => /answering in Slack/.test(b.text)));
+  ok("it counts against the asker's day", (state.docs.get(`aiUsage/member@berkeley.edu_${day}`) || {}).ask === 1);
+  ok("its spend shows under slackPaul", Number((state.docs.get(monthKey) || {}).by_slackPaul) > 0, JSON.stringify(state.docs.get(monthKey)));
+
+  calls.length = 0; state.sent.length = 0;
+  await slackPaul({ data: { data: () => ({ ...job, user: "UOUT" }) } });
+  const no = calls.find(c => c.m === "chat.postMessage");
+  ok("someone off the roster gets one line and no model call", no && /roster/.test(no.p.text) && state.sent.length === 0, JSON.stringify(calls.map(c => c.m)));
+
+  calls.length = 0;
+  mergeInto("config/ai", { enabled: false });
+  await slackPaul({ data: { data: () => ({ ...job }) } });
+  ok("the off switch covers Slack too", /switched off/.test((calls.find(c => c.m === "chat.postMessage") || { p: {} }).p.text) && state.sent.length === 0);
+  mergeInto("config/ai", { enabled: true });
+
+  calls.length = 0;
+  // The model unreachable: an error on our side, not the asker's.
+  state.throwErr = sdkErr("APIConnectionError");
+  const before = (state.docs.get(`aiUsage/member@berkeley.edu_${day}`) || {}).ask;
+  await slackPaul({ data: { data: () => ({ ...job }) } });
+  state.throwErr = null; state.replies = null;
+  ok("a failure says so in the thread and refunds the question", /Try again/.test((calls.find(c => c.m === "chat.postMessage") || { p: {} }).p.text) && (state.docs.get(`aiUsage/member@berkeley.edu_${day}`) || {}).ask === before, JSON.stringify(state.docs.get(`aiUsage/member@berkeley.edu_${day}`)));
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

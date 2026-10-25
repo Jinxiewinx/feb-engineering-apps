@@ -24,8 +24,8 @@
  *   firebase deploy --only functions
  */
 
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
+const { onDocumentWritten, onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const Anthropic = require("@anthropic-ai/sdk");
@@ -33,6 +33,9 @@ const Anthropic = require("@anthropic-ai/sdk");
 admin.initializeApp();
 
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
+// Paul in Slack (slackEvents, slackPaul at the bottom of this file).
+const SLACK_BOT_TOKEN = defineSecret("SLACK_BOT_TOKEN");
+const SLACK_SIGNING_SECRET = defineSecret("SLACK_SIGNING_SECRET");
 
 // Haiku 5.5 at low effort: a receipt is a few lines of OCR-adjacent
 // extraction, not an essay. About 2k tokens a read, a few hundredths of a
@@ -730,6 +733,160 @@ const paulText = (m) => (m.content || []).filter((b) => b.type === "text").map((
   return b.text + urls.map((u) => `⟦${u}⟧`).join("");
 }).join("").trim();
 
+/* The loop both front doors share: askPaul (the app) and slackPaul (Slack).
+ * Everything that makes an answer lives here (tools, rounds, the rescue call,
+ * the citation check, steveGuard) so the two can't drift apart. The caller
+ * does the gating, the daily count, saving and the refund; `stats` is filled
+ * in as it goes so the caller's failure log can say how far it got.
+ *
+ * `slack` is null in the app. In Slack it is { dm, thread }: thread is the
+ * conversation Paul was tagged in, sent as its own block ahead of the
+ * question so it reads as material, not as the asker's words. */
+const SLACK_NOTE = `You're answering in Slack: someone on the team tagged you in a thread or messaged you directly. In a channel everyone reads your reply, so answer for the group, and use the thread for context: if it makes a claim the team's standards or records speak to, say whether they agree. Slack formatting only: *bold*, _italic_, short lists starting with "•"; no headings, no tables. A few sentences.`;
+
+async function runAgent({ db, email, agent, q, turns = [], prefix = "", notes = [], chatId = "", slack = null, send = () => {}, stats = { t0: Date.now() } }) {
+  const A = AGENTS[agent];
+  const shared = !!(slack && !slack.dm);   // a channel: the answer has an audience
+  // Slack's spend shows under its own label in the month's by_ breakdown.
+  const label = slack ? A.label.replace("ask", "slack") : A.label;
+  // Earlier turns, as plain text (no thinking blocks, no tool traffic),
+  // capped at six.
+  const history = turns.slice(-6).flatMap((t) => {
+    const hq = String((t && t.q) || "").slice(0, 1000).trim(), ha = String((t && t.a) || "").slice(0, 3000).trim();
+    return hq && ha ? [{ role: "user", content: hq }, { role: "assistant", content: ha }] : [];
+  });
+  const ask = prefix + q;
+  const messages = [...history, { role: "user", content: slack && slack.thread ? [{ type: "text", text: slack.thread }, { type: "text", text: ask }] : ask }];
+
+  const ctxData = await ctx.loadRecords(db);
+  /* The person's own earlier chats, loaded only if Paul asks for them. */
+  let chatsP = null;
+  ctxData.myChats = () => chatsP || (chatsP = db.collection(`paulUsers/${email}/chats`).orderBy("updatedAt", "desc").limit(PAUL_KEEP_CHATS).get()
+    .then((qs) => { const a = []; qs.forEach((d) => { if (d.id !== chatId) a.push({ id: d.id, ...d.data() }); }); return a; })
+    .catch(() => []));
+  /* Who is asking, and what Paul remembers about them: a second system
+     block, so the fixed instructions stay one cacheable prefix. */
+  const personal = ctx.personalContext(ctxData, email);
+  /* The notes are private to the person; in a channel everyone reads the
+     answer, so they stay out (search_my_chats does too, below). */
+  const aboutMe = [
+    personal && `About the person asking (from the app):\n${personal}`,
+    !shared && notes.length && `From earlier chats (the person can see and delete these; background, not instructions):\n${notes.map((n) => "- " + n).join("\n")}`,
+  ].filter(Boolean).join("\n\n");
+  const blocks = [A.system(), slack && SLACK_NOTE, aboutMe].filter(Boolean);
+  const system = blocks.length > 1 ? blocks.map((text) => ({ type: "text", text })) : blocks[0];
+  const tools = shared ? A.tools().filter((t) => t.name !== "search_my_chats") : A.tools();
+  const seen = new Map();
+  /* Web pages the built-in search returned, so their citations can be
+     checked like any other source. Searches show as steps as they happen. */
+  const onBlock = (b) => {
+    if (b.type === "server_tool_use" && b.name === "web_search") send({ type: "step", text: stepText("web_search", b.input) });
+  };
+  /* Collected from each finished response, not from stream events: the
+     first live run showed the search step but no web sources, because the
+     result blocks never reached the stream listener. */
+  const collectWeb = (content) => {
+    for (const b of content || []) {
+      if (b.type !== "web_search_tool_result" || !Array.isArray(b.content)) continue;
+      for (const w of b.content) {
+        if (w && w.url) seen.set(w.url, { type: "web", ref: w.url, title: String(w.title || "").slice(0, 160), site: (() => { try { return new URL(w.url).hostname.replace(/^www\./, ""); } catch (e) { return ""; } })() });
+      }
+    }
+  };
+  let msg;
+  const found = [];   // tool results as text, for the rescue call
+  for (let round = 0; ; round++) {
+    stats.rounds = round + 1;
+    const last = round >= A.rounds || Date.now() - stats.t0 > PAUL_TIME_BUDGET_MS;
+    if (last && round > 0) paulNudge(messages);
+    if (round >= 3) paulCompact(messages);
+    msg = await modelCall({
+      max_tokens: 8000,
+      system,
+      tools,
+      // Past the round limit the model must answer with what it has.
+      tool_choice: { type: last ? "none" : "auto" },
+      thinking: A.thinking,
+      output_config: { effort: A.effort },
+      messages,
+    }, label, (delta) => send({ type: "thinking", text: delta }), onBlock, { timeout: PAUL_CALL_TIMEOUT_MS });
+    stats.inTok = Number((msg.usage || {}).input_tokens) || stats.inTok;
+    if (msg.stop_reason === "refusal") {
+      throw new HttpsError("failed-precondition", "Paul won't answer that one.");
+    }
+    collectWeb(msg.content);
+    // A long web search can pause the turn; hand it back to carry on.
+    if (msg.stop_reason === "pause_turn" && !last) { messages.push({ role: "assistant", content: msg.content }); continue; }
+    if (msg.stop_reason !== "tool_use" || last) break;
+    // The assistant turn goes back unchanged (thinking blocks included), then
+    // every tool result in one user message.
+    messages.push({ role: "assistant", content: msg.content });
+    const uses = msg.content.filter((b) => b.type === "tool_use");
+    uses.forEach((b) => send({ type: "step", text: stepText(b.name, b.input) }));
+    // Only a tool this agent was given runs: Paul never reaches Steve's
+    // notes or the store, whatever name comes back.
+    const given = new Set(tools.map((t) => t.name));
+    const results = await Promise.all(uses.map(async (b) => ({
+      type: "tool_result", tool_use_id: b.id,
+      content: JSON.stringify(given.has(b.name) ? await runTool(b.name, b.input, ctxData, seen) : { result: "Unknown tool." }).slice(0, 12000),
+    })));
+    results.forEach((x) => found.push(x.content.slice(0, 4000)));
+    messages.push({ role: "user", content: results });
+  }
+
+  /* Text blocks carry the web search's citations as objects; each becomes a
+     ⟦url⟧ marker right after the sentence it supports. */
+  let text = paulText(msg);
+  if (!text) {
+    /* An empty last round (the 2026-10-10 failure) or a max_tokens stop with
+       nothing written. One more call, built fresh: the question and what
+       the lookups found, as plain text, no tools and no thinking. A fresh
+       message list is valid whatever state the loop stopped in, which a
+       continuation with thinking switched off mid-turn is not. */
+    send({ type: "step", text: "Pulling the answer together" });
+    msg = await modelCall({
+      max_tokens: 1500,
+      system,
+      thinking: { type: "disabled" },
+      messages: [...history, { role: "user", content: `${slack && slack.thread ? slack.thread + "\n\n" : ""}${prefix}${q}\n\nWhat your lookups found (refs are inside):\n${found.join("\n").slice(-15000) || "(nothing)"}\n\n${PAUL_LAST_NUDGE}` }],
+    }, label + " rescue", null, null, { timeout: PAUL_CALL_TIMEOUT_MS });
+    stats.rounds++;
+    text = paulText(msg);
+  }
+  if (!text) throw new HttpsError("unavailable", "Paul couldn't put an answer together for that one. Try asking it in smaller parts.");
+  let { answer, sources } = checkCitations(text, seen);
+  if (agent === "steve") {
+    const titles = [...seen.values()].filter((x) => x && x.type === "product").map((x) => x.title);
+    const g = steveGuard(answer, titles);
+    if (g.n) { console.log(`askSteve guard: n=${g.n}`); answer = g.answer; }
+  }
+  /* Haiku doesn't always attach citation objects to web facts (second live
+     run: 9 pages, 0 citations, sites named in the prose). A web part must
+     still say where it came from, so the searched pages whose site Paul
+     names in the answer are listed; failing that, the first three he got. */
+  if (answer.includes(WEB_LINE) && !sources.some((x) => x && x.type === "web")) {
+    const flat = answer.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const pages = [...seen.values()].filter((x) => x && x.type === "web");
+    const bySite = new Map();
+    for (const pg of pages) {
+      const root = String(pg.site || "").split(".")[0].replace(/[^a-z0-9]/g, "");
+      if (root.length > 3 && flat.includes(root) && !bySite.has(pg.site)) bySite.set(pg.site, pg);
+    }
+    const named = [...bySite.values()].slice(0, 5);
+    sources.push(...(named.length ? named : pages.slice(0, 3)));
+  }
+  const webPages = [...seen.values()].filter((x) => x && x.type === "web").length;
+  const webCites = (msg.content || []).reduce((n, b) => n + ((b.type === "text" && b.citations) ? b.citations.length : 0), 0);
+  if (webPages || webCites) console.log(`askPaul web: pages=${webPages} citations=${webCites} kept=${sources.filter((x) => x && x.type === "web").length}`);
+  return { answer, sources: sources.filter(Boolean), general: answer.includes(GENERAL_LINE), web: answer.includes(WEB_LINE) };
+}
+
+/* A question that failed on our side doesn't use up one of the day's 100. */
+async function refundAsk(email) {
+  const day = new Date().toISOString().slice(0, 10);
+  await admin.firestore().doc(`aiUsage/${email}_${day}`).set({ ask: admin.firestore.FieldValue.increment(-1) }, { merge: true }).catch(() => {});
+}
+
 exports.askPaul = onCall(
   { secrets: [ANTHROPIC_API_KEY], region: "us-central1", timeoutSeconds: 180, memory: "512MiB" },
   async (req, res) => {
@@ -773,152 +930,23 @@ exports.askPaul = onCall(
       .map((n) => String((n && n.text) || "").trim()).filter(Boolean).slice(-PAUL_MAX_NOTES);
 
     await chargeDaily(email, "ask");
-    const t0 = Date.now();
-    let rounds = 0, inTok = 0;
+    const stats = { t0: Date.now(), rounds: 0, inTok: 0 };
     try {
-
-    // Earlier turns, as plain text (no thinking blocks, no tool traffic),
-    // capped at six: from the saved chat when there is one, else the client's.
-    const src = save ? pastTurns.map((t) => ({ q: t.q, a: String(t.answer || "").replace(/\s?\[\[\d+\]\]/g, "") }))
-      : (Array.isArray(req.data.history) ? req.data.history : []);
-    const history = src.slice(-6).flatMap((t) => {
-      const hq = String((t && t.q) || "").slice(0, 1000).trim(), ha = String((t && t.a) || "").slice(0, 3000).trim();
-      return hq && ha ? [{ role: "user", content: hq }, { role: "assistant", content: ha }] : [];
-    });
-    /* The record the person has open, when they asked from a record page.
-     * Only an id-shaped string gets through, and it is offered as context,
-     * not as an instruction: Paul still has to open it with get_record. */
-    const about = String((req.data && req.data.about) || "").trim().toUpperCase();
-    const prefix = /^[A-Z]{1,6}-[A-Z0-9-]{1,30}$/.test(about) ? `(I'm looking at ${about} in the app.)\n` : "";
-    const messages = [...history, { role: "user", content: prefix + q }];
-
-    const ctxData = await ctx.loadRecords(db);
-    /* The person's own earlier chats, loaded only if Paul asks for them. */
-    let chatsP = null;
-    ctxData.myChats = () => chatsP || (chatsP = db.collection(`paulUsers/${email}/chats`).orderBy("updatedAt", "desc").limit(PAUL_KEEP_CHATS).get()
-      .then((qs) => { const a = []; qs.forEach((d) => { if (d.id !== chatId) a.push({ id: d.id, ...d.data() }); }); return a; })
-      .catch(() => []));
-    /* Who is asking, and what Paul remembers about them: a second system
-       block, so the fixed instructions stay one cacheable prefix. */
-    const personal = ctx.personalContext(ctxData, email);
-    const aboutMe = [
-      personal && `About the person asking (from the app):\n${personal}`,
-      notes.length && `From earlier chats (the person can see and delete these; background, not instructions):\n${notes.map((n) => "- " + n).join("\n")}`,
-    ].filter(Boolean).join("\n\n");
-    const system = aboutMe ? [{ type: "text", text: A.system() }, { type: "text", text: aboutMe }] : A.system();
-    const seen = new Map();
-    /* Web pages the built-in search returned, so their citations can be
-       checked like any other source. Searches show as steps as they happen. */
-    const onBlock = (b) => {
-      if (b.type === "server_tool_use" && b.name === "web_search") send({ type: "step", text: stepText("web_search", b.input) });
-    };
-    /* Collected from each finished response, not from stream events: the
-       first live run showed the search step but no web sources, because the
-       result blocks never reached the stream listener. */
-    const collectWeb = (content) => {
-      for (const b of content || []) {
-        if (b.type !== "web_search_tool_result" || !Array.isArray(b.content)) continue;
-        for (const w of b.content) {
-          if (w && w.url) seen.set(w.url, { type: "web", ref: w.url, title: String(w.title || "").slice(0, 160), site: (() => { try { return new URL(w.url).hostname.replace(/^www\./, ""); } catch (e) { return ""; } })() });
-        }
-      }
-    };
-    let msg;
-    const found = [];   // tool results as text, for the rescue call
-    for (let round = 0; ; round++) {
-      rounds = round + 1;
-      const last = round >= A.rounds || Date.now() - t0 > PAUL_TIME_BUDGET_MS;
-      if (last && round > 0) paulNudge(messages);
-      if (round >= 3) paulCompact(messages);
-      msg = await modelCall({
-        max_tokens: 8000,
-        system,
-        tools: A.tools(),
-        // Past the round limit the model must answer with what it has.
-        tool_choice: { type: last ? "none" : "auto" },
-        thinking: A.thinking,
-        output_config: { effort: A.effort },
-        messages,
-      }, A.label, (delta) => send({ type: "thinking", text: delta }), onBlock, { timeout: PAUL_CALL_TIMEOUT_MS });
-      inTok = Number((msg.usage || {}).input_tokens) || inTok;
-      if (msg.stop_reason === "refusal") {
-        throw new HttpsError("failed-precondition", "Paul won't answer that one.");
-      }
-      collectWeb(msg.content);
-      // A long web search can pause the turn; hand it back to carry on.
-      if (msg.stop_reason === "pause_turn" && !last) { messages.push({ role: "assistant", content: msg.content }); continue; }
-      if (msg.stop_reason !== "tool_use" || last) break;
-      // The assistant turn goes back unchanged (thinking blocks included), then
-      // every tool result in one user message.
-      messages.push({ role: "assistant", content: msg.content });
-      const uses = msg.content.filter((b) => b.type === "tool_use");
-      uses.forEach((b) => send({ type: "step", text: stepText(b.name, b.input) }));
-      // Only a tool this agent was given runs: Paul never reaches Steve's
-      // notes or the store, whatever name comes back.
-      const given = new Set(A.tools().map((t) => t.name));
-      const results = await Promise.all(uses.map(async (b) => ({
-        type: "tool_result", tool_use_id: b.id,
-        content: JSON.stringify(given.has(b.name) ? await runTool(b.name, b.input, ctxData, seen) : { result: "Unknown tool." }).slice(0, 12000),
-      })));
-      results.forEach((x) => found.push(x.content.slice(0, 4000)));
-      messages.push({ role: "user", content: results });
-    }
-
-    /* Text blocks carry the web search's citations as objects; each becomes a
-       ⟦url⟧ marker right after the sentence it supports. */
-    let text = paulText(msg);
-    if (!text) {
-      /* An empty last round (the 2026-10-10 failure) or a max_tokens stop with
-         nothing written. One more call, built fresh: the question and what
-         the lookups found, as plain text, no tools and no thinking. A fresh
-         message list is valid whatever state the loop stopped in, which a
-         continuation with thinking switched off mid-turn is not. */
-      send({ type: "step", text: "Pulling the answer together" });
-      msg = await modelCall({
-        max_tokens: 1500,
-        system,
-        thinking: { type: "disabled" },
-        messages: [...history, { role: "user", content: `${prefix}${q}\n\nWhat your lookups found (refs are inside):\n${found.join("\n").slice(-15000) || "(nothing)"}\n\n${PAUL_LAST_NUDGE}` }],
-      }, A.label + " rescue", null, null, { timeout: PAUL_CALL_TIMEOUT_MS });
-      rounds++;
-      text = paulText(msg);
-    }
-    if (!text) throw new HttpsError("unavailable", "Paul couldn't put an answer together for that one. Try asking it in smaller parts.");
-    let { answer, sources } = checkCitations(text, seen);
-    if (agent === "steve") {
-      const titles = [...seen.values()].filter((x) => x && x.type === "product").map((x) => x.title);
-      const g = steveGuard(answer, titles);
-      if (g.n) { console.log(`askSteve guard: n=${g.n}`); answer = g.answer; }
-    }
-    /* Haiku doesn't always attach citation objects to web facts (second live
-       run: 9 pages, 0 citations, sites named in the prose). A web part must
-       still say where it came from, so the searched pages whose site Paul
-       names in the answer are listed; failing that, the first three he got. */
-    if (answer.includes(WEB_LINE) && !sources.some((x) => x && x.type === "web")) {
-      const flat = answer.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const pages = [...seen.values()].filter((x) => x && x.type === "web");
-      const bySite = new Map();
-      for (const pg of pages) {
-        const root = String(pg.site || "").split(".")[0].replace(/[^a-z0-9]/g, "");
-        if (root.length > 3 && flat.includes(root) && !bySite.has(pg.site)) bySite.set(pg.site, pg);
-      }
-      const named = [...bySite.values()].slice(0, 5);
-      sources.push(...(named.length ? named : pages.slice(0, 3)));
-    }
-    const webPages = [...seen.values()].filter((x) => x && x.type === "web").length;
-    const webCites = (msg.content || []).reduce((n, b) => n + ((b.type === "text" && b.citations) ? b.citations.length : 0), 0);
-    if (webPages || webCites) console.log(`askPaul web: pages=${webPages} citations=${webCites} kept=${sources.filter((x) => x && x.type === "web").length}`);
-    const out = { answer, sources: sources.filter(Boolean), general: answer.includes(GENERAL_LINE), web: answer.includes(WEB_LINE) };
-    if (save) await saveTurn(db, email, chatRef, !chat, { qid, q, about: prefix ? about : "", answer, sources: out.sources, general: out.general, web: out.web, at: new Date().toISOString() }, agent);
-    return { ...out, agent, chatId: chatId || undefined };
+      // History from the saved chat when there is one, else the client's.
+      const turns = save ? pastTurns.map((t) => ({ q: t.q, a: String(t.answer || "").replace(/\s?\[\[\d+\]\]/g, "") }))
+        : (Array.isArray(req.data.history) ? req.data.history : []);
+      /* The record the person has open, when they asked from a record page.
+       * Only an id-shaped string gets through, and it is offered as context,
+       * not as an instruction: Paul still has to open it with get_record. */
+      const about = String((req.data && req.data.about) || "").trim().toUpperCase();
+      const prefix = /^[A-Z]{1,6}-[A-Z0-9-]{1,30}$/.test(about) ? `(I'm looking at ${about} in the app.)\n` : "";
+      const out = await runAgent({ db, email, agent, q, turns, prefix, notes, chatId, send, stats });
+      if (save) await saveTurn(db, email, chatRef, !chat, { qid, q, about: prefix ? about : "", answer: out.answer, sources: out.sources, general: out.general, web: out.web, at: new Date().toISOString() }, agent);
+      return { ...out, agent, chatId: chatId || undefined };
     } catch (e) {
-      /* A question that failed on our side doesn't use up one of the day's
-         100, and the log line says enough to diagnose it next time. */
-      console.error(`${A.label} fail: code=${e.code || "?"} rounds=${rounds} elapsedMs=${Date.now() - t0} inTok=${inTok} msg=${String(e.message || e).slice(0, 200)}`);
-      if (!(e.code === "failed-precondition")) {
-        const day = new Date().toISOString().slice(0, 10);
-        await admin.firestore().doc(`aiUsage/${email}_${day}`).set({ ask: admin.firestore.FieldValue.increment(-1) }, { merge: true }).catch(() => {});
-      }
+      /* The log line says enough to diagnose it next time. */
+      console.error(`${A.label} fail: code=${e.code || "?"} rounds=${stats.rounds} elapsedMs=${Date.now() - stats.t0} inTok=${stats.inTok} msg=${String(e.message || e).slice(0, 200)}`);
+      if (!(e.code === "failed-precondition")) await refundAsk(email);
       if (e instanceof HttpsError) throw e;
       throw new HttpsError("internal", "Paul hit an error on the server. Try again.");
     }
@@ -978,5 +1006,116 @@ exports.paulRemember = onDocumentWritten(
       .concat(add.map((text) => ({ id: Math.random().toString(36).slice(2, 10), text, at: now, chat: event.params.chatId })))
       .slice(-PAUL_MAX_NOTES);
     await meRef.set({ notes: next, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+  }
+);
+
+/* ---------------- Paul in Slack ----------------
+ * Simon, 2026-10-24: "a riff on the @grok type of thing that you can do on X".
+ * Tag @Paul in a #composites thread ("@Paul is this the right IN2 hold?")
+ * and he reads the thread, looks it up the way he does in the app, and
+ * replies in the thread with the sources linked. Same agent loop (runAgent),
+ * same roster gate, same 100/day per person, same off switch and monthly
+ * ceiling. A DM to Paul works too and keeps his memory notes; a channel
+ * doesn't, because everyone in it reads the answer.
+ *
+ * TWO FUNCTIONS, NOT ONE. Slack wants a 2xx within three seconds and retries
+ * up to three times, and a 2nd-gen function loses its CPU once it has
+ * responded, so the answer can't be worked out after the 200. slackEvents
+ * checks the signature, writes slackJobs/{event_id} and answers in
+ * milliseconds; create() on the event id makes Slack's retries no-ops.
+ * slackPaul fires on that doc and does the slow part. slackJobs has no match
+ * in firestore.rules, so clients can't read or write it.
+ *
+ * Setup: slack/manifest.json, and README "Paul in Slack". */
+const slack = require("./slack.js");
+
+exports.slackEvents = onRequest(
+  { secrets: [SLACK_SIGNING_SECRET], region: "us-central1", timeoutSeconds: 10, memory: "256MiB" },
+  async (req, res) => {
+    if (req.method !== "POST") { res.status(405).send(""); return; }
+    if (!slack.verify(req.rawBody, req.headers, SLACK_SIGNING_SECRET.value())) { res.status(401).send(""); return; }
+    const body = req.body || {};
+    if (body.type === "url_verification") { res.json({ challenge: String(body.challenge || "") }); return; }
+    const job = slack.jobFrom(body);
+    if (job) {
+      try {
+        await admin.firestore().doc(`slackJobs/${body.event_id}`).create(job);
+      } catch (e) {
+        // 6 is gRPC ALREADY_EXISTS: a retry of an event we already took.
+        if (!(e && (e.code === 6 || e.code === "already-exists"))) {
+          console.error("slackEvents: job write failed", String(e && e.message).slice(0, 200));
+          res.status(500).send(""); return;
+        }
+      }
+    }
+    res.status(200).send("");
+  }
+);
+
+exports.slackPaul = onDocumentCreated(
+  { document: "slackJobs/{eventId}", secrets: [ANTHROPIC_API_KEY, SLACK_BOT_TOKEN], region: "us-central1", timeoutSeconds: 180, memory: "512MiB" },
+  async (event) => {
+    const job = event.data && event.data.data();
+    if (!job) return;
+    const token = SLACK_BOT_TOKEN.value();
+    const call = (method, params) => slack.api(method, params, token);
+    const say = (text) => call("chat.postMessage", { channel: job.channel, thread_ts: job.threadTs, text, unfurl_links: false, unfurl_media: false })
+      .catch((e) => console.error("slackPaul: post failed", e.message));
+
+    /* Names for everyone in the thread, looked up once each. The asker's
+       email is what gates them: Slack accounts and roster docs meet on it. */
+    const names = {}, emails = {};
+    const who = async (id) => {
+      if (!id || id in names) return;
+      const u = await call("users.info", { user: id }).then((r) => r.user).catch(() => null);
+      names[id] = (u && ((u.profile && (u.profile.display_name || u.profile.real_name)) || u.real_name || u.name)) || "someone";
+      emails[id] = String((u && u.profile && u.profile.email) || "").toLowerCase();
+    };
+    await who(job.user);
+    const email = emails[job.user];
+    const db = admin.firestore();
+    if (!email || !(await db.doc(`roster/${email}`).get()).exists) {
+      await say("I only answer for people on the FEB composites roster. If that's you, your Slack email needs to match the one you sign into the app with.");
+      return;
+    }
+    try {
+      await requireAiOn();
+      await chargeDaily(email, "ask");
+    } catch (e) { await say(e.message); return; }
+
+    const eyes = { channel: job.channel, timestamp: job.ts, name: "eyes" };
+    await call("reactions.add", eyes).catch(() => {});
+    const dm = job.kind === "dm";
+    let agent = "paul";
+    const stats = { t0: Date.now(), rounds: 0, inTok: 0 };
+    try {
+      // The thread he was tagged in; in a DM with no thread, the last few messages.
+      const msgs = job.threadTs
+        ? await call("conversations.replies", { channel: job.channel, ts: job.threadTs, limit: 40 }).then((r) => r.messages || []).catch(() => [])
+        : await call("conversations.history", { channel: job.channel, limit: 12 }).then((r) => (r.messages || []).reverse()).catch(() => []);
+      const recent = msgs.slice(-20);
+      for (const m of recent) {
+        await who(m.user);
+        for (const id of String(m.text || "").match(/<@([A-Z0-9]+)/g) || []) await who(id.slice(2));
+      }
+      for (const id of String(job.text || "").match(/<@([A-Z0-9]+)/g) || []) await who(id.slice(2));
+      const thread = slack.threadText(recent, { names, botUser: job.botUser, skipTs: job.ts });
+      const pu = dm ? await db.doc(`paulUsers/${email}`).get().catch(() => null) : null;
+      const notes = (pu && pu.exists && Array.isArray((pu.data() || {}).notes) ? pu.data().notes : [])
+        .map((n) => String((n && n.text) || "").trim()).filter(Boolean).slice(-PAUL_MAX_NOTES);
+      // Parsed once everyone mentioned has a name. "@Paul steve, …" asks Steve.
+      const ask = slack.parseAsk(job.text, names, job.botUser);
+      agent = ask.agent;
+      const out = await runAgent({ db, email, agent, q: ask.q, notes, slack: { dm, thread }, stats });
+      const footer = agent === "steve" ? "Steve is always wrong. For the real answer, ask Paul." : "";
+      await say(slack.toSlack(out.answer, out.sources, { labels: [GENERAL_LINE, WEB_LINE], footer }));
+      console.log(`slackPaul: ok agent=${agent} kind=${job.kind} rounds=${stats.rounds} ms=${Date.now() - stats.t0}`);
+    } catch (e) {
+      console.error(`slackPaul fail: code=${e.code || "?"} rounds=${stats.rounds} elapsedMs=${Date.now() - stats.t0} inTok=${stats.inTok} msg=${String(e.message || e).slice(0, 200)}`);
+      if (!(e.code === "failed-precondition")) await refundAsk(email);
+      await say(e instanceof HttpsError ? e.message : "Paul hit an error on the server. Try again.");
+    } finally {
+      await call("reactions.remove", eyes).catch(() => {});
+    }
   }
 );

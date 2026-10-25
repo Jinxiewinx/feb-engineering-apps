@@ -20,6 +20,22 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**Paul in Slack (2026-10-24), code done, NOT live.** Plan:
+`~/.claude/plans/i-d-like-to-expand-atomic-marshmallow.md`. Tag @Paul in a
+thread and he answers there (the @grok idea). `runAgent()` now holds the loop
+askPaul and slackPaul share; `slackEvents` (signed HTTP, writes
+`slackJobs/{event_id}`) and `slackPaul` (Firestore trigger, does the work).
+test_functions 229/229; emulator checked signature, challenge, retry dedupe.
+- Waiting on Simon/an admin: create the Slack app from
+  `06 Composites App/slack/manifest.json`, install, set the two secrets,
+  `firebase deploy --only functions` (not covered by the hosting
+  authorization), `/invite @Paul`. Steps in README "Paul in Slack".
+- Until the secrets exist, a plain functions deploy will prompt for them;
+  deploy other functions by name.
+- Not yet tried live: a real thread, Steve via "@Paul steve", a DM, the
+  roster refusal. Phase 2 idea: read images in the thread (files:read).
+- Re-run tools/eval_askpaul.js after the refactor (signed-in browser).
+
 **Documentation overhaul (2026-10-10), promoted.** Plan, register,
 audits, reviews: `02 CS Standards/overhaul/`. House style:
 `02 CS Standards/STYLE.md`. Markdown is canonical; Google Docs retired.

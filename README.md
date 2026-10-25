@@ -109,7 +109,7 @@ Twelve tabs, grouped in the sidebar by who is asking:
 - **Budget:** purchases on two tracks, the goods (Submitted, Purchased,
   Arrived) and the money (Submitted, Approved, Reimbursed). A receipt photo or
   PDF invoice reads itself into line items (Claude Haiku 5.5, through the app's
-  one Cloud Function), and a Charged to field covers spend that belongs to
+  Cloud Functions), and a Charged to field covers spend that belongs to
   another team's budget.
 - **Documents:** the datasheets (TDS, SDS and glove charts from `03 Datasheets/`), member uploads, and pinned Google Docs in
   one filterable shelf.
@@ -133,6 +133,35 @@ Twelve tabs, grouped in the sidebar by who is asking:
   CNC questions to Paul. His private notes live in `06 Composites App/steve/`.
   Refresh his catalog with `node tools/build_steve_catalog.mjs`, then
   `node tools/build_steve_kb.mjs`, commit, and deploy functions.
+- **Paul in Slack:** tag `@Paul` in a thread, the way people tag @grok on X
+  ("@Paul is this the right IN2 hold?", or just "@Paul" under a post), and he
+  reads the thread, looks it up like he does in the app, and replies in the
+  thread with links into the app and the standards. "@Paul steve, …" asks
+  Steve. A DM to Paul works too. Only people on the roster get answers (Slack
+  and the app meet on email), each question counts against the same 100 a
+  day, and the lead's AI switch turns it off with everything else. In a
+  channel he leaves out your private notes and chats, since everyone there
+  reads the reply. Code: `slackEvents` and `slackPaul` in
+  `06 Composites App/functions/index.js`, helpers in `functions/slack.js`.
+
+  Setting it up (once, needs a Slack workspace admin if the workspace
+  restricts app installs):
+  1. api.slack.com/apps, Create New App, From a manifest, and paste
+     `06 Composites App/slack/manifest.json`.
+  2. Install it to the workspace. Copy the Bot User OAuth Token (xoxb-…) and,
+     from Basic Information, the Signing Secret.
+  3. From `06 Composites App/`:
+     `firebase functions:secrets:set SLACK_BOT_TOKEN`,
+     `firebase functions:secrets:set SLACK_SIGNING_SECRET`, then
+     `firebase deploy --only functions`.
+  4. Back in the Slack app settings, Event Subscriptions should show the
+     request URL as Verified. `/invite @Paul` in #composites and any other
+     channel he should answer in.
+
+  Once these two secrets exist, every `firebase deploy --only functions`
+  needs them. Before they exist, deploy the other functions by name
+  (`--only functions:askPaul,functions:paulRemember,…`) or the CLI will ask
+  for them.
 - **AI, on every ✨:** receipts, packing slips and resin jug labels read
   themselves into the grid you'd otherwise type, and you check before anything
   saves. A lead can switch all of it off from ⋯, and it stops itself at $80 a
