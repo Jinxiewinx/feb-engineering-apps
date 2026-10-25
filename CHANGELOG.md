@@ -38,6 +38,16 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.10.0 — 2026-10-24
+
+- What's New for 6.10.0: Paul in Slack, guests can ask Paul, R&D off the Parts overview
+- Paul for everyone: guests and non-roster Slack users get the same Paul
+- Parts overview: R&D parts no longer list under late, mine or due soon
+- SESSION-STATE: Paul in Slack deployed, Slack-side verification left
+- Paul in Slack: tag @Paul in a thread and he answers there
+
+---
+
 ## v6.9.1 — 2026-10-10
 
 - Paul and Steve's panel header in two rows
