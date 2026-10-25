@@ -212,7 +212,7 @@ async function modelCall(body, label, onThinking, onBlock, opts = {}) {
 
   const u = msg.usage || {};
   const model = body.model || MODEL;
-  console.log(`${label}: model=${model} in=${u.input_tokens} cacheRead=${u.cache_read_input_tokens || 0} out=${u.output_tokens} stop=${msg.stop_reason}`);
+  console.log(`${label}: model=${model} in=${u.input_tokens} cacheRead=${u.cache_read_input_tokens || 0} cacheWrite=${u.cache_creation_input_tokens || 0} out=${u.output_tokens} stop=${msg.stop_reason}`);
   await recordSpend(u, label, model);
   return msg;
 }
@@ -838,8 +838,14 @@ async function runAgent({ db, email, guest = false, agent, q, turns = [], prefix
     personal && `About the person asking (from the app):\n${personal}`,
     mine && notes.length && `From earlier chats (the person can see and delete these; background, not instructions):\n${notes.map((n) => "- " + n).join("\n")}`,
   ].filter(Boolean).join("\n\n");
-  const blocks = [A.system(), slack && SLACK_NOTE, aboutMe].filter(Boolean);
-  const system = blocks.length > 1 ? blocks.map((text) => ({ type: "text", text })) : blocks[0];
+  /* The fixed instructions end in their own cache marker. Automatic caching
+     marks only the end of the conversation, which differs per question, so
+     without this every question's first round re-wrote the ~6k tokens of
+     tools and instructions (live logs, 2026-10-25: cacheRead=0 on every
+     first round). The personal block goes after the marker. */
+  const fixed = [A.system(), slack && SLACK_NOTE].filter(Boolean).map((text) => ({ type: "text", text }));
+  fixed[fixed.length - 1].cache_control = { type: "ephemeral" };
+  const system = aboutMe ? [...fixed, { type: "text", text: aboutMe }] : fixed;
   const tools = mine ? A.tools() : A.tools().filter((t) => t.name !== "search_my_chats");
   const seen = new Map();
   /* Web pages the built-in search returned, so their citations can be

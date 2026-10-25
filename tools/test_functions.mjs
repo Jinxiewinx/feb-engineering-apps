@@ -388,6 +388,7 @@ r = await ask({ question: "What's blocking the diffuser?" });
 ok("a question gets an answer", r.ok, JSON.stringify(r));
 const calls = state.sent.slice(sentBefore);
 ok("three model calls: search, open, answer", calls.length === 3, String(calls.length));
+ok("the fixed instructions carry their own cache marker, ahead of anything personal", calls.every(b => Array.isArray(b.system) && b.system[0].cache_control && b.system[0].cache_control.type === "ephemeral" && b.system.slice(1).every(x => !x.cache_control || /answering in Slack/.test(x.text))), JSON.stringify(calls[0].system.map(x => ({ c: !!x.cache_control, t: x.text.slice(0, 30) }))));
 ok("Paul runs Sonnet 5.5 at medium effort, with automatic caching", calls.every(b => b.model === "claude-sonnet-5-5" && b.output_config.effort === "medium" && b.cache_control && b.cache_control.type === "ephemeral"));
 ok("with summarized thinking, so there is something to show", calls.every(b => b.thinking && b.thinking.type === "adaptive" && b.thinking.display === "summarized"));
 ok("the thinking streams to the client as it comes", chunks.filter(c => c.type === "thinking").length === 2 && chunks[0].text === "Checking the work orders first.", JSON.stringify(chunks.slice(0, 3)));
