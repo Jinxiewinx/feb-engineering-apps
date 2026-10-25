@@ -32,8 +32,10 @@ var APP_VERSION = "6.9.1";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Paul and Steve's panel header is tidier: who you're talking to and the close button on top, the Paul | Steve switch and your chats underneath.",
-  "The name and \"always wrong, always selling\" no longer squash into a column, and the close button no longer falls off the edge.",
+  "Paul is in Slack. Tag @Paul in a thread (\"@Paul is this the right IN2 hold?\") and he answers there, with links into the app.",
+  "Start with \"@Paul steve,\" to get Steve instead. You can also DM Paul.",
+  "Guests can ask Paul now too. Same answers; only saved chats and notes need an account.",
+  "R&D parts no longer show up in the Parts overview's late and due-soon lists.",
 ];
 
 
