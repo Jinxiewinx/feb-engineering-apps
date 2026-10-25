@@ -20,18 +20,19 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
-**Paul in Slack (2026-10-24), code done, NOT live.** Plan:
+**Paul in Slack (2026-10-24), deployed 2026-10-25, not yet tried in Slack.** Plan:
 `~/.claude/plans/i-d-like-to-expand-atomic-marshmallow.md`. Tag @Paul in a
 thread and he answers there (the @grok idea). `runAgent()` now holds the loop
 askPaul and slackPaul share; `slackEvents` (signed HTTP, writes
 `slackJobs/{event_id}`) and `slackPaul` (Firestore trigger, does the work).
 test_functions 229/229; emulator checked signature, challenge, retry dedupe.
-- Waiting on Simon/an admin: create the Slack app from
-  `06 Composites App/slack/manifest.json`, install, set the two secrets,
-  `firebase deploy --only functions` (not covered by the hosting
-  authorization), `/invite @Paul`. Steps in README "Paul in Slack".
-- Until the secrets exist, a plain functions deploy will prompt for them;
-  deploy other functions by name.
+- Slack app created by Simon, both secrets set, functions deployed from
+  1202ab0 (slackEvents + slackPaul ACTIVE; live URL answers 405 to GET and
+  401 to an unsigned POST). Left: Event Subscriptions "Retry" to verify the
+  URL, `/invite @Paul`, first real mention. Check `firebase functions:log
+  --only slackPaul` for `slackPaul: ok` or `slackPaul fail:` lines.
+- Every functions deploy now needs SLACK_BOT_TOKEN and SLACK_SIGNING_SECRET
+  (they exist).
 - Not yet tried live: a real thread, Steve via "@Paul steve", a DM, the
   roster refusal. Phase 2 idea: read images in the thread (files:read).
 - Re-run tools/eval_askpaul.js after the refactor (signed-in browser).
