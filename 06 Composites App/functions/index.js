@@ -98,6 +98,19 @@ async function requireAsker(req) {
   return { email: "", key: `guest_${uid}`, guest: true };
 }
 
+/* The roster entry an email belongs to: its own doc, or the one entry that
+ * lists it under otherEmails (a lead sets these on the person page, for a
+ * Slack account on a different address). Two entries claiming the same
+ * address match neither: a lead fixes that, Paul doesn't guess. */
+async function rosterEmailFor(email) {
+  const e = String(email || "").trim().toLowerCase();
+  if (!e) return "";
+  const db = admin.firestore();
+  if ((await db.doc(`roster/${e}`).get()).exists) return e;
+  const qs = await db.collection("roster").where("otherEmails", "array-contains", e).limit(2).get();
+  return qs.size === 1 ? qs.docs[0].id : "";
+}
+
 /* The lead's off switch and the monthly ceiling, checked before anything is
  * fetched or counted. config/ai is lead-written ({ enabled }) and roster-read;
  * a missing doc means on. The month's spend is read from aiUsage, which has no
@@ -1180,10 +1193,10 @@ exports.slackPaul = onDocumentCreated(
     };
     await who(job.user);
     const db = admin.firestore();
-    const found = emails[job.user];
-    const member = !!found && (await db.doc(`roster/${found}`).get()).exists;
-    const email = member ? found : "";
-    const key = member ? found : `slack_${job.team || "T"}_${job.user}`;
+    // Their roster entry, by its own address or one listed under otherEmails.
+    const email = await rosterEmailFor(emails[job.user]).catch(() => "");
+    const member = !!email;
+    const key = member ? email : `slack_${job.team || "T"}_${job.user}`;
     try {
       await requireAiOn();
       await chargeDaily(key, "ask");

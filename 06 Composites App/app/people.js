@@ -229,6 +229,8 @@ function renderPerson(email) {
       <div class="muted tny">${u ? `<span class="pill">${esc(displayRole(u))}</span> ${esc(userHandle(email))}` : "No longer on the roster"}</div>
       ${u ? `<div class="trwrap" style="margin-top:6px"><span class="tny muted">Trainings</span> ${trainingPills(u)}
         ${isLead() ? `<button class="ib sm no-print" title="Edit ${esc(name)}'s trainings" onclick="openPersonTrainings(this.dataset.email)" data-email="${esc(email)}">${icon("edit", 13)}</button>` : ""}</div>` : ""}
+      ${u && isLead() ? `<div class="tny muted" style="margin-top:6px">Other emails: ${(u.otherEmails || []).length ? esc(u.otherEmails.join(", ")) : "none"}
+        <button class="ib sm no-print" title="Other addresses ${esc(name)} uses, like the one on their Slack account" aria-label="Edit ${esc(name)}'s other emails" onclick="editOtherEmails(this.dataset.email)" data-email="${esc(email)}">${icon("edit", 13)}</button></div>` : ""}
     </div>
   </div>
   <div class="persgrid">
@@ -413,6 +415,46 @@ function renderPeopleMatrix(rows) {
    and revokes. All go through fb.rosterGrant/rosterRevoke (dot-path writes
    on the roster doc; the rules already reject a member writing trainings on
    their own doc). */
+/* Other emails (2026-10-26). A person's roster entry is keyed on the address
+   they sign into the app with, but their Slack account may use another (a
+   Berkeley address against a personal one). Paul in Slack matches a Slack
+   email against these too, so that person gets their own notes and context
+   rather than being treated as a guest. Lead-only: the list decides whose
+   identity a Slack account carries, and the rules let only a lead write it.
+   An address already on someone else's entry is refused here, and the server
+   ignores an address two entries both claim. */
+function editOtherEmails(email) {
+  const u = userByEmail(email);
+  if (!u || !isLead()) return;
+  openModal(`
+    <h2>${esc(u.name || email)}: other emails</h2>
+    <p class="muted">Addresses this person uses besides ${esc(email)}, like the one on their Slack account. Paul in Slack recognises them by any of these. Separate with commas.</p>
+    <div class="field"><label for="oe-list">Other emails</label>
+      <input id="oe-list" type="text" autocomplete="off" spellcheck="false" value="${esc((u.otherEmails || []).join(", "))}" placeholder="name@berkeley.edu"></div>
+    <div class="foot"><button onclick="closeModal()">Cancel</button><button class="primary" onclick="saveOtherEmails(this.dataset.email)" data-email="${esc(email)}">Save</button></div>
+  `);
+}
+function parseOtherEmails(text, own) {
+  const list = [...new Set(String(text || "").split(/[\s,;]+/).map(x => x.trim().toLowerCase()).filter(Boolean))];
+  const bad = list.filter(x => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+  if (bad.length) return { error: `Not an email: ${bad.join(", ")}` };
+  const mine = String(own || "").toLowerCase();
+  const others = (DB.users || []).filter(x => x.email !== mine);
+  const taken = list.filter(x => x !== mine && others.some(o => o.email === x || (o.otherEmails || []).includes(x)));
+  if (taken.length) return { error: `Already someone else's: ${taken.join(", ")}` };
+  return { list: list.filter(x => x !== mine) };
+}
+async function saveOtherEmails(email) {
+  const box = document.getElementById("oe-list");
+  const r = parseOtherEmails(box ? box.value : "", email);
+  if (r.error) { toast(r.error, "error"); return; }
+  try {
+    await fb.rosterPatch(email, { otherEmails: r.list });
+    closeModal();
+    toast(r.list.length ? `Saved. Paul knows ${userName(email)} by ${r.list.join(", ")} too.` : "Other emails cleared.");
+  } catch (e) { toast("Couldn't save: " + e.message, "error"); }
+}
+
 function openPersonTrainings(email) {
   const u = userByEmail(email);
   if (!u) return;

@@ -111,6 +111,11 @@ const subQuery = (name, o = {}) => ({
 });
 const firestore = {
   collection: (name) => name.includes("/") ? subQuery(name) : ({
+    // array-contains only, which is all rosterEmailFor asks.
+    where: (f, op, v) => ({ limit: (n) => ({ get: async () => {
+      const rows = (state.colls[name] || []).filter((r) => Array.isArray(r[f]) && r[f].includes(v)).slice(0, n);
+      return { size: rows.length, docs: rows.map((r) => ({ id: r.id, data: () => ({ ...r }) })) };
+    } }) }),
     get: async () => {
       state.collsRead.push(name);
       return { forEach: (fn) => (state.colls[name] || []).forEach((r) => fn({ id: r.id, data: () => ({ ...r }) })) };
@@ -977,6 +982,20 @@ console.log("slack");
   ok("someone off the roster gets a real answer, not a refusal", out2 && /Not per the team hold/.test(out2.p.text) && !/roster/.test(out2.p.text), JSON.stringify(out2));
   ok("their question counts under their Slack id", (state.docs.get(`aiUsage/slack_T1_UOUT_${day}`) || {}).ask === 1);
   ok("a guest gets no private chat search", state.sent[0] && !state.sent[0].tools.some(t => t.name === "search_my_chats"));
+
+  /* Other emails: a Slack account on a different address is still the person. */
+  users.UALT = { name: "maya2", profile: { display_name: "Maya", email: "Maya.B@School.edu" } };
+  state.colls = { ...state.colls, roster: [{ id: "member@berkeley.edu", otherEmails: ["maya.b@school.edu"] }] };
+  calls.length = 0; state.sent.length = 0;
+  state.replies = [answer("Hi Maya.")];
+  await slackPaul({ data: { data: () => ({ ...job, user: "UALT" }) } });
+  ok("a Slack email listed under otherEmails is that roster member", (state.docs.get(`aiUsage/member@berkeley.edu_${day}`) || {}).ask >= 1 && !state.docs.has(`aiUsage/slack_T1_UALT_${day}`));
+  state.colls = { ...state.colls, roster: [{ id: "member@berkeley.edu", otherEmails: ["maya.b@school.edu"] }, { id: "other@x.edu", otherEmails: ["maya.b@school.edu"] }] };
+  calls.length = 0; state.sent.length = 0;
+  state.replies = [answer("Hi.")];
+  await slackPaul({ data: { data: () => ({ ...job, user: "UALT" }) } });
+  ok("an address two entries both claim matches neither", (state.docs.get(`aiUsage/slack_T1_UALT_${day}`) || {}).ask === 1);
+  state.colls = { ...state.colls, roster: [] };
 
   calls.length = 0; state.sent.length = 0;
   mergeInto("config/ai", { enabled: false });

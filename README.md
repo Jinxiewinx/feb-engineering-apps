@@ -140,7 +140,8 @@ Twelve tabs, grouped in the sidebar by who is asking:
   reads the thread, looks it up like he does in the app, and replies in the
   thread with links into the app and the standards. "@Paul steve, …" asks
   Steve. A DM to Paul works too. Anyone in the workspace gets an answer,
-  roster or not; a roster member (matched on their Slack email) also gets
+  roster or not; a roster member (matched on their Slack email, or on an
+  address a lead lists under Other emails on their People page) also gets
   their own notes in a DM. Each question counts against the same 100 a day
   per person, and the lead's AI switch turns it off with everything else.
   In a channel he leaves out your private notes and chats, since everyone

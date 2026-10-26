@@ -58,8 +58,10 @@ test_functions 229/229; emulator checked signature, challenge, retry dedupe.
   past 40k prompt tokens, since it broke the cache). About $0.015 for a
   one-round question, $0.05 for a four-round one, before the compaction
   fix. Open: (1) no channel mention has arrived yet, likely Paul not
-  invited there; (2) Simon's Slack DMs log member=false, so his Slack email
-  isn't a roster doc id.
+  invited there.
+- 2026-10-26: roster `otherEmails` (lead-edited on the person page) and
+  `rosterEmailFor()` in slackPaul, so a Slack account on another address
+  (Simon's Berkeley email vs his roster gmail) is that member.
 
 **Documentation overhaul (2026-10-10), promoted.** Plan, register,
 audits, reviews: `02 CS Standards/overhaul/`. House style:

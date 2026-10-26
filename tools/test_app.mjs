@@ -12128,6 +12128,20 @@ await t("fb refuses a guest write even if every client check above is bypassed",
   assert(!/async signIn\([^)]*\) \{\s*noWrites/.test(src), "except the auth methods, which are the way out");
 });
 
+await t("other emails: parsed, lowercased, and never someone else's (2026-10-26)", () => {
+  const saved = DB.users;
+  DB.users = [{ email: "simon@gmail.com", name: "Simon", role: "lead" }, { email: "nick@berkeley.edu", name: "Nick", otherEmails: ["nick@gmail.com"] }];
+  let r = parseOtherEmails(" Starbuck@Berkeley.edu, starbuck@berkeley.edu ;", "simon@gmail.com");
+  assert(r.list && r.list.length === 1 && r.list[0] === "starbuck@berkeley.edu", "trimmed, lowercased, de-duplicated: " + JSON.stringify(r));
+  r = parseOtherEmails("simon@gmail.com, s@x.edu", "simon@gmail.com");
+  assert(r.list && r.list.join() === "s@x.edu", "the entry's own address is dropped, not stored twice");
+  assert(parseOtherEmails("not-an-email", "simon@gmail.com").error, "a non-address is refused");
+  assert(/someone else's/.test(parseOtherEmails("nick@berkeley.edu", "simon@gmail.com").error || ""), "another person's sign-in address is refused");
+  assert(/someone else's/.test(parseOtherEmails("nick@gmail.com", "simon@gmail.com").error || ""), "and so is one on their other-emails list");
+  assert(parseOtherEmails("", "simon@gmail.com").list.length === 0, "an empty box clears the list");
+  DB.users = saved;
+});
+
 await t("a guest can ask Paul, and only Paul (Simon, 2026-10-25)", () => {
   signInAsGuest();
   const hadCall = fb.call;
