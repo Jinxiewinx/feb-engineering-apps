@@ -50,8 +50,7 @@ test_functions 229/229; emulator checked signature, challenge, retry dedupe.
   disabled); paulCompact drops thinking blocks after its first stubbed
   result (Sonnet's history-editing check). guestPool cut 300 -> 60/day.
   SLACK_NOTE is verdict-first with a ~600-char budget (grok-style.md item
-  1). NOT yet run: tools/eval_askpaul.js (33 cases, bar 29), now including
-  six `style:"slack"` cases. Needs a signed-in browser.
+  1).
 - Live check 2026-10-25: Slack DMs and web-app questions all ran on
   Sonnet with no errors; caching hits across questions and rounds after
   two fixes (a cache marker on the fixed system blocks; paulCompact only
@@ -61,7 +60,12 @@ test_functions 229/229; emulator checked signature, challenge, retry dedupe.
   invited there.
 - 2026-10-26: roster `otherEmails` (lead-edited on the person page) and
   `rosterEmailFor()` in slackPaul, so a Slack account on another address
-  (Simon's Berkeley email vs his roster gmail) is that member.
+  (Simon's Berkeley email vs his roster gmail) is that member. Shipped in v6.11.0;
+  Simon's entry now lists starbuck@berkeley.edu.
+- Eval run 2026-10-26 on Sonnet: 31/33 (bar 29), all six Slack cases pass.
+  Misses: XCR PPE cited QR-008 not the XCR sheet; West 105/206 cure cited
+  the RESIN record + QR-001 not the datasheet. Answers read right; the
+  cases want a datasheet citation.
 
 **Documentation overhaul (2026-10-10), promoted.** Plan, register,
 audits, reviews: `02 CS Standards/overhaul/`. House style:
