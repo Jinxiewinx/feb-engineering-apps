@@ -38,6 +38,23 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.11.0 — 2026-10-26
+
+- What's New for 6.11.0: Paul on Sonnet, other emails for Slack
+- Other emails per person, so Paul in Slack knows a member on another address
+- Paul: compact old tool results only past 40k prompt tokens
+- Paul: cache the fixed instructions across questions; log cache writes
+- Paul on Sonnet 5.5, and verdict-first Slack answers (grok-style item 1)
+- Paul, @grok style: research note on @grok and a composites spin for Paul
+
+<details><summary>1 more</summary>
+
+- Paul, @grok style: research note on @grok and a composites spin for Paul
+
+</details>
+
+---
+
 ## v6.10.0 — 2026-10-24
 
 - What's New for 6.10.0: Paul in Slack, guests can ask Paul, R&D off the Parts overview
