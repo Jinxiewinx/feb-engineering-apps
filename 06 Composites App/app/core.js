@@ -32,10 +32,9 @@ var APP_VERSION = "6.10.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Paul is in Slack. Tag @Paul in a thread (\"@Paul is this the right IN2 hold?\") and he answers there, with links into the app.",
-  "Start with \"@Paul steve,\" to get Steve instead. You can also DM Paul.",
-  "Guests can ask Paul now too. Same answers; only saved chats and notes need an account.",
-  "R&D parts no longer show up in the Parts overview's late and due-soon lists.",
+  "Paul is sharper: he runs on a bigger model now, and his answers in Slack lead with Yes, Mostly or No.",
+  "Leads: a person's page has an Other emails line, for an address they use besides their sign-in one.",
+  "If your Slack account is on a different email than the app, a lead can add it there and Paul in Slack will know it's you.",
 ];
 
 
