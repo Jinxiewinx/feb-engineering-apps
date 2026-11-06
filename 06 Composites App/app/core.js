@@ -32,9 +32,11 @@ var APP_VERSION = "6.11.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Paul is sharper: he runs on a bigger model now, and his answers in Slack lead with Yes, Mostly or No.",
-  "Leads: a person's page has an Other emails line, for an address they use besides their sign-in one.",
-  "If your Slack account is on a different email than the app, a lead can add it there and Paul in Slack will know it's you.",
+  "Change a mold's min or max density and the cut list follows straight away. No more deleting the mold and making it again.",
+  "Leads: Re-plan stacks together, on the cut list, tries other layer thicknesses across every mold ready to cut, so two molds stop fighting over the same long board.",
+  "It only suggests. Nothing changes until you press Use these stacks, and the old plan stays under Earlier on the mold.",
+  "Molds with different density ranges can now share a board when the grade suits both, so fewer boards get opened.",
+  "Hand-picked thicknesses are left alone, and R&D runs no longer show under Behind due date on Work Orders.",
 ];
 
 
