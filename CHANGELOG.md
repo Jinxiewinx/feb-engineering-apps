@@ -38,6 +38,12 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.13.2 — 2026-11-06
+
+- Stacks to try reads in combinations, not "groups"
+
+---
+
 ## v6.13.1 — 2026-11-06
 
 - Adjust stack: reach the modal box the way openModal does
