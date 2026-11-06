@@ -38,6 +38,16 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.12.0 — 2026-11-06
+
+- README and SESSION-STATE: mold density edits, Re-plan stacks together
+- What's New for 6.12.0: density edits reach the cut list, Re-plan stacks together
+- Cut list: mold edits reach it, ranges share boards, stacks re-planned together
+- Work Orders overview: R&D runs no longer list under Behind due date
+- SESSION-STATE: eval 31/33 on Sonnet, Simon's Slack email linked
+
+---
+
 ## v6.11.0 — 2026-10-26
 
 - What's New for 6.11.0: Paul on Sonnet, other emails for Slack
