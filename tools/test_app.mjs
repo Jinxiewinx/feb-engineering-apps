@@ -13310,6 +13310,192 @@ await t("no name or email inside any handler, apostrophe included", () => {
   });
 }
 
+/* ---------- the planner's knobs ---------- */
+{
+  const IN = 25.4;
+  const board = (id, thk, density, qty) => ({ id, len: { value: 96, unit: "in" }, wid: { value: 48, unit: "in" },
+    thk: { value: thk, unit: "in" }, qty, density });
+  const mesh = () => writeBinarySTL(blankTris({ x0: 0, y0: 0, x1: 40 * IN, y1: 20 * IN }, 0, 3 * IN), "t");
+
+  await t("leaving every knob alone plans exactly what it always did", () => {
+    const tris = parseSTL(mesh()).tris;
+    assert(!Object.keys(knobSliceOpts(knobValues({}))).length, "no slicer option differs");
+    assert(!Object.keys(knobDiff(knobValues({}))).length, "and nothing is stored");
+    const a = sliceMold(tris, [3 * IN], {}), b = sliceMold(tris, [3 * IN], knobSliceOpts(knobValues({})));
+    assert(JSON.stringify(a.layers[0].blanks) === JSON.stringify(b.layers[0].blanks), "the same blanks");
+    /* The numbers in the panel are the numbers in the code, or the panel lies. */
+    const k = key => STACK_KNOBS.find(x => x.key === key);
+    assert(k("margin").def * IN === MARGIN_MIN_MM, "edge distance");
+    assert(k("quantum").def * IN === BLANK_QUANTUM_MM, "rounding");
+    assert(k("mergeGap").def * IN / 2 === MARGIN_MAX_MM, "merge gap");
+    assert(k("jointWorthSheets").def === JOINT_WORTH_SHEETS, "glue joint");
+    assert(CUT_KNOBS.find(x => x.key === "kerfIn").def * IN === KERF_MM, "kerf");
+    assert(CUT_KNOBS.find(x => x.key === "minOffcutIn").def * IN === MIN_REMNANT_MM, "smallest offcut");
+    assert(CUT_KNOBS.find(x => x.key === "liftWorth").def === DIG_WORTH_BLANK, "lift");
+  });
+
+  await t("every knob says what it means", () => {
+    for (const k of STACK_KNOBS.concat(CUT_KNOBS)) assert(k.help && k.help.length > 40 && !/—/.test(k.help), "explained: " + k.key);
+    const h = knobFieldsHtml("x", knobValues({}));
+    assert(STACK_KNOBS.every(k => h.includes(`id="x-${k.key}"`)), "and has a field");
+  });
+
+  await t("edge distance moves the blank, and an out-of-range number is held to the range", () => {
+    const tris = parseSTL(mesh()).tris;
+    const size = v => { const b = sliceMold(tris, [3 * IN], knobSliceOpts(knobValues({ margin: v }))).layers[0].blanks[0]; return (b.x1 - b.x0) / IN; };
+    assert(size(1) === 42, "1in each side: " + size(1));
+    assert(size(2) === 44, "2in each side: " + size(2));
+    assert(size(0) === 40, "0 leaves the mold's own size: " + size(0));
+    const w = sliceMold(tris, [3 * IN], knobSliceOpts(knobValues({ margin: 0.5 }))).warnings.join(" ");
+    assert(/under the usual 1in/.test(w), "under 1in warns on the plan: " + w);
+    assert(knobParse(STACK_KNOBS[0], "99") === 6 && knobParse(STACK_KNOBS[0], "-1") === 0 && knobParse(STACK_KNOBS[0], "") === 1, "clamped, blank is default");
+  });
+
+  await t("a large edge distance can never make two blanks overlap", () => {
+    const a = blankTris({ x0: 0, y0: 0, x1: 100, y1: 100 }, 0, 50), b = blankTris({ x0: 400, y0: 0, x1: 500, y1: 100 }, 0, 50);
+    const r = sliceMold(a.concat(b), [50.8], knobSliceOpts(knobValues({ margin: 6, mergeGap: 0 })));
+    const L = r.layers[0].blanks;
+    for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) assert(!boxesOverlap(L[i], L[j]), "overlap");
+    assert(!r.warnings.some(w => /overlap/.test(w)), r.warnings.join(" "));
+    const near = sliceMold(a.concat(b), [50.8], knobSliceOpts(knobValues({ mergeGap: 24 })));
+    const far = sliceMold(a.concat(b), [50.8], knobSliceOpts(knobValues({ mergeGap: 4 })));
+    assert(near.layers[0].blanks.length === 1 && far.layers[0].blanks.length === 2, "the merge gap decides one blank or two");
+  });
+
+  function adjustFixture() {
+    const tris = parseSTL(mesh()).tris;
+    const sliced = sliceMold(tris, [2 * IN, IN], {});
+    DB.stock = [board("BRD-A", 2, 30, 3), board("BRD-B", 1, 30, 3)];
+    DB.molds = [{ id: "MOLD-K", name: "K", stage: "Designed", density: "30", densityMin: "30", densityMax: "30", currentPlanId: "STK-K", layers: "2 layers" }];
+    DB.stackplans = [{ id: "STK-K", name: "K", moldId: "MOLD-K", density: 30, densityMin: 30, densityMax: 30, considered: 9, cost: 5,
+      thicknessesMm: [2 * IN, IN], layers: sliced.layers, sections: [], bounds: sliced.bounds, meshUrl: "m", meshPath: "stackplans/STK-K/mesh.stl", ts: "2026-11-06T21:00:00Z" }];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({ ok: true, arrayBuffer: async () => mesh().slice(0) });
+    return () => { globalThis.fetch = realFetch; STACK_ADJ = null; };
+  }
+  const setKnob = (id, v) => { document.getElementById(id).value = v; };
+  /* The harness's DOM does not parse a modal's markup into values, so a test types
+     what the modal prefills. The real prefill is checked on the live app. */
+  const openAdjust = async () => {
+    await openStackKnobs("MOLD-K");
+    setKnob("sk-dmin", "30"); setKnob("sk-dmax", "30"); setKnob("sk-thk", "2, 1"); setKnob("sk-mode", "keep"); setKnob("sk-shape", "steps");
+    for (const k of STACK_KNOBS) setKnob("sk-" + k.key, k.def == null ? "" : k.def);
+    STACK_ADJ.first = true;
+    await stackKnobsRun();
+  };
+
+  await t("Adjust stack previews live and writes nothing until saved", async () => {
+    const restore = adjustFixture();
+    try {
+      calls.length = 0;
+      await openAdjust();
+      assert(STACK_ADJ.result, "first preview ran");
+      const first = STACK_ADJ.result.layers[0].blanks[0];
+      assert((first.x1 - first.x0) / IN === 42, "and shows the plan as it is");
+      setKnob("sk-margin", "2");
+      await stackKnobsRun();
+      const b = STACK_ADJ.result.layers[0].blanks[0];
+      assert((b.x1 - b.x0) / IN === 44, "a new edge distance redraws the blanks");
+      assert(/Preview/.test(document.getElementById("sk-preview").innerHTML), "in the preview");
+      assert(!calls.some(c => /save|set|update|upload/i.test(String(c[0]))), "nothing written: " + JSON.stringify(calls.map(c => c[0])));
+      assert(DB.stackplans.length === 1, "no new plan");
+      closeModal();
+    } finally { restore(); }
+  });
+
+  await t("saving adds a plan with its settings, keeps the old one, and the cut list uses it", async () => {
+    const restore = adjustFixture();
+    try {
+      await openAdjust();
+      setKnob("sk-margin", "2");
+      await stackKnobsRun();
+      await saveStackKnobs();
+      const m = DB.molds[0], fresh = planById(m.currentPlanId);
+      assert(fresh.id !== "STK-K" && m.planHistory[0].id === "STK-K", "new plan, old on the history");
+      assert(fresh.knobs.margin === 2 && !("quantum" in fresh.knobs), "only what differs is stored");
+      assert(fresh.considered === 9, "moving only the edge distance leaves a chosen stack chosen");
+      assert(/edge/.test(knobSummary(fresh.knobs)), "the mold page can name it");
+      const blank = blanksFromPlans(cutEligiblePlans())[0];
+      assert(Math.round(blank.w / IN) === 44, "the cut list cuts the new size: " + blank.w);
+      /* And the next adjust starts from what was saved. */
+      assert(knobValues(fresh.knobs).margin === 2, "round trip");
+    } finally { restore(); }
+  });
+
+  await t("typed thicknesses and a density change save as such, and a bad entry says why", async () => {
+    const restore = adjustFixture();
+    try {
+      await openAdjust();
+      setKnob("sk-thk", "abc");
+      await stackKnobsRun();
+      assert(!STACK_ADJ.result && /thicknesses/.test(document.getElementById("sk-preview").innerHTML), "a bad list explains itself");
+      setKnob("sk-thk", "1, 1, 1");
+      setKnob("sk-dmin", "20");
+      await stackKnobsRun();
+      await saveStackKnobs();
+      const m = DB.molds[0], fresh = planById(m.currentPlanId);
+      assert(fresh.thicknessesMm.length === 3 && fresh.considered === 0, "hand-typed, so Re-plan together leaves it");
+      assert(m.densityMin === "20" && m.densityMax === "30" && m.density === "20", "the range landed on the mold");
+    } finally { restore(); }
+  });
+
+  await t("Re-plan together slices each mold at its own edge distance", async () => {
+    const restore = adjustFixture();
+    try {
+      const p = DB.stackplans[0];
+      p.knobs = { margin: 2 };
+      p.layers = sliceMold(parseSTL(mesh()).tris, p.thicknessesMm, knobSliceOpts(knobValues(p.knobs))).layers;
+      await openPlanTogether();
+      assert(!PLAN_TOGETHER.r.molds[0].pinned, "its mesh reproduces it at 2in: " + PLAN_TOGETHER.r.molds[0].pinned);
+      PLAN_TOGETHER = null; closeModal();
+    } finally { restore(); }
+  });
+
+  await t("cut settings change the pack everywhere, say so, and go back", () => {
+    const restore = adjustFixture();
+    try {
+      localStorage.removeItem(CUT_KNOB_STORE);
+      assert(!Object.keys(cutPackOpts()).length && cutKnobNote() === "", "nothing at the defaults");
+      view = { ...view, tab: "molds", mode: "cuts", cutSel: "", id: null };
+      assert(/openCutKnobs\(\)/.test(renderCutList()), "offered on the cut list");
+      openCutKnobs();
+      document.getElementById("ck-kerfIn").value = "0.25";
+      document.getElementById("ck-noTurn").checked = true;
+      cutKnobsChanged();
+      const o = cutPackOpts();
+      assert(o.kerf === 0.25 * IN && o.allowRotate === false, JSON.stringify(o));
+      const h = renderCutList();
+      assert(/Cut settings changed in this browser/.test(h) && /0\.25in/.test(h), "the list says so");
+      assert(/6\.35mm/.test(h), "and the kerf it prints is the kerf it used");
+      assert(cutPack(null, cutEligiblePlans()).pack.settingsNote === cutKnobNote(), "the printed set carries it");
+      cutKnobsReset();
+      assert(!Object.keys(cutPackOpts()).length, "reset clears it");
+    } finally { localStorage.removeItem(CUT_KNOB_STORE); restore(); }
+  });
+
+  await t("the smallest offcut setting moves what counts as scrap", () => {
+    const sheet = { w: 1000, h: 500 };
+    const part = { id: "a", w: 960, h: 300, thickness: IN, density: 30 };
+    assert(packBoard(sheet, [part], {}).scrap.length === 1, "under 4in is scrap by default");
+    assert(packBoard(sheet, [part], { minRemnant: 20 }).scrap.length === 0, "at under an inch it is kept");
+  });
+
+  await t("the new mold modal carries the settings and a new plan records them", async () => {
+    DB.stock = [board("BRD-A", 3, 30, 3)];
+    DB.molds = []; DB.stackplans = [];
+    uploadMold();
+    assert(document.getElementById("ml-k-margin"), "edge distance is on the modal");
+    const set = (id, v) => { document.getElementById(id).value = v; };
+    set("ml-name", "Knob test"); set("ml-density-min", "30");
+    set("ml-bl", "20"); set("ml-bw", "10"); set("ml-bh", "3"); set("ml-k-margin", "1.5");
+    await submitMold();
+    const p = DB.stackplans[0];
+    assert(p && p.knobs.margin === 1.5, "recorded: " + JSON.stringify(p && p.knobs));
+    const b = p.layers[0].blanks[0];
+    assert((b.x1 - b.x0) / IN === 23, "1.5in each side of 20in: " + (b.x1 - b.x0) / IN);
+  });
+}
+
 /* Nothing below should inherit a splash the tests above left half-dismissed. */
 resetSplash();
 console.log(`\n${pass} passed, ${fail} failed`);

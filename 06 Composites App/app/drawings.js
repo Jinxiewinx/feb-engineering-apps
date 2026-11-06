@@ -2113,6 +2113,8 @@ function cutNotes(ctx, planId, o) {
     ? ` Boards opened: ${(pack.densitiesUsed || []).join(", ")} lb/ft3. The densest board in a stack sets the feed for the whole thing.`
     : " Every board opened is that grade."}`);
 
+  if (pack.settingsNote) n.push(`PACKED WITH NON-STANDARD SETTINGS: ${String(pack.settingsNote).toUpperCase()}.`);
+
   const short = (pack.shortfall || []).filter(b => !planId || b.planId === planId);
   if (short.length) {
     n.push(`SHORT ${short.length} BLANK${short.length === 1 ? "" : "S"} — nothing on the rack fits ${short.length === 1 ? "it" : "these"}. Order board before starting: ${

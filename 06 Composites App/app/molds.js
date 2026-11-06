@@ -396,7 +396,7 @@ function moldsOverview() {
   const cutPlans = typeof cutEligiblePlans === "function" ? cutEligiblePlans() : (DB.stackplans || []);
   const blanks = (typeof blanksFromPlans === "function" && cutPlans.length) ? blanksFromPlans(cutPlans) : [];
   if (blanks.length) {
-    const res = packAll(blanks, boardsForPacking(), {});
+    const res = packAll(blanks, boardsForPacking(), cutPackOpts());
     shortLine = res.shortfall.length
       ? `<div class="warn">${icon("warning", 14)} <b>Short ${res.shortfall.length} blank${res.shortfall.length === 1 ? "" : "s"}</b> across the planned molds — nothing on the rack fits them. Open the cut list for the sizes.</div>`
       : `<div class="muted">Every planned blank fits the rack: ${blanks.length} blanks across ${res.boardsUsed} board${res.boardsUsed === 1 ? "" : "s"}.</div>`;
@@ -634,7 +634,9 @@ function moldPlanSection(m) {
     <div class="muted tny">${esc(p.id)} · ${(p.layers || []).length} layers · planned ${fmtWhen(p.ts)}</div>
     ${plans.length > 1 ? `<div class="muted tny">Earlier: ${plans.slice(1).map(x =>
       `<span class="chip tny" onclick="selectMoldsRec('${esc(x.id)}')">${esc(x.name || x.id)} · ${fmtWhen(x.ts)}</span>`).join(" ")}</div>` : ""}
+    ${knobSummary(p.knobs) ? `<div class="muted tny">Planned with ${esc(knobSummary(p.knobs))}.</div>` : ""}
     <div class="toolbar no-print">
+      ${p.meshUrl ? `<button class="ib" onclick="openStackKnobs('${esc(m.id)}')" title="Change the edge distance, layers, density and the rest, and watch the stack update.">Adjust stack…</button>` : ""}
       ${isLead() ? `<button class="ib" onclick="replanMold('${esc(m.id)}')">${icon("edit", 15)} Re-plan</button>` : ""}
       <button class="ib" onclick="openDrawings('${esc(p.id)}')">${icon("print", 15)} Drawings</button>
       ${nSec === 1 ? `<button class="ib" onclick="exportSectionStl('${esc(p.id)}',0)">${icon("download", 15)} Stock STL</button>`

@@ -704,7 +704,10 @@ const PLAN_BYTE_BUDGET = 900000;
    paths honest because slicer.js is pure either way. */
 function runSliceInline(msg) {
   let tris, displayTris;
-  if (msg.box) {
+  if (msg.stored) {
+    tris = parseSTL(msg.buffer).tris;
+    displayTris = tris;
+  } else if (msg.box) {
     tris = boxTris(msg.box.len, msg.box.wid, msg.box.hgt);
     // Closed solid for the viewer; boxTris is 4 open walls (see the worker).
     displayTris = blankTris({ x0: 0, y0: 0, x1: msg.box.len, y1: msg.box.wid }, 0, msg.box.hgt);
@@ -728,13 +731,13 @@ function runSliceInline(msg) {
   if (msg.supply) opts.supply = msg.supply;
   if (msg.boards && msg.boards.length) {
     opts.score = layers => moldCost(layers, msg.boards,
-      { densityMin: msg.densityMin, densityMax: msg.densityMax }).cost;
+      { ...(msg.costOpts || {}), densityMin: msg.densityMin, densityMax: msg.densityMax }).cost;
   }
   const r = (msg.thicknesses && msg.thicknesses.length)
     ? sliceMold(tris, msg.thicknesses, opts)
     : planMold(tris, msg.available, opts);
   let meshStl = null;
-  try { meshStl = meshStlForStorage(displayTris); } catch (e) { meshStl = null; }
+  try { meshStl = msg.stored ? null : meshStlForStorage(displayTris); } catch (e) { meshStl = null; }
   return {
     layers: r.layers, sections: (r.sections || []).map(s => ({ index: s.index, height: s.height, count: s.layers.length })),
     bounds: r.bounds, warnings: r.warnings, composition: r.composition || msg.thicknesses,
@@ -843,6 +846,333 @@ async function loadSampleMold(file) {
   }
 }
 
+/* ---------- the planner's settings ----------
+   Every number the stack planner works with, adjustable and explained. Simon:
+   "try to give all the knobs to the user, and explain what they mean." Stored as
+   plan.knobs, non-default values only, so a plan says what it was sliced under and
+   every plan from before this reads as the defaults it was made with.
+
+   `to` turns the typed value into what the slicer or the costing takes. Lengths are
+   typed in inches because the shop reads inches, and held in mm like all geometry.
+   THE DEFAULTS ARE THE CONSTANTS slicer.js AND packer.js ALREADY USE, on purpose:
+   leaving everything alone plans exactly what it always did. */
+const IN_MM = 25.4;
+const STACK_KNOBS = [
+  { key: "margin", label: "Distance from the mold edge", unit: "in", def: 1, min: 0, max: 6, step: 0.25, opt: "margin", mm: true,
+    help: "How far each blank stands off the mold, on every side and in every layer. More gives more room if the stack shifts in glue-up and for the cutter to run around the part. It also makes every blank bigger, which uses more board and can stop blanks fitting. Under 1in you get a warning on the plan." },
+  { key: "quantum", label: "Round blanks up to the next", unit: "in", def: 0.5, min: 0.125, max: 4, step: 0.125, opt: "quantum", mm: true,
+    help: "Blank sizes are rounded up to this so they are easy to measure and saw. Always up, so the edge distance above is the least you get. A bigger step is quicker to cut and uses a little more board. Layers of a stack line up on this same grid." },
+  { key: "mergeGap", label: "Join raised areas closer than", unit: "in", def: 4, min: 0, max: 24, step: 0.5, opt: "inflate", mm: true, half: true,
+    help: "When a layer has separate raised areas, they share one blank if they are closer than this, and get their own blanks if further apart. Bigger means fewer, larger blanks and fewer pieces to place. Smaller saves board between the areas. It can never go below what the edge distance needs, or two blanks would overlap." },
+  { key: "maxLayers", label: "Most layers in a stack", unit: "layers", def: 8, min: 1, max: 12, step: 1, opt: "maxLayers",
+    help: "The planner will not offer a stack with more boards than this. Each layer past the first is a glue joint and a 4 hour clamp under CS-003 §7.3." },
+  { key: "maxOvershoot", label: "Most extra height", unit: "in", def: null, min: 0, max: 6, step: 0.25, opt: "maxOvershoot", mm: true,
+    help: "How much taller than the mold a stack may be, since boards only come in certain thicknesses. Blank means up to one of your thickest boards. Lower it to stop the planner spending a thick board on a little height." },
+  { key: "maxCandidates", label: "Stacks to try", unit: "groups", def: 8, min: 1, max: 40, step: 1, opt: "maxCandidates",
+    help: "How many thickness combinations the planner slices and prices, nearest the mold's height first. More can find a better answer and takes longer on a big mesh." },
+  { key: "jointWorthSheets", label: "One glue joint is worth", unit: "4x8 sheets of 1in", def: 0.25, min: 0, max: 2, step: 0.05, cost: true,
+    help: "The trade between board and glue-ups when the planner compares stacks. Raise it and you get fewer layers using more board. Lower it and you get more layers using less board." },
+];
+/* Typed value to a number within range. Blank means default. */
+function knobParse(k, raw) {
+  const t = String(raw ?? "").trim();
+  if (t === "") return k.def;
+  const n = Number(t);
+  if (!Number.isFinite(n)) return k.def;
+  return Math.min(k.max, Math.max(k.min, n));
+}
+/* A full set of values: what the plan recorded, defaults for the rest. */
+function knobValues(stored) {
+  const out = {};
+  for (const k of STACK_KNOBS) out[k.key] = stored && stored[k.key] != null ? stored[k.key] : k.def;
+  return out;
+}
+/* Only what differs, which is what gets stored and what the mold page names. */
+function knobDiff(vals) {
+  const out = {};
+  for (const k of STACK_KNOBS) if (vals[k.key] != null && vals[k.key] !== k.def) out[k.key] = vals[k.key];
+  return out;
+}
+function knobSliceOpts(vals) {
+  const o = {};
+  for (const k of STACK_KNOBS) {
+    const v = vals[k.key];
+    if (!k.opt || v == null || v === k.def) continue;
+    o[k.opt] = (k.mm ? v * IN_MM : v) / (k.half ? 2 : 1);
+  }
+  return o;
+}
+function knobCostOpts(vals) {
+  const o = {};
+  for (const k of STACK_KNOBS) if (k.cost && vals[k.key] != null && vals[k.key] !== k.def) o[k.key] = vals[k.key];
+  return o;
+}
+function knobSummary(stored) {
+  const d = knobDiff(knobValues(stored));
+  return STACK_KNOBS.filter(k => k.key in d).map(k => `${k.label.toLowerCase()} ${d[k.key]}${k.unit === "in" ? "in" : " " + k.unit}`).join(", ");
+}
+function knobFieldsHtml(prefix, vals, handler) {
+  const on = handler ? ` oninput="${handler}"` : "";
+  return STACK_KNOBS.map(k => `<div class="field"><label for="${prefix}-${k.key}">${esc(k.label)}</label>
+      <input id="${prefix}-${k.key}" type="number" min="${k.min}" max="${k.max}" step="${k.step}" style="max-width:90px"
+        value="${vals[k.key] == null ? "" : esc(vals[k.key])}" placeholder="${k.def == null ? "auto" : esc(k.def)}"${on}>
+      <span class="muted tny">${esc(k.unit)}${k.def != null ? ` (usually ${esc(k.def)})` : ""}</span>
+      <div class="muted tny">${esc(k.help)}</div></div>`).join("");
+}
+function knobRead(prefix) {
+  const out = {};
+  for (const k of STACK_KNOBS) out[k.key] = knobParse(k, (document.getElementById(`${prefix}-${k.key}`) || {}).value);
+  return out;
+}
+
+/* ---------- the cut list's settings ----------
+   How the saw and the rack behave, as opposed to how a mold is stacked, so they
+   apply to the whole cut list rather than to a plan. Kept in this browser: what is
+   on screen is what prints and what Mark cut commits, so a setting cannot
+   disagree with its own sheet, and the screen and the printed notes both say when
+   they are not the defaults. */
+const CUT_KNOB_STORE = "feb.cutKnobs";
+const CUT_KNOBS = [
+  { key: "kerfIn", label: "Saw blade width", unit: "in", def: 0.125, min: 0, max: 0.5, step: 0.0625,
+    help: "Board lost to each cut. Too small and blanks come out undersize when they sit edge to edge. Change it if the blade or the machine changes." },
+  { key: "minOffcutIn", label: "Smallest offcut to keep", unit: "in", def: 4, min: 0, max: 24, step: 0.5,
+    help: "An offcut narrower than this counts as scrap: the planner gives it no value, and it starts unticked when you mark boards cut. Lower it and small pieces go back on the rack." },
+  { key: "liftWorth", label: "Cost of digging one board deeper", unit: "of a blank", def: 0.05, min: 0, max: 1, step: 0.01,
+    help: "How much the planner prefers the board on top of its pile. Small on purpose, so it only breaks ties. Raise it to lift less at the risk of a worse nest. 0 ignores piles altogether." },
+];
+function cutKnobValues() {
+  let stored = {};
+  try { stored = JSON.parse(localStorage.getItem(CUT_KNOB_STORE) || "{}") || {}; } catch (e) { stored = {}; }
+  const out = { noTurn: !!stored.noTurn };
+  for (const k of CUT_KNOBS) out[k.key] = Number.isFinite(stored[k.key]) ? stored[k.key] : k.def;
+  return out;
+}
+/* What every packAll on the page is given, so the list, the commit, the print and
+   the overview's one sentence cannot pack differently. Empty at the defaults. */
+function cutPackOpts() {
+  const v = cutKnobValues(), o = {}, d = {};
+  CUT_KNOBS.forEach(k => { d[k.key] = k.def; });
+  if (v.kerfIn !== d.kerfIn) o.kerf = v.kerfIn * IN_MM;
+  if (v.minOffcutIn !== d.minOffcutIn) o.minRemnant = v.minOffcutIn * IN_MM;
+  if (v.liftWorth !== d.liftWorth) o.digWorthBlank = v.liftWorth;
+  if (v.noTurn) o.allowRotate = false;
+  return o;
+}
+function cutKnobNote() {
+  const v = cutKnobValues(), bits = [];
+  CUT_KNOBS.forEach(k => { if (v[k.key] !== k.def) bits.push(`${k.label.toLowerCase()} ${v[k.key]}${k.unit === "in" ? "in" : " " + k.unit}`); });
+  if (v.noTurn) bits.push("blanks not turned");
+  return bits.join(", ");
+}
+function openCutKnobs() {
+  const v = cutKnobValues();
+  openModal(`<h2>Cut list settings</h2>
+    <p class="muted tny">The cut list behind this updates as you type. These stay in this browser and change nobody else's screen. The list and the printed sheet both say when they are not the usual values.</p>
+    ${CUT_KNOBS.map(k => `<div class="field"><label for="ck-${k.key}">${esc(k.label)}</label>
+      <input id="ck-${k.key}" type="number" min="${k.min}" max="${k.max}" step="${k.step}" style="max-width:90px" value="${esc(v[k.key])}" oninput="cutKnobsChanged()">
+      <span class="muted tny">${esc(k.unit)} (usually ${esc(k.def)})</span>
+      <div class="muted tny">${esc(k.help)}</div></div>`).join("")}
+    <div class="field"><label>Turning blanks</label>
+      <label class="chk"><input type="checkbox" id="ck-noTurn" ${v.noTurn ? "checked" : ""} onchange="cutKnobsChanged()"> Never turn a blank 90° on the board</label>
+      <div class="muted tny">Tooling board has no grain, so turning is normally free and nests tighter. Tick this only if a board has a face or a direction that matters.</div></div>
+    <div class="foot"><button onclick="cutKnobsReset()">Back to usual</button><button class="primary" onclick="closeModal()">Done</button></div>`);
+}
+function cutKnobsChanged() {
+  const out = { noTurn: !!(document.getElementById("ck-noTurn") || {}).checked };
+  for (const k of CUT_KNOBS) out[k.key] = knobParse(k, (document.getElementById("ck-" + k.key) || {}).value);
+  try { localStorage.setItem(CUT_KNOB_STORE, JSON.stringify(out)); } catch (e) { /* the session still has what is on screen only if storage works; nothing to save to */ }
+  render();
+}
+function cutKnobsReset() {
+  try { localStorage.removeItem(CUT_KNOB_STORE); } catch (e) { /* nothing stored */ }
+  closeModal();
+  render();
+}
+
+/* ---------- adjusting a mold's stack, live ----------
+   The stored mesh is re-sliced on every change and the stack, the blanks and what
+   it does to the rack redraw beside the settings. Nothing is written until Save as
+   a new plan, which goes through the same path as a re-plan, so the old plan stays
+   under Earlier on the mold. The modal is its own DOM and repaints only its preview,
+   so a Firestore snapshot's render() cannot eat a half-typed number. */
+let STACK_ADJ = null;
+async function openStackKnobs(moldId) {
+  const mold = moldRecById(moldId);
+  const p = mold ? currentPlanFor(mold) : null;
+  if (!p) return;
+  if (!p.meshUrl) { toast("This plan has no stored mesh to adjust. Re-plan it with the file.", "error"); return; }
+  const [lo, hi] = planDensityRange(p);
+  const vals = knobValues(p.knobs);
+  const inch = (p.thicknessesMm || []).map(t => Math.round(t / IN_MM * 1000) / 1000).join(", ");
+  STACK_ADJ = { moldId, planId: p.id, buffer: null, token: 0, result: null, first: true, timer: null };
+  openModal(`<h2>Adjust stack: ${esc(p.name || p.id)}</h2>
+    <p class="muted tny">Change anything and the preview follows. Nothing is saved until you press Save as a new plan.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+      <div style="flex:1 1 300px;min-width:0">
+        <h3>Layers</h3>
+        <div class="field"><label for="sk-mode">Thicknesses</label><select id="sk-mode" onchange="stackKnobsChanged()">
+          <option value="keep">use the ones below</option><option value="auto">choose them for me, from stock</option></select>
+          <div class="muted tny">Typed thicknesses stay put when Re-plan stacks together runs. Chosen ones may move.</div></div>
+        <div class="field"><label for="sk-thk">Bottom to top</label><input id="sk-thk" value="${esc(inch)}" oninput="stackKnobsChanged()">
+          <span class="muted tny">in, separated by commas. They have to add up to the mold's height.</span></div>
+        <div class="field"><label for="sk-shape">Blank shape</label><select id="sk-shape" onchange="stackKnobsChanged()">
+          <option value="steps" ${p.monolithic ? "" : "selected"}>step each layer in to the mold</option>
+          <option value="block" ${p.monolithic ? "selected" : ""}>one solid block around the whole mold</option></select>
+          <div class="muted tny">Steps follow the mold's taper and use less board. A block gives every layer the same footprint: more board, nothing to line up, and a plain box for CAM.</div></div>
+        <h3>Board</h3>
+        <div class="field"><label for="sk-dmin">Density, min and max</label>
+          <input id="sk-dmin" style="max-width:70px" value="${esc(lo)}" oninput="stackKnobsChanged()">
+          <input id="sk-dmax" style="max-width:70px" value="${esc(hi)}" oninput="stackKnobsChanged()"> <span class="muted tny">lb/ft³</span>
+          <div class="muted tny">Any board in this range may supply any blank. The highest grade actually cut sets the feed rate for the whole mold.</div></div>
+        <h3>Blanks and stack choice</h3>
+        ${knobFieldsHtml("sk", vals, "stackKnobsChanged()")}
+      </div>
+      <div style="flex:2 1 340px;min-width:0"><div id="sk-preview" class="muted tny">Loading the mold…</div></div>
+    </div>
+    <div class="foot"><button onclick="stackKnobsDefaults()">Usual settings</button>
+      <button onclick="STACK_ADJ=null;closeModal()">Cancel</button>
+      ${isLead() ? `<button class="primary" id="sk-save" onclick="saveStackKnobs()" disabled>Save as a new plan</button>` : ""}</div>`, { wide: true });
+  const run = STACK_ADJ;
+  try {
+    const res = await fetch(p.meshUrl);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    run.buffer = await res.arrayBuffer();
+  } catch (e) {
+    if (STACK_ADJ === run) { const el = document.getElementById("sk-preview"); if (el) el.textContent = "The stored mesh could not be downloaded, so this cannot be previewed."; }
+    return;
+  }
+  if (STACK_ADJ === run) await stackKnobsRun();
+}
+function stackKnobsChanged() {
+  if (!STACK_ADJ) return;
+  clearTimeout(STACK_ADJ.timer);
+  STACK_ADJ.timer = setTimeout(stackKnobsRun, 150);
+}
+function stackKnobsDefaults() {
+  for (const k of STACK_KNOBS) { const el = document.getElementById("sk-" + k.key); if (el) el.value = k.def == null ? "" : k.def; }
+  stackKnobsChanged();
+}
+function stackKnobsRead() {
+  const v = k => (document.getElementById(k) || {}).value || "";
+  const a = canonDensity(v("sk-dmin")), b = canonDensity(v("sk-dmax")) ?? a;
+  const knobs = knobRead("sk");
+  const thk = String(v("sk-thk")).split(/[, ]+/).filter(Boolean).map(Number);
+  return { auto: v("sk-mode") === "auto", thkMm: thk.map(t => t * IN_MM), thkOk: thk.length && thk.every(t => Number.isFinite(t) && t > 0),
+    monolithic: v("sk-shape") === "block", dLo: a == null ? null : Math.min(a, b), dHi: a == null ? null : Math.max(a, b), knobs };
+}
+async function stackKnobsRun() {
+  const st = STACK_ADJ;
+  if (!st || !st.buffer) return;
+  const f = stackKnobsRead();
+  const el = document.getElementById("sk-preview");
+  const say = t => { st.result = null; const b = document.getElementById("sk-save"); if (b) b.disabled = true; if (el) el.innerHTML = `<div class="warn">${icon("warning", 14)} ${esc(t)}</div>`; };
+  if (f.dLo == null) return say("Density needs to be a plain number in lb/ft³.");
+  if (!f.auto && !f.thkOk) return say("List the thicknesses bottom to top, in inches, like 2, 1.5, 1.");
+  const old = planById(st.planId);
+  const rack = boardsForPacking().filter(b => b.density >= f.dLo && b.density <= f.dHi);
+  const supply = {};
+  for (const b of rack) { const k = Math.round(b.thk * 10) / 10; supply[k] = (supply[k] || 0) + (b.qty || 1); }
+  const available = stockThicknessesMm(f.dLo, f.dHi);
+  if (f.auto && !available.length) return say(`No board on the rack between ${f.dLo} and ${f.dHi} lb to choose from.`);
+  const token = ++st.token;
+  try {
+    const result = await runSlice({
+      cmd: "slice", stored: true, buffer: st.buffer, thicknesses: f.auto ? null : f.thkMm, available, boards: rack, supply,
+      densityMin: f.dLo, densityMax: f.dHi, costOpts: { ...knobCostOpts(f.knobs), ...cutPackOpts() },
+      opts: { monolithic: f.monolithic, ...(old.splitWaived ? { maxCutDepth: old.maxCutDepthMm } : {}), ...knobSliceOpts(f.knobs) },
+    });
+    if (STACK_ADJ !== st || st.token !== token) return;
+    st.result = result; st.read = f;
+    stackKnobsPaint();
+  } catch (e) {
+    if (STACK_ADJ === st && st.token === token) say(e.message || "That combination could not be sliced.");
+  }
+}
+function stackKnobsPaint() {
+  const st = STACK_ADJ, f = st.read, res = st.result, old = planById(st.planId);
+  const el = document.getElementById("sk-preview");
+  if (!el) return;
+  const mine = blanksFromLayers(res.layers, { min: f.dLo, max: f.dHi }, old.name, old.id);
+  const others = old && cutHeldBackReason(old) === "" ? blanksFromPlans(cutEligiblePlans().filter(p => p.id !== old.id)) : blanksFromPlans(cutEligiblePlans());
+  const boards = boardsForPacking(), po = cutPackOpts();
+  const alone = packAll(mine, boards, po), all = packAll(mine.concat(others), boards, po);
+  const nowAll = packAll(blanksFromPlans(cutEligiblePlans()), boards, po);
+  const line = r => `${r.boardsUsed} board${r.boardsUsed === 1 ? "" : "s"} opened${r.shortfall.length ? `, <b>${r.shortfall.length} blank${r.shortfall.length === 1 ? "" : "s"} short</b>` : ", nothing short"}`;
+  const inch = c => c.map(t => (Math.round(t / IN_MM * 100) / 100) + "″").join(" + ");
+  // Only the first paint is the plan's own settings, so only it can be compared.
+  const drift = st.first && !sameBlanks(res.layers, old.layers);
+  st.first = false;
+  const save = document.getElementById("sk-save");
+  if (save) save.disabled = false;
+  el.innerHTML = `<h3>Preview: ${esc(inch(res.composition || f.thkMm))}, ${Math.max(0, res.layers.length - 1)} glue joint${res.layers.length === 2 ? "" : "s"}</h3>
+    <table class="list">
+      <tr><td>This mold alone</td><td>${line(alone)}</td></tr>
+      <tr><td>With the other molds ready to cut</td><td>${line(all)}</td></tr>
+      <tr><td class="muted">Cut list right now</td><td class="muted">${line(nowAll)}</td></tr>
+    </table>
+    ${drift ? `<div class="warn">${icon("warning", 14)} The stored mesh gives slightly different blanks from the saved plan, usually because a very large mesh was thinned when it was saved. Check the fit before saving.</div>` : ""}
+    ${(res.warnings || []).map(w => `<div class="warn">${icon("warning", 14)} ${esc(w)}</div>`).join("")}
+    ${stackSvg(res)}
+    ${stackTable(res)}`;
+}
+/* The new plan a re-choice makes, from an old plan and a slicer result. One builder
+   for adjusting and for Re-plan stacks together, including the mold's own copy of
+   the mesh: a shared file would let deleting the old plan take the new plan's 3D
+   view with it. Non-fatal for the same reason as submitMold. */
+async function savePlanFrom(old, res, fields, note, meshBuffer) {
+  const mold = recById("molds", old.moldId);
+  const id = await allocId("stackplans");
+  if (!id) return null;
+  const raw = {
+    id, name: old.name, source: old.source, sourceBytes: old.sourceBytes || 0, unit: old.unit,
+    thicknessesMm: res.composition, bounds: res.bounds, layers: res.layers, sections: res.sections,
+    warnings: res.warnings || [], usedRack: true, monolithic: !!res.monolithic,
+    splitWaived: !!old.splitWaived, maxCutDepthMm: old.maxCutDepthMm, triangleCount: old.triangleCount || 0,
+    moldId: old.moldId, by: myEmail(), ts: new Date().toISOString(), ...fields,
+  };
+  if (old.frame) raw.frame = old.frame;
+  const { plan, notes } = fitPlanForStorage(raw);
+  plan.notes = notes;
+  if (note) plan.notes.unshift(note);
+  try {
+    const file = new Blob([meshBuffer], { type: "model/stl" });
+    file.name = `${id}-mesh.stl`;
+    const rec = await fb.upload(`stackplans/${id}/mesh.stl`, file);
+    plan.meshPath = rec.path;
+    plan.meshUrl = rec.url;
+  } catch (e) {
+    plan.notes.push("The 3D view couldn't be saved, so this plan shows blocks only. The blanks and cut list are unaffected.");
+  }
+  (DB.stackplans = DB.stackplans || []).push(plan);
+  save("stackplans", plan);
+  mold.layers = `${plan.thicknessesMm.length} layers`;
+  save("molds", mold, "layers");
+  setCurrentPlan(mold, plan.id);
+  return plan;
+}
+async function saveStackKnobs() {
+  const st = STACK_ADJ;
+  if (!st || !st.result || !isLead()) return;
+  STACK_ADJ = null;   // first, so a second press does nothing
+  const old = planById(st.planId), mold = recById("molds", old.moldId), f = st.read, res = st.result;
+  const same = !f.auto && JSON.stringify(f.thkMm.map(Math.round)) === JSON.stringify((old.thicknessesMm || []).map(Math.round));
+  const plan = await savePlanFrom(old, { ...res, composition: res.composition || f.thkMm }, {
+    density: f.dLo, densityMin: f.dLo, densityMax: f.dHi,
+    /* Hand-typed thicknesses are 0, which is what keeps Re-plan stacks together off
+       them. Only moving the edge distance on a chosen stack leaves it chosen. */
+    considered: f.auto ? res.considered : (same ? (old.considered || 0) : 0),
+    alternatives: f.auto ? res.alternatives : (same ? (old.alternatives || []) : []),
+    cost: f.auto ? res.cost : (same ? (old.cost || 0) : 0),
+    knobs: knobDiff(f.knobs),
+  }, `Adjusted from ${old.id}.`, st.buffer);
+  if (!plan) { toast("Couldn't get a plan id, so nothing was saved.", "error"); return; }
+  mold.density = String(f.dLo); mold.densityMin = String(f.dLo); mold.densityMax = String(f.dHi);
+  save("molds", mold, "density", "densityMin", "densityMax");
+  closeModal();
+  toast(`${plan.name} has a new plan. The old one is under Earlier.`);
+  render();
+}
+
 /* One way in. Simon: "there should only be an option to make a mold." This is
    the + Mold button, the Re-plan button, and nothing else. `existing` is set
    when re-planning, which prefills the name and density and, on submit, points
@@ -929,6 +1259,9 @@ function uploadMold(existing) {
       <input id="ml-thk" placeholder="e.g. 2, 2, 1">
       <select id="ml-thk-u">${UNITS.map(u => `<option ${u === "in" ? "selected" : ""}>${u}</option>`).join("")}</select>
     </div>
+    <div class="field"><label></label><button type="button" class="sm" onclick="(function(){var e=document.getElementById('ml-knobs');e.style.display=e.style.display==='none'?'':'none'})()">Stack settings: edge distance, rounding, layers…</button>
+      <span class="muted tny">Leave these alone and you get the usual 1in off the mold.</span></div>
+    <div id="ml-knobs" style="display:none">${knobFieldsHtml("ml-k", knobValues(curPlan && curPlan.knobs))}</div>
     <div id="ml-bodies"></div>
     <div id="ml-progress" class="muted tny"></div>
     <div class="foot"><button onclick="closeModal()">Cancel</button><button class="primary" onclick="submitMold()">Plan</button></div>
@@ -1033,6 +1366,9 @@ async function submitMold() {
      drawings, planSetups, exportSectionStl — works unchanged with no edits. */
   const noSplit = !!(document.getElementById("ml-nosplit") || {}).checked;
   const noSplitOpts = noSplit ? { maxCutDepth: NO_SPLIT_DEPTH_MM } : {};
+  const knobs = knobRead("ml-k");
+  const knobOpts = knobSliceOpts(knobs);
+  const costOpts = { ...knobCostOpts(knobs), ...cutPackOpts() };
 
   let msg, sourceName, sourceBytes = 0;
   if (isBox) {
@@ -1041,7 +1377,7 @@ async function submitMold() {
     for (const [r, label] of [[L, "Length"], [W, "Width"], [H, "Height"]]) {
       if (r.err) { toast(`${label} ${r.err}.`, "error"); return; }
     }
-    msg = { cmd: "slice", box: { len: toMm(L.dim), wid: toMm(W.dim), hgt: toMm(H.dim) }, thicknesses: thkMm, available, boards: rack, supply, densityMin: dLo, densityMax: dHi, opts: { ...noSplitOpts } };
+    msg = { cmd: "slice", box: { len: toMm(L.dim), wid: toMm(W.dim), hgt: toMm(H.dim) }, thicknesses: thkMm, available, boards: rack, supply, densityMin: dLo, densityMax: dHi, costOpts, opts: { ...noSplitOpts, ...knobOpts } };
     sourceName = `block ${fmtDim(L.dim)} x ${fmtDim(W.dim)} x ${fmtDim(H.dim)}`;
   } else {
     const fileEl = document.getElementById("ml-file");
@@ -1082,9 +1418,9 @@ async function submitMold() {
     msg = {
       cmd: "slice", buffer: MOLD_BUF.buffer, unit, cacheKey: MOLD_BUF.key,
       bodyIndex: Number((document.getElementById("ml-body") || {}).value || 0),
-      thicknesses: thkMm, available, boards: rack, supply, densityMin: dLo, densityMax: dHi,
+      thicknesses: thkMm, available, boards: rack, supply, densityMin: dLo, densityMax: dHi, costOpts,
       // A typed box is a block already, so the choice only exists for an STL.
-      opts: { monolithic: val("ml-shape") === "block", ...noSplitOpts },
+      opts: { monolithic: val("ml-shape") === "block", ...noSplitOpts, ...knobOpts },
     };
     sourceName = MOLD_BUF.name; sourceBytes = MOLD_BUF.size;
   }
@@ -1103,7 +1439,7 @@ async function submitMold() {
       layers: result.layers, sections: result.sections || [],
       warnings: result.warnings || [], considered: result.considered || 0,
       alternatives: result.alternatives || [], usedRack: !!result.usedRack, cost: result.cost || 0,
-      monolithic: !!result.monolithic,
+      monolithic: !!result.monolithic, knobs: knobDiff(knobs),
       /* What this plan was actually sliced under. Every consumer of the split
          reads the PLAN (drawings, planSetups, exportSectionStl), so the plan
          has to carry the cap or a re-plan silently changes the wall drawings. */
@@ -1361,7 +1697,7 @@ function renderCutList() {
   const { eligible, sel, plans } = cutScopePlans();
   const blanks = blanksFromPlans(plans);
   const boards = boardsForPacking();
-  const res = blanks.length && boards.length ? packAll(blanks, boards, {}) : null;
+  const res = blanks.length && boards.length ? packAll(blanks, boards, cutPackOpts()) : null;
   const back = (typeof cutsUndoBar === "function" ? cutsUndoBar() : "") +
     `<div class="toolbar no-print"><button class="ib" onclick="view={...view,mode:'list'};render()">${icon("chevronLeft", 16)} All stock</button>
     <select onchange="view.cutSel=this.value;render()">
@@ -1369,6 +1705,7 @@ function renderCutList() {
       ${eligible.map(p => `<option value="${esc(p.id)}" ${sel === p.id ? "selected" : ""}>${esc(p.name)}</option>`).join("")}
     </select>
     <button onclick="printCutSet()">${icon("print", 15)} Print cut list</button>
+    <button class="ib" onclick="openCutKnobs()" title="Saw blade width, smallest offcut to keep, turning blanks, and how much the planner avoids digging for a board.">Cut settings…</button>
     ${sel ? `<button class="ib" onclick="openDrawings('${esc(sel)}')">${icon("print", 15)} This mold's drawings</button>` : ""}
     ${eligible.length && isLead() ? `<button class="ib" onclick="openPlanTogether()" title="Try other layer thicknesses across every mold ready to cut. Nothing changes until you apply it.">Re-plan stacks together…</button>` : ""}
     ${res && res.plans.length ? `<button class="primary" style="margin-left:auto" onclick="openCommitCutsModal()">Mark these boards cut…</button>` : ""}</div>`;
@@ -1382,7 +1719,8 @@ function renderCutList() {
   return back + cutHeldBackCard() + `
   <div class="card">
     <h2>Cut list</h2>
-    <div class="muted">${blanks.length} blanks from ${plans.length} mold${plans.length > 1 ? "s" : ""} · ${res.boardsUsed} board${res.boardsUsed === 1 ? "" : "s"} opened · ${(util * 100).toFixed(0)}% of opened board used · kerf ${KERF_MM}mm</div>
+    <div class="muted">${blanks.length} blanks from ${plans.length} mold${plans.length > 1 ? "s" : ""} · ${res.boardsUsed} board${res.boardsUsed === 1 ? "" : "s"} opened · ${(util * 100).toFixed(0)}% of opened board used · kerf ${Math.round(cutKnobValues().kerfIn * IN_MM * 1000) / 1000}mm</div>
+    ${cutKnobNote() ? `<div class="muted tny"><b>Cut settings changed in this browser:</b> ${esc(cutKnobNote())}.</div>` : ""}
     ${feedRateBand(res)}
     ${res.shortfall.length ? `<div class="warn">${icon("warning", 14)} <b>Short ${res.shortfall.length} blank${res.shortfall.length > 1 ? "s" : ""}.</b> Nothing on the rack fits these — order board before starting:
       <ul>${res.shortfall.map(s => `<li>${esc(s.id)} — ${mmIn(s.w)} &times; ${mmIn(s.h)} at ${mmIn(s.thickness)} thick</li>`).join("")}</ul>
@@ -1424,7 +1762,7 @@ function planTogetherStamp(plans) {
 function planTogetherRun(msg, onProgress) {
   if (typeof Worker === "undefined") {
     const molds = msg.molds.map(m => ({ ...m, buffer: undefined, tris: m.buffer ? parseSTL(m.buffer).tris : null }));
-    return Promise.resolve(batchForPage(planBatch(molds, msg.boards, { plan: planMold, slice: sliceMold }, { onProgress })));
+    return Promise.resolve(batchForPage(planBatch(molds, msg.boards, { plan: planMold, slice: sliceMold }, { onProgress, packOpts: msg.packOpts })));
   }
   return new Promise((resolve, reject) => {
     const w = new Worker("slicer.worker.js");
@@ -1471,12 +1809,12 @@ async function openPlanTogether() {
       id: p.id, name: p.name, buffer, pinned, densityMin: lo, densityMax: hi,
       thicknessesMm: p.thicknessesMm,
       layers: (p.layers || []).map(L => ({ thickness: L.thickness, blanks: L.blanks })),
-      sliceOpts: { monolithic: !!p.monolithic, ...(p.splitWaived ? { maxCutDepth: p.maxCutDepthMm } : {}) },
+      sliceOpts: { monolithic: !!p.monolithic, ...(p.splitWaived ? { maxCutDepth: p.maxCutDepthMm } : {}), ...knobSliceOpts(knobValues(p.knobs)) },
     });
   }
   let r;
   try {
-    r = await planTogetherRun({ cmd: "batch", molds, boards: boardsForPacking() },
+    r = await planTogetherRun({ cmd: "batch", molds, boards: boardsForPacking(), packOpts: cutPackOpts() },
       v => set(`Trying stacks… ${Math.round(v * 100)}%`));
   } catch (e) {
     if (PLAN_TOGETHER_RUN !== run) return;
@@ -1528,43 +1866,14 @@ async function applyPlanTogether() {
   }
   for (const m of changed) {
     const old = planById(m.id);
-    const mold = recById("molds", old.moldId);
-    const id = await allocId("stackplans");
-    if (!id) { toast("Couldn't get a plan id, so the rest were left as they were.", "error"); break; }
     const [lo, hi] = planDensityRange(old);
     const res = m.result;
     const others = state.r.molds.filter(o => o.id !== m.id).map(o => o.name);
-    const raw = {
-      id, name: old.name, source: old.source, sourceBytes: old.sourceBytes || 0,
-      density: lo, densityMin: lo, densityMax: hi, unit: old.unit,
-      thicknessesMm: res.composition, bounds: res.bounds, layers: res.layers, sections: res.sections,
-      warnings: res.warnings || [], considered: res.considered, alternatives: res.alternatives,
-      usedRack: true, cost: res.cost, monolithic: !!res.monolithic,
-      splitWaived: !!old.splitWaived, maxCutDepthMm: old.maxCutDepthMm, triangleCount: old.triangleCount || 0,
-      plannedTogether: true, moldId: old.moldId,
-      by: myEmail(), ts: new Date().toISOString(),
-    };
-    if (old.frame) raw.frame = old.frame;
-    const { plan, notes } = fitPlanForStorage(raw);
-    plan.notes = notes;
-    plan.notes.unshift(`Stack chosen at the cut list${others.length ? ", together with " + others.join(", ") : ""}, replacing ${old.id}.`);
-    /* Its own copy of the mesh, as a plan from the modal has. Sharing the file
-       would let deleting the old plan take the new plan's 3D view with it.
-       Non-fatal for the same reason as submitMold: the blanks are what get cut. */
-    try {
-      const file = new Blob([state.buffers[m.id]], { type: "model/stl" });
-      file.name = `${id}-mesh.stl`;
-      const rec = await fb.upload(`stackplans/${id}/mesh.stl`, file);
-      plan.meshPath = rec.path;
-      plan.meshUrl = rec.url;
-    } catch (e) {
-      plan.notes.push("The 3D view couldn't be saved, so this plan shows blocks only. The blanks and cut list are unaffected.");
-    }
-    (DB.stackplans = DB.stackplans || []).push(plan);
-    save("stackplans", plan);
-    mold.layers = `${plan.thicknessesMm.length} layers`;
-    save("molds", mold, "layers");
-    setCurrentPlan(mold, plan.id);
+    const plan = await savePlanFrom(old, res, {
+      density: lo, densityMin: lo, densityMax: hi, considered: res.considered, alternatives: res.alternatives,
+      cost: res.cost, plannedTogether: true, knobs: old.knobs || {},
+    }, `Stack chosen at the cut list${others.length ? ", together with " + others.join(", ") : ""}, replacing ${old.id}.`, state.buffers[m.id]);
+    if (!plan) { toast("Couldn't get a plan id, so the rest were left as they were.", "error"); break; }
   }
   closeModal();
   toast(`${changed.length} stack${changed.length === 1 ? "" : "s"} re-planned. The old ones are under Earlier on each mold.`);
@@ -1662,7 +1971,7 @@ let CUT_FEED = "";      // the feed-rate band, kept so the pane can repaint with
 
 function openCommitCutsModal() {
   const plans = cutScopePlans().plans;
-  const res = packAll(blanksFromPlans(plans), boardsForPacking(), {});
+  const res = packAll(blanksFromPlans(plans), boardsForPacking(), cutPackOpts());
   if (!res.plans.length) { toast("Nothing to cut.", "info"); return; }
   /* uid per offcut, minted once, the plyTable/stackMutate idiom: the pane
      re-renders itself after every add and delete, and a row identified by its
@@ -2017,8 +2326,9 @@ function cutPack(mineId, plans) {
   const all = plans || DB.stackplans || [];
   const boards = boardsForPacking();
   const blanks = blanksFromPlans(all);
-  const res = (blanks.length && boards.length) ? packAll(blanks, boards, {}) : null;
+  const res = (blanks.length && boards.length) ? packAll(blanks, boards, cutPackOpts()) : null;
   if (!res) return null;
+  res.settingsNote = cutKnobNote();
   return {
     pack: res,
     mineId: mineId || null,
@@ -2111,7 +2421,7 @@ function whyTheseBoards(p) {
   return `<h3>Why these boards</h3>
     <p class="muted tny">${esc(inch(p.thicknessesMm || []))} — ${joints} glue joint${joints === 1 ? "" : "s"},
       ${joints * 4}h of clamp time under CS-003 §7.3. Scored against the boards on the rack, pricing one glue joint
-      at a quarter of a 4×8 sheet. Runners-up:</p>
+      at ${knobValues(p.knobs).jointWorthSheets === 0.25 ? "a quarter" : esc(knobValues(p.knobs).jointWorthSheets)} of a 4×8 sheet. Runners-up:</p>
     <table class="list">
       <tr><th>Stack</th><th>Glue joints</th><th>Cost</th></tr>
       ${alts.map(a => `<tr>
@@ -2137,7 +2447,7 @@ function whyTheseBoards(p) {
 function whyTheseLifts(p) {
   const boards = boardsForPacking();
   if (!boards.length) return "";
-  const res = packAll(blanksFromPlans([p]), boards, {});
+  const res = packAll(blanksFromPlans([p]), boards, cutPackOpts());
   if (!res.plans.length) return "";
   const anyLift = res.plans.some(pl => pl.digCost > 0);
   return `<p class="muted tny">Beside board and glue joints, the planner prefers the board nearest the

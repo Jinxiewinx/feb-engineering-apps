@@ -631,6 +631,19 @@ ready to cut re-chosen against the rack at once. It proposes, and applying adds 
 new plan with the old one kept under Earlier. Blanks from different ranges also
 share a board now when its grade suits both.
 
+**The planner's settings are the user's (November 2026).** Simon: give all the
+knobs to the user and explain what they mean. Adjust stack on a mold re-slices its
+stored mesh as you type and redraws the stack, the blanks and the board count,
+without saving until Save as a new plan. It covers the distance from the mold edge,
+rounding, when raised areas share a blank, thicknesses, blank shape, density range,
+most layers, extra height, stacks to try and what a glue joint is worth. The same
+stack settings are on the New Mold window. A plan stores what differs from usual as
+`plan.knobs`, and Re-plan stacks together slices each mold at its own settings. The
+cut list has Cut settings for blade width, smallest offcut, turning and the lift
+charge. Those stay in the browser, and the screen and the printed sheet both say
+when they are not the usual values. The defaults are the existing constants, so
+leaving everything alone plans what it always did.
+
 **The cut list only offers molds still at "Designed".** It used to pack every
 stack plan on file, forever — retired molds, last season's, molds already
 machined, and both halves of every re-plan. That is worse than a long list:

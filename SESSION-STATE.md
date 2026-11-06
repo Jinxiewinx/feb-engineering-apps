@@ -20,13 +20,14 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
-**Cut list and mold edits (2026-11-06), from Nick's report.** v6.12.0. The mold owns
-the density range (`planDensityRange`); `packAll` pools ranges; Re-plan stacks
-together (`planBatch`) is on the cut list, lead only, and writes nothing until
-applied. Open: Back Side Panel Left and Right are still 3 blanks short on live.
-Nobody has pressed Use these stacks; that is Nick's or Simon's call, because it
-gives Right a new plan. Idea: the single-mold Re-plan modal still asks for the STL
-again and could reuse the stored mesh.
+**Cut list and mold edits (2026-11-06), from Nick's report.** v6.12.0: the mold owns
+the density range (`planDensityRange`), `packAll` pools ranges, Re-plan stacks
+together (`planBatch`) is on the cut list. v6.13.0: Adjust stack (`openStackKnobs`,
+live preview off the stored mesh), `STACK_KNOBS` stored as `plan.knobs`, Cut settings
+(`CUT_KNOBS`, per browser). Nick's molds: at 21:40 he remade Back Side Panel Left at
+20 lb and Right at 30 lb on the old build, which clears the shortfall, so there is
+nothing to apply on them. Not done: cut settings team-wide; the re-plan modal still
+asks for the file rather than the stored mesh (Adjust stack covers most of that).
 
 **Paul in Slack (2026-10-24), deployed 2026-10-25, not yet tried in Slack.** Plan:
 `~/.claude/plans/i-d-like-to-expand-atomic-marshmallow.md`. Tag @Paul in a

@@ -68,14 +68,19 @@ self.onmessage = function (e) {
         tris: m.buffer ? parseSTL(m.buffer).tris : null,
       }));
       const r = planBatch(molds, msg.boards, { plan: planMold, slice: sliceMold },
-        { onProgress: v => self.postMessage({ type: "progress", value: v }) });
+        { packOpts: msg.packOpts, onProgress: v => self.postMessage({ type: "progress", value: v }) });
       self.postMessage({ type: "batch", result: batchForPage(r) });
       return;
     }
     if (msg.cmd !== "slice") return;
     // Either a box typed in by hand, or one body of an uploaded STL.
     let tris, triangleCount, displayTris;
-    if (msg.box) {
+    if (msg.stored) {
+      // The plan's stored mesh, already one body in mm. For live adjusting.
+      tris = parseSTL(msg.buffer).tris;
+      triangleCount = tris.length;
+      displayTris = tris;
+    } else if (msg.box) {
       tris = boxTris(msg.box.len, msg.box.wid, msg.box.hgt);
       triangleCount = tris.length;
       // boxTris is 4 open walls — enough to slice against Z planes, but it
@@ -97,7 +102,7 @@ self.onmessage = function (e) {
     if (msg.supply) opts.supply = msg.supply;
     if (msg.boards && msg.boards.length) {
       opts.score = layers => moldCost(layers, msg.boards,
-        { densityMin: msg.densityMin, densityMax: msg.densityMax }).cost;
+        { ...(msg.costOpts || {}), densityMin: msg.densityMin, densityMax: msg.densityMax }).cost;
     }
     // thicknesses null => choose them from what the rack actually holds.
     const result = msg.thicknesses && msg.thicknesses.length
@@ -106,7 +111,7 @@ self.onmessage = function (e) {
     // Best-effort: a mesh we couldn't shrink or write must never cost anyone
     // their cut list, which is the part that actually gets cut.
     let meshStl = null;
-    try { meshStl = meshStlForStorage(displayTris); } catch (e) { meshStl = null; }
+    try { meshStl = msg.stored ? null : meshStlForStorage(displayTris); } catch (e) { meshStl = null; }
     self.postMessage({
       type: "done",
       meshStl,

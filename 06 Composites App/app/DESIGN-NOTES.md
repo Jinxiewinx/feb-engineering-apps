@@ -124,6 +124,20 @@ plans; it does not rewrite them, and hand-picked stacks (`considered: 0`) never
 move. It is not automatic because a new stack invalidates printed drawings and
 a CS-003 §7.2 review, and that should be somebody's decision.
 
+## Planner settings
+
+`STACK_KNOBS` in `stock.js` is the one list: label, range, default, explanation and
+which slicer or costing option each one feeds. Non-default values are stored on the
+plan, because a plan has to say what it was sliced under and every old plan should
+read as its defaults. Merging is forced to stay at least margin plus one rounding
+step, whatever the merge knob says, so no setting can make two blanks overlap.
+
+Cut settings are per browser for now, not team-wide. What is on screen is what prints
+and what Mark cut commits, so they cannot disagree with their own sheet. Going
+team-wide means a shared config doc and a rules change, so that waits for a reason.
+`MIN_REMNANT_MM` still scores splits inside `betterSplit`; the setting moves the
+keep-or-scrap line and what `boardCost` credits, not that tiebreak.
+
 ## A map that hides things is not a map
 
 Empty shelves used to collapse out of the storage map into a one-line text

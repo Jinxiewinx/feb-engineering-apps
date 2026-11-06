@@ -194,7 +194,8 @@ function packBoard(board, parts, opts) {
      different question, which is what to count as recovered value when
      choosing a split. */
   const usable = [], scrap = [];
-  for (const o of r.leftover) (o.w >= MIN_REMNANT_MM && o.h >= MIN_REMNANT_MM ? usable : scrap).push(o);
+  const keep = opts.minRemnant == null ? MIN_REMNANT_MM : opts.minRemnant;
+  for (const o of r.leftover) (o.w >= keep && o.h >= keep ? usable : scrap).push(o);
   return { placed: r.placed, cuts: r.cuts, leftover: usable, scrap, unplaced: r.remaining };
 }
 
@@ -719,13 +720,14 @@ function sameBlanks(a, b) {
 function planBatch(molds, boards, deps, opts) {
   opts = opts || {};
   const onProgress = opts.onProgress || (() => {});
+  const packOpts = opts.packOpts || {};
   const st = molds.map(m => ({ ...m, start: m.layers, result: null }));
   const blanksOf = (m, layers) => blanksFromLayers(layers, { min: m.densityMin, max: m.densityMax }, m.name, m.id);
   const jointsOf = layers => Math.max(0, (layers || []).length - 1);
   const total = (list, pick) => {
     const blanks = [], joints = list.reduce((n, m) => n + jointsOf(pick(m)), 0);
     list.forEach(m => blanks.push(...blanksOf(m, pick(m))));
-    const c = blanksCost(blanks, boards, joints);
+    const c = blanksCost(blanks, boards, joints, packOpts);
     const pack = c.pack || { plans: [], boardsUsed: 0, shortfall: [], maxDensity: null };
     return { cost: c.cost, joints, short: c.shortfall.length, boards: pack.boardsUsed,
       util: utilisation(pack.plans), maxDensity: pack.maxDensity, blanks: blanks.length };
@@ -756,7 +758,7 @@ function planBatch(molds, boards, deps, opts) {
       others.forEach(o => otherBlanks.push(...blanksOf(o, o.layers)));
       const otherJoints = others.reduce((n, o) => n + jointsOf(o.layers), 0);
       const score = layers => {
-        const c = blanksCost(otherBlanks.concat(blanksOf(m, layers)), boards, otherJoints + jointsOf(layers));
+        const c = blanksCost(otherBlanks.concat(blanksOf(m, layers)), boards, otherJoints + jointsOf(layers), packOpts);
         return c.cost + c.shortfall.length * BATCH_SHORT_SHEETS * SHEET_REF_MM3;
       };
       const rack = (boards || []).filter(b => blankTakes({ density: m.densityMin, densityMin: m.densityMin, densityMax: m.densityMax }, b.density));

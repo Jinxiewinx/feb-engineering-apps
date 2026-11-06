@@ -868,7 +868,11 @@ function planMold(tris, availableThicknessesMm, opts) {
 function sliceMold(tris, thicknesses, opts) {
   opts = opts || {};
   const margin = opts.margin == null ? MARGIN_MIN_MM : opts.margin;
-  const inflate = opts.inflate == null ? MARGIN_MAX_MM : opts.inflate;
+  const quantum = opts.quantum == null ? BLANK_QUANTUM_MM : opts.quantum;
+  /* Margin and rounding are settings now, and merging has to stay ahead of them.
+     Inflating by at least margin + one increment is what keeps two blanks that
+     were judged separate from growing into each other. */
+  const inflate = Math.max(opts.inflate == null ? MARGIN_MAX_MM : opts.inflate, margin + quantum);
   const eps = opts.simplifyEps == null ? 0.2 : opts.simplifyEps;
   const bounds = meshBounds(tris);
   /* MONOLITHIC — one footprint for every layer.
@@ -895,7 +899,7 @@ function sliceMold(tris, thicknesses, opts) {
      corner of the mold's whole footprint, margined and rounded symmetrically.
      For a drafted mold that IS the bottom blank, unchanged from before; the
      upper layers now land on its grid instead of drifting. */
-  const anchorBox = applyMargin(fullBox, margin);
+  const anchorBox = applyMargin(fullBox, margin, quantum);
   const anchor = { x: anchorBox.x0, y: anchorBox.y0 };
   const total = thicknesses.reduce((a, b) => a + b, 0);
   const height = bounds.z1 - bounds.z0;
@@ -919,7 +923,7 @@ function sliceMold(tris, thicknesses, opts) {
       ? [{ box: fullBox, members: [0] }]
       : slabBoxes(tris, z0, Math.min(z1, bounds.z1), inflate);
     if (!groups.length) throw new Error(`Layer ${i + 1} came out empty — the mold may not sit flat on Z.`);
-    const blanks = groups.map(g => applyMargin(g.box, margin, undefined, anchor));
+    const blanks = groups.map(g => applyMargin(g.box, margin, quantum, anchor));
 
     /* CONTOURS are cosmetic: they draw the mold outline inside the block so a
        reviewer can see the fit. Best-effort — a rough or overhung mesh that
@@ -950,6 +954,9 @@ function sliceMold(tris, thicknesses, opts) {
     if (opts.onProgress) opts.onProgress((i + 1) / thicknesses.length);
   }
 
+  if (margin < MARGIN_MIN_MM - 1e-6) {
+    warnings.push(`Blanks stand only ${(margin / 25.4).toFixed(2)}in off the mold, under the usual 1in. A stack that shifts in glue-up can leave the mold outside the board. Check the fit before anyone cuts.`);
+  }
   // Support: every blank should sit on material below it. With a drafted mold
   // this is automatic; with an overhung one it genuinely is not, and the person
   // gluing needs to know which layer hangs over air.
