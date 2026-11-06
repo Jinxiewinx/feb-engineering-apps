@@ -1036,7 +1036,7 @@ async function openStackKnobs(moldId) {
   /* Wider than a normal wide modal, so the settings and the stack sit side by side
      and you can watch one while changing the other. On a phone they stack, and the
      sticky line above keeps the sizes and board count in view while you type. */
-  const box = document.querySelector("#modal .modal");
+  const box = document.getElementById("modal").querySelector(".modal");
   if (box && box.style) { box.style.width = "min(1120px, 96vw)"; box.style.maxWidth = "96vw"; }
   const run = STACK_ADJ;
   try {
