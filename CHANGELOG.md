@@ -38,6 +38,13 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.13.0 — 2026-11-06
+
+- What's New for 6.13.0: Adjust stack and Cut settings
+- Planner settings for the user: edge distance and the rest, adjustable live
+
+---
+
 ## v6.12.0 — 2026-11-06
 
 - README and SESSION-STATE: mold density edits, Re-plan stacks together
