@@ -358,9 +358,46 @@ const TRIAL_FALLBACK = 4;
 
    `blanks`  [{ id, w, h, thickness, density, label }]
    `boards`  [{ id, len, wid, thk, density, qty, label }]  (mm)
-   Returns per-board plans, leftovers to write back, and any shortfall. */
+   Returns per-board plans, leftovers to write back, and any shortfall.
+
+   TWO MOLDS WITH DIFFERENT RANGES CAN SHARE A BOARD. They could not until
+   November 2026: blanks were bucketed by range, a board opened for one bucket
+   was spent, and its offcut was invisible to the next bucket. So a 20-30 lb
+   mold and a 20 lb mold each opened their own 20 lb sheet of the same thickness
+   with room to spare on both, which is the waste Nick Jepsen reported as the
+   cut list not condensing.
+
+   Pooling is greedy, and a greedy pool can hand a wide-range blank the one board
+   a narrow-range blank needed. So both are run and the pooled pack has to win:
+   fewer blanks short first, then fewer boards, then less board spent. A batch
+   with one range per thickness has nothing to pool and skips the second run,
+   which keeps moldCost's scoring and every single-range pack exactly as it was. */
 function packAll(blanks, boards, opts) {
   opts = opts || {};
+  const tol = opts.thicknessTol == null ? 0.5 : opts.thicknessTol;
+  const seen = new Map();
+  let mixed = false;
+  for (const b of blanks) {
+    const k = Math.round(b.thickness / tol), r = blankDensityRange(b).join("|");
+    if (seen.has(k) && seen.get(k) !== r) mixed = true;
+    seen.set(k, r);
+  }
+  const apart = packPass(blanks, boards, opts, false);
+  if (!mixed) return apart;
+  const pooled = packPass(blanks, boards, opts, true);
+  return packBeats(pooled, apart) ? { ...pooled, pooled: true } : apart;
+}
+function packBeats(a, b) {
+  if (a.shortfall.length !== b.shortfall.length) return a.shortfall.length < b.shortfall.length;
+  if (a.boardsUsed !== b.boardsUsed) return a.boardsUsed < b.boardsUsed;
+  const spent = r => r.plans.reduce((n, p) => n + p.board.w * p.board.h * p.thickness, 0);
+  return spent(a) < spent(b);
+}
+function blankTakes(p, density) {
+  const [lo, hi] = blankDensityRange(p);
+  return density >= lo - DENSITY_TOL && density <= hi + DENSITY_TOL;
+}
+function packPass(blanks, boards, opts, pooled) {
   const tol = opts.thicknessTol == null ? 0.5 : opts.thicknessTol;
   const rotate = opts.allowRotate !== false;
   const plans = [];
@@ -370,7 +407,8 @@ function packAll(blanks, boards, opts) {
   // hard bucket — a blank can only come from a board of the same thickness.
   // Density is now the RANGE the blank declares: two blanks with the same range
   // share a pool, two blanks with different ranges are different jobs and stay
-  // apart, which is also what keeps this deterministic.
+  // apart, which is also what keeps this deterministic. The pooled pass drops
+  // the range from the key and asks each blank whether it takes the board.
   const buckets = new Map();
   for (const b of blanks) {
     // No coercion here on purpose: this file is importScripts()'d into the
@@ -378,7 +416,7 @@ function packAll(blanks, boards, opts) {
     // need to be — blanksFromPlans and boardsForPacking in stock.js both
     // canonicalise, so both sides of the key below are already one form.
     const [dlo, dhi] = blankDensityRange(b);
-    const k = `${Math.round(b.thickness / tol)}|${dlo}|${dhi}`;
+    const k = pooled ? `${Math.round(b.thickness / tol)}` : `${Math.round(b.thickness / tol)}|${dlo}|${dhi}`;
     if (!buckets.has(k)) buckets.set(k, []);
     buckets.get(k).push(b);
   }
@@ -400,12 +438,17 @@ function packAll(blanks, boards, opts) {
     // plain string order is fine and a ReferenceError would not be.
     || String(a.src.id).localeCompare(String(b.src.id)) || (a.unit - b.unit));
 
-  for (const [k, wanted] of buckets) {
+  /* Narrowest range chooses first. A 20 lb blank has fewer boards it can use than
+     a 20-30 lb one, so letting the wide one go first can spend the only board the
+     narrow one had. Stable, so a batch with one range per thickness is untouched. */
+  const width = b => { const [lo, hi] = blankDensityRange(b); return hi - lo; };
+  const ordered = [...buckets].sort((a, b) => width(a[1][0]) - width(b[1][0]));
+  for (const [k, wanted] of ordered) {
     let todo = wanted.slice();
-    const [thkKey, loKey, hiKey] = k.split("|");
+    const [thkKey] = k.split("|");
     const usable = () => pool.filter(bd => !bd.used
       && Math.round(bd.thk / tol) === +thkKey
-      && bd.density >= +loKey - DENSITY_TOL && bd.density <= +hiKey + DENSITY_TOL);
+      && todo.some(p => blankTakes(p, bd.density)));
 
     while (todo.length) {
       /* Identical units are interchangeable, so only one of each SIZE is worth
@@ -443,7 +486,7 @@ function packAll(blanks, boards, opts) {
       let best = null, runnerUp = Infinity;
       const beaten = c => { if (c < runnerUp) runnerUp = c; };
       for (const bd of cands) {
-        const r = packBoard(bd, todo, opts);
+        const r = packBoard(bd, todo.filter(p => blankTakes(p, bd.density)), opts);
         if (!r.placed.length) continue;
         const cost = boardCost(bd, r, opts.digWorthBlank);
         // Strictly better only, then the tiebreaks, so two runs agree. `cands`
@@ -458,7 +501,8 @@ function packAll(blanks, boards, opts) {
       if (!best) break;
 
       best.bd.used = true;
-      todo = best.r.unplaced;
+      // Blanks this board's grade was never offered to stay on the list.
+      todo = best.r.unplaced.concat(todo.filter(p => !blankTakes(p, best.bd.density)));
       plans.push({
         board: best.bd, placed: best.r.placed, cuts: best.r.cuts,
         // boardId on every leftover, so whatever eventually writes offcuts back
@@ -584,9 +628,16 @@ function moldCost(layers, boards, opts) {
   const dHi = opts.densityMax != null ? opts.densityMax : dLo;
   const jointRate = opts.jointWorthSheets == null ? JOINT_WORTH_SHEETS : opts.jointWorthSheets;
   const joints = Math.max(0, (layers || []).length - 1);
-  const jointCost = joints * jointRate * SHEET_REF_MM3;
   const blanks = blanksFromLayers(layers, { min: dLo, max: dHi });
+  return blanksCost(blanks, boards, joints, opts, jointRate);
+}
 
+/* The body of moldCost, on any pile of blanks: one mold's, or a whole cut list's
+   when planBatch below asks what a stack costs next to the other molds. */
+function blanksCost(blanks, boards, joints, opts, jointRate) {
+  opts = opts || {};
+  const rate = jointRate == null ? (opts.jointWorthSheets == null ? JOINT_WORTH_SHEETS : opts.jointWorthSheets) : jointRate;
+  const jointCost = joints * rate * SHEET_REF_MM3;
   if (!boards || !boards.length) {
     let vol = 0;
     for (const b of blanks) vol += b.w * b.h * b.thickness;
@@ -611,13 +662,144 @@ function moldCost(layers, boards, opts) {
   return {
     usedRack: true, boardsOpened: r.boardsUsed, joints,
     shortfall: r.shortfall, mustBuySheets, cost: spent + jointCost,
-    densitiesUsed: r.densitiesUsed, maxDensity: r.maxDensity,
+    densitiesUsed: r.densitiesUsed, maxDensity: r.maxDensity, pack: r,
   };
+}
+
+/* ============================================================================
+   CHOOSING THE STACKS TOGETHER
+   ============================================================================
+   planMold picks one mold's thicknesses as if it were the only mold being cut.
+   That is deliberate at planning time (see whyTheseBoards in stock.js): counting
+   other molds there would make a plan depend on who planned first. But it means
+   the question "do these molds fit the rack TOGETHER" has no answer until the
+   cut list, and by then the layers were fixed.
+
+   The real case, 2026-11-06: Back Side Panel Left and Right are mirror images,
+   each planned alone on 2 + 1.5 + 1.5 + 1in. The rack holds one 2in and one 1.5in
+   board long enough, so the cut list reported three blanks short with six 4x8
+   sheets of 1in sitting unopened. Re-choosing Right as 1 + 1 + 1 + 1 + 2in clears
+   the shortfall.
+
+   So this is that second question. Coordinate descent: take each mold in turn,
+   hold the others where they are, and run the ordinary planMold with a score
+   that packs all of them. It never writes anything; a person applies the result.
+
+     A mold moves only if the new stack beats its current one by 0.5%, the same
+     margin planMold uses, so a batch with nothing to gain changes nothing.
+
+     BATCH_SHORT_SHEETS = 4: a blank with no board is worth four sheet-inches on
+     top of the sheet moldCost already charges, so going from short to not short
+     outranks saving glue joints. It only ranks stacks inside this search.
+
+   PURE, with the slicer injected the way moldCost is injected into slicer.js.
+
+   `molds` [{ id, name, tris, layers, thicknessesMm, densityMin, densityMax,
+              sliceOpts, pinned }]. `pinned` is a reason this one must not move:
+   its thicknesses were picked by hand, or its mesh is gone. A pinned mold still
+   takes up board. */
+const BATCH_SHORT_SHEETS = 4;
+const BATCH_PASSES = 3;
+
+/* Does re-slicing the stored mesh give the blanks this plan already has? A mesh
+   over the storage budget was decimated on the way in, and re-planning from a
+   degraded copy would quietly move blanks nobody asked to move. */
+function sameBlanks(a, b) {
+  if ((a || []).length !== (b || []).length) return false;
+  return a.every((L, i) => {
+    const M = b[i];
+    if ((L.blanks || []).length !== (M.blanks || []).length) return false;
+    return L.blanks.every((x, k) => {
+      const y = M.blanks[k];
+      return Math.abs((x.x1 - x.x0) - (y.x1 - y.x0)) < 1 && Math.abs((x.y1 - x.y0) - (y.y1 - y.y0)) < 1;
+    });
+  });
+}
+
+function planBatch(molds, boards, deps, opts) {
+  opts = opts || {};
+  const onProgress = opts.onProgress || (() => {});
+  const st = molds.map(m => ({ ...m, start: m.layers, result: null }));
+  const blanksOf = (m, layers) => blanksFromLayers(layers, { min: m.densityMin, max: m.densityMax }, m.name, m.id);
+  const jointsOf = layers => Math.max(0, (layers || []).length - 1);
+  const total = (list, pick) => {
+    const blanks = [], joints = list.reduce((n, m) => n + jointsOf(pick(m)), 0);
+    list.forEach(m => blanks.push(...blanksOf(m, pick(m))));
+    const c = blanksCost(blanks, boards, joints);
+    const pack = c.pack || { plans: [], boardsUsed: 0, shortfall: [], maxDensity: null };
+    return { cost: c.cost, joints, short: c.shortfall.length, boards: pack.boardsUsed,
+      util: utilisation(pack.plans), maxDensity: pack.maxDensity, blanks: blanks.length };
+  };
+
+  // Biggest first: the mold with the fewest boards that can hold it chooses early.
+  const vol = m => blanksOf(m, m.layers).reduce((n, b) => n + b.w * b.h * b.thickness, 0);
+  const order = st.slice().sort((a, b) => (vol(b) - vol(a)) || String(a.id).localeCompare(String(b.id)));
+
+  for (const m of order) {
+    if (m.pinned) continue;
+    if (!m.tris || !m.tris.length) { m.pinned = "its 3D mesh could not be read"; continue; }
+    try {
+      if (!sameBlanks(deps.slice(m.tris, m.thicknessesMm, m.sliceOpts || {}).layers, m.layers)) {
+        m.pinned = "its stored mesh no longer reproduces this plan";
+      }
+    } catch (e) { m.pinned = "its stored mesh no longer reproduces this plan"; }
+  }
+
+  const before = total(st, m => m.start);
+  const movable = order.filter(m => !m.pinned);
+  for (let pass = 0; pass < BATCH_PASSES; pass++) {
+    let moved = false;
+    movable.forEach((m, i) => {
+      onProgress((pass + i / movable.length) / BATCH_PASSES);
+      const others = st.filter(o => o !== m);
+      const otherBlanks = [];
+      others.forEach(o => otherBlanks.push(...blanksOf(o, o.layers)));
+      const otherJoints = others.reduce((n, o) => n + jointsOf(o.layers), 0);
+      const score = layers => {
+        const c = blanksCost(otherBlanks.concat(blanksOf(m, layers)), boards, otherJoints + jointsOf(layers));
+        return c.cost + c.shortfall.length * BATCH_SHORT_SHEETS * SHEET_REF_MM3;
+      };
+      const rack = (boards || []).filter(b => blankTakes({ density: m.densityMin, densityMin: m.densityMin, densityMax: m.densityMax }, b.density));
+      const supply = {};
+      for (const b of rack) { const k = Math.round(b.thk * 10) / 10; supply[k] = (supply[k] || 0) + (b.qty || 1); }
+      const avail = Object.keys(supply).map(Number).sort((a, b) => a - b);
+      if (!avail.length) return;
+      let r;
+      try { r = deps.plan(m.tris, avail, { ...(m.sliceOpts || {}), supply, score }); }
+      catch (e) { return; }
+      if (r.cost < score(m.layers) * (1 - 0.005)) { m.layers = r.layers; m.result = r; moved = true; }
+    });
+    if (!moved) break;
+  }
+
+  const after = total(st, m => m.layers);
+  const improved = after.short < before.short
+    || (after.short === before.short && after.cost < before.cost * (1 - 0.005));
+  return {
+    before, after, improved,
+    molds: st.map(m => {
+      const changed = !!m.result && improved;
+      return { id: m.id, name: m.name, pinned: m.pinned || "", changed,
+        thicknessesMm: changed ? m.result.composition : m.thicknessesMm,
+        result: changed ? m.result : null };
+    }),
+  };
+}
+
+/* The part of a batch answer the page needs, in one shape for the Worker and the
+   inline path. The heavy per-candidate slicing state stays behind. */
+function batchForPage(r) {
+  return { ...r, molds: r.molds.map(m => ({ ...m, result: m.result ? {
+    layers: m.result.layers, bounds: m.result.bounds, warnings: m.result.warnings,
+    sections: (m.result.sections || []).map(s => ({ index: s.index, height: s.height, count: s.layers.length })),
+    composition: m.result.composition, considered: m.result.considered || 0,
+    alternatives: m.result.alternatives || [], cost: m.result.cost || 0, monolithic: !!m.result.monolithic,
+  } : null })) };
 }
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { packBoard, packAll, cutSequence, utilisation, fitIn, boardCost,
-    blanksFromLayers, moldCost, blankDensityRange, densityRollup,
+    blanksFromLayers, moldCost, blanksCost, planBatch, batchForPage, sameBlanks, blankDensityRange, densityRollup,
     KERF_MM, MIN_REMNANT_MM, JOINT_WORTH_SHEETS, SHEET_AREA_MM2, SHEET_REF_MM3,
     DIG_WORTH_BLANK, DENSITY_TOL };
 }

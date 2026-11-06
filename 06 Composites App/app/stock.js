@@ -1268,13 +1268,38 @@ function cutHeldBackCard() {
   </div>`;
 }
 
+/* WHAT RANGE MAY THIS PLAN'S BLANKS BE CUT FROM? THE MOLD SAYS.
+   Min and max are editable on the mold's page, and the cut list used to read the
+   copy frozen onto the plan at slicing time, so the edit saved, showed on the
+   record, and changed nothing. Nick Jepsen, 2026-11-06, went through five
+   delete-and-recreate rounds on the Back Side Panel molds looking for a way to
+   change it; the trash still holds molds at 20-30 over plans at 20.
+
+   Read rather than written through, so an edit touches one record, there is no
+   copy to keep in step and no stored plan needs migrating. Only a mold's CURRENT
+   plan follows it: a superseded plan is a record of what was decided then. A
+   blank max is "same as min", the modal's rule. A blank min means the mold has
+   no range to give (an older record), so the plan's own copy stands, and a plan
+   written before ranges existed falls through to lo === hi as it always did. */
+function moldRangeFor(p) {
+  const mold = p && p.moldId ? recById("molds", p.moldId) : null;
+  if (!mold || currentPlanFor(mold) !== p) return null;
+  const lo = canonDensity(mold.densityMin);
+  if (lo == null) return null;
+  const hi = canonDensity(mold.densityMax) ?? lo;
+  return lo <= hi ? [lo, hi] : [hi, lo];
+}
+function planDensityRange(p) {
+  const own = moldRangeFor(p);
+  if (own) return own;
+  const lo = canonDensity(p.densityMin ?? p.density) ?? 30;
+  return [lo, canonDensity(p.densityMax ?? p.densityMin ?? p.density) ?? lo];
+}
+
 function blanksFromPlans(plans) {
   const out = [];
   plans.forEach(p => {
-    /* A plan written before ranges existed carries only `density`, and falls
-       through to lo === hi — the behaviour it was planned under. No migration. */
-    const lo = canonDensity(p.densityMin ?? p.density) ?? 30;
-    const hi = canonDensity(p.densityMax ?? p.densityMin ?? p.density) ?? lo;
+    const [lo, hi] = planDensityRange(p);
     (p.layers || []).forEach((L, i) => (L.blanks || []).forEach((b, k) => out.push({
       id: `${p.name} L${i + 1}${L.blanks.length > 1 ? String.fromCharCode(97 + k) : ""}`,
       // `layer` rides along so the commit can record which grade each LAYER was
@@ -1345,6 +1370,7 @@ function renderCutList() {
     </select>
     <button onclick="printCutSet()">${icon("print", 15)} Print cut list</button>
     ${sel ? `<button class="ib" onclick="openDrawings('${esc(sel)}')">${icon("print", 15)} This mold's drawings</button>` : ""}
+    ${eligible.length && isLead() ? `<button class="ib" onclick="openPlanTogether()" title="Try other layer thicknesses across every mold ready to cut. Nothing changes until you apply it.">Re-plan stacks together…</button>` : ""}
     ${res && res.plans.length ? `<button class="primary" style="margin-left:auto" onclick="openCommitCutsModal()">Mark these boards cut…</button>` : ""}</div>`;
   if (!blanks.length) return back + cutHeldBackCard() +
     `<div class="card">${(DB.stackplans || []).length
@@ -1359,7 +1385,8 @@ function renderCutList() {
     <div class="muted">${blanks.length} blanks from ${plans.length} mold${plans.length > 1 ? "s" : ""} · ${res.boardsUsed} board${res.boardsUsed === 1 ? "" : "s"} opened · ${(util * 100).toFixed(0)}% of opened board used · kerf ${KERF_MM}mm</div>
     ${feedRateBand(res)}
     ${res.shortfall.length ? `<div class="warn">${icon("warning", 14)} <b>Short ${res.shortfall.length} blank${res.shortfall.length > 1 ? "s" : ""}.</b> Nothing on the rack fits these — order board before starting:
-      <ul>${res.shortfall.map(s => `<li>${esc(s.id)} — ${mmIn(s.w)} &times; ${mmIn(s.h)} at ${mmIn(s.thickness)} thick</li>`).join("")}</ul></div>` : ""}
+      <ul>${res.shortfall.map(s => `<li>${esc(s.id)} — ${mmIn(s.w)} &times; ${mmIn(s.h)} at ${mmIn(s.thickness)} thick</li>`).join("")}</ul>
+      ${eligible.length > 1 ? `Each mold's layers were chosen as if it were the only one being cut, so other thicknesses may fit.${isLead() ? " <b>Re-plan stacks together</b> tries them before you order anything." : " A lead can try Re-plan stacks together before anyone orders."}` : ""}</div>` : ""}
     ${res.degraded ? `<div class="warn">${icon("warning", 14)} <b>Narrowed search.</b> This batch is large enough that the planner scored only the smallest few boards that could hold the biggest blank, rather than every board on the rack. The plan is valid; it may not be the cheapest one.</div>` : ""}
   </div>
   ${res.plans.map((pl, i) => `<div class="card">
@@ -1376,6 +1403,174 @@ function renderCutList() {
     <div class="muted tny">Yields: ${pl.placed.map(p => esc(p.part.id) + (p.rotated ? " (turned 90°)" : "")).join(", ")}${pl.leftover.length ? ` · keeps ${pl.leftover.length} reusable offcut${pl.leftover.length > 1 ? "s" : ""}` : ""}</div>
   </div>`).join("")}`;
 }
+/* ---------- re-planning the stacks together ----------
+   The cut list is the first place that knows which molds are being cut at once,
+   so it is where the layers can be chosen with all of them in view. See planBatch
+   in packer.js for the search and for why this is not done at planning time.
+
+   A PROPOSAL UNTIL SOMEBODY APPLIES IT. Nothing is written while it runs. Applying
+   adds a new plan per changed mold through setCurrentPlan, the same as Re-plan, so
+   the old stack stays on the mold under "Earlier" and Make this the current plan
+   puts it back. A mold whose thicknesses were picked by hand is never moved; the
+   planner records those with `considered: 0`. */
+let PLAN_TOGETHER = null;
+let PLAN_TOGETHER_RUN = null;   // the run the open modal is waiting on; Cancel clears it
+function planTogetherStamp(plans) {
+  return JSON.stringify([
+    plans.map(p => { const m = recById("molds", p.moldId) || {}; return [p.id, m.id, m.currentPlanId, m.stage, planDensityRange(p)]; }),
+    boardsForPacking().map(b => [b.id, b.qty, b.density]),
+  ]);
+}
+function planTogetherRun(msg, onProgress) {
+  if (typeof Worker === "undefined") {
+    const molds = msg.molds.map(m => ({ ...m, buffer: undefined, tris: m.buffer ? parseSTL(m.buffer).tris : null }));
+    return Promise.resolve(batchForPage(planBatch(molds, msg.boards, { plan: planMold, slice: sliceMold }, { onProgress })));
+  }
+  return new Promise((resolve, reject) => {
+    const w = new Worker("slicer.worker.js");
+    const timer = setTimeout(() => { w.terminate(); reject(new Error("Re-planning took too long and was stopped.")); }, SLICE_TIMEOUT_MS * 3);
+    const finish = (fn, arg) => { clearTimeout(timer); w.terminate(); fn(arg); };
+    w.onmessage = e => {
+      const m = e.data || {};
+      if (m.type === "progress") { if (onProgress) onProgress(m.value); return; }
+      if (m.type === "batch") return finish(resolve, m.result);
+      if (m.type === "error") return finish(reject, new Error(m.message));
+    };
+    w.onerror = () => finish(reject, new Error("The planner stopped unexpectedly."));
+    w.postMessage(msg);
+  });
+}
+async function openPlanTogether() {
+  if (!isLead()) { toast("Only a lead can re-plan a mold.", "error"); return; }
+  const plans = cutEligiblePlans();
+  if (!plans.length) { toast("No mold is ready to cut.", "info"); return; }
+  const set = t => { const el = document.getElementById("pt-progress"); if (el) el.textContent = t; };
+  openModal(`<h2>Re-plan stacks together</h2><p id="pt-progress" class="muted tny">Reading ${plans.length} mold${plans.length === 1 ? "" : "s"}…</p>
+    <div class="foot"><button onclick="PLAN_TOGETHER_RUN=null;closeModal()">Cancel</button></div>`);
+  const run = PLAN_TOGETHER_RUN = {};
+  const stamp = planTogetherStamp(plans);
+  const buffers = {};
+  const molds = [];
+  for (const p of plans) {
+    const [lo, hi] = planDensityRange(p);
+    let pinned = "";
+    if (!p.considered) pinned = "its thicknesses were picked by hand";
+    let buffer = null;
+    if (!pinned) {
+      if (!p.meshUrl) pinned = "it has no stored 3D mesh";
+      else {
+        try {
+          const res = await fetch(p.meshUrl);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          buffer = await res.arrayBuffer();
+          buffers[p.id] = buffer.slice(0);   // the Worker gets its own copy; this one becomes the new plan's mesh
+        } catch (e) { pinned = "its 3D mesh could not be downloaded"; }
+      }
+    }
+    molds.push({
+      id: p.id, name: p.name, buffer, pinned, densityMin: lo, densityMax: hi,
+      thicknessesMm: p.thicknessesMm,
+      layers: (p.layers || []).map(L => ({ thickness: L.thickness, blanks: L.blanks })),
+      sliceOpts: { monolithic: !!p.monolithic, ...(p.splitWaived ? { maxCutDepth: p.maxCutDepthMm } : {}) },
+    });
+  }
+  let r;
+  try {
+    r = await planTogetherRun({ cmd: "batch", molds, boards: boardsForPacking() },
+      v => set(`Trying stacks… ${Math.round(v * 100)}%`));
+  } catch (e) {
+    if (PLAN_TOGETHER_RUN !== run) return;
+    closeModal();
+    toast(e.message || "Re-planning failed.", "error");
+    return;
+  }
+  if (PLAN_TOGETHER_RUN !== run) return;   // cancelled while it ran
+  PLAN_TOGETHER = { r, stamp, buffers };
+  planTogetherShow();
+}
+function planTogetherShow() {
+  const { r } = PLAN_TOGETHER;
+  const inch = c => (c || []).map(t => (Math.round(t / 25.4 * 100) / 100) + "″").join(" + ");
+  const line = m => `${m.boards} board${m.boards === 1 ? "" : "s"} opened · ${m.short ? `<b>${m.short} blank${m.short === 1 ? "" : "s"} short</b>` : "nothing short"} · ${m.joints} glue joint${m.joints === 1 ? "" : "s"} · ${m.maxDensity == null ? "no" : m.maxDensity + " lb"} feed`;
+  const changed = r.molds.filter(m => m.changed);
+  const planOf = id => planById(id) || {};
+  const held = r.molds.filter(m => m.pinned);
+  const fusion = changed.filter(m => (recById("molds", planOf(m.id).moldId) || {}).fusion);
+  openModal(`<h2>Re-plan stacks together</h2>
+    <p class="muted tny">Every mold ready to cut, packed onto the rack at once, trying other layer thicknesses for each.</p>
+    <table class="list">
+      <tr><th></th><th>Cut list</th></tr>
+      <tr><td><b>Now</b></td><td>${line(r.before)}</td></tr>
+      ${r.improved ? `<tr><td><b>Together</b></td><td>${line(r.after)}</td></tr>` : ""}
+    </table>
+    ${r.improved ? `<table class="list">
+      <tr><th>Mold</th><th>Stack now</th><th>New stack</th></tr>
+      ${r.molds.map(m => `<tr><td>${esc(m.name)}</td><td>${esc(inch(planOf(m.id).thicknessesMm))}</td>
+        <td>${m.changed ? `<b>${esc(inch(m.thicknessesMm))}</b>` : `<span class="muted">unchanged</span>`}</td></tr>`).join("")}
+    </table>
+    <p class="muted tny">Applying adds a new plan to each changed mold. The old one stays under Earlier on the mold and can be made current again. Drawings printed from the old plan are out of date, and a CS-003 §7.2 review of it has to be done again.</p>
+    ${fusion.length ? `<div class="warn">${icon("warning", 14)} ${esc(fusion.map(m => m.name).join(", "))} came from Fusion. The stock bodies in the Fusion document will not change; re-plan from Fusion if you need them to match.</div>` : ""}`
+    : `<p>No other stack beats what is planned now, so there is nothing to change.${r.after.short ? " The short blanks need more board." : ""}</p>`}
+    ${held.length ? `<p class="muted tny">Left as planned: ${held.map(m => `${esc(m.name)}, because ${esc(m.pinned)}`).join("; ")}.</p>` : ""}
+    <div class="foot"><button onclick="PLAN_TOGETHER=null;closeModal()">${r.improved ? "Cancel" : "Close"}</button>
+      ${r.improved ? `<button class="primary" onclick="applyPlanTogether()">Use these stacks</button>` : ""}</div>`, { wide: true });
+}
+async function applyPlanTogether() {
+  const state = PLAN_TOGETHER;
+  if (!state) return;
+  PLAN_TOGETHER = null;   // first, so a second press of the button does nothing
+  const changed = state.r.molds.filter(m => m.changed);
+  /* The proposal is an answer about one rack and one set of molds. */
+  if (planTogetherStamp(cutEligiblePlans()) !== state.stamp) {
+    closeModal();
+    toast("The rack or a mold changed while this was open. Run it again.", "error");
+    return;
+  }
+  for (const m of changed) {
+    const old = planById(m.id);
+    const mold = recById("molds", old.moldId);
+    const id = await allocId("stackplans");
+    if (!id) { toast("Couldn't get a plan id, so the rest were left as they were.", "error"); break; }
+    const [lo, hi] = planDensityRange(old);
+    const res = m.result;
+    const others = state.r.molds.filter(o => o.id !== m.id).map(o => o.name);
+    const raw = {
+      id, name: old.name, source: old.source, sourceBytes: old.sourceBytes || 0,
+      density: lo, densityMin: lo, densityMax: hi, unit: old.unit,
+      thicknessesMm: res.composition, bounds: res.bounds, layers: res.layers, sections: res.sections,
+      warnings: res.warnings || [], considered: res.considered, alternatives: res.alternatives,
+      usedRack: true, cost: res.cost, monolithic: !!res.monolithic,
+      splitWaived: !!old.splitWaived, maxCutDepthMm: old.maxCutDepthMm, triangleCount: old.triangleCount || 0,
+      plannedTogether: true, moldId: old.moldId,
+      by: myEmail(), ts: new Date().toISOString(),
+    };
+    if (old.frame) raw.frame = old.frame;
+    const { plan, notes } = fitPlanForStorage(raw);
+    plan.notes = notes;
+    plan.notes.unshift(`Stack chosen at the cut list${others.length ? ", together with " + others.join(", ") : ""}, replacing ${old.id}.`);
+    /* Its own copy of the mesh, as a plan from the modal has. Sharing the file
+       would let deleting the old plan take the new plan's 3D view with it.
+       Non-fatal for the same reason as submitMold: the blanks are what get cut. */
+    try {
+      const file = new Blob([state.buffers[m.id]], { type: "model/stl" });
+      file.name = `${id}-mesh.stl`;
+      const rec = await fb.upload(`stackplans/${id}/mesh.stl`, file);
+      plan.meshPath = rec.path;
+      plan.meshUrl = rec.url;
+    } catch (e) {
+      plan.notes.push("The 3D view couldn't be saved, so this plan shows blocks only. The blanks and cut list are unaffected.");
+    }
+    (DB.stackplans = DB.stackplans || []).push(plan);
+    save("stackplans", plan);
+    mold.layers = `${plan.thicknessesMm.length} layers`;
+    save("molds", mold, "layers");
+    setCurrentPlan(mold, plan.id);
+  }
+  closeModal();
+  toast(`${changed.length} stack${changed.length === 1 ? "" : "s"} re-planned. The old ones are under Earlier on each mold.`);
+  render();
+}
+
 /* WHAT FEED RATE DOES THIS GET MACHINED AT?
    The densest board in a stack sets the ShopSabre feed for the whole thing —
    you cannot run the 30lb layers fast and the 45lb layer slow when they are one
@@ -1926,7 +2121,9 @@ function whyTheseBoards(p) {
       </tr>`).join("")}
     </table>
     ${whyTheseLifts(p)}
-    <p class="muted tny">Costed as if this were the only mold being cut. The cut list packs every planned mold together and is the authority on how much board actually gets opened.</p>`;
+    <p class="muted tny">${p.plannedTogether
+      ? "Chosen at the cut list, costed with the other molds ready to cut at the time. The runners-up are costed the same way."
+      : "Costed as if this were the only mold being cut. The cut list packs every planned mold together and is the authority on how much board actually gets opened; Re-plan stacks together, there, is where the layers can be chosen with the other molds in view."}</p>`;
 }
 
 /* THE SECOND EXCHANGE RATE, AND WHETHER IT EVER DECIDES ANYTHING.

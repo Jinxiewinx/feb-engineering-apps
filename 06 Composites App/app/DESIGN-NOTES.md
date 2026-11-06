@@ -104,6 +104,26 @@ asymmetry is deliberate: the coercion produces a byte-identical `SZ:` key for
 everything already stored, so there was no migration. `packer.js` has no access
 to `core.js` and does not need it — both its inputs canonicalise first.
 
+## Who decides density and layers, and when
+
+The mold owns the density range. Its page is where min and max are edited, so
+`planDensityRange()` reads the mold for its current plan and every reader goes
+through it. The copy on the plan is what the plan was sliced under; it is not
+rewritten by an edit, so nothing needs migrating and the drift note on the mold
+page can say what changed. Which grade actually gets opened is decided later,
+board by board, by the packer inside that range, and written down by the commit.
+
+Layer thicknesses are chosen at planning time, for one mold, as if it were the
+only one being cut. That is on purpose: counting other molds there would make a
+plan depend on who planned first, and make a mold's page change when somebody
+edits a different mold. The cost is that "do these fit the rack together" has no
+answer until the cut list. So the cut list asks it: Re-plan stacks together
+(`planBatch` in `packer.js`) re-chooses each mold's stack with the others held in
+place, from the stored mesh, and proposes. A person applies it. Applying adds
+plans; it does not rewrite them, and hand-picked stacks (`considered: 0`) never
+move. It is not automatic because a new stack invalidates printed drawings and
+a CS-003 §7.2 review, and that should be somebody's decision.
+
 ## A map that hides things is not a map
 
 Empty shelves used to collapse out of the storage map into a one-line text

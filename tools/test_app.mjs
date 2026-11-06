@@ -13157,6 +13157,159 @@ await t("no name or email inside any handler, apostrophe included", () => {
   view = { ...view, edit: false };
 });
 
+/* ---------- Nick Jepsen, 2026-11-06: editing a mold, and the cut list ---------- */
+{
+  const IN = 25.4;
+  const board = (id, thk, density, qty) => ({ id, len: { value: 96, unit: "in" }, wid: { value: 48, unit: "in" },
+    thk: { value: thk, unit: "in" }, qty, density });
+  const stack = comp => comp.map(t => ({ thickness: t, blanks: [{ x0: 0, x1: 67 * IN, y0: 0, y1: 30.5 * IN }] }));
+  const planRec = (id, moldId, over) => ({ id, name: id, moldId, density: 20, densityMin: 20, densityMax: 20,
+    considered: 8, layers: stack([IN]), thicknessesMm: [IN], ...over });
+  const moldRec = (id, plan, over) => ({ id, name: id, stage: "Designed", density: "20",
+    densityMin: "20", densityMax: "20", currentPlanId: plan, ...over });
+
+  await t("editing a mold's density range reaches the cut list without touching the plan", () => {
+    /* The bug. The fields are on the mold's page, and the cut list read the copy
+       frozen on the plan: the trash held MOLD-SN6-024 at 20-30 over STK-SN6-032 at
+       20, MOLD-SN6-022 at 20-30 over STK-SN6-030 at 30. */
+    DB.stock = [board("BRD-30", 1, 30, 1)];
+    DB.molds = [moldRec("MOLD-R1", "STK-R1")];
+    DB.stackplans = [planRec("STK-R1", "MOLD-R1")];
+    assert(packAll(blanksFromPlans(cutEligiblePlans()), boardsForPacking(), {}).shortfall.length === 1,
+      "at 20 lb the only board, 30 lb, is off limits");
+    view = { ...view, tab: "molds", mode: "detail", id: "MOLD-R1" };
+    updShop("molds", "densityMax", "30");
+    const res = packAll(blanksFromPlans(cutEligiblePlans()), boardsForPacking(), {});
+    assert(!res.shortfall.length && res.densitiesUsed.join() === "30", "the edit opened the board: " + JSON.stringify(res.densitiesUsed));
+    assert(DB.stackplans[0].densityMax === 20, "and the stored plan was not rewritten");
+  });
+
+  await t("a blank max means same as min, and min above max is read in order", () => {
+    DB.molds = [moldRec("MOLD-R2", "STK-R2", { densityMin: "45", densityMax: "" })];
+    DB.stackplans = [planRec("STK-R2", "MOLD-R2")];
+    assert(planDensityRange(DB.stackplans[0]).join() === "45,45", planDensityRange(DB.stackplans[0]).join());
+    DB.molds[0].densityMax = "30";
+    assert(planDensityRange(DB.stackplans[0]).join() === "30,45", planDensityRange(DB.stackplans[0]).join());
+  });
+
+  await t("only the current plan follows the mold, and an old record with no range keeps the plan's", () => {
+    DB.molds = [moldRec("MOLD-R3", "STK-R3B", { densityMin: "45", densityMax: "45" }),
+      { id: "MOLD-R4", name: "old", stage: "Designed", density: "20", currentPlanId: "STK-R4" }];
+    DB.stackplans = [planRec("STK-R3A", "MOLD-R3"), planRec("STK-R3B", "MOLD-R3"),
+      planRec("STK-R4", "MOLD-R4", { densityMin: 20, densityMax: 30 })];
+    assert(planDensityRange(planById("STK-R3B")).join() === "45,45", "current follows");
+    assert(planDensityRange(planById("STK-R3A")).join() === "20,20", "superseded keeps what it was");
+    assert(planDensityRange(planById("STK-R4")).join() === "20,30", "a mold with no min takes nothing from the plan");
+  });
+
+  await t("the drawings and the mold's page say the range the cut list uses", () => {
+    DB.molds = [moldRec("MOLD-R5", "STK-R5", { densityMax: "30" })];
+    DB.stackplans = [planRec("STK-R5", "MOLD-R5")];
+    assert(/20–30 LB/.test(planBoardGrades(DB.stackplans[0]).cellText), planBoardGrades(DB.stackplans[0]).cellText);
+    assert(/now takes board at <b>20–30 lb<\/b>/.test(moldRangeDriftNote(DB.stackplans[0])), "the mold page names the change");
+    DB.molds[0].densityMax = "20";
+    assert(moldRangeDriftNote(DB.stackplans[0]) === "", "and says nothing when they agree");
+    const bare = { density: 30 };
+    assert(planBoardGrades(bare).cellText === "30 LB", "a plan with no mold reads as it always did");
+  });
+
+  await t("editing min keeps the mold's one-number density in step", () => {
+    DB.molds = [moldRec("MOLD-R6", "STK-R6")];
+    DB.stackplans = [planRec("STK-R6", "MOLD-R6")];
+    view = { ...view, tab: "molds", mode: "detail", id: "MOLD-R6" };
+    updShop("molds", "densityMin", "25");
+    assert(DB.molds[0].density === "25", "density follows min: " + DB.molds[0].density);
+  });
+
+  /* The real shape of Back Side Panel Left and Right, through the real slicer: two
+     identical molds, a rack with one long board at 2in and one at 1.5in. */
+  const panelMesh = () => writeBinarySTL(blankTris({ x0: 0, y0: 0, x1: 66 * IN, y1: 29.5 * IN }, 0, 5.78 * IN), "t");
+  const panelRack = () => [board("BRD-2", 2, 30, 1), board("BRD-15", 1.5, 20, 1), board("BRD-1", 1, 20, 10)];
+  function panelFixture() {
+    const tris = parseSTL(panelMesh()).tris;
+    const comp = [2 * IN, 1.5 * IN, 1.5 * IN, IN];
+    const sliced = sliceMold(tris, comp, {});
+    const plan = (id, mold) => ({ id, name: id, moldId: mold, density: 20, densityMin: 20, densityMax: 30,
+      considered: 13, thicknessesMm: comp, layers: sliced.layers, sections: [], bounds: sliced.bounds,
+      meshUrl: "mesh:" + id, meshPath: `stackplans/${id}/mesh.stl`, ts: "2026-11-06T21:00:00Z" });
+    DB.stock = panelRack();
+    DB.molds = [moldRec("MOLD-L", "STK-L", { densityMax: "30" }), moldRec("MOLD-R", "STK-R", { densityMax: "30" })];
+    DB.stackplans = [plan("STK-L", "MOLD-L"), plan("STK-R", "MOLD-R")];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({ ok: true, arrayBuffer: async () => panelMesh().slice(0) });
+    return () => { globalThis.fetch = realFetch; };
+  }
+
+  await t("the two panel molds come up short alone, and Re-plan together clears it without saving", async () => {
+    const restore = panelFixture();
+    try {
+      assert(packAll(blanksFromPlans(cutEligiblePlans()), boardsForPacking(), {}).shortfall.length > 0, "short as planned");
+      view = { ...view, tab: "molds", mode: "cuts", cutSel: "", id: null };
+      const h = renderCutList();
+      assert(/openPlanTogether\(\)/.test(h), "a lead is offered it");
+      assert(/chosen as if it were the only one/.test(h), "and the shortfall says why it might help");
+      calls.length = 0;
+      await openPlanTogether();
+      assert(PLAN_TOGETHER && PLAN_TOGETHER.r.improved, "it found better");
+      assert(PLAN_TOGETHER.r.after.short === 0, "nothing short: " + PLAN_TOGETHER.r.after.short);
+      assert(/Use these stacks/.test(document.getElementById("modal").innerHTML), "and asks");
+      assert(!calls.some(c => /save|set|update|upload/i.test(String(c[0]))), "nothing written yet: " + JSON.stringify(calls.map(c => c[0])));
+      assert(DB.stackplans.length === 2 && DB.molds[0].currentPlanId === "STK-L", "records untouched");
+      PLAN_TOGETHER = null; closeModal();
+    } finally { restore(); }
+  });
+
+  await t("applying adds a plan per changed mold, keeps the old one, and the cut list comes up whole", async () => {
+    const restore = panelFixture();
+    try {
+      await openPlanTogether();
+      const changed = PLAN_TOGETHER.r.molds.filter(m => m.changed).map(m => m.id);
+      assert(changed.length >= 1, "something moved");
+      await applyPlanTogether();
+      assert(DB.stackplans.length === 2 + changed.length, "added, not replaced");
+      const mold = DB.molds.find(m => m.id === (changed[0] === "STK-L" ? "MOLD-L" : "MOLD-R"));
+      assert(mold.currentPlanId !== changed[0], "the mold points at the new plan");
+      assert(mold.planHistory[0].id === changed[0], "and the old one is on its history");
+      const fresh = planById(mold.currentPlanId);
+      assert(fresh.plannedTogether && fresh.moldId === mold.id, "the new plan says how it was chosen");
+      assert(fresh.meshPath === `stackplans/${fresh.id}/mesh.stl`, "with its own copy of the mesh");
+      assert(fresh.densityMin === 20 && fresh.densityMax === 30, "at the mold's range");
+      assert(mold.layers === `${fresh.thicknessesMm.length} layers`, "and the mold's layer count follows");
+      const res = packAll(blanksFromPlans(cutEligiblePlans()), boardsForPacking(), {});
+      assert(cutEligiblePlans().length === 2 && !res.shortfall.length, "two molds, nothing short");
+    } finally { restore(); }
+  });
+
+  await t("a changed rack stops the apply, and a hand-picked stack is left alone", async () => {
+    const restore = panelFixture();
+    try {
+      await openPlanTogether();
+      DB.stock.pop();
+      await applyPlanTogether();
+      assert(DB.stackplans.length === 2, "nothing written against a stale rack");
+      DB.stock = panelRack();
+      planById("STK-L").considered = 0;
+      await openPlanTogether();
+      const L = PLAN_TOGETHER.r.molds.find(m => m.id === "STK-L");
+      assert(L.pinned && !L.changed, "hand-picked stays: " + L.pinned);
+      assert(/picked by hand/.test(document.getElementById("modal").innerHTML), "and the modal says so");
+      PLAN_TOGETHER = null; closeModal();
+    } finally { restore(); }
+  });
+
+  await t("a member sees the note but not the button", () => {
+    const restore = panelFixture();
+    const was = fb.roster;
+    try {
+      fb.roster = { name: "Sander", role: "member" };
+      view = { ...view, tab: "molds", mode: "cuts", cutSel: "", id: null };
+      const h = renderCutList();
+      assert(!/openPlanTogether/.test(h), "no button");
+      assert(/A lead can try/.test(h), "but it says who can");
+    } finally { fb.roster = was; restore(); }
+  });
+}
+
 /* Nothing below should inherit a splash the tests above left half-dismissed. */
 resetSplash();
 console.log(`\n${pass} passed, ${fail} failed`);

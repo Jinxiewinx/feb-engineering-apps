@@ -495,6 +495,13 @@ function updShop(tab, key, val) {
   }
   o[key] = val;
   save(spec.coll, o, key);
+  /* `density` is min on every mold the planner writes, for the readers that want
+     one number (labels, the traveler). Editing min here used to leave it behind,
+     so the record held two answers. */
+  if (spec.coll === "molds" && key === "densityMin" && val !== "") {
+    o.density = val;
+    save("molds", o, "density");
+  }
   /* A person typing over an expiry the model read has looked at the jug, so
      the date is theirs now and the AI tag comes off. */
   if (key === "expiresOn" && o.expirySource === AI_EXPIRY_SOURCE) {

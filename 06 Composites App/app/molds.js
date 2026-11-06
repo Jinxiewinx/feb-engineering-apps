@@ -489,7 +489,10 @@ async function createMoldFromPlan(planId) {
   if (!id) return;
   const m = {
     id, name: p.name || p.id, stage: "Designed",
-    density: String(canonDensity(p.density) ?? ""), layers: (p.thicknessesMm || []).length ? `${p.thicknessesMm.length} layers` : "",
+    density: String(canonDensity(p.density) ?? ""),
+    densityMin: String(canonDensity(p.densityMin ?? p.density) ?? ""),
+    densityMax: String(canonDensity(p.densityMax ?? p.densityMin ?? p.density) ?? ""),
+    layers: (p.thicknessesMm || []).length ? `${p.thicknessesMm.length} layers` : "",
     createdBy: myEmail(),
   };
   DB.molds.push(m);
@@ -603,6 +606,21 @@ function moldFilesSection(o) {
     <div class="no-print" style="margin-top:6px"><button class="sm" onclick="addRecordFiles('molds','${esc(o.id)}','molds')">+ Add files</button></div>`;
 }
 
+/* Editing a mold's range changes which boards the cut list may open, straight
+   away. It does not change the layer thicknesses, which were chosen against the
+   old range and may not exist in the new one. Say both, or the edit reads as
+   having either done everything or nothing. */
+function moldRangeDriftNote(p) {
+  const [lo, hi] = planDensityRange(p);
+  const oLo = canonDensity(p.densityMin ?? p.density);
+  const oHi = canonDensity(p.densityMax ?? p.densityMin ?? p.density) ?? oLo;
+  if (oLo == null || (lo === oLo && hi === oHi)) return "";
+  const r = (a, b) => a === b ? `${a} lb` : `${a}–${b} lb`;
+  return `<div class="warn">${icon("warning", 14)} The cut list now takes board at <b>${r(lo, hi)}</b> for this mold.
+    Its layer thicknesses were chosen at ${r(oLo, oHi)} and have not changed. To re-choose them, open the
+    <button class="sm" onclick="view={...view,mode:'cuts',cutSel:''};render()">Cut list</button> and use Re-plan stacks together.</div>`;
+}
+
 function moldPlanSection(m) {
   const plans = plansForMold(m);
   if (!plans.length) {
@@ -622,6 +640,7 @@ function moldPlanSection(m) {
       ${nSec === 1 ? `<button class="ib" onclick="exportSectionStl('${esc(p.id)}',0)">${icon("download", 15)} Stock STL</button>`
         : Array.from({ length: nSec }, (_, i) => `<button class="ib" onclick="exportSectionStl('${esc(p.id)}',${i})">${icon("download", 15)} STL S${i + 1}</button>`).join("")}
     </div>
+    ${moldRangeDriftNote(p)}
     ${(p.warnings || []).map(w => `<div class="warn">${icon("warning", 14)} ${esc(w)}</div>`).join("")}
     ${(p.notes || []).map(n => `<div class="muted tny">${esc(n)}</div>`).join("")}
     <h3>Mold in stock <span class="muted" style="text-transform:none">— drag to rotate, scroll or pinch to zoom</span></h3>

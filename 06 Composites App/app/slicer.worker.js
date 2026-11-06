@@ -10,8 +10,10 @@
 
    Protocol
      in : { cmd:"slice", buffer, unit, thicknesses, boards, supply, densityMin, densityMax, opts }
+          { cmd:"batch", boards, molds:[{ id, name, buffer, layers, thicknessesMm, densityMin, densityMax, sliceOpts, pinned }] }
      out: { type:"progress", value 0..1 }
           { type:"done", result, meshStl? }
+          { type:"batch", result }
           { type:"error", message, region? }
 
    `meshStl` is the mold itself, decimated and written back out as a binary STL
@@ -55,6 +57,19 @@ self.onmessage = function (e) {
           w: b.bounds.x1 - b.bounds.x0, d: b.bounds.y1 - b.bounds.y0, h: b.bounds.z1 - b.bounds.z0,
         })),
       });
+      return;
+    }
+    /* Choose several molds' stacks together, for the cut list. Each mesh is the
+       stored copy, already in mm. Answers with results only: nothing is saved
+       until a person applies them on the page. */
+    if (msg.cmd === "batch") {
+      const molds = (msg.molds || []).map(m => ({
+        ...m, buffer: undefined,
+        tris: m.buffer ? parseSTL(m.buffer).tris : null,
+      }));
+      const r = planBatch(molds, msg.boards, { plan: planMold, slice: sliceMold },
+        { onProgress: v => self.postMessage({ type: "progress", value: v }) });
+      self.postMessage({ type: "batch", result: batchForPage(r) });
       return;
     }
     if (msg.cmd !== "slice") return;

@@ -2276,8 +2276,11 @@ function planBoardGrades(plan) {
   const p = plan || {};
   const cut = p.densityCut;
   const num = v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : null; };
-  const lo = num(p.densityMin ?? p.density);
-  const hi = num(p.densityMax ?? p.densityMin ?? p.density) ?? lo;
+  // The mold owns the range (moldRangeFor in stock.js). Guarded because this
+  // file is also evaluated alone under node, with a bare plan and no DB.
+  const own = typeof moldRangeFor === "function" ? moldRangeFor(p) : null;
+  const lo = own ? own[0] : num(p.densityMin ?? p.density);
+  const hi = own ? own[1] : (num(p.densityMax ?? p.densityMin ?? p.density) ?? lo);
   if (cut && cut.max != null) {
     const used = (cut.used || [cut.max]).slice().sort((a, b) => a - b);
     return {

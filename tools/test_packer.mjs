@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "06 Composites App", "app");
 const src = readFileSync(join(root, "packer.js"), "utf8").replace(/"use strict";\n/, "");
 globalThis.__P = {};
-(0, eval)(src + "\n;Object.assign(globalThis.__P,{packBoard,packAll,cutSequence,utilisation,fitIn,boardCost,blanksFromLayers,moldCost,packFill,blankDensityRange,densityRollup,KERF_MM,MIN_REMNANT_MM,SHEET_REF_MM3,DIG_WORTH_BLANK});");
+(0, eval)(src + "\n;Object.assign(globalThis.__P,{packBoard,packAll,cutSequence,utilisation,fitIn,boardCost,blanksFromLayers,moldCost,blanksCost,planBatch,batchForPage,sameBlanks,packFill,blankDensityRange,densityRollup,KERF_MM,MIN_REMNANT_MM,SHEET_REF_MM3,DIG_WORTH_BLANK});");
 const P = globalThis.__P;
 
 const IN = 25.4;
@@ -465,6 +465,133 @@ t("utilisation is reported so the plan can be judged", () => {
   const r = P.packAll([blank("a", 900, 500)], [sheet(1000, 600)], {});
   const u = P.utilisation(r.plans);
   assert(u > 0.6 && u <= 1, "one big blank on a snug board should be well used, got " + u.toFixed(2));
+});
+
+/* ---------- different ranges share a board (Nick Jepsen, 2026-11-06) ---------- */
+const rngBlank = (id, w, h, lo, hi) => ({ id, w, h, thickness: IN, density: lo, densityMin: lo, densityMax: hi });
+const gradeSheet = (id, d, len = 1000, wid = 800) => ({ id, len, wid, thk: IN, density: d, qty: 1 });
+
+t("two ranges that both take a board's grade share it instead of opening two", () => {
+  const r = P.packAll([rngBlank("wide", 400, 300, 20, 30), rngBlank("narrow", 400, 300, 20, 20)],
+    [gradeSheet("A", 20), gradeSheet("B", 20)], {});
+  assert(r.boardsUsed === 1, "one board holds both, got " + r.boardsUsed);
+  assert(r.pooled === true, "and the result says it pooled");
+  assert(!r.shortfall.length, "nothing short");
+});
+
+t("pooling never gives a blank a grade outside its own range", () => {
+  const r = P.packAll([rngBlank("wide", 400, 300, 20, 30), rngBlank("narrow", 400, 300, 20, 20)],
+    [gradeSheet("A", 30), gradeSheet("B", 20)], {});
+  for (const pl of r.plans) for (const p of pl.placed) {
+    assert(pl.density >= p.part.densityMin && pl.density <= p.part.densityMax,
+      `${p.part.id} landed on ${pl.density} lb`);
+  }
+  assert(!r.shortfall.length, "both still cut");
+});
+
+t("a pooled pack that would strand a narrow blank loses to packing apart", () => {
+  /* The wide blank is bigger, so a greedy pool puts it on the one 20 lb board the
+     narrow blank can use. Apart, the narrow range chooses first and the wide one
+     takes the 30 lb board. */
+  const blanks = [rngBlank("wide", 900, 700, 20, 30), rngBlank("narrow", 800, 600, 20, 20)];
+  const r = P.packAll(blanks, [gradeSheet("A", 20), gradeSheet("B", 30)], {});
+  assert(!r.shortfall.length, "the fallback keeps both cut: " + r.shortfall.map(s => s.id));
+});
+
+t("one range per thickness packs exactly as it did, with no second pass", () => {
+  const r = P.packAll([rngBlank("a", 400, 300, 20, 30), rngBlank("b", 400, 300, 20, 30)],
+    [gradeSheet("A", 20), gradeSheet("B", 30)], {});
+  assert(r.pooled === undefined, "nothing to pool");
+});
+
+t("moldCost still costs the same pile through blanksCost", () => {
+  const layers = [{ thickness: IN, blanks: [{ x0: 0, y0: 0, x1: 500, y1: 400 }] }];
+  const a = P.moldCost(layers, [gradeSheet("A", 30)], { densityMin: 30, densityMax: 30 });
+  const b = P.blanksCost(P.blanksFromLayers(layers, { min: 30, max: 30 }), [gradeSheet("A", 30)], 0);
+  assert(a.cost === b.cost && a.boardsOpened === b.boardsOpened, `${a.cost} vs ${b.cost}`);
+});
+
+/* ---------- choosing the stacks together ----------
+   A stand-in slicer: a stack is one rectangle per thickness. The search under test
+   is the packing and the choosing, not the geometry; test_app.mjs runs the real
+   slicer through the page. */
+const sliceBox = (w, h) => (comp) => ({
+  layers: comp.map(t => ({ thickness: t, blanks: [{ x0: 0, y0: 0, x1: w, y1: h }] })),
+});
+const fakeDeps = (w, h, height) => ({
+  slice: (tris, comp) => sliceBox(w, h)(comp),
+  plan: (tris, avail, opts) => {
+    /* Every multiset of what is on the rack that reaches the height, cheapest wins. */
+    let best = null;
+    const walk = (i, sum, picked) => {
+      if (sum >= height - 1e-6) {
+        const layers = sliceBox(w, h)(picked).layers;
+        const cost = opts.score(layers);
+        if (!best || cost < best.cost) best = { layers, composition: picked.slice(), cost, considered: 1, alternatives: [] };
+        return;
+      }
+      if (picked.length >= 8) return;
+      for (let k = i; k < avail.length; k++) { picked.push(avail[k]); walk(k, sum + avail[k], picked); picked.pop(); }
+    };
+    walk(0, 0, []);
+    return best;
+  },
+});
+/* Nick's real problem in miniature: 67 x 30.5in blanks, 6in tall, a rack with one
+   long 2in board, one long 1.5in board, and plenty of long 1in sheets. */
+const longRack = () => [
+  { id: "2IN", len: 96 * IN, wid: 48 * IN, thk: 2 * IN, density: 30, qty: 1 },
+  { id: "1.5IN", len: 96 * IN, wid: 48 * IN, thk: 1.5 * IN, density: 20, qty: 1 },
+  { id: "1IN", len: 96 * IN, wid: 48 * IN, thk: IN, density: 20, qty: 10 },
+];
+const panel = (id) => ({
+  id, name: id, tris: [{}], densityMin: 20, densityMax: 30, sliceOpts: {},
+  thicknessesMm: [2 * IN, 1.5 * IN, 1.5 * IN, IN],
+  layers: sliceBox(67 * IN, 30.5 * IN)([2 * IN, 1.5 * IN, 1.5 * IN, IN]).layers,
+});
+const panelDeps = () => fakeDeps(67 * IN, 30.5 * IN, 6 * IN);
+
+t("two molds planned alone come up short, and together they fit the rack", () => {
+  const r = P.planBatch([panel("L"), panel("R")], longRack(), panelDeps());
+  assert(r.before.short > 0, "the case is real: short before, got " + r.before.short);
+  assert(r.after.short === 0, "nothing short after, got " + r.after.short);
+  assert(r.improved === true, "and that counts as an improvement");
+  assert(r.molds.some(m => m.changed), "at least one mold takes a new stack");
+});
+
+t("a mold keeps its stack unless moving pays", () => {
+  const huge = [{ id: "2IN", len: 96 * IN, wid: 48 * IN, thk: 2 * IN, density: 30, qty: 9 },
+    { id: "1.5IN", len: 96 * IN, wid: 48 * IN, thk: 1.5 * IN, density: 20, qty: 9 },
+    { id: "1IN", len: 96 * IN, wid: 48 * IN, thk: IN, density: 20, qty: 9 }];
+  const m = { ...panel("L"), thicknessesMm: [2 * IN, 2 * IN, 2 * IN],
+    layers: sliceBox(67 * IN, 30.5 * IN)([2 * IN, 2 * IN, 2 * IN]).layers };
+  const r = P.planBatch([m], huge, panelDeps());
+  assert(!r.molds[0].changed, "three 2in boards is already the fewest joints");
+  assert(!r.improved, "so there is nothing to offer");
+});
+
+t("a hand-picked mold is never moved, and its boards still count", () => {
+  const comp = [2 * IN, 1.5 * IN, IN, IN, IN];
+  const hand = { ...panel("L"), pinned: "its thicknesses were picked by hand", thicknessesMm: comp,
+    layers: sliceBox(67 * IN, 30.5 * IN)(comp).layers };
+  const r = P.planBatch([hand, panel("R")], longRack(), panelDeps());
+  const L = r.molds.find(m => m.id === "L");
+  assert(!L.changed && L.pinned, "pinned stays put, with its reason");
+  assert(r.after.short === 0, "and the other mold planned around it");
+});
+
+t("a mesh that no longer reproduces the plan pins the mold instead of moving blanks", () => {
+  const moved = { ...panel("L"), layers: sliceBox(10, 10)([2 * IN, 1.5 * IN, 1.5 * IN, IN]).layers };
+  const r = P.planBatch([moved], longRack(), panelDeps());
+  assert(r.molds[0].pinned && !r.molds[0].changed, "pinned: " + r.molds[0].pinned);
+  assert(!P.sameBlanks(moved.layers, panel("L").layers), "sameBlanks sees the difference");
+  assert(P.sameBlanks(panel("L").layers, panel("L").layers), "and not a difference that is not there");
+});
+
+t("the batch answer for the page drops the slicer's working state", () => {
+  const r = P.batchForPage(P.planBatch([panel("L"), panel("R")], longRack(), panelDeps()));
+  const m = r.molds.find(x => x.changed);
+  assert(m.result.layers && Array.isArray(m.result.sections), "layers and sections survive");
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);
