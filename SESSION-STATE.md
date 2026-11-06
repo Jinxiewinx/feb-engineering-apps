@@ -20,6 +20,14 @@ git log -p --follow -- SESSION-STATE.md
 
 ## Now
 
+**Cut list and mold edits (2026-11-06), from Nick's report.** v6.12.0. The mold owns
+the density range (`planDensityRange`); `packAll` pools ranges; Re-plan stacks
+together (`planBatch`) is on the cut list, lead only, and writes nothing until
+applied. Open: Back Side Panel Left and Right are still 3 blanks short on live.
+Nobody has pressed Use these stacks; that is Nick's or Simon's call, because it
+gives Right a new plan. Idea: the single-mold Re-plan modal still asks for the STL
+again and could reuse the stored mesh.
+
 **Paul in Slack (2026-10-24), deployed 2026-10-25, not yet tried in Slack.** Plan:
 `~/.claude/plans/i-d-like-to-expand-atomic-marshmallow.md`. Tag @Paul in a
 thread and he answers there (the @grok idea). `runAgent()` now holds the loop

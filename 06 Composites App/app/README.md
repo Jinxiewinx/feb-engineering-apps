@@ -616,6 +616,21 @@ This is also the first time anything could be attached to a mold at all.
 photos people had been pasting into a mold's Notes had been failing at upload
 for a season behind a toast that read like bad wifi. Same for Items and Lots.
 
+**Editing a mold's density range reaches the cut list (November 2026).** Min and
+max are on the mold's page, and the cut list used to read the copy frozen on the
+plan, so an edit saved and did nothing. Nick Jepsen deleted and remade the Back
+Side Panel molds about five times on 2026-11-06 looking for a way to change it.
+The mold now owns the range, for its current plan. Layer thicknesses do not change
+on an edit, and the mold page says so.
+
+**Re-plan stacks together, on the cut list.** Each mold's layers are chosen as if
+it were the only one being cut, which is deliberate at planning time. Two mirror
+molds can then want the same long board: Back Side Panel Left and Right came up
+three blanks short with six 4x8 sheets of 1in unopened. A lead can have every mold
+ready to cut re-chosen against the rack at once. It proposes, and applying adds a
+new plan with the old one kept under Earlier. Blanks from different ranges also
+share a board now when its grade suits both.
+
 **The cut list only offers molds still at "Designed".** It used to pack every
 stack plan on file, forever — retired molds, last season's, molds already
 machined, and both halves of every re-plan. That is worse than a long list:
