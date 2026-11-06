@@ -32,11 +32,11 @@ var APP_VERSION = "6.12.0";
    a modal in front of someone who wants to get to work, and a paragraph per
    bullet is how nobody reads any of it (Simon, 2026-08-29). */
 var WHATS_NEW = [
-  "Change a mold's min or max density and the cut list follows straight away. No more deleting the mold and making it again.",
-  "Leads: Re-plan stacks together, on the cut list, tries other layer thicknesses across every mold ready to cut, so two molds stop fighting over the same long board.",
-  "It only suggests. Nothing changes until you press Use these stacks, and the old plan stays under Earlier on the mold.",
-  "Molds with different density ranges can now share a board when the grade suits both, so fewer boards get opened.",
-  "Hand-picked thicknesses are left alone, and R&D runs no longer show under Behind due date on Work Orders.",
+  "New on a mold: Adjust stack. Change how far the blanks stand off the mold edge and watch the stack and the board count update as you type.",
+  "Every planner setting is there with a line on what it does: rounding, when raised areas share a blank, most layers, extra height, what a glue joint is worth.",
+  "The same stack settings are on the New Mold window, and each plan remembers what it was planned with.",
+  "Cut settings on the cut list: blade width, smallest offcut to keep, turning blanks, and how much to avoid digging for a board.",
+  "Nothing saves until you press Save as a new plan. The old plan stays under Earlier on the mold.",
 ];
 
 
