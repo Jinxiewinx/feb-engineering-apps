@@ -868,7 +868,7 @@ const STACK_KNOBS = [
     help: "The planner will not offer a stack with more boards than this. Each layer past the first is a glue joint and a 4 hour clamp under CS-003 §7.3." },
   { key: "maxOvershoot", label: "Most extra height", unit: "in", def: null, min: 0, max: 6, step: 0.25, opt: "maxOvershoot", mm: true,
     help: "How much taller than the mold a stack may be, since boards only come in certain thicknesses. Blank means up to one of your thickest boards. Lower it to stop the planner spending a thick board on a little height." },
-  { key: "maxCandidates", label: "Stacks to try", unit: "groups", def: 8, min: 1, max: 40, step: 1, opt: "maxCandidates",
+  { key: "maxCandidates", label: "Stacks to try", unit: "combinations", def: 8, min: 1, max: 40, step: 1, opt: "maxCandidates",
     help: "How many thickness combinations the planner slices and prices, nearest the mold's height first. More can find a better answer and takes longer on a big mesh." },
   { key: "jointWorthSheets", label: "One glue joint is worth", unit: "4x8 sheets of 1in", def: 0.25, min: 0, max: 2, step: 0.05, cost: true,
     help: "The trade between board and glue-ups when the planner compares stacks. Raise it and you get fewer layers using more board. Lower it and you get more layers using less board." },

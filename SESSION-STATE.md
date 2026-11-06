@@ -22,7 +22,7 @@ git log -p --follow -- SESSION-STATE.md
 
 **Cut list and mold edits (2026-11-06), from Nick's report.** v6.12.0: the mold owns
 the density range (`planDensityRange`), `packAll` pools ranges, Re-plan stacks
-together (`planBatch`) is on the cut list. v6.13.0: Adjust stack (`openStackKnobs`,
+together (`planBatch`) is on the cut list. v6.13: Adjust stack (`openStackKnobs`,
 live preview off the stored mesh), `STACK_KNOBS` stored as `plan.knobs`, Cut settings
 (`CUT_KNOBS`, per browser). Nick's molds: at 21:40 he remade Back Side Panel Left at
 20 lb and Right at 30 lb on the old build, which clears the shortfall, so there is
