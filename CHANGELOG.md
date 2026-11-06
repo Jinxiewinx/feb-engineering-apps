@@ -38,6 +38,13 @@ to learn**, not about API compatibility:
 
 ---
 
+## v6.13.1 — 2026-11-06
+
+- Adjust stack: reach the modal box the way openModal does
+- Adjust stack: edge distance first, settings beside the preview, sizes stay in view
+
+---
+
 ## v6.13.0 — 2026-11-06
 
 - What's New for 6.13.0: Adjust stack and Cut settings
