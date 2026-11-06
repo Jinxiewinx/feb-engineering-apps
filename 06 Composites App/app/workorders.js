@@ -1260,7 +1260,9 @@ function openBlankTraveler() {
    The rail answers "which run"; this answers "what is the state of the build".
    At ≤900 it is never shown, because there the rail owns the screen. */
 function renderWOOverview() {
-  const D = DB.workOrders || [];
+  // The season's runs only, the same as the rail beside it. An R&D run past its
+  // due date used to list here under Behind due date.
+  const D = (DB.workOrders || []).filter(w => !woIsRnd(w));
   const s = woSummary();
   const tile = (n, label, cls) => `<div class="stat-tile"><div class="bignum ${cls || ""}">${n}</div><div class="stat-label">${esc(label)}</div></div>`;
   const open = D.filter(w => w.status !== "Complete");
