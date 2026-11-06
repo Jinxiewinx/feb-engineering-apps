@@ -1007,8 +1007,11 @@ async function openStackKnobs(moldId) {
   STACK_ADJ = { moldId, planId: p.id, buffer: null, token: 0, result: null, first: true, timer: null };
   openModal(`<h2>Adjust stack: ${esc(p.name || p.id)}</h2>
     <p class="muted tny">Change anything and the preview follows. Nothing is saved until you press Save as a new plan.</p>
+    <div id="sk-live" class="tny" role="status" style="position:sticky;top:0;z-index:2;background:var(--surface,#fff);padding:6px 0;font-weight:600">Loading…</div>
     <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
       <div style="flex:1 1 300px;min-width:0">
+        <h3>Blanks and stack choice</h3>
+        ${knobFieldsHtml("sk", vals, "stackKnobsChanged()")}
         <h3>Layers</h3>
         <div class="field"><label for="sk-mode">Thicknesses</label><select id="sk-mode" onchange="stackKnobsChanged()">
           <option value="keep">use the ones below</option><option value="auto">choose them for me, from stock</option></select>
@@ -1024,14 +1027,17 @@ async function openStackKnobs(moldId) {
           <input id="sk-dmin" style="max-width:70px" value="${esc(lo)}" oninput="stackKnobsChanged()">
           <input id="sk-dmax" style="max-width:70px" value="${esc(hi)}" oninput="stackKnobsChanged()"> <span class="muted tny">lb/ft³</span>
           <div class="muted tny">Any board in this range may supply any blank. The highest grade actually cut sets the feed rate for the whole mold.</div></div>
-        <h3>Blanks and stack choice</h3>
-        ${knobFieldsHtml("sk", vals, "stackKnobsChanged()")}
       </div>
-      <div style="flex:2 1 340px;min-width:0"><div id="sk-preview" class="muted tny">Loading the mold…</div></div>
+      <div style="flex:2 1 400px;min-width:0;position:sticky;top:32px"><div id="sk-preview" class="muted tny">Loading the mold…</div></div>
     </div>
     <div class="foot"><button onclick="stackKnobsDefaults()">Usual settings</button>
       <button onclick="STACK_ADJ=null;closeModal()">Cancel</button>
       ${isLead() ? `<button class="primary" id="sk-save" onclick="saveStackKnobs()" disabled>Save as a new plan</button>` : ""}</div>`, { wide: true });
+  /* Wider than a normal wide modal, so the settings and the stack sit side by side
+     and you can watch one while changing the other. On a phone they stack, and the
+     sticky line above keeps the sizes and board count in view while you type. */
+  const box = document.querySelector("#modal .modal");
+  if (box && box.style) { box.style.width = "min(1120px, 96vw)"; box.style.maxWidth = "96vw"; }
   const run = STACK_ADJ;
   try {
     const res = await fetch(p.meshUrl);
@@ -1065,7 +1071,9 @@ async function stackKnobsRun() {
   if (!st || !st.buffer) return;
   const f = stackKnobsRead();
   const el = document.getElementById("sk-preview");
-  const say = t => { st.result = null; const b = document.getElementById("sk-save"); if (b) b.disabled = true; if (el) el.innerHTML = `<div class="warn">${icon("warning", 14)} ${esc(t)}</div>`; };
+  const say = t => { st.result = null; const b = document.getElementById("sk-save"); if (b) b.disabled = true;
+    const lv = document.getElementById("sk-live"); if (lv) lv.textContent = "Not a stack yet: see the note beside the settings.";
+    if (el) el.innerHTML = `<div class="warn">${icon("warning", 14)} ${esc(t)}</div>`; };
   if (f.dLo == null) return say("Density needs to be a plain number in lb/ft³.");
   if (!f.auto && !f.thkOk) return say("List the thicknesses bottom to top, in inches, like 2, 1.5, 1.");
   const old = planById(st.planId);
@@ -1104,6 +1112,9 @@ function stackKnobsPaint() {
   st.first = false;
   const save = document.getElementById("sk-save");
   if (save) save.disabled = false;
+  const big = res.layers[0] && res.layers[0].blanks[0];
+  const live = document.getElementById("sk-live");
+  if (live && big) live.textContent = `Bottom blank ${Math.round((big.x1 - big.x0) / IN_MM * 100) / 100} × ${Math.round((big.y1 - big.y0) / IN_MM * 100) / 100}in · ${res.layers.length} layers · with the other molds: ${all.boardsUsed} boards, ${all.shortfall.length ? all.shortfall.length + " short" : "nothing short"}`;
   el.innerHTML = `<h3>Preview: ${esc(inch(res.composition || f.thkMm))}, ${Math.max(0, res.layers.length - 1)} glue joint${res.layers.length === 2 ? "" : "s"}</h3>
     <table class="list">
       <tr><td>This mold alone</td><td>${line(alone)}</td></tr>
